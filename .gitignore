@@ -1,0 +1,16 @@
+.godot/
+*.import
+export_presets.cfg
+*.apk
+*.aab
+.mono/
+
+# Python
+__pycache__/
+*.py[cod]
+
+# IDEs and OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
