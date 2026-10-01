@@ -45,6 +45,7 @@ var _boss_bar: ProgressBar
 var _banner: Label
 var _result: PanelContainer
 var _result_text: RichTextLabel
+var _min_town_btn: Button
 
 
 func _ready() -> void:
@@ -213,25 +214,95 @@ func _build_hud() -> void:
 	_result.anchor_left = 0.0
 	_result.anchor_right = 0.0
 	_result.anchor_top = 0.0
-	_result.offset_left = 16  # left side, so the loot in the middle and the buttons stay clear
-	_result.offset_right = 376
-	_result.offset_top = 200
+	_result.anchor_bottom = 1.0
+	_result.offset_left = 20
+	_result.offset_right = 430
+	_result.offset_top = 65
+	_result.offset_bottom = -20
+
+	var res_sb := StyleBoxFlat.new()
+	res_sb.bg_color = Color(0.08, 0.07, 0.10, 0.96)
+	res_sb.border_color = Color(0.80, 0.65, 0.28, 1.0)
+	res_sb.set_border_width_all(2)
+	res_sb.set_corner_radius_all(8)
+	res_sb.set_content_margin_all(12)
+	_result.add_theme_stylebox_override("panel", res_sb)
+
 	var vb := VBoxContainer.new()
-	vb.add_theme_constant_override("separation", 10)
+	vb.add_theme_constant_override("separation", 8)
+	vb.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_result.add_child(vb)
+
+	# Header with title and minimize button
+	var rhdr := HBoxContainer.new()
+	vb.add_child(rhdr)
+
+	var t_lbl := Label.new()
+	t_lbl.text = "🏆  DUNGEON CLEARED"
+	t_lbl.add_theme_font_size_override("font_size", 20)
+	t_lbl.add_theme_color_override("font_color", Color(0.95, 0.85, 0.45))
+	t_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	rhdr.add_child(t_lbl)
+
+	var min_btn := Button.new()
+	min_btn.text = "—"
+	min_btn.custom_minimum_size = Vector2(36, 36)
+	min_btn.add_theme_font_size_override("font_size", 18)
+	min_btn.pressed.connect(_toggle_result_minimized)
+	rhdr.add_child(min_btn)
+
+	# Scrollable content area so it never clips offscreen
+	var sc := ScrollContainer.new()
+	sc.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	sc.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	vb.add_child(sc)
+
 	_result_text = RichTextLabel.new()
 	_result_text.bbcode_enabled = true
 	_result_text.fit_content = true
 	_result_text.scroll_active = false
-	_result_text.add_theme_font_size_override("normal_font_size", 19)
-	_result_text.add_theme_font_size_override("bold_font_size", 24)
-	vb.add_child(_result_text)
+	_result_text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_result_text.add_theme_font_size_override("normal_font_size", 15)
+	_result_text.add_theme_font_size_override("bold_font_size", 17)
+	sc.add_child(_result_text)
+
+	# Fixed action buttons bar at bottom
+	var act_row := HBoxContainer.new()
+	act_row.add_theme_constant_override("separation", 10)
+	vb.add_child(act_row)
+
 	var btn := Button.new()
-	btn.text = "Return to town"
-	btn.custom_minimum_size = Vector2(0, 56)
-	btn.add_theme_font_size_override("font_size", 22)
+	btn.text = "🏛 Return to Town"
+	btn.custom_minimum_size = Vector2(0, 52)
+	btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	btn.add_theme_font_size_override("font_size", 19)
+	var town_sb := StyleBoxFlat.new()
+	town_sb.bg_color = Color(0.20, 0.16, 0.08)
+	town_sb.border_color = Color(0.85, 0.70, 0.30)
+	town_sb.set_border_width_all(2)
+	town_sb.set_corner_radius_all(6)
+	btn.add_theme_stylebox_override("normal", town_sb)
 	btn.pressed.connect(func(): main.return_to_town())
-	vb.add_child(btn)
+	act_row.add_child(btn)
+
+	# Minimized floating button
+	_min_town_btn = Button.new()
+	_min_town_btn.text = "🏛 Return to Town (Cleared)"
+	_min_town_btn.visible = false
+	_min_town_btn.custom_minimum_size = Vector2(210, 48)
+	_min_town_btn.anchor_left = 0.0
+	_min_town_btn.anchor_top = 0.0
+	_min_town_btn.offset_left = 20
+	_min_town_btn.offset_top = 70
+	_min_town_btn.add_theme_font_size_override("font_size", 15)
+	var min_sb := StyleBoxFlat.new()
+	min_sb.bg_color = Color(0.12, 0.10, 0.15, 0.95)
+	min_sb.border_color = Color(0.85, 0.70, 0.30)
+	min_sb.set_border_width_all(2)
+	min_sb.set_corner_radius_all(6)
+	_min_town_btn.add_theme_stylebox_override("normal", min_sb)
+	_min_town_btn.pressed.connect(_toggle_result_minimized)
+	_layer.add_child(_min_town_btn)
 
 
 func _label(size: int) -> Label:
@@ -278,26 +349,41 @@ func _show_banner(text: String, col: Color) -> void:
 	t.tween_callback(func(): _banner.visible = false)
 
 
-func _show_result() -> void:
-	var t := "[center][b][color=#f0c040]DUNGEON CLEARED[/color][/b][/center]\n"
-	t += "Time  %s    Kills  %d\n" % [fmt_time(elapsed), kills]
-	if on_time:
-		t += "[color=#66dd66]Under the time limit. Bonus loot![/color]\n"
+func _toggle_result_minimized() -> void:
+	if _result.visible:
+		_result.visible = false
+		_min_town_btn.visible = true
 	else:
-		t += "[color=#aaaaaa]Over the %s limit. Standard loot.[/color]\n" % fmt_time(TIME_LIMIT)
-	t += "\n[b]Rewards on the ground:[/b]\n"
+		_result.visible = true
+		_min_town_btn.visible = false
+
+
+func _show_result() -> void:
+	var t := "[color=#998877]Completion Time:[/color] [b]%s[/b]    [color=#998877]Kills:[/color] [b]%d[/b]\n" % [fmt_time(elapsed), kills]
+	if on_time:
+		t += "[color=#4ade80][b]⚡ SPEED CLEAR BONUS LOOT ACHIEVED![/b][/color]\n"
+	else:
+		t += "[color=#888888]Time Limit (%s) exceeded - Standard Loot[/color]\n" % fmt_time(TIME_LIMIT)
+	t += "[color=#3d3545]──────────────────────────────[/color]\n"
+	t += "[b][color=#f3c66f]REWARDS ON THE GROUND:[/color][/b]\n"
 	for it in rewards:
 		var col: String = ItemInstance.RARITY_COLORS[it.rarity].to_html(false)
-		t += "  [color=#%s]%s[/color]\n" % [col, it.display_name]
-	t += "\n[b]Added to your stash:[/b]\n"
-	t += "  %d Gold\n" % int(extra_drops.gold)
+		t += "  • [b][color=#%s]%s[/color][/b]  [color=#777777](%s)[/color]\n" % [
+			col, it.display_name, ItemInstance.Rarity.keys()[it.rarity].capitalize()]
+	t += "[color=#3d3545]──────────────────────────────[/color]\n"
+	t += "[b][color=#f3c66f]STASH REWARDS DEPOSITED:[/color][/b]\n"
+	t += "  • [color=#ffd933]🪙 %d Gold[/color]\n" % int(extra_drops.gold)
 	for k in extra_drops.materials:
-		t += "  %d %s\n" % [extra_drops.materials[k], CraftingDB.MATERIALS[k].name]
+		var mc: String = CraftingDB.MATERIALS[k].color.to_html(false)
+		t += "  • [color=#%s]%d %s[/color]\n" % [mc, extra_drops.materials[k], CraftingDB.MATERIALS[k].name]
 	for k in extra_drops.orbs:
-		t += "  %d %s\n" % [extra_drops.orbs[k], CraftingDB.ORBS[k].name]
+		var oc: String = CraftingDB.ORBS[k].color.to_html(false)
+		t += "  • [color=#%s]%d %s[/color]\n" % [oc, extra_drops.orbs[k], CraftingDB.ORBS[k].name]
 	if recipe_drop != "":
-		t += "[color=#e6bf80]A recipe page dropped: %s[/color]\n" % CraftingDB.RECIPES[recipe_drop].name
-	t += "[color=#888888]Walk over the items to collect,\nthen return to town.[/color]"
+		t += "  • [color=#f59e0b]📜 Recipe: %s[/color]\n" % CraftingDB.RECIPES[recipe_drop].name
+	t += "[color=#3d3545]──────────────────────────────[/color]\n"
+	t += "[color=#a8a29e]💡 Walk over ground items to collect them, then tap Return to Town.[/color]"
 	_result_text.text = t
 	_result.visible = true
+	_min_town_btn.visible = false
 	_banner.visible = false
