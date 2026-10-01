@@ -171,16 +171,22 @@ func _fill(grid: GridContainer, items: Array) -> void:
 		c.queue_free()
 	for it in items:
 		var b := Button.new()
-		b.text = it.display_name
-		b.custom_minimum_size = Vector2(96, 60)
-		b.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		b.custom_minimum_size = Vector2(66, 66)
 		b.clip_text = true
-		b.add_theme_font_size_override("font_size", 12)
+		b.expand_icon = true
+		b.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		b.vertical_icon_alignment = VERTICAL_ALIGNMENT_CENTER
+		b.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		b.add_theme_font_size_override("font_size", 11)
+		if it.base.icon != null:
+			b.icon = it.base.icon
+		else:
+			b.text = it.display_name
 		var col: Color = ItemInstance.RARITY_COLORS[it.rarity]
 		var sb := StyleBoxFlat.new()
-		sb.bg_color = it.base.color.darkened(0.65)
+		sb.bg_color = it.base.color.darkened(0.72)
 		sb.border_color = Color.WHITE if it == _selected else col
-		sb.set_border_width_all(4 if it == _selected else 2)
+		sb.set_border_width_all(3 if it == _selected else 2)
 		sb.set_corner_radius_all(6)
 		for st in ["normal", "hover", "pressed", "focus", "disabled"]:
 			b.add_theme_stylebox_override(st, sb)
