@@ -1,6 +1,6 @@
 extends Node
 ## Autoload "GameState": everything that persists between dungeon runs
-## (orbs - which are also the money - materials, recipes, player's items, skill tree and runes). Saved to user://.
+## (orbs - which are also the money and what recipes cost - recipes, player's items, skill tree and runes). Saved to user://.
 ## Each character has its own save (CHAR_DIR/<id>.json); the account file lists the characters
 ## and holds the stash, which all characters share.
 
@@ -26,11 +26,10 @@ var show_hub_intro := false
 ## Set by the map editor's "Test in Game" (command line --test-map=<id>): rifts use only this map.
 var test_map := ""  # set when the tutorial ends: the town shows its welcome once
 
-# Shared by every character (saved in the account, shown in the stash's Currency, Materials and
-# Gems tabs): orbs, shards, crafting materials and loose gems. See SHARED_KEYS.
+# Shared by every character (saved in the account, shown in the stash's Currency and
+# Gems tabs): orbs, shards and loose gems. See SHARED_KEYS.
 var orbs := {}
 var shards := {}  # orb id -> shards (Currency.SHARDS_PER_ORB join into one orb)
-var materials := {}
 var known_recipes: Array[String] = []
 var runs_cleared := 0
 var rift_unlocked := 1  # highest rift level the player may enter (beat a level on time to unlock the next)
@@ -63,7 +62,7 @@ var gems := {}             # gem_id -> count (int), see GemDef     [shared]
 ## Pools every character shares, saved in the account rather than each character. Loose skill
 ## gems are shared too, but what is socketed in a character's skill slots and the gems' levels
 ## stay that character's.
-const SHARED_KEYS := ["orbs", "shards", "materials", "skill_gems", "runes", "gems"]
+const SHARED_KEYS := ["orbs", "shards", "skill_gems", "runes", "gems"]
 ## Open while the stash or the Jeweler is: gems can only be socketed or swapped then.
 var gem_station := false
 ## Flasks in the character's flask slots (Player.flasks), as saved: item dicts or null.
@@ -112,7 +111,7 @@ func _new_game() -> void:
 	gem_xp = {}
 	support_levels = {}
 	support_xp = {}
-	give_starter_skills()
+	_starter_slots()  # defaults until a character is loaded; the shared gems are left alone
 	tutorial_stage = TUTORIAL_DONE
 
 
@@ -121,7 +120,6 @@ func _new_game() -> void:
 func _starter_pools() -> void:
 	orbs = CraftingDB.STARTING_CURRENCY.duplicate()
 	shards = {}
-	materials = CraftingDB.STARTING_MATERIALS.duplicate()
 	gems = {"ruby_1": 2, "topaz_1": 1, "sapphire_1": 1}
 	runes = STARTER_RUNES.duplicate()
 	skill_gems = {}
@@ -133,15 +131,24 @@ const STARTER_RUNES := {
 }
 
 
-## The usual starting skill setup (new characters who skip the tutorial get this too; gems
-## already owned are kept).
+## The usual starting skill setup, for a new character who skips the tutorial: the starting
+## skills socketed, and a Frenzy gem in the shared stash unless one is owned already -- loose or
+## socketed. (Handing one out whenever the stash had none put a second Frenzy there for every
+## character load once the gems became shared, beside the one in the slot.)
 func give_starter_skills() -> void:
-	skill_gems["frenzy"] = maxi(skill_gem_count("frenzy"), 1)
+	var owned := skill_gem_count("frenzy") > 0 or slot_of("frenzy") >= 0  # before the slots change
+	_starter_slots()
+	if not owned:
+		skill_gems["frenzy"] = 1
+	_on_skills_modified()
+
+
+## The starting skills in this character's slots. Touches nothing shared.
+func _starter_slots() -> void:
 	skill_slots = _empty_slots()
 	for i in 4:
 		skill_slots[i].skill = ["cleave", "whirlwind", "leap_slam", "battle_cry"][i]
 	skill_slots[0].supports = ["rune_frost"]
-	_on_skills_modified()
 
 
 ## Item level used by crafting recipes; grows as you clear dungeons.
@@ -155,17 +162,8 @@ func orb_count(id: String) -> int:
 	return int(orbs.get(id, 0))
 
 
-func material_count(id: String) -> int:
-	return int(materials.get(id, 0))
-
-
 func add_orb(id: String, n: int) -> void:
 	orbs[id] = maxi(orb_count(id) + n, 0)
-	_changed()
-
-
-func add_material(id: String, n: int) -> void:
-	materials[id] = maxi(material_count(id) + n, 0)
 	_changed()
 
 
@@ -210,25 +208,10 @@ func grant_currency(r: Dictionary) -> void:
 	_changed()
 
 
-func can_afford_materials(cost: Dictionary) -> bool:
-	for k in cost:
-		if material_count(k) < int(cost[k]):
-			return false
-	return true
-
-
-func spend_materials(cost: Dictionary) -> void:
-	for k in cost:
-		materials[k] = material_count(k) - int(cost[k])
-	_changed()
-
-
-## Applies a drops dictionary ({"shards", "materials", "orbs"}).
+## Applies a drops dictionary ({"shards", "orbs"}).
 func grant(drops: Dictionary) -> void:
 	for k in drops.get("shards", {}):
 		add_shards(k, int(drops.shards[k]))
-	for k in drops.get("materials", {}):
-		materials[k] = material_count(k) + int(drops.materials[k])
 	for k in drops.get("orbs", {}):
 		orbs[k] = orb_count(k) + int(drops.orbs[k])
 	_changed()
@@ -268,15 +251,6 @@ func buy_orb(id: String) -> bool:
 	if price.is_empty() or not pay(price):
 		return false
 	add_orb(id, 1)
-	return true
-
-
-## Materials come in bundles (CraftingDB.MATERIALS[id].bundle = [amount, price]).
-func buy_material(id: String) -> bool:
-	var b: Array = CraftingDB.MATERIALS[id].get("bundle", [])
-	if b.is_empty() or not pay(b[1]):
-		return false
-	add_material(id, int(b[0]))
 	return true
 
 
@@ -485,7 +459,7 @@ func points_spent() -> int:
 	return allocated_nodes().size()
 
 
-## Refund the whole passive tree. For the respec NPC.
+## Refund the whole passive tree, free (the Respec button on the passive tree).
 func reset_all_skills() -> void:
 	skill_points += points_spent()
 	passive_nodes[_class_id()] = []
@@ -1114,7 +1088,7 @@ func _save_account() -> void:
 		"characters": characters, "last": last_character,
 		"stash": stash.to_array(),
 		"stash_overflow": stash_overflow.map(func(i): return i.to_dict()),
-		"shared": {"orbs": orbs, "shards": shards, "materials": materials,
+		"shared": {"orbs": orbs, "shards": shards,
 			"skill_gems": skill_gems, "runes": runes, "gems": gems},
 	})
 
@@ -1149,14 +1123,16 @@ func _load_stash(list: Array, overflow: Array = []) -> void:
 
 
 ## The shared pools from the account. An account from before they were shared gathers them
-## from its characters -- every character's orbs, materials and loose gems added together -- and
-## takes them out of the character saves, once. A brand-new account gets the starting pools.
+## from its characters -- every character's orbs and loose gems added together -- and takes them
+## out of the character saves, once. A brand-new account gets the starting pools. Crafting
+## materials, from before recipes cost orbs, become the orb shards they were worth.
 func _load_shared(acc: Dictionary) -> void:
+	var old_materials := {}
 	if acc.has("shared"):
 		var sh: Dictionary = acc.shared
 		orbs = _ints(sh.get("orbs", {}))
 		shards = _ints(sh.get("shards", {}))
-		materials = _ints(sh.get("materials", {}))
+		old_materials = _ints(sh.get("materials", {}))
 		skill_gems = _ints(sh.get("skill_gems", {}))
 		runes = _ints(sh.get("runes", {}))
 		gems = _ints(sh.get("gems", {}))
@@ -1173,7 +1149,6 @@ func _load_shared(acc: Dictionary) -> void:
 			var pools := {
 				"orbs": _ints(data.get("orbs", {})),
 				"shards": _ints(data.get("shards", {})),
-				"materials": _ints(data.get("materials", {})),
 				"skill_gems": _ints(data.get("skill_gems", {})),
 				# a character saved before these existed was given the starting ones on load
 				"runes": _ints(data.get("runes", STARTER_RUNES)),
@@ -1183,6 +1158,10 @@ func _load_shared(acc: Dictionary) -> void:
 			var gold := Currency.gold_to_orbs(int(data.get("gold", 0)))
 			for id in gold:
 				pools.orbs[id] = int(pools.orbs.get(id, 0)) + int(gold[id])
+			var mats := _ints(data.get("materials", {}))
+			for id in mats:
+				old_materials[id] = int(old_materials.get(id, 0)) + int(mats[id])
+			data.erase("materials")
 			for k in SHARED_KEYS:
 				var pool: Dictionary = get(k)
 				for id in pools[k]:
@@ -1194,6 +1173,19 @@ func _load_shared(acc: Dictionary) -> void:
 	for id in orbs.keys():
 		if not CraftingDB.ORBS.has(id):
 			orbs.erase(id)
+	if not old_materials.is_empty():
+		_materials_to_shards(old_materials)
+		_save_account()
+
+
+## Crafting materials from an older save, as the orb shards each was worth
+## (CraftingDB.OLD_MATERIAL_SHARDS); whole orbs form as the shards add up.
+func _materials_to_shards(mats: Dictionary) -> void:
+	for id in mats:
+		var conv: Array = CraftingDB.OLD_MATERIAL_SHARDS.get(id, [])
+		if conv.is_empty() or int(mats[id]) <= 0:
+			continue
+		add_shards(String(conv[0]), int(mats[id]) * int(conv[1]))
 
 
 ## The save from before characters existed becomes the first character; its stash becomes the

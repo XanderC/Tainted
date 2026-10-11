@@ -63,16 +63,17 @@ that is never used up: drink it from a flask slot and it goes on cooldown.
 - Test: `godot --headless --path . res://scratch/test_flasks.tscn`;
   `res://scratch/capture_flasks.tscn` for screenshots.
 
-### Shared stash tabs: currency, materials, gems
-Orbs and shards, crafting materials, and loose skill, support and socket gems belong to the
+### Shared stash tabs: currency, gems
+Orbs and shards, and loose skill, support and socket gems belong to the
 account, not a character (`GameState.SHARED_KEYS`, saved in the account file). The stash shows them
-in tabs: **Items** (the grid), **Currency**, **Materials** and **Gems**. The inventory keeps only
+in tabs: **Items** (the grid), **Currency** and **Gems**. The inventory keeps only
 Equipment and Consumables.
 - Gems are changed only at the stash (its Gems tab: skill slots and the tapped item's sockets
   beside the shared gems) or socketed at the Jeweler (`GameState.gem_station`). Elsewhere the
   Skills and Gems panels are view-only. Gem levels and what each character has socketed stay
   that character's.
-- Orbs are still usable on any item from its details, or dragged from the Currency tab onto worn gear.
+- Currency is used only in the stash's Currency tab: tap an item (bag, worn or stashed), then tap
+  an orb; or drag an orb onto worn gear. The item details and the Blacksmith no longer use orbs.
 - A new account gets the starting pools once (`_starter_pools`), not each new character.
   Accounts from before this add every character's pools together the first time they load.
 - The tutorial altar sockets the first gem straight into the main attack slot.
@@ -158,21 +159,22 @@ All numbers (`KILL_TARGET`, `TIME_LIMIT`, `BOSS_HP`, reward chances) are constan
 
 ## Crafting (scripts/crafting_db.gd, crafting.gd, crafting_ui.gd, game_state.gd)
 
-Crafting happens in town (see below). The Blacksmith offers Orbs, Salvage and Recipes; the Merchant offers Buy and Sell.
+Crafting happens in town (see below). The Blacksmith forges Recipes and Plans; the Merchant buys and sells.
+Orbs are used on items from the stash's Currency tab. There are no crafting materials and no
+salvaging: orbs are the one currency, and recipes cost orbs.
 
 - **Orbs** (Path of Exile style), used on any item in your bag or worn: Transmutation (Normal to Magic),
   Alteration (reroll Magic), Augmentation (add to Magic), Regal (Magic to Rare), Alchemy (Normal to Rare),
   Chaos (reroll Rare), Exalted (add to Rare, max 6), Divine (reroll values), Scouring (back to Normal).
   Orbs drop from monsters and bosses.
-- **Salvage** (Diablo 3 style): break bag items into Iron Scrap (Normal), Arcane Dust (Magic) and
-  Wraith Essence (Rare). Monsters drop materials too; Tainted Cores drop only from bosses.
-- **Recipes**: craft with materials. Some are known from the start, some are found as recipe pages
+- **Recipes**: craft with orbs (Transmutation for the basic forges, up to Chaos for Tainted and
+  Exalted crafts, Legendary and Set plans). Some are known from the start, some are found as recipe pages
   on monsters and bosses, some are bought from the Trader.
-- **Merchant**: Buy recipes, orbs and materials with gold, or Sell bag items for gold.
+- **Merchant**: Buy recipes and orbs, or Sell bag items for orbs.
 
-Content is data: add orbs, materials and recipes in `crafting_db.gd`; orb rules live in `crafting.gd`.
+Content is data: add orbs and recipes in `crafting_db.gd`; orb rules live in `crafting.gd`.
 
-**Saving:** gold, orbs, materials, recipes, bag and worn gear are saved to `user://tainted_save.json`
+**Saving:** orbs, recipes, bag and worn gear are saved to `user://tainted_save.json`
 (on every change), so they carry between dungeon runs and app restarts. To wipe it, call
 `GameState.reset_save()` or delete that file (on desktop: Godot's user data folder for "Tainted").
 
@@ -182,7 +184,7 @@ Content is data: add orbs, materials and recipes in `crafting_db.gd`; orb rules 
 The game starts here, and you return here after a dungeon (leaving, or dying). Walk up to an NPC
 and tap the Talk button at the bottom (or press E):
 
-- **Blacksmith** (west): orbs, salvage, recipes.
+- **Blacksmith** (west): recipes and plans.
 - **Merchant** (east): buy and sell.
 - **Stash Keeper** (north): shared storage, 60 slots, saved with the account so every future character sees it.
 - **Dungeon Gate** (east, by the pyramid): starts a dungeon instance.

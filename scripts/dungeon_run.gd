@@ -40,7 +40,7 @@ const HP_GROWTH := 1.18        # monster & boss life x this per level
 const DAMAGE_GROWTH := 1.12    # monster & boss damage x this per level
 const SPEED_PER_LEVEL := 0.02  # +2% move speed per level (capped at +40%)
 const ILVL_PER_LEVEL := 2      # item level bonus per level
-const REWARD_PER_LEVEL := 0.25 # +25% shards / materials / orbs per level
+const REWARD_PER_LEVEL := 0.25 # +25% shards / orbs per level
 const EXTRA_ITEM_EVERY := 3    # one more boss item every N levels
 
 var level := 1
@@ -154,7 +154,7 @@ func _on_boss_died(pos: Vector2) -> void:
 		pk.delay = 0.8
 		pk.position = pos + Vector2.from_angle(TAU * i / rewards.size() + 0.5) * (70.0 + 12.0 * (i % 3))
 		main.add_child(pk)
-	# Materials, orbs and shards go straight to your stash; a recipe page drops on the ground.
+	# Orbs and shards go straight to your stash; a recipe page drops on the ground.
 	extra_drops = scale_drops(CraftingDB.boss_drops(on_time), level)
 	horde_loot(extra_drops)
 	GameState.grant(extra_drops)
@@ -204,22 +204,22 @@ static func item_level(lvl: int, kill_count: int) -> int:
 	return 1 + int(kill_count / 8.0) + ILVL_PER_LEVEL * (lvl - 1)
 
 
-## Multiplies the shard, material and orb amounts of a drop table by the level's reward bonus.
+## Multiplies the shard and orb amounts of a drop table by the level's reward bonus.
 static func scale_drops(d: Dictionary, lvl: int) -> Dictionary:
 	var m := reward_mult(lvl)
-	for key in ["shards", "materials", "orbs"]:
+	for key in ["shards", "orbs"]:
 		var sub: Dictionary = d.get(key, {})
 		for k in sub:
 			sub[k] = int(round(int(sub[k]) * m))
 	return d
 
 
-## Adds what the monsters you killed would have dropped: their shards, materials and orbs into
+## Adds what the monsters you killed would have dropped: their shards and orbs into
 ## `drops`, plus runes and gems (granted now, listed in the result).
 func horde_loot(drops: Dictionary) -> void:
 	for i in kills:
 		var d := scale_drops(CraftingDB.monster_drops(item_level(level, i)), level)
-		for key in ["shards", "materials", "orbs"]:
+		for key in ["shards", "orbs"]:
 			var into: Dictionary = drops[key]
 			for k in d[key]:
 				into[k] = int(into.get(k, 0)) + int(d[key][k])
@@ -506,9 +506,6 @@ func _show_result() -> void:
 	for k in extra_drops.get("shards", {}):
 		var sc: String = CraftingDB.ORBS[k].color.to_html(false)
 		t += "  • [color=#%s]%d %s Shards[/color]\n" % [sc, extra_drops.shards[k], CraftingDB.ORBS[k].short]
-	for k in extra_drops.materials:
-		var mc: String = CraftingDB.MATERIALS[k].color.to_html(false)
-		t += "  • [color=#%s]%d %s[/color]\n" % [mc, extra_drops.materials[k], CraftingDB.MATERIALS[k].name]
 	for k in extra_drops.orbs:
 		var oc: String = CraftingDB.ORBS[k].color.to_html(false)
 		t += "  • [color=#%s]%d %s[/color]\n" % [oc, extra_drops.orbs[k], CraftingDB.ORBS[k].name]

@@ -3,15 +3,16 @@ extends MenuPanel
 ## The shared (account-wide) stash, in tabs:
 ##   Items     - a grid like the bag, bigger. Drag gear between it and the bag on the right, or
 ##               within the stash to rearrange; dropping onto one item swaps the two.
-##   Currency  - every orb, with shards. Drag an orb onto worn gear to use it.
-##   Materials - crafting materials, spent by the Blacksmith's recipes.
+##   Currency  - every orb, with shards, and the one place currency is used: tap an item (in
+##               the bag, worn, or in the Items tab), then tap an orb to use it on that item, or
+##               drag an orb onto worn gear.
 ##   Gems      - the gem station: your skill slots and the sockets of the item tapped in your
 ##               bag, beside the shared skill, support and socket gems. Gems can only be changed
 ##               here (or socketed at the Jeweler).
 ## Everything here is shared by all your characters.
 
 const CELL := 44.0
-const TABS := [["items", "📦 Items"], ["currency", "💰 Currency"], ["materials", "⚒ Materials"], ["gems", "💠 Gems"]]
+const TABS := [["items", "📦 Items"], ["currency", "💰 Currency"], ["gems", "💠 Gems"]]
 const ORB_CELL := Vector2(64, 64)
 
 var tab := "items"
@@ -34,7 +35,6 @@ func refresh() -> void:
 	_add_tabs()
 	match tab:
 		"currency": _show_currency()
-		"materials": _show_materials()
 		"gems": _show_gems()
 		_: _show_items()
 
@@ -109,8 +109,16 @@ func _show_items() -> void:
 # ---------- currency ----------
 
 func _show_currency() -> void:
+	# The item currency is used on: whatever is tapped in the bag, worn, or in the Items tab
+	var it := menu.selected
+	if it != null:
+		var target := UIKit.section(self, "USING CURRENCY ON")
+		UIKit.item_card(target, it, true)
 	var sec := UIKit.section(self, "CURRENCY")
-	sec.add_child(UIKit.label("Shared by all your characters. Drag an orb onto gear you're wearing to use it, or use orbs on any item from its details.", 13, UIKit.TEXT_DIM, true))
+	sec.add_child(UIKit.label(
+		"Tap an orb to use it on this item." if it != null else
+		"Shared by all your characters. Tap an item in your bag or gear (or in the Items tab), then tap an orb to use it on it. You can also drag an orb onto gear you're wearing.",
+		13, UIKit.TEXT_DIM, true))
 	var grid := UIKit.grid(6)
 	sec.add_child(grid)
 	for id in CraftingDB.ORB_ORDER:
@@ -121,10 +129,15 @@ func _show_currency() -> void:
 		var tip := "%s\n%s" % [o.name, o.desc]
 		if sh > 0:
 			tip += "\nShards: %d / %d" % [sh, Currency.SHARDS_PER_ORB]
+		# With an item picked, an orb that can't be used on it is dimmed and says why
+		var on_item := it != null and not Crafting.NOT_ITEM_ORBS.has(id)
+		var why := Crafting.orb_block_reason(it, id) if on_item else ""
+		if why != "":
+			tip += "\n" + why
 		cell.setup(CraftingDB.orb_icon(id), Color(o.color) if n > 0 else UIKit.EMPTY_BORDER, Color(0.08, 0.07, 0.10), n, "", tip)
-		if n <= 0:
+		if n <= 0 or (it != null and (not on_item or why != "")):
 			cell.modulate = Color(1, 1, 1, 0.4)
-		else:
+		if n > 0:
 			cell.payload = {"kind": "orb", "id": id}
 		if sh > 0:
 			var l := UIKit.label("%d/%d" % [sh, Currency.SHARDS_PER_ORB], 10, Color(0.85, 0.85, 0.95))
@@ -135,30 +148,15 @@ func _show_currency() -> void:
 			l.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 			l.offset_left = 3
 			cell.add_child(l)
-		cell.clicked.connect(func(): menu.feedback("%s: %s" % [o.name, o.desc]))
+		cell.clicked.connect(func():
+			if not on_item:
+				menu.feedback("%s: %s" % [o.name, o.desc])
+				return
+			var res := Crafting.apply_orb(player, it, id)
+			menu.feedback(res.msg)
+			menu.refresh()
+		)
 		grid.add_child(cell)
-
-
-# ---------- materials ----------
-
-func _show_materials() -> void:
-	var sec := UIKit.section(self, "CRAFTING MATERIALS")
-	sec.add_child(UIKit.label("Shared by all your characters. The Blacksmith's recipes use them.", 13, UIKit.TEXT_DIM, true))
-	for k in CraftingDB.MATERIALS:
-		var m: Dictionary = CraftingDB.MATERIALS[k]
-		var row := HBoxContainer.new()
-		row.add_theme_constant_override("separation", 10)
-		var icon := TextureRect.new()
-		icon.texture = IconFactory.material_icon(k, m.color)
-		icon.custom_minimum_size = Vector2(36, 36)
-		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		row.add_child(icon)
-		var name_l := UIKit.label(m.name, 17, m.color)
-		name_l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		row.add_child(name_l)
-		row.add_child(UIKit.label(str(GameState.material_count(k)), 18, Color(0.95, 0.92, 0.85)))
-		sec.add_child(row)
 
 
 # ---------- gems ----------

@@ -5,13 +5,13 @@ extends PanelContainer
 ##   bag <-> bag (rearrange/swap), bag -> equipment slot (equip), equipment -> bag (unequip),
 ##   stash -> bag (take), and anything the current left panel accepts (e.g. buying a ware).
 ## Tapping an item selects it for the left panel (details, gems, blacksmith, merchant...).
-## Currency, crafting materials and loose gems aren't carried: they are the account's, in the
+## Currency and loose gems aren't carried: they are the account's, in the
 ## shared stash (StashPanel). Orbs dragged from its Currency tab can be dropped on worn gear.
 
 ## One cell of the bag grid (Player.BAG_COLS x BAG_ROWS, gear spanning several).
-const GEAR_GRID_CELL := 36.0  # 10 x 6 cells fit under the paperdoll on a 720p screen
-const GEAR_CELL := Vector2(66, 66)
-const FLASK_CELL := Vector2(42, 66)  # flasks stand tall, as in the bag
+const GEAR_GRID_CELL := 46.0  # 10 x 6 cells fill the space under the paperdoll on a 720p-tall screen
+const GEAR_CELL := Vector2(60, 60)  # five down each side: their height sets how much the bag gets
+const FLASK_CELL := Vector2(40, 60)  # flasks stand tall, as in the bag
 const LEFT_SLOTS := ["helmet", "chest", "gloves", "boots"]
 const RIGHT_SLOTS := ["amulet", "ring", "weapon", "offhand"]
 

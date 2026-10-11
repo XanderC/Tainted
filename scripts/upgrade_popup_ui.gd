@@ -19,7 +19,6 @@ var _replaces_lbl: Label
 var _timer_bar: ProgressBar
 
 var _btn_equip: Button
-var _btn_salvage: Button
 var _btn_dismiss: Button
 
 var _current_item: ItemInstance = null
@@ -155,7 +154,7 @@ func _build_ui() -> void:
 	_replaces_lbl.add_theme_color_override("font_color", Color(0.65, 0.60, 0.55))
 	outer.add_child(_replaces_lbl)
 
-	# 4. ACTION ROW: Quick Equip & Quick Salvage
+	# 4. ACTION ROW: Quick Equip
 	var act_row := HBoxContainer.new()
 	act_row.add_theme_constant_override("separation", 8)
 	outer.add_child(act_row)
@@ -170,14 +169,6 @@ func _build_ui() -> void:
 	_btn_equip.pressed.connect(_on_equip_pressed)
 	act_row.add_child(_btn_equip)
 
-	_btn_salvage = Button.new()
-	_btn_salvage.text = "🔨 Salvage"
-	_btn_salvage.custom_minimum_size = Vector2(95, 32)
-	_btn_salvage.add_theme_font_size_override("font_size", 12)
-	var sal_sb := _make_stylebox(Color(0.20, 0.12, 0.08), Color(0.85, 0.50, 0.25), 1, 6)
-	_btn_salvage.add_theme_stylebox_override("normal", sal_sb)
-	_btn_salvage.pressed.connect(_on_salvage_pressed)
-	act_row.add_child(_btn_salvage)
 
 	# 5. TIMER PROGRESS BAR: Visual countdown before auto-dismiss
 	_timer_bar = ProgressBar.new()
@@ -230,25 +221,6 @@ func _on_equip_pressed() -> void:
 		pk.queue_free()
 
 	upgrade_resolved.emit("equip", it)
-	close()
-
-
-func _on_salvage_pressed() -> void:
-	if _current_item == null:
-		close()
-		return
-
-	var it: ItemInstance = _current_item
-	var pk: LootPickup = _current_pickup
-
-	# If item is in the bag, take it out
-	player.remove_from_bag(it)
-
-	Crafting.salvage_item_direct(it)
-	if pk != null and is_instance_valid(pk):
-		pk.queue_free()
-
-	upgrade_resolved.emit("salvage", it)
 	close()
 
 

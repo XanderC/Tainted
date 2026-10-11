@@ -5,8 +5,13 @@ extends MenuPanel
 ## in orbs and shards (Currency.sell_value). Drag a ware onto your bag to buy it, drag a bag
 ## item onto the merchant grid to sell it. Tap a ware or bag item for a Buy / Sell strip.
 
-const COLS := 8
-const CELL := Vector2(58, 58)
+const CELL := Vector2(54, 54)
+const SEP := 5
+## As many columns as the panel is wide (at least this many), so the wares take few rows and the
+## Buy / Sell strip below them stays on screen without scrolling.
+const MIN_COLS := 6
+
+var _cols := 0  # columns last laid out; a resize that changes it rebuilds the grid
 
 var _ware := {}  # selected ware
 
@@ -15,16 +20,31 @@ func panel_title() -> String:
 	return "🛒 Merchant"
 
 
+func _ready() -> void:
+	resized.connect(func():
+		if is_visible_in_tree() and _cols_for_width() != _cols:
+			refresh()
+	)
+
+
+func _cols_for_width() -> int:
+	var w := size.x if size.x > 0.0 else 600.0
+	return maxi(MIN_COLS, int((w - 30.0) / (CELL.x + SEP)))
+
+
 func refresh() -> void:
 	UIKit.clear(self)
+	_cols = _cols_for_width()
 	var sec := UIKit.section(self, "MERCHANT'S WARES")
-	var grid := UIKit.grid(COLS)
+	var grid := UIKit.grid(_cols, SEP)
 	sec.add_child(grid)
 	var wares := _wares()
 	for w in wares:
 		grid.add_child(_ware_cell(w))
-	# Spare cells so there is always room to drop items to sell
-	var spare := COLS - (wares.size() % COLS) + COLS
+	# Spare cells to drop items on to sell: the rest of the last row (a whole row if it is nearly full)
+	var spare := (_cols - wares.size() % _cols) % _cols
+	if spare < 4:
+		spare += _cols
 	for i in spare:
 		var cell := DragSlot.new(CELL)
 		cell.setup(null, UIKit.EMPTY_BORDER)
@@ -75,11 +95,6 @@ func _wares() -> Array[Dictionary]:
 		var o: Dictionary = CraftingDB.ORBS[id]
 		list.append({"type": "orb", "id": id, "name": o.name, "desc": o.desc,
 			"price": price, "color": o.color, "icon": CraftingDB.orb_icon(id)})
-	for id in CraftingDB.MATERIALS:
-		var m: Dictionary = CraftingDB.MATERIALS[id]
-		if m.has("bundle"):
-			list.append({"type": "material", "id": id, "name": "%d %s" % [int(m.bundle[0]), m.name], "desc": "Crafting material",
-				"price": m.bundle[1], "color": m.color, "icon": IconFactory.material_icon(id, m.color)})
 	return list
 
 
@@ -134,7 +149,6 @@ func _buy(w: Dictionary) -> void:
 	match w.get("type", ""):
 		"recipe": ok = GameState.buy_recipe(w.id)
 		"orb": ok = GameState.buy_orb(w.id)
-		"material": ok = GameState.buy_material(w.id)
 		"flask": ok = GameState.buy_flask(w.id, w.price)
 		"skillgem": ok = GameState.buy_skill_gem(w.id)
 	var why := "Not enough orbs!" if not GameState.can_afford(w.price) else "No room in your bag!"
@@ -155,7 +169,6 @@ func _add_trade_strip() -> void:
 	var it := menu.selected
 	if it != null and player.inventory.has(it):
 		_ware = {}
-		info.text = it.display_name
 		info.add_theme_color_override("font_color", ItemInstance.RARITY_COLORS[it.rarity])
 		btn.text = "💰 Sell"
 		info.text = "%s  ➜  %s" % [it.display_name, Currency.reward_text(Currency.sell_value(it))]

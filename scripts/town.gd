@@ -1,8 +1,7 @@
 extends Node2D
 ## The hub scene, entered from the character select screen. Walk up to an NPC and tap Talk.
-## Blacksmith: orbs, salvage, recipes.  Merchant: buy and sell.  Stash keeper: shared storage.
+## Blacksmith: recipes and plans (paid in orbs).  Merchant: buy and sell.  Stash keeper: shared storage and currency.
 ## Jeweler: combine gems into higher tiers and remove socketed gems.
-## Mystic: respec (refund every passive point, free).
 ## Rift Gate: pick a rift level, then start a run (scenes/main.tscn).
 
 const DUNGEON_SCENE := "res://scenes/main.tscn"
@@ -14,7 +13,6 @@ var player: Player
 var menu: GameMenu  # character screen + inventory / vendor panels
 var skill_tree_ui: SkillTreeUI
 var rift_ui: RiftSelectUI
-var respec_ui: RespecUI
 var upgrade_popup_ui: CanvasLayer
 var _hud: Label
 var _talk_btn: Button
@@ -39,7 +37,7 @@ func _ready() -> void:
 	cam.limit_bottom = int(TownMap.CAM_LIMIT.end.y)
 	player.add_child(cam)
 
-	_add_npc("Blacksmith", "Craft & Salvage", Vector2(-560, -205), {"weapon": "battle_axe", "chest": "chain_mail", "helmet": "leather_cap"},
+	_add_npc("Blacksmith", "Craft", Vector2(-560, -205), {"weapon": "battle_axe", "chest": "chain_mail", "helmet": "leather_cap"},
 		Color(1.0, 0.88, 0.78), "Talk to the Blacksmith", func(): menu.open_vendor("smith"))
 	_add_npc("Merchant", "Buy & Sell", Vector2(580, -185), {"chest": "padded_vest", "helmet": "leather_cap"},
 		Color(0.82, 0.92, 1.0), "Talk to the Merchant", func(): menu.open_vendor("shop"))
@@ -49,8 +47,6 @@ func _ready() -> void:
 		Color(0.95, 0.85, 0.7), "Open the Passive Tree", func(): skill_tree_ui.open())
 	_add_npc("Jeweler", "Gems", Vector2(280, -175), {"chest": "padded_vest", "helmet": "leather_cap"},
 		Color(0.80, 0.90, 1.0), "Talk to the Jeweler", func(): menu.open_vendor("jeweler"))
-	_add_npc("Mystic Seraphine", "Respec Skills", Vector2(-600, 150), {"chest": "padded_vest"},
-		Color(0.75, 0.85, 1.0), "Talk to the Mystic", func(): respec_ui.open())
 	_add_gate(Vector2(820, 220))
 
 	var layer := CanvasLayer.new()
@@ -113,12 +109,11 @@ func _ready() -> void:
 	menu = GameMenu.new()
 	menu.player = player
 	add_child(menu)
-	respec_ui = RespecUI.new()
-	add_child(respec_ui)
 	rift_ui = RiftSelectUI.new()
 	rift_ui.enter_requested.connect(enter_dungeon)
 	add_child(rift_ui)
 	skill_tree_ui = SkillTreeUI.new()
+	skill_tree_ui.can_respec = true
 	skill_tree_ui.player = player
 	add_child(skill_tree_ui)
 	upgrade_popup_ui = UpgradePopupUIScript.new()
@@ -149,7 +144,7 @@ func _show_hub_intro() -> void:
 	var t := UIKit.rich(
 		"This is your home base. Walk up to someone and tap [b]Talk[/b]:\n" +
 		"  • [color=#ffd54a]Merchant[/color] - buy skill gems, flasks and orbs, and sell loot for orbs\n" +
-		"  • [color=#ffd54a]Blacksmith[/color] - use orbs on items, salvage, and forge recipes and plans\n" +
+		"  • [color=#ffd54a]Blacksmith[/color] - forge recipes and plans\n" +
 		"  • [color=#ffd54a]Stash Keeper[/color] - storage shared by all your characters\n" +
 		"  • [color=#ffd54a]Jeweler[/color] - combine and remove item gems\n" +
 		"  • [color=#ffd54a]Battlemaster Brom[/color] - your passive tree (you get a point every level)\n" +
@@ -192,7 +187,7 @@ func _process(delta: float) -> void:
 			best_d = d
 	var any_open: bool = (menu != null and menu.is_open()) or \
 		(rift_ui != null and rift_ui.is_open()) or \
-		(respec_ui != null and respec_ui.is_open()) or \
+\
 		(skill_tree_ui != null and skill_tree_ui.is_open())
 	_near = best
 	_talk_btn.visible = best != null and not any_open

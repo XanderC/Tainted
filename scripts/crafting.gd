@@ -220,47 +220,16 @@ static func _become(item: ItemInstance, other: ItemInstance) -> void:
 	item.implicit_roll = other.implicit_roll
 
 
-## Breaks an item (from the bag) into materials. Returns the materials gained.
-static func salvage(player: Player, item: ItemInstance) -> Dictionary:
-	if not player.inventory.has(item):
-		return {}
-	var gain := CraftingDB.salvage_yield(item)
-	player.remove_from_bag(item)
-	for k in gain:
-		GameState.add_material(k, gain[k])
-	return gain
-
-
-## Breaks an item directly (even if lying on ground or unbagged) and awards materials.
-static func salvage_item_direct(item: ItemInstance) -> Dictionary:
-	if item == null:
-		return {}
-	var gain := CraftingDB.salvage_yield(item)
-	for k in gain:
-		GameState.add_material(k, gain[k])
-	return gain
-
-
-static func salvage_all(player: Player, rarity: int) -> Dictionary:
-	var total := {}
-	for it in player.inventory:
-		if it != null and it.rarity == rarity:
-			var g := salvage(player, it)
-			for k in g:
-				total[k] = int(total.get(k, 0)) + int(g[k])
-	return total
-
-
 ## Crafts a recipe. Returns {"ok", "msg"}.
 static func craft(player: Player, recipe_id: String) -> Dictionary:
 	var r: Dictionary = CraftingDB.RECIPES[recipe_id]
 	if not GameState.knows_recipe(recipe_id):
 		return {"ok": false, "msg": "Recipe not known"}
-	if not GameState.can_afford_materials(r.cost):
-		return {"ok": false, "msg": "Not enough materials"}
+	if not GameState.can_afford(r.cost):
+		return {"ok": false, "msg": "Not enough orbs"}
 	var res: Dictionary = r.result
 	if res.type == "orb":
-		GameState.spend_materials(r.cost)
+		GameState.pay(r.cost)
 		GameState.add_orb(res.id, int(res.n))
 		return {"ok": true, "msg": "Crafted %d %s" % [res.n, CraftingDB.ORBS[res.id].short]}
 	var ilvl := GameState.craft_ilvl() + int(res.get("ilvl_bonus", 0))
@@ -273,6 +242,6 @@ static func craft(player: Player, recipe_id: String) -> Dictionary:
 	# Made before anything is spent: gear takes a space its shape, so check this one fits
 	if not player.can_fit(item):
 		return {"ok": false, "msg": "No room in the bag for %s" % item.display_name}
-	GameState.spend_materials(r.cost)
+	GameState.pay(r.cost)
 	player.add_to_bag(item)
 	return {"ok": true, "msg": "Crafted %s" % item.display_name, "item": item}

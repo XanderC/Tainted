@@ -1,7 +1,7 @@
 class_name CurrencyPickup
 extends Node2D
-## Orbs, orb shards, materials and recipe pages lying on the ground. Collected by walking near.
-## kind: "orb" | "shard" | "material" | "recipe"
+## Orbs, orb shards and recipe pages lying on the ground. Collected by walking near.
+## kind: "orb" | "shard" | "recipe"
 
 var kind := "shard"
 var id := ""
@@ -24,7 +24,6 @@ func _process(delta: float) -> void:
 func label_text() -> String:
 	match kind:
 		"orb": return "%s" % CraftingDB.ORBS[id].short
-		"material": return "%d %s" % [amount, CraftingDB.MATERIALS[id].name]
 		"recipe": return "%s: %s" % ["Plan" if CraftingDB.is_plan(id) else "Recipe", CraftingDB.RECIPES[id].name]
 	return "%d %s Shards" % [amount, CraftingDB.ORBS.get(id, {}).get("short", "Orb")]
 
@@ -32,7 +31,6 @@ func label_text() -> String:
 func color() -> Color:
 	match kind:
 		"orb": return CraftingDB.ORBS[id].color
-		"material": return CraftingDB.MATERIALS[id].color
 		"recipe": return CraftingDB.recipe_color(id)
 	return CraftingDB.ORBS.get(id, {}).get("color", Color(1.0, 0.85, 0.2))
 
@@ -41,7 +39,6 @@ func color() -> Color:
 func collect() -> String:
 	match kind:
 		"orb": GameState.add_orb(id, amount)
-		"material": GameState.add_material(id, amount)
 		"recipe":
 			if not GameState.learn_recipe(id):
 				GameState.add_shards("alchemy", 5)
@@ -60,10 +57,6 @@ func _draw() -> void:
 			draw_circle(p, 11, c.darkened(0.5))
 			draw_circle(p, 8, c)
 			draw_circle(p + Vector2(-3, -3), 3, Color(1, 1, 1, 0.7))
-		"material":
-			var pts := PackedVector2Array([p + Vector2(0, -10), p + Vector2(9, 0), p + Vector2(0, 10), p + Vector2(-9, 0)])
-			draw_colored_polygon(pts, c)
-			draw_polyline(pts + PackedVector2Array([pts[0]]), c.lightened(0.5), 2.0)
 		"recipe":
 			draw_rect(Rect2(p + Vector2(-9, -11), Vector2(18, 22)), c)
 			draw_rect(Rect2(p + Vector2(-9, -11), Vector2(18, 22)), c.darkened(0.5), false, 2.0)

@@ -116,7 +116,7 @@ func _refresh() -> void:
 	_info.text = ("[color=#bdb6aa]Monster Life[/color]   [color=#f87171][b]×%.2f[/b][/color]\n" +
 		"[color=#bdb6aa]Monster Damage[/color]   [color=#f87171][b]×%.2f[/b][/color]\n" +
 		"[color=#bdb6aa]Item Level[/color]   [color=#4ade80][b]+%d[/b][/color]\n" +
-		"[color=#bdb6aa]Orbs, Shards & Materials[/color]   [color=#4ade80][b]+%d%%[/b][/color]\n" +
+		"[color=#bdb6aa]Orbs & Shards[/color]   [color=#4ade80][b]+%d%%[/b][/color]\n" +
 		"[color=#bdb6aa]Extra Boss Items[/color]   [color=#4ade80][b]+%d[/b][/color]\n\n" +
 		"[color=#c084fc]Clear in %s to unlock the next level.[/color]   [color=#888888]Highest unlocked: %d[/color]") % [
 		DungeonRun.hp_mult(L), DungeonRun.damage_mult(L), DungeonRun.ILVL_PER_LEVEL * (L - 1),

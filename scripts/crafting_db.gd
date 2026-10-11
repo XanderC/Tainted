@@ -1,6 +1,7 @@
 class_name CraftingDB
 extends RefCounted
-## Crafting content: orbs, materials, recipes, drop tables, vendor prices.
+## Crafting content: orbs, recipes, drop tables, vendor prices. Orbs are the only crafting currency:
+## recipes cost orbs too.
 ## Add content by adding entries to the dictionaries below.
 
 const R := ItemInstance.Rarity
@@ -61,47 +62,42 @@ static func orb_icon(id: String) -> Texture2D:
 	return IconFactory.material_icon(id, ORBS[id].color)
 
 
-# Materials come from monsters and from salvaging gear (Diablo 3 style).
-# "bundle": [how many, price] the Merchant sells them in (none for boss-only materials).
-const MATERIALS := {
-	"scrap": {"name": "Iron Scrap", "color": Color(0.75, 0.75, 0.8), "bundle": [5, {"transmute": 1}]},
-	"dust": {"name": "Arcane Dust", "color": Color(0.55, 0.6, 1.0), "bundle": [3, {"alteration": 1}]},
-	"essence": {"name": "Wraith Essence", "color": Color(1.0, 0.85, 0.35), "bundle": [1, {"alteration": 3}]},
-	"core": {"name": "Tainted Core", "color": Color(0.8, 0.4, 1.0)},  # boss drop only
-	# bosses and salvaged Legendary / Set items only; spent on plans
-	"soul": {"name": "Forgotten Soul", "color": Color(0.35, 0.95, 0.90)},
+## Older saves held crafting materials (now gone): each converts into shards of the orb it was
+## worth: id -> [orb, shards per material]. 20 shards make an orb (Currency.SHARDS_PER_ORB).
+const OLD_MATERIAL_SHARDS := {
+	"scrap": ["transmute", 4],     # 5 Iron Scrap sold for 1 Transmutation
+	"dust": ["alteration", 7],     # 3 Arcane Dust for 1 Alteration
+	"essence": ["alteration", 60], # 1 Wraith Essence for 3 Alterations
+	"core": ["chaos", 10],         # boss only
+	"soul": ["chaos", 10],         # boss only
 }
 
 # source: "start" (known from the beginning), "drop" (found on monsters/bosses), "vendor" (bought with orbs),
 # "plan" (a Legendary / Set item plan, dropped by rift bosses; added by _static_init from UniqueItems)
 static var RECIPES := {
+# "cost" is in orbs, like every other price. (Swapping orbs for orbs is the Merchant's exchange.)
 	"forge_weapon": {"name": "Forge Weapon", "desc": "A fresh Normal weapon.", "source": "start",
-		"cost": {"scrap": 12}, "result": {"type": "item", "slot": "weapon", "rarity": R.NORMAL}},
+		"cost": {"transmute": 3}, "result": {"type": "item", "slot": "weapon", "rarity": R.NORMAL}},
 	"forge_helmet": {"name": "Forge Helmet", "desc": "A fresh Normal helmet.", "source": "start",
-		"cost": {"scrap": 10}, "result": {"type": "item", "slot": "helmet", "rarity": R.NORMAL}},
+		"cost": {"transmute": 2}, "result": {"type": "item", "slot": "helmet", "rarity": R.NORMAL}},
 	"forge_chest": {"name": "Forge Armour", "desc": "A fresh Normal chest piece.", "source": "start",
-		"cost": {"scrap": 14}, "result": {"type": "item", "slot": "chest", "rarity": R.NORMAL}},
-	"bundle_transmute": {"name": "Transmutation Bundle", "desc": "4 Orbs of Transmutation.", "source": "start",
-		"cost": {"scrap": 8}, "result": {"type": "orb", "id": "transmute", "n": 4}},
+		"cost": {"transmute": 3}, "result": {"type": "item", "slot": "chest", "rarity": R.NORMAL}},
 	"arcane_forging": {"name": "Arcane Forging", "desc": "A Magic item of any kind.", "source": "vendor", "price": {"alteration": 6},
-		"cost": {"scrap": 10, "dust": 6}, "result": {"type": "item", "slot": "", "rarity": R.MAGIC}},
-	"bundle_alteration": {"name": "Alteration Bundle", "desc": "3 Orbs of Alteration.", "source": "vendor", "price": {"alchemy": 1},
-		"cost": {"dust": 5}, "result": {"type": "orb", "id": "alteration", "n": 3}},
-	"distill_chaos": {"name": "Distill Chaos", "desc": "1 Chaos Orb.", "source": "vendor", "price": {"alchemy": 4},
-		"cost": {"essence": 3, "dust": 4}, "result": {"type": "orb", "id": "chaos", "n": 1}},
+		"cost": {"alteration": 3}, "result": {"type": "item", "slot": "", "rarity": R.MAGIC}},
 	"masterwork": {"name": "Masterwork", "desc": "A Rare item of any kind, +2 item level.", "source": "vendor", "price": {"chaos": 2},
-		"cost": {"scrap": 10, "dust": 8, "essence": 3}, "result": {"type": "item", "slot": "", "rarity": R.RARE, "ilvl_bonus": 2}},
+		"cost": {"alchemy": 3}, "result": {"type": "item", "slot": "", "rarity": R.RARE, "ilvl_bonus": 2}},
+	# Exalted Orbs are never sold: finding this recipe is the one way to make them
 	"exalted_rite": {"name": "Exalted Rite", "desc": "1 Exalted Orb.", "source": "drop",
-		"cost": {"core": 1, "essence": 6}, "result": {"type": "orb", "id": "exalt", "n": 1}},
+		"cost": {"chaos": 3}, "result": {"type": "orb", "id": "exalt", "n": 1}},
 	"tainted_weapon": {"name": "Tainted Weapon", "desc": "A Rare weapon, +5 item level.", "source": "drop",
-		"cost": {"core": 2, "essence": 4, "scrap": 20}, "result": {"type": "item", "slot": "weapon", "rarity": R.RARE, "ilvl_bonus": 5}},
+		"cost": {"chaos": 2}, "result": {"type": "item", "slot": "weapon", "rarity": R.RARE, "ilvl_bonus": 5}},
 	"tainted_armour": {"name": "Tainted Armour", "desc": "A Rare chest piece, +5 item level.", "source": "drop",
-		"cost": {"core": 2, "essence": 4, "scrap": 20}, "result": {"type": "item", "slot": "chest", "rarity": R.RARE, "ilvl_bonus": 5}},
+		"cost": {"chaos": 2}, "result": {"type": "item", "slot": "chest", "rarity": R.RARE, "ilvl_bonus": 5}},
 }
 
-## Materials a Legendary / Set plan costs to forge.
-const LEGENDARY_PLAN_COST := {"soul": 2, "core": 2, "essence": 6}
-const SET_PLAN_COST := {"soul": 1, "core": 2, "essence": 5, "dust": 6}
+## What forging a Legendary / Set plan costs.
+const LEGENDARY_PLAN_COST := {"chaos": 4}
+const SET_PLAN_COST := {"chaos": 3}
 const PLAN_ILVL_BONUS := 5
 
 
@@ -147,60 +143,23 @@ static func recipe_color(recipe_id: String) -> Color:
 
 
 const STARTING_CURRENCY := {"transmute": 8, "alteration": 6, "augment": 3, "chance": 1, "armourer": 2, "whetstone": 1}
-const STARTING_MATERIALS := {"scrap": 10}
 
 
-static func cost_text(cost: Dictionary, have_mats: Dictionary = {}) -> String:
-	var parts: Array[String] = []
-	for k in cost:
-		var m: Dictionary = MATERIALS[k]
-		var ok: bool = int(have_mats.get(k, 0)) >= int(cost[k])
-		var col: String = (Color(0.6, 0.9, 0.6) if ok else Color(0.95, 0.4, 0.4)).to_html(false)
-		parts.append("[color=#%s]%d %s[/color]" % [col, cost[k], m.name])
-	return ", ".join(PackedStringArray(parts))
-
-
-## Materials gained by salvaging an item.
-static func salvage_yield(item: ItemInstance) -> Dictionary:
-	var bonus := int(item.ilvl / 5.0)
-	match item.rarity:
-		R.MAGIC:
-			return {"scrap": randi_range(1, 2) + bonus, "dust": randi_range(1, 3) + bonus}
-		R.RARE:
-			return {"dust": randi_range(2, 4) + bonus, "essence": randi_range(1, 2)}
-		R.LEGENDARY, R.SET:
-			return {"essence": randi_range(2, 4) + int(bonus / 2.0), "core": 1, "soul": 1}
-		_:
-			return {"scrap": randi_range(1, 3) + bonus}
-
-
-static func salvage_preview(item: ItemInstance) -> String:
-	var bonus := int(item.ilvl / 5.0)
-	match item.rarity:
-		R.MAGIC:
-			return "%d-%d Iron Scrap, %d-%d Arcane Dust" % [1 + bonus, 2 + bonus, 1 + bonus, 3 + bonus]
-		R.RARE:
-			return "%d-%d Arcane Dust, 1-2 Wraith Essence" % [2 + bonus, 4 + bonus]
-		R.LEGENDARY, R.SET:
-			return "%d-%d Wraith Essence, 1 Tainted Core, 1 Forgotten Soul" % [2 + int(bonus / 2.0), 4 + int(bonus / 2.0)]
-		_:
-			return "%d-%d Iron Scrap" % [1 + bonus, 3 + bonus]
-
-
-## Drops from one normal monster kill. Returns {"shards": {...}, "materials": {...}, "orbs": {...}}.
+## Drops from one normal monster kill. Returns {"shards": {...}, "orbs": {...}}.
 static func monster_drops(ilvl: int) -> Dictionary:
-	var out := {"shards": {}, "materials": {}, "orbs": {}}
+	var out := {"shards": {}, "orbs": {}}
 	if randf() < 0.40:
 		out.shards["transmute"] = randi_range(1, 3) + int(ilvl / 10.0)
 	elif randf() < 0.15:
 		out.shards["alteration"] = randi_range(1, 2)
+	# What used to drop as crafting materials, as the shards it was worth
 	var r := randf()
 	if r < 0.30:
-		out.materials["scrap"] = randi_range(1, 2)
+		_add(out.shards, "transmute", randi_range(4, 8))
 	elif r < 0.40:
-		out.materials["dust"] = 1
+		_add(out.shards, "alteration", 7)
 	elif r < 0.43:
-		out.materials["essence"] = 1
+		_add(out.orbs, "alteration", 3)
 	if randf() < 0.22:
 		out.orbs[_weighted_orb()] = 1
 	return out
@@ -221,13 +180,17 @@ static func _weighted_orb() -> String:
 ## Guaranteed boss loot (besides the item rewards). Better when cleared under the time limit.
 static func boss_drops(fast: bool) -> Dictionary:
 	var m := 2 if fast else 1
-	var out := {"shards": {"alchemy": randi_range(4, 8) * m, "chaos": randi_range(2, 5) * m}, "materials": {}, "orbs": {}}
-	out.materials["core"] = randi_range(1, 2) if fast else 1
-	out.materials["soul"] = randi_range(1, 2) if fast else 1
-	out.materials["essence"] = randi_range(2, 4) if fast else randi_range(1, 2)
-	out.materials["dust"] = randi_range(4, 8)
+	var out := {"shards": {"alchemy": randi_range(4, 8) * m, "chaos": randi_range(2, 5) * m}, "orbs": {}}
+	# What used to drop as crafting materials (cores, souls, essence, dust), as the orbs it was worth
+	_add(out.shards, "chaos", 10 * ((randi_range(1, 2) if fast else 1) + (randi_range(1, 2) if fast else 1)))
+	_add(out.orbs, "alteration", 3 * (randi_range(2, 4) if fast else randi_range(1, 2)))
+	_add(out.shards, "alteration", 7 * randi_range(4, 8))
 	var n := 6 if fast else 3
 	for i in n:
 		var id := _weighted_orb()
 		out.orbs[id] = int(out.orbs.get(id, 0)) + 1
 	return out
+
+
+static func _add(into: Dictionary, id: String, n: int) -> void:
+	into[id] = int(into.get(id, 0)) + n

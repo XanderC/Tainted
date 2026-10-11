@@ -2,13 +2,18 @@ class_name SkillTreeUI
 extends CanvasLayer
 ## The class's passive tree (Path of Exile style, one tree per class, see PassiveTree). Spend the
 ## points you earn from levelling on nodes linked to ones you already have; refund
-## any node that isn't holding others up. Active skills are skill gems (inventory Skills tab).
+## any node that isn't holding others up (an Orb of Regret each), or Respec the whole tree for
+## free in town (tap twice to confirm). Active skills are skill gems (inventory Skills tab).
 
 var player: Player
+## Only the town's tree can Respec; in a rift or the tutorial the button says to go to town.
+var can_respec := false
 
 var _root: Control
 var _selected_id := ""
 var _points_label: Label
+var _respec_btn: Button
+var _respec_armed := false
 var _btn_open: Button
 var _tree_canvas: SkillTreeCanvas
 var _detail_vbox: VBoxContainer
@@ -102,6 +107,9 @@ func _build_ui() -> void:
 	_points_label = UIKit.label("", 19, Color(1.0, 0.85, 0.30))
 	_points_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	header.add_child(_points_label)
+	_respec_btn = UIKit.button("", Color(0.12, 0.18, 0.30), Color(0.55, 0.75, 1.0), Vector2(170, 52), 18)
+	_respec_btn.pressed.connect(_on_respec)
+	header.add_child(_respec_btn)
 	var close_btn := UIKit.button("✕ Close", Color(0.22, 0.08, 0.08), Color(0.70, 0.25, 0.25), Vector2(120, 52), 20)
 	close_btn.pressed.connect(close)
 	header.add_child(close_btn)
@@ -161,8 +169,28 @@ func _refresh() -> void:
 	if not is_open():
 		return
 	_points_label.text = "%d UNSPENT POINTS     %d spent" % [GameState.skill_points, GameState.points_spent()]
+	_respec_btn.text = "⚠ Tap to confirm" if _respec_armed else ("↺ Respec" if can_respec else "↺ Respec in town")
+	_respec_btn.disabled = not can_respec or GameState.points_spent() <= 0
 	_render_tree()
 	_render_inspector()
+
+
+## Free full reset of the passive tree. The first tap arms it, the second (within 3 s) resets.
+func _on_respec() -> void:
+	if not can_respec:
+		return
+	if not _respec_armed:
+		_respec_armed = true
+		_refresh()
+		await get_tree().create_timer(3.0, true).timeout
+		if _respec_armed:
+			_respec_armed = false
+			_refresh()
+		return
+	_respec_armed = false
+	GameState.reset_all_skills()
+	_selected_id = ""
+	_refresh()
 
 
 func _render_tree() -> void:
@@ -203,7 +231,7 @@ func _render_inspector() -> void:
 		if not connected:
 			_detail_vbox.add_child(UIKit.label("Other nodes you have connect through this one.", 13, UIKit.TEXT_DIM, true))
 		elif regrets <= 0:
-			_detail_vbox.add_child(UIKit.label("You need an Orb of Regret (or reset everything for free at the Mystic).", 13, UIKit.TEXT_DIM, true))
+			_detail_vbox.add_child(UIKit.label("You need an Orb of Regret (or Respec the whole tree for free in town).", 13, UIKit.TEXT_DIM, true))
 	else:
 		var btn := UIKit.button("➕ Allocate (1 point)", Color(0.12, 0.35, 0.18), Color(0.35, 1.0, 0.50), Vector2(0, 46), 16)
 		var why := GameState.node_block_reason(_selected_id)
