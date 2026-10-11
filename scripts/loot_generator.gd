@@ -79,6 +79,7 @@ func _build_bases() -> void:
 	# Shields (off hand)
 	_base("wooden_shield", "Wooden Shield", "offhand", Color(0.55, 0.40, 0.25), "armor", 12, "shield")
 	_base("tower_shield", "Tower Shield", "offhand", Color(0.60, 0.62, 0.68), "armor", 22, "shield")
+	bases[-1].grid_size = Vector2i(2, 3)  # a tall shield takes a tall space
 	_base("leather_cap", "Leather Cap", "helmet", Color(0.55, 0.4, 0.25), "armor", 5)
 	_base("iron_helm", "Iron Helm", "helmet", Color(0.6, 0.6, 0.65), "armor", 10)
 	_base("padded_vest", "Padded Vest", "chest", Color(0.5, 0.4, 0.3), "armor", 10)

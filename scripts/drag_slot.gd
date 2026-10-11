@@ -12,6 +12,14 @@ signal clicked
 var payload: Dictionary = {}
 var can_accept: Callable = Callable()
 var on_drop: Callable = Callable()
+## For cells that care where in them a drop lands (an item spanning several grid cells):
+## Callable(data, at_position: Vector2), used instead of can_accept / on_drop when set.
+var can_accept_at: Callable = Callable()
+var on_drop_at: Callable = Callable()
+## A grid item: the size of one grid cell. Dragging it then shows it full size, held at the point
+## it was picked up, and adds "grab" (the cell within the item that was grabbed) to the payload,
+## so it can be dropped with that same cell under the finger.
+var grid_cell := 0.0
 
 var _icon: TextureRect
 var _count: Label
@@ -83,7 +91,7 @@ func _apply_style(border: Color) -> void:
 
 # ---------- drag and drop ----------
 
-func _get_drag_data(_at_position: Vector2) -> Variant:
+func _get_drag_data(at_position: Vector2) -> Variant:
 	if payload.is_empty() or _icon_tex == null:
 		return null
 	var preview := Control.new()
@@ -91,25 +99,41 @@ func _get_drag_data(_at_position: Vector2) -> Variant:
 	pic.texture = _icon_tex
 	pic.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	pic.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	pic.custom_minimum_size = Vector2(56, 56)
-	pic.size = Vector2(56, 56)
-	pic.position = Vector2(-28, -28)
+	var data := payload
+	if grid_cell > 0.0:
+		# Full size, offset so the point picked up stays under the finger
+		pic.custom_minimum_size = size
+		pic.size = size
+		pic.position = -at_position
+		data = payload.duplicate()
+		data["grab"] = Vector2i(int(at_position.x / grid_cell), int(at_position.y / grid_cell))
+	else:
+		pic.custom_minimum_size = Vector2(56, 56)
+		pic.size = Vector2(56, 56)
+		pic.position = Vector2(-28, -28)
 	pic.modulate = Color(1, 1, 1, 0.85)
 	preview.add_child(pic)
 	set_drag_preview(preview)
 	modulate = Color(1, 1, 1, 0.45)
-	return payload
+	return data
 
 
-func _can_drop_data(_at_position: Vector2, data: Variant) -> bool:
-	var ok := data is Dictionary and can_accept.is_valid() and bool(can_accept.call(data))
+func _can_drop_data(at_position: Vector2, data: Variant) -> bool:
+	var ok := false
+	if data is Dictionary:
+		if can_accept_at.is_valid():
+			ok = bool(can_accept_at.call(data, at_position))
+		elif can_accept.is_valid():
+			ok = bool(can_accept.call(data))
 	_apply_style(Color(0.35, 1.0, 0.45) if ok else Color(1.0, 0.35, 0.35))
 	return ok
 
 
-func _drop_data(_at_position: Vector2, data: Variant) -> void:
+func _drop_data(at_position: Vector2, data: Variant) -> void:
 	_apply_style(_border)
-	if on_drop.is_valid():
+	if on_drop_at.is_valid():
+		on_drop_at.call(data, at_position)
+	elif on_drop.is_valid():
 		on_drop.call(data)
 
 

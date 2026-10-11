@@ -241,11 +241,8 @@ func _on_salvage_pressed() -> void:
 	var it: ItemInstance = _current_item
 	var pk: LootPickup = _current_pickup
 
-	# If item is in the bag, clear it from bag
-	var bag_idx := player.inventory.find(it)
-	if bag_idx != -1:
-		player.inventory[bag_idx] = null
-		player.inventory_changed.emit()
+	# If item is in the bag, take it out
+	player.remove_from_bag(it)
 
 	Crafting.salvage_item_direct(it)
 	if pk != null and is_instance_valid(pk):

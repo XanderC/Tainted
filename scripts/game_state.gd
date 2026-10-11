@@ -34,8 +34,14 @@ var runs_cleared := 0
 var rift_unlocked := 1  # highest rift level the player may enter (beat a level on time to unlock the next)
 var rift_level := 1     # level chosen at the rift gate for the next run
 var player: Player
-const STASH_SIZE := 60
-var stash: Array[ItemInstance] = []  # shared storage, account-wide
+## The shared stash is a grid like the bag (ItemGrid), bigger.
+const STASH_COLS := 12
+const STASH_ROWS := 10
+const STASH_SIZE := STASH_COLS * STASH_ROWS  # cells
+var stash := ItemGrid.new(STASH_COLS, STASH_ROWS)  # shared storage, account-wide
+## Items that had nowhere to go when an older save was loaded (it counted items, not cells, so a
+## full bag or stash of big gear can't all fit the grids). Moved into the stash as room is made.
+var stash_overflow: Array[ItemInstance] = []
 
 # Skill gems (Path of Exile style) and the passive tree
 const SKILL_SLOTS := 6     # skill gem slots (one HUD button each)
@@ -264,14 +270,17 @@ func buy_material(id: String) -> bool:
 # ---------- stash ----------
 
 func stash_count() -> int:
-	return stash.size()
+	return stash.count()
 
 
+## Move a bag item into the first space in the stash it fits.
 func stash_item(item: ItemInstance) -> bool:
-	if stash.size() >= STASH_SIZE or not is_instance_valid(player) or not player.inventory.has(item):
+	if not is_instance_valid(player) or not player.bag.has(item) or not stash.can_fit(item):
 		return false
-	player.remove_from_bag(item)
-	stash.append(item)
+	player.bag.remove(item)
+	stash.add(item)
+	player.inventory_changed.emit()
+	_changed()
 	return true
 
 
@@ -279,71 +288,74 @@ func put_in_stash(item: ItemInstance) -> bool:
 	return stash_item(item)
 
 
+## Move a stash item into the first space in the bag it fits.
 func take_from_stash(item: ItemInstance) -> bool:
-	if not stash.has(item) or not is_instance_valid(player) or not player.has_empty_bag_slot():
+	if not stash.has(item) or not is_instance_valid(player) or not player.can_fit(item):
 		return false
-	stash.erase(item)
-	player.add_to_bag(item)
-	return true
-
-
-## Stash slots fill from the front (no gaps), so dropping on an empty slot appends.
-
-## Drag a stash item onto another stash slot: swap, or move to the end if the target is empty.
-func move_stash_slot(from_idx: int, to_idx: int) -> bool:
-	if from_idx < 0 or from_idx >= stash.size() or to_idx < 0 or to_idx >= STASH_SIZE or from_idx == to_idx:
-		return false
-	if to_idx < stash.size():
-		var tmp: ItemInstance = stash[from_idx]
-		stash[from_idx] = stash[to_idx]
-		stash[to_idx] = tmp
-	else:
-		var it: ItemInstance = stash[from_idx]
-		stash.remove_at(from_idx)
-		stash.append(it)
-	_changed()
-	return true
-
-
-## Drag a bag item onto a stash slot: swap with the item there, or store it if the slot is empty.
-func bag_to_stash_slot(bag_idx: int, stash_idx: int) -> bool:
-	if not is_instance_valid(player) or bag_idx < 0 or bag_idx >= Player.BAG_SIZE or bag_idx >= player.inventory.size():
-		return false
-	var item: ItemInstance = player.inventory[bag_idx]
-	if item == null or stash_idx < 0 or stash_idx >= STASH_SIZE:
-		return false
-	if stash_idx < stash.size():
-		var other: ItemInstance = stash[stash_idx]
-		stash[stash_idx] = item
-		player.inventory[bag_idx] = other
-		player.inventory_changed.emit()
-		_changed()
-		return true
-	if stash.size() >= STASH_SIZE:
-		return false
-	player.inventory[bag_idx] = null
-	stash.append(item)
+	stash.remove(item)
+	player.bag.add(item)
+	_settle_overflow()
 	player.inventory_changed.emit()
 	_changed()
 	return true
 
 
-## Drag a stash item onto a bag slot: swap with the item there, or take it if the slot is empty.
-func stash_to_bag_slot(stash_idx: int, bag_idx: int) -> bool:
-	if not is_instance_valid(player) or stash_idx < 0 or stash_idx >= stash.size() or bag_idx < 0 or bag_idx >= Player.BAG_SIZE:
+## Drag within the stash: `item` to top-left cell `at`, swapping with one item it lands on.
+func move_in_stash(item: ItemInstance, at: Vector2i) -> bool:
+	var plan := stash.plan_drop(item, at, stash)
+	if not stash.has(item) or plan.is_empty():
 		return false
-	while player.inventory.size() < Player.BAG_SIZE:
-		player.inventory.append(null)
-	var item: ItemInstance = stash[stash_idx]
-	var other: ItemInstance = player.inventory[bag_idx]
-	if other == null:
-		stash.remove_at(stash_idx)
-	else:
-		stash[stash_idx] = other
-	player.inventory[bag_idx] = item
+	stash.apply_drop(item, at, stash, plan)
+	_changed()
+	return true
+
+
+## Whether a bag item may be dropped at `at` in the stash (into space, or swapping with one item
+## that then fits in the bag).
+func can_bag_to_stash(item: ItemInstance, at: Vector2i) -> bool:
+	return is_instance_valid(player) and player.bag.has(item) and not stash.plan_drop(item, at, player.bag).is_empty()
+
+
+func bag_to_stash(item: ItemInstance, at: Vector2i) -> bool:
+	if not can_bag_to_stash(item, at):
+		return false
+	stash.apply_drop(item, at, player.bag, stash.plan_drop(item, at, player.bag))
 	player.inventory_changed.emit()
 	_changed()
 	return true
+
+
+## Whether a stash item may be dropped at `at` in the bag (into space, or swapping with one item
+## that then fits in the stash).
+func can_stash_to_bag(item: ItemInstance, at: Vector2i) -> bool:
+	return is_instance_valid(player) and stash.has(item) and not player.bag.plan_drop(item, at, stash).is_empty()
+
+
+func stash_to_bag(item: ItemInstance, at: Vector2i) -> bool:
+	if not can_stash_to_bag(item, at):
+		return false
+	player.bag.apply_drop(item, at, stash, player.bag.plan_drop(item, at, stash))
+	_settle_overflow()
+	player.inventory_changed.emit()
+	_changed()
+	return true
+
+
+## Move overflow items into the stash where they now fit. True if any moved.
+func _settle_overflow() -> bool:
+	var moved := false
+	for it in stash_overflow.duplicate():
+		if stash.add(it):
+			stash_overflow.erase(it)
+			moved = true
+	return moved
+
+
+## Anything that couldn't be placed goes to the stash, or waits in the overflow for room.
+func _keep(items: Array[ItemInstance]) -> void:
+	for it in items:
+		if not stash.add(it):
+			stash_overflow.append(it)
 
 
 ## Sells a bag item to the Merchant for orbs and shards. Returns what was paid ({} if it couldn't).
@@ -944,14 +956,11 @@ func attach_player(p: Player) -> void:
 	player = p
 	LootGenerator.smart_class = p.class_def
 	_restoring = true
-	p.inventory.clear()
-	while p.inventory.size() < Player.BAG_SIZE:
-		p.inventory.append(null)
-	for i in _pending_inventory.size():
-		var d = _pending_inventory[i]
-		if d != null and i < Player.BAG_SIZE:
-			var it := ItemInstance.from_dict(d)
-			p.inventory[i] = it
+	# Old saves list items by slot; ones that no longer fit the grid go to the stash, not lost
+	var homeless := p.bag.load_array(_pending_inventory)
+	if not homeless.is_empty():
+		_keep(homeless)
+		_save_account()
 	for slot in _pending_alt_set:
 		var alt := ItemInstance.from_dict(_pending_alt_set[slot])
 		if alt != null and slot in Player.SET_SLOTS:
@@ -987,11 +996,7 @@ func save() -> void:
 	var inv: Array = []
 	var eq := {}
 	if is_instance_valid(player):
-		for it in player.inventory:
-			if it != null:
-				inv.append(it.to_dict())
-			else:
-				inv.append(null)
+		inv = player.bag.to_array()
 		for slot in player.equipment:
 			eq[slot] = player.equipment[slot].to_dict()
 		_pending_inventory = inv
@@ -1057,7 +1062,8 @@ func _read_json(path: String) -> Dictionary:
 func _save_account() -> void:
 	_write_json(ACCOUNT_PATH, {
 		"characters": characters, "last": last_character,
-		"stash": stash.map(func(i): return i.to_dict()),
+		"stash": stash.to_array(),
+		"stash_overflow": stash_overflow.map(func(i): return i.to_dict()),
 	})
 
 
@@ -1073,15 +1079,18 @@ func _load_account() -> void:
 			characters.append({"id": String(c.id), "name": String(c.get("name", "Hero")),
 				"class": String(c.get("class", "warrior")), "level": int(c.get("level", 1))})
 	last_character = String(acc.get("last", ""))
-	_load_stash(acc.get("stash", []))
+	_load_stash(acc.get("stash", []), acc.get("stash_overflow", []))
 
 
-func _load_stash(list: Array) -> void:
-	stash.clear()
-	for d in list:
+func _load_stash(list: Array, overflow: Array = []) -> void:
+	stash_overflow.clear()
+	for d in overflow:
 		var it := ItemInstance.from_dict(d)
 		if it != null:
-			stash.append(it)
+			stash_overflow.append(it)
+	# The old stash was a list of 60 items; what doesn't fit the grid waits in the overflow
+	stash_overflow.append_array(stash.load_array(list))
+	_settle_overflow()
 
 
 ## The save from before characters existed becomes the first character; its stash becomes the

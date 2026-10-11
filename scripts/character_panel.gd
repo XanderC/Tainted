@@ -9,6 +9,10 @@ extends PanelContainer
 
 const BAG_COLS := 8
 const BAG_CELL := Vector2(58, 58)
+## Equipment tab: one cell of the bag grid (Player.BAG_COLS x BAG_ROWS, gear spanning several).
+const GEAR_GRID_CELL := 36.0  # 10 x 6 cells fit under the bag tabs on a 720p screen
+## Cells shown in the gem, consumable and currency tabs (at least; more if there is more to show).
+const POUCH_CELLS := 24
 const GEAR_CELL := Vector2(66, 66)
 const LEFT_SLOTS := ["helmet", "chest", "gloves", "boots"]
 const RIGHT_SLOTS := ["amulet", "ring", "weapon", "offhand"]
@@ -24,7 +28,8 @@ var _summary: RichTextLabel
 var _portrait: SubViewportContainer
 var _rig: RigSprite
 var _mats: VBoxContainer
-var _bag_grid: GridContainer
+var _bag_grid: GridContainer  # the non-gear tabs: gems, consumables, currency
+var _bag_view: ItemGridView      # the Equipment tab: the bag itself, as a grid
 var bag_tab := "equipment"  # "equipment" | "skillgems" | "supports" | "gems" | "consumables" | "currency"
 var _tab_row: HBoxContainer
 
@@ -122,6 +127,13 @@ func _ready() -> void:
 	_bag_grid = UIKit.grid(BAG_COLS, 5)
 	_bag_grid.size_flags_horizontal = Control.SIZE_EXPAND | Control.SIZE_SHRINK_CENTER
 	bag_row.add_child(_bag_grid)
+	_bag_view = ItemGridView.new(player.bag, GEAR_GRID_CELL, "bag")
+	_bag_view.size_flags_horizontal = Control.SIZE_EXPAND | Control.SIZE_SHRINK_CENTER
+	_bag_view.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+	_bag_view.can_accept_at = _bag_accepts
+	_bag_view.on_drop_at = _bag_dropped
+	_bag_view.item_clicked.connect(func(it: ItemInstance): menu.select(it))
+	bag_row.add_child(_bag_view)
 
 
 func refresh() -> void:
@@ -166,6 +178,8 @@ func refresh() -> void:
 		_tab_row.add_child(b)
 
 	UIKit.clear(_bag_grid)
+	_bag_grid.visible = bag_tab != "equipment"
+	_bag_view.visible = bag_tab == "equipment"
 	if bag_tab == "consumables":
 		_fill_consumables()
 	elif bag_tab == "currency":
@@ -177,8 +191,8 @@ func refresh() -> void:
 	elif bag_tab == "gems":
 		_fill_item_gems()
 	else:
-		for i in Player.BAG_SIZE:
-			_bag_grid.add_child(_bag_cell(i))
+		_bag_view.selected = menu.selected
+		_bag_view.refresh()
 
 	# Crafting materials, one per line down the left of the grid
 	UIKit.clear(_mats)
@@ -229,31 +243,33 @@ func _gear_cell(slot: String) -> DragSlot:
 	return cell
 
 
-func _bag_cell(i: int) -> DragSlot:
-	var it: ItemInstance = player.inventory[i] if i < player.inventory.size() else null
-	var cell := UIKit.item_cell(it, it != null and it == menu.selected, BAG_CELL)
-	if it != null:
-		cell.payload = {"kind": "item", "from": "bag", "idx": i, "item": it}
-		cell.clicked.connect(menu.select.bind(it))
-	cell.can_accept = func(d: Dictionary) -> bool:
-		if d.get("kind", "") == "item":
-			match d.get("from", ""):
-				"bag": return int(d.get("idx", -1)) != i
-				"gear": return it == null or player.valid_slots(it).has(d.get("slot", ""))
-				"stash": return true
+## Whether something dragged over the bag may land with its top-left cell at `at`: gear from the
+## bag itself, the paperdoll or the stash (into space, or swapping with one item), or anything the
+## open panel takes (a merchant's ware).
+func _bag_accepts(d: Dictionary, at: Vector2i) -> bool:
+	if d.get("kind", "") == "item":
+		var it: ItemInstance = d.get("item")
+		if it == null:
 			return false
-		var p := menu.current_panel()
-		return p != null and p.accepts_bag_drop(d)
-	cell.on_drop = func(d: Dictionary) -> void:
-		if d.get("kind", "") == "item":
-			match d.get("from", ""):
-				"bag": player.swap_bag_slots(int(d.get("idx", -1)), i)
-				"gear": player.unequip_gear_to_bag_slot(d.get("slot", ""), i)
-				"stash": GameState.stash_to_bag_slot(int(d.get("idx", -1)), i)
-			menu.refresh()
-		else:
-			menu.current_panel().on_bag_drop(d, i)
-	return cell
+		match d.get("from", ""):
+			"bag": return player.bag.has(it) and not player.bag.plan_drop(it, at, player.bag).is_empty()
+			"gear": return player.can_unequip_to(String(d.get("slot", "")), at)
+			"stash": return GameState.can_stash_to_bag(it, at)
+		return false
+	var p := menu.current_panel()
+	return p != null and p.accepts_bag_drop(d)
+
+
+func _bag_dropped(d: Dictionary, at: Vector2i) -> void:
+	if d.get("kind", "") != "item":
+		menu.current_panel().on_bag_drop(d, at)
+		return
+	var it: ItemInstance = d.get("item")
+	match d.get("from", ""):
+		"bag": player.move_in_bag(it, at)
+		"gear": player.unequip_to(String(d.get("slot", "")), at)
+		"stash": GameState.stash_to_bag(it, at)
+	menu.refresh()
 
 
 # ---------- potions ----------
@@ -288,7 +304,7 @@ func _fill_consumables() -> void:
 	for id in PotionDef.all_ids():
 		if GameState.potion_count(id) > 0:
 			owned.append(id)
-	for i in Player.BAG_SIZE:
+	for i in POUCH_CELLS:
 		var cell := DragSlot.new(BAG_CELL)
 		if i < owned.size():
 			var id := owned[i]
@@ -340,7 +356,7 @@ func _fill_currency() -> void:
 ## onto the Skills panel's slots and links; drop socketed gems back here to take them out.
 func _fill_gems(ids: Array[String], skills: bool) -> void:
 	var sp := menu.skills_panel()
-	var total := maxi(Player.BAG_SIZE, int(ceil(float(ids.size() + 1) / BAG_COLS)) * BAG_COLS)
+	var total := maxi(POUCH_CELLS, int(ceil(float(ids.size() + 1) / BAG_COLS)) * BAG_COLS)
 	for i in total:
 		var id: String = ids[i] if i < ids.size() else ""
 		_bag_grid.add_child(sp.pouch_skill_cell(id, BAG_CELL) if skills else sp.pouch_support_cell(id, BAG_CELL))
@@ -349,7 +365,7 @@ func _fill_gems(ids: Array[String], skills: bool) -> void:
 ## Gems tab: the item gem pouch. Drag gems onto an item's sockets in the Gems / Jeweler panel.
 func _fill_item_gems() -> void:
 	var ids := GemsPanel.owned_gems()
-	var total := maxi(Player.BAG_SIZE, int(ceil(float(ids.size() + 1) / BAG_COLS)) * BAG_COLS)
+	var total := maxi(POUCH_CELLS, int(ceil(float(ids.size() + 1) / BAG_COLS)) * BAG_COLS)
 	for i in total:
 		_bag_grid.add_child(GemsPanel.pouch_cell(menu, ids[i] if i < ids.size() else "", BAG_CELL))
 

@@ -60,7 +60,9 @@ static func orb_block_reason(item: ItemInstance, orb: String) -> String:
 			if item.is_weapon() or item.base.implicit_stat != "armor": return "Needs armour or a shield"
 			if item.quality >= ItemInstance.MAX_QUALITY: return "Quality is already 20%"
 		"mirror":
-			if is_instance_valid(GameState.player) and not GameState.player.has_empty_bag_slot(): return "Bag is full"
+			# The copy is the same shape as the original, so it needs a space that size
+			if is_instance_valid(GameState.player) and GameState.player.bag.find_free(item) == ItemGrid.NONE:
+				return "No room in the bag for the copy"
 	return ""
 
 
@@ -247,10 +249,8 @@ static func craft(player: Player, recipe_id: String) -> Dictionary:
 	if not GameState.can_afford_materials(r.cost):
 		return {"ok": false, "msg": "Not enough materials"}
 	var res: Dictionary = r.result
-	if res.type in ["item", "unique"] and not player.has_empty_bag_slot():
-		return {"ok": false, "msg": "Bag is full"}
-	GameState.spend_materials(r.cost)
 	if res.type == "orb":
+		GameState.spend_materials(r.cost)
 		GameState.add_orb(res.id, int(res.n))
 		return {"ok": true, "msg": "Crafted %d %s" % [res.n, CraftingDB.ORBS[res.id].short]}
 	var ilvl := GameState.craft_ilvl() + int(res.get("ilvl_bonus", 0))
@@ -260,5 +260,9 @@ static func craft(player: Player, recipe_id: String) -> Dictionary:
 		item = UniqueItems.make(String(res.id), maxi(ilvl, GameState.level + int(res.get("ilvl_bonus", 0))))
 	else:
 		item = LootGenerator.roll_item(ilvl, int(res.rarity), String(res.slot))
+	# Made before anything is spent: gear takes a space its shape, so check this one fits
+	if not player.can_fit(item):
+		return {"ok": false, "msg": "No room in the bag for %s" % item.display_name}
+	GameState.spend_materials(r.cost)
 	player.add_to_bag(item)
 	return {"ok": true, "msg": "Crafted %s" % item.display_name, "item": item}

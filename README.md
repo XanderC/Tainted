@@ -22,9 +22,25 @@ Top-down mobile ARPG prototype (Godot 4.3+, GDScript, GL Compatibility renderer)
 Tap **Bag** (top right) or press **I**. The game pauses while it's open.
 - Tap a bag item to inspect it. You get its stats, a green/red list of what changes if you equip it, and the item you're currently wearing in that slot.
 - **Equip** swaps it in place (the old item takes its bag slot). **Drop** puts it on the ground; you can't re-pick it for 1.5s.
-- Tap an equipped item to **Unequip** it (needs a free bag slot).
-- Items for an empty slot are worn immediately. A full bag leaves loot on the ground.
+- Tap an equipped item to **Unequip** it (needs a space in the bag its shape fits).
+- Items for an empty slot are worn immediately. Loot with no space its shape fits stays on the ground.
 - When you have real icons, set `icon` on an `ItemBase` and the bag shows the sprite instead of text.
+
+### Bag and stash grids
+The bag (10 x 6 cells) and the shared stash (12 x 10) are Diablo / Path of Exile style grids: each
+item covers a rectangle of cells, so what fits depends on shape as well as count.
+- Sizes come from `ItemBase.bag_size()`: rings and amulets 1x1, dagger 1x2, one-handed swords,
+  axes and maces 1x3, staff 1x4, bow and battle axe 2x3, greatsword and war maul 2x4, helmet,
+  gloves, boots and wooden shield 2x2, body armour and tower shield 2x3. Set `grid_size` on a
+  base to give it its own.
+- Drag an item and the cells it would take light up green (fits) or red. Dropping onto exactly one
+  other item swaps them, if that item fits back where yours came from; onto two or more is refused.
+- `ItemGrid` holds the positions and does the fitting; `ItemGridView` draws one and handles drops.
+  Saves store each item's cell. Older saves (a list of slots) are placed automatically, and
+  anything that no longer fits goes to the stash, or waits under "Waiting for room" in the stash
+  until there is space.
+- Tests: `godot --headless --path . res://scratch/test_item_grid.tscn` (logic);
+  `res://scratch/capture_item_grid.tscn` (screenshots, needs a window).
 
 ### Warrior
 Tanky melee: 160 life, 20 armor, life regen. **Cleave** auto-attacks in a wide arc. Skill buttons (or keys 1-3 on desktop):

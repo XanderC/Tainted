@@ -38,7 +38,7 @@ func accepts_bag_drop(d: Dictionary) -> bool:
 	return d.get("kind", "") == "ware"
 
 
-func on_bag_drop(d: Dictionary, _bag_idx: int) -> void:
+func on_bag_drop(d: Dictionary, _at: Vector2i) -> void:
 	_buy(d.get("ware", {}))
 
 

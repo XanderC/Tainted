@@ -28,5 +28,6 @@ func accepts_bag_drop(_d: Dictionary) -> bool:
 	return false
 
 
-func on_bag_drop(_d: Dictionary, _bag_idx: int) -> void:
+## `at` is the bag cell it landed on (ItemGrid.NONE for things that aren't gear).
+func on_bag_drop(_d: Dictionary, _at: Vector2i) -> void:
 	pass

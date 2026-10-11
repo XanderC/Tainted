@@ -162,8 +162,8 @@ func _show_hub_intro() -> void:
 
 
 func _process(delta: float) -> void:
-	_hud.text = "Ashfall Outpost\nChaos %d   Divine %d     Bag %d/%d" % [GameState.orb_count("chaos"), GameState.orb_count("divine"),
-		player.bag_item_count(), Player.BAG_SIZE]
+	_hud.text = "Ashfall Outpost\nChaos %d   Divine %d     Bag %d/%d cells" % [GameState.orb_count("chaos"), GameState.orb_count("divine"),
+		player.bag_cells_used(), Player.BAG_SIZE]
 	if _gate:
 		_gate.queue_redraw()
 

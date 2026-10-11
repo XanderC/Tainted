@@ -60,7 +60,7 @@ func refresh() -> void:
 	if worn_now:
 		var unequip := UIKit.button("⬇ Unequip", Color(0.20, 0.16, 0.08), Color(0.85, 0.70, 0.30), Vector2(0, 52), 18)
 		unequip.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		unequip.disabled = not player.has_empty_bag_slot()
+		unequip.disabled = not player.can_fit(it)  # needs a space its shape fits
 		unequip.pressed.connect(func():
 			for s in player.equipment.keys():
 				if player.equipment[s] == it:

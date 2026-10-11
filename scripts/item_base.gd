@@ -15,12 +15,45 @@ extends Resource
 @export var color: Color = Color.WHITE
 ## Set this once you have art: res://assets/kenney/....png
 @export var icon: Texture2D
+## Cells it takes in the bag and stash (columns x rows). Zero means the usual size for its kind,
+## from default_grid_size().
+@export var grid_size := Vector2i.ZERO
 
 
 const TYPE_NAMES := {
 	"sword": "Sword", "axe": "Axe", "mace": "Mace", "dagger": "Dagger",
 	"staff": "Staff", "bow": "Bow", "shield": "Shield",
 }
+
+
+## Bag footprint by kind of item, Diablo II style: jewellery is one cell, a dagger two, swords
+## and axes a long column, two-handers and body armour a big block.
+const WEAPON_SIZES := {
+	"dagger": Vector2i(1, 2),
+	"sword": Vector2i(1, 3), "axe": Vector2i(1, 3), "mace": Vector2i(1, 3),
+	"staff": Vector2i(1, 4), "bow": Vector2i(2, 3),
+	"shield": Vector2i(2, 2),
+}
+const TWO_HANDED_SIZES := {
+	"sword": Vector2i(2, 4), "axe": Vector2i(2, 3), "mace": Vector2i(2, 4),
+}
+const SLOT_SIZES := {
+	"helmet": Vector2i(2, 2), "chest": Vector2i(2, 3), "gloves": Vector2i(2, 2),
+	"boots": Vector2i(2, 2), "ring": Vector2i(1, 1), "amulet": Vector2i(1, 1),
+	"weapon": Vector2i(1, 3), "offhand": Vector2i(2, 2),
+}
+
+
+## Cells this base takes in the bag: its own grid_size if set, otherwise the size for its kind.
+func bag_size() -> Vector2i:
+	if grid_size.x > 0 and grid_size.y > 0:
+		return grid_size
+	if weapon_type != "":
+		if two_handed and TWO_HANDED_SIZES.has(weapon_type):
+			return TWO_HANDED_SIZES[weapon_type]
+		if WEAPON_SIZES.has(weapon_type):
+			return WEAPON_SIZES[weapon_type]
+	return SLOT_SIZES.get(slot, Vector2i.ONE)
 
 
 ## e.g. "Two-Handed Axe", "One-Handed Sword", "Shield", or "" for armour.

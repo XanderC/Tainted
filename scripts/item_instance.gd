@@ -39,6 +39,11 @@ const MAX_QUALITY := 20
 const IMPLICIT_ROLL := [0.9, 1.1]
 
 
+## Cells this item takes in the bag and stash (columns x rows).
+func grid_size() -> Vector2i:
+	return base.bag_size() if base != null else Vector2i.ONE
+
+
 static func roll_implicit() -> float:
 	return snappedf(randf_range(IMPLICIT_ROLL[0], IMPLICIT_ROLL[1]), 0.01)
 

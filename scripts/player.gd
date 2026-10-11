@@ -7,7 +7,10 @@ signal item_dropped(item: ItemInstance)
 signal inventory_changed
 
 const SWING_TIME := 0.15
-const BAG_SIZE := 24
+## The bag is a grid: gear takes several cells (ItemBase.bag_size), so what fits depends on shape.
+const BAG_COLS := 10
+const BAG_ROWS := 6
+const BAG_SIZE := BAG_COLS * BAG_ROWS  # cells
 const SLOTS := ["weapon", "offhand", "helmet", "chest", "gloves", "boots", "ring", "amulet"]
 ## Slots that change how the character looks (see RigSprite.GEAR_LAYERS).
 const VISIBLE_SLOTS := ["weapon", "helmet", "chest"]
@@ -29,7 +32,12 @@ var _swap_cd := 0.0
 var _hit_power_cd := 0.0  # flat resource-on-hit at most every 0.5s
 var _slow_t := 0.0  # Frozen elites: move 40% slower while > 0
 var dead := false
-var inventory: Array[ItemInstance] = []
+var bag := ItemGrid.new(BAG_COLS, BAG_ROWS)
+## What is in the bag, in reading order. Read-only: change the bag through `bag` and the bag
+## functions below, which emit inventory_changed.
+var inventory: Array[ItemInstance]:
+	get:
+		return bag.items()
 var equipment := {}  # slot -> ItemInstance
 var item_powers := {}  # Legendary powers + set bonuses of the worn gear (UniqueItems.powers_of)
 var joystick: VirtualJoystick
@@ -87,8 +95,6 @@ func _ready() -> void:
 	rig.weapon_from_gear = true  # weapon appears when equipped, not only during slashes
 	add_child(rig)
 	_sync_gear_visuals()
-	while inventory.size() < BAG_SIZE:
-		inventory.append(null)
 	GameState.attach_player(self)  # restore saved gear, bag and skills
 
 
@@ -725,87 +731,85 @@ func take_damage(amount: float) -> void:
 
 
 func bag_item_count() -> int:
-	var c := 0
-	for it in inventory:
-		if it != null:
-			c += 1
-	return c
+	return bag.count()
 
 
+## Cells the bag's items cover, of BAG_SIZE.
+func bag_cells_used() -> int:
+	return BAG_SIZE - bag.free_cells()
+
+
+## Whether the bag has a free cell at all. To know if a particular item fits, use can_fit().
 func has_empty_bag_slot() -> bool:
-	return _first_empty_slot() != -1
+	return bag.free_cells() > 0
 
 
-func _first_empty_slot() -> int:
-	for i in BAG_SIZE:
-		if i >= inventory.size() or inventory[i] == null:
-			return i
-	return -1
+## Whether `item` has room in the bag (true if it's already in it).
+func can_fit(item: ItemInstance) -> bool:
+	return bag.can_fit(item)
 
 
 func add_to_bag(item: ItemInstance) -> bool:
-	var idx := _first_empty_slot()
-	if idx == -1:
+	if not bag.add(item):
 		return false
-	while inventory.size() < BAG_SIZE:
-		inventory.append(null)
-	inventory[idx] = item
 	inventory_changed.emit()
 	return true
 
 
 func remove_from_bag(item: ItemInstance) -> bool:
-	var idx := inventory.find(item)
-	if idx != -1:
-		inventory[idx] = null
+	if bag.remove(item):
 		inventory_changed.emit()
 		return true
 	return false
 
 
-func swap_bag_slots(idx_a: int, idx_b: int) -> void:
-	if idx_a < 0 or idx_a >= BAG_SIZE or idx_b < 0 or idx_b >= BAG_SIZE:
-		return
-	while inventory.size() < BAG_SIZE:
-		inventory.append(null)
-	var temp: ItemInstance = inventory[idx_a]
-	inventory[idx_a] = inventory[idx_b]
-	inventory[idx_b] = temp
+## Drag within the bag: `item` to top-left cell `at`. Landing on one item swaps it to where `item`
+## was (or anywhere it fits); on two or more, or off the grid, nothing moves.
+func move_in_bag(item: ItemInstance, at: Vector2i) -> bool:
+	if not bag.has(item):
+		return false
+	var plan := bag.plan_drop(item, at, bag)
+	if plan.is_empty():
+		return false
+	bag.apply_drop(item, at, bag, plan)
 	inventory_changed.emit()
+	return true
 
 
-func equip_bag_slot_to_gear(bag_idx: int, target_slot: String) -> bool:
-	if bag_idx < 0 or bag_idx >= BAG_SIZE or bag_idx >= inventory.size():
+## Whether worn gear in `slot` could be dropped at `at` in the bag: into free space, or onto one
+## bag item that can be worn in that slot (the two then trade places).
+func can_unequip_to(slot: String, at: Vector2i) -> bool:
+	var gear: ItemInstance = equipment.get(slot)
+	if gear == null:
 		return false
-	return equip_to(inventory[bag_idx], target_slot)
-
-
-func unequip_gear_to_bag_slot(slot: String, bag_idx: int) -> bool:
-	if not equipment.has(slot) or bag_idx < 0 or bag_idx >= BAG_SIZE:
+	var plan := bag.plan_drop(gear, at, null)
+	if plan.is_empty():
 		return false
-	while inventory.size() < BAG_SIZE:
-		inventory.append(null)
-	var gear_item: ItemInstance = equipment[slot]
-	var bag_item: ItemInstance = inventory[bag_idx]
-	if bag_item == null:
-		gear_item.remove_from(stats)
-		equipment.erase(slot)
-		inventory[bag_idx] = gear_item
-		hp = minf(hp, stats.get_stat("max_life"))
-		_sync_gear_visuals()
-		inventory_changed.emit()
-		return true
-	# Dropped onto a bag item that fits this slot: swap them
-	return equip_to(bag_item, slot)
+	var b: ItemInstance = plan.get("swap")
+	return b == null or valid_slots(b).has(slot)
 
 
-func drop_bag_slot(bag_idx: int) -> void:
-	if bag_idx < 0 or bag_idx >= BAG_SIZE or bag_idx >= inventory.size():
+## Take worn gear off into the bag at `at`, or swap it with the bag item there (see can_unequip_to).
+func unequip_to(slot: String, at: Vector2i) -> bool:
+	if not can_unequip_to(slot, at):
+		return false
+	var gear: ItemInstance = equipment[slot]
+	var plan := bag.plan_drop(gear, at, null)
+	var b: ItemInstance = plan.get("swap")
+	if b != null:
+		return equip_to(b, slot, false, at)
+	gear.remove_from(stats)
+	equipment.erase(slot)
+	bag.place(gear, at)
+	hp = minf(hp, stats.get_stat("max_life"))
+	_sync_gear_visuals()
+	inventory_changed.emit()
+	return true
+
+
+func drop_from_bag(item: ItemInstance) -> void:
+	if not bag.remove(item):
 		return
-	var item: ItemInstance = inventory[bag_idx]
-	if item == null:
-		return
-	inventory[bag_idx] = null
 	item_dropped.emit(item)
 	inventory_changed.emit()
 
@@ -825,8 +829,8 @@ func pick_up(item: ItemInstance) -> bool:
 	var slot := equip_slot_for(item)
 	if can_equip(item) and not equipment.has(slot) and displaced_by(item, slot).is_empty():
 		equip_to(item, slot)
-	elif has_empty_bag_slot():
-		add_to_bag(item)
+	elif bag.can_fit(item):
+		bag.add(item)
 	else:
 		return false
 	item_picked.emit(item)
@@ -895,24 +899,15 @@ func displaced_by(item: ItemInstance, slot: String) -> Array[ItemInstance]:
 	return out
 
 
-func _empty_bag_count() -> int:
-	var n := 0
-	for i in BAG_SIZE:
-		if i >= inventory.size() or inventory[i] == null:
-			n += 1
-	return n
-
-
-## Equip `item` (from the bag or the ground) into `slot`. Whatever it replaces goes into the item's
-## old bag slot or a free one; with allow_drop it is dropped on the ground if the bag is full.
+## Equip `item` (from the bag or the ground) into `slot`. Whatever it replaces goes into the bag:
+## at `prefer_at` if given and it fits, else where `item` was, else any space it fits. With
+## allow_drop it is dropped on the ground if it fits nowhere; otherwise nothing changes.
 ## Also moves a worn one-hander between main and off hand. Returns false if not allowed.
-func equip_to(item: ItemInstance, slot: String, allow_drop := false) -> bool:
+func equip_to(item: ItemInstance, slot: String, allow_drop := false, prefer_at := ItemGrid.NONE) -> bool:
 	if item == null or not valid_slots(item).has(slot):
 		return false
 	if equipment.get(slot) == item:
 		return true
-	while inventory.size() < BAG_SIZE:
-		inventory.append(null)
 
 	# Already worn in the other hand: swap hands (stats don't change)
 	for s in equipment.keys():
@@ -929,10 +924,24 @@ func equip_to(item: ItemInstance, slot: String, allow_drop := false) -> bool:
 			return true
 
 	var out := displaced_by(item, slot)
-	var bag_idx := inventory.find(item)
-	var room := _empty_bag_count() + (1 if bag_idx != -1 else 0)
-	if out.size() > room and not allow_drop:
-		return false
+	# Where each piece coming off goes, worked out on a copy of the bag with `item` taken out
+	var trial := bag.duplicate_grid()
+	var old_at := bag.position_of(item)
+	trial.remove(item)
+	var spots := {}  # displaced item -> cell, or NONE to drop it on the ground
+	for o in out:
+		var spot := ItemGrid.NONE
+		for c in [prefer_at, old_at]:
+			if c != ItemGrid.NONE and trial.fits(o, c):
+				spot = c
+				break
+		if spot == ItemGrid.NONE:
+			spot = trial.find_free(o)
+		if spot == ItemGrid.NONE and not allow_drop:
+			return false
+		if spot != ItemGrid.NONE:
+			trial.place(o, spot)
+		spots[o] = spot
 
 	var old_max := stats.get_stat("max_life")
 	for o in out:
@@ -940,18 +949,14 @@ func equip_to(item: ItemInstance, slot: String, allow_drop := false) -> bool:
 		for s in equipment.keys():
 			if equipment[s] == o:
 				equipment.erase(s)
-	if bag_idx != -1:
-		inventory[bag_idx] = null
+	bag.remove(item)
 	item.apply_to(stats)
 	equipment[slot] = item
 	for o in out:
-		if bag_idx != -1:
-			inventory[bag_idx] = o
-			bag_idx = -1
-		elif has_empty_bag_slot():
-			inventory[_first_empty_slot()] = o
+		if spots[o] != ItemGrid.NONE:
+			bag.place(o, spots[o])
 		else:
-			item_dropped.emit(o)  # bag full: drop it so nothing is lost
+			item_dropped.emit(o)  # no room in the bag: drop it so nothing is lost
 	var new_max := stats.get_stat("max_life")
 	hp = clampf(hp + maxf(new_max - old_max, 0.0), 0.0, new_max)
 	_sync_gear_visuals()
@@ -975,17 +980,18 @@ func modify_item(item: ItemInstance, change: Callable) -> void:
 	inventory_changed.emit()
 
 
+## Take worn gear off into the first space in the bag it fits. False if it fits nowhere.
 func unequip(slot: String) -> bool:
-	if not equipment.has(slot) or not has_empty_bag_slot():
+	var gear: ItemInstance = equipment.get(slot)
+	if gear == null:
 		return false
-	var empty_idx := _first_empty_slot()
-	return unequip_gear_to_bag_slot(slot, empty_idx)
+	var at := bag.find_free(gear)
+	return at != ItemGrid.NONE and unequip_to(slot, at)
 
 
 func drop_item(item: ItemInstance) -> void:
-	var idx := inventory.find(item)
-	if idx != -1:
-		drop_bag_slot(idx)
+	if bag.has(item):
+		drop_from_bag(item)
 		return
 	for s in equipment:
 		if equipment[s] == item:
