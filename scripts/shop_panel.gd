@@ -42,6 +42,10 @@ func on_bag_drop(d: Dictionary, _at: Vector2i) -> void:
 	_buy(d.get("ware", {}))
 
 
+## What a Normal flask costs, by tier (small, medium, large; utility flasks as small).
+const FLASK_PRICES := [{"transmute": 1}, {"alteration": 2}, {"alchemy": 1}]
+
+
 func _wares() -> Array[Dictionary]:
 	var list: Array[Dictionary] = []
 	for id in CraftingDB.RECIPES:
@@ -53,10 +57,16 @@ func _wares() -> Array[Dictionary]:
 		list.append({"type": "skillgem", "id": sk.id, "name": "Skill Gem: " + sk.display_name,
 			"desc": "%s (needs level %d)" % [sk.description, SkillTree.gem_level_req(sk.id)],
 			"price": SkillTree.gem_price(sk.id), "color": sk.color, "icon": IconFactory.gem_icon("skill:" + sk.id, sk.color, 3)})
-	for id in PotionDef.all_ids():
-		var p := PotionDef.info(id, player.class_def.power_name)
-		list.append({"type": "potion", "id": id, "name": p.name, "desc": p.desc,
-			"price": p.price, "color": p.color, "icon": PotionDef.icon(id)})
+	# Normal flasks of every base; find or craft better ones
+	for b in LootGenerator.bases:
+		if b.slot != "flask":
+			continue
+		var f := ItemInstance.new()
+		f.base = b
+		list.append({"type": "flask", "id": b.id, "name": b.display_name,
+			"desc": "%s, cooldown %.0fs. Never runs out." % [f.flask_text(player.class_def.power_name), float(b.flask.cooldown)],
+			"price": FLASK_PRICES[int(b.flask.get("tier", 1)) - 1] if b.flask.kind != "utility" else FLASK_PRICES[0],
+			"color": b.color, "icon": b.icon})
 	# Currency exchange: better orbs for cheaper ones
 	for id in CraftingDB.ORB_ORDER:
 		var price := Currency.orb_price(id)
@@ -125,9 +135,10 @@ func _buy(w: Dictionary) -> void:
 		"recipe": ok = GameState.buy_recipe(w.id)
 		"orb": ok = GameState.buy_orb(w.id)
 		"material": ok = GameState.buy_material(w.id)
-		"potion": ok = GameState.buy_potion(w.id)
+		"flask": ok = GameState.buy_flask(w.id, w.price)
 		"skillgem": ok = GameState.buy_skill_gem(w.id)
-	menu.feedback(("Bought %s!" % w.name) if ok else "Not enough orbs!")
+	var why := "Not enough orbs!" if not GameState.can_afford(w.price) else "No room in your bag!"
+	menu.feedback(("Bought %s!" % w.name) if ok else why)
 	menu.refresh()
 
 

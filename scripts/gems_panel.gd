@@ -1,11 +1,15 @@
 class_name GemsPanel
 extends MenuPanel
-## Gems: tap an item in the character panel to open its sockets here, then drag gems from the
-## pouch (the inventory's Gems tab) into them, or back to the pouch to remove them. When opened at the Jeweler
+## Gems: tap an item in the character panel to open its sockets here. Socket gems are the
+## account's, in the shared stash, so they go in and out of sockets only at the stash or the Jeweler
+## (GameState.gem_station), where the shared gems show below the sockets: drag them onto a socket,
+## or a socketed gem back onto them. Elsewhere the sockets are view-only. At the Jeweler
 ## (`jeweler = true`) it also combines GemDef.COMBINE_COUNT gems into the next tier for orbs.
 
 
 var jeweler := false
+## Shown inside another panel (the stash's Gems tab): tapping a gem doesn't switch panels.
+var embedded := false
 var _combine_gem := ""
 var _sel_gem := ""  # gem tapped in the Gems tab or in a socket: its details card is shown
 
@@ -23,7 +27,11 @@ func refresh() -> void:
 	UIKit.clear(self)
 	_add_sockets()
 	_add_gem_details()
-	add_child(UIKit.label("Drag gems in from the Gems tab of your inventory (and back to take them out).", 13, UIKit.TEXT_DIM, true))
+	if GameState.gem_station:
+		add_child(UIKit.label("Drag gems from the shared gems below onto a socket (and back to take them out).", 13, UIKit.TEXT_DIM, true))
+		_add_pool()
+	else:
+		add_child(UIKit.label("🔒 Socket gems at the stash or the Jeweler in town.", 13, UIKit.TEXT_DIM, true))
 	if jeweler:
 		_add_combine()
 
@@ -79,6 +87,9 @@ func _socket_cell(it: ItemInstance, i: int) -> DragSlot:
 		)
 	else:
 		cell.setup(null, Color(0.45, 0.50, 0.70), Color(0.06, 0.06, 0.10), 0, "◇", "Empty socket - drop a gem here")
+	if not GameState.gem_station:
+		cell.payload = {}  # view-only away from the stash and the Jeweler
+		return cell
 	cell.can_accept = func(d: Dictionary) -> bool:
 		return d.get("kind", "") == "gem" and d.get("from", "") == "pouch"
 	cell.on_drop = func(d: Dictionary) -> void:
@@ -146,7 +157,19 @@ func _add_gem_details() -> void:
 	v.add_child(UIKit.rich(t, 14))
 
 
-# ---------- pouch (shown in the inventory's Gems tab, see CharacterPanel) ----------
+# ---------- the shared gems (at the stash or the Jeweler) ----------
+
+const POOL_COLS := 8
+
+
+func _add_pool() -> void:
+	var sec := UIKit.section(self, "SHARED SOCKET GEMS")
+	var grid := UIKit.grid(POOL_COLS)
+	sec.add_child(grid)
+	var ids := owned_gems()
+	var total := maxi(POOL_COLS, int(ceil(float(ids.size() + 1) / POOL_COLS)) * POOL_COLS)
+	for i in total:
+		grid.add_child(pouch_cell(menu, ids[i] if i < ids.size() else "", Vector2(54, 54), self))
 
 ## Owned item gems, in catalogue order.
 static func owned_gems() -> Array[String]:
@@ -159,16 +182,16 @@ static func owned_gems() -> Array[String]:
 
 ## One pouch cell (gid "" = empty). Drag a gem onto a socket in the Gems panel; dropping a
 ## socketed gem here takes it out. Tapping a gem picks it for the Jeweler's combine.
-static func pouch_cell(m: GameMenu, gid: String, sz: Vector2) -> DragSlot:
+static func pouch_cell(m: GameMenu, gid: String, sz: Vector2, owner: GemsPanel = null) -> DragSlot:
 	var cell := DragSlot.new(sz)
 	if gid != "":
 		var g := GemDef.info(gid)
-		var gp_now := m.current_panel() as GemsPanel
+		var gp_now := owner if owner != null else m.current_panel() as GemsPanel
 		var sel := gp_now != null and gp_now._sel_gem == gid
 		cell.setup(GemDef.icon(gid), Color.WHITE if sel else g.color, Color(g.color).darkened(0.82), GameState.gem_count(gid), "", UIKit.gem_tip(gid))
 		cell.payload = {"kind": "gem", "from": "pouch", "gem_id": gid}
 		cell.clicked.connect(func():
-			var gp := m.current_panel() as GemsPanel
+			var gp := owner if owner != null else m.current_panel() as GemsPanel
 			if gp == null:
 				m.show_panel("gems")
 				gp = m.current_panel() as GemsPanel
@@ -182,7 +205,7 @@ static func pouch_cell(m: GameMenu, gid: String, sz: Vector2) -> DragSlot:
 		return d.get("kind", "") == "gem" and d.get("from", "") == "socket"
 	cell.on_drop = func(d: Dictionary) -> void:
 		if GameState.unsocket_gem(d.get("item"), int(d.get("idx", -1))):
-			m.feedback("Gem returned to your pouch.")
+			m.feedback("Gem returned to the shared gems.")
 		m.refresh()
 	return cell
 
@@ -214,7 +237,7 @@ func _add_combine() -> void:
 	row.add_child(UIKit.label("➜", 28, Color.WHITE))
 
 	var out_cell := DragSlot.new(Vector2(64, 64))
-	var info := UIKit.label("Drop a gem here (or tap one in your Gems tab) to see what it becomes.", 14, UIKit.TEXT_DIM, true)
+	var info := UIKit.label("Drop a gem here (or tap one in the shared gems) to see what it becomes.", 14, UIKit.TEXT_DIM, true)
 	info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var can := false
 	if g.is_empty():

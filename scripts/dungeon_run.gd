@@ -59,7 +59,6 @@ var plan_drop := ""  # Legendary / Set plan dropped by the boss, "" if none
 var rune_drop := ""
 var bonus_runes: Array[String] = []
 var bonus_gems: Array[String] = []
-var potion_drops := {}  # potion id -> count
 var skill_gem_drop := ""
 
 var _layer: CanvasLayer
@@ -138,6 +137,9 @@ func _on_boss_died(pos: Vector2) -> void:
 	on_time = elapsed <= TIME_LIMIT
 	_boss_box.visible = false
 	rewards = roll_rewards(on_time, item_level(level, kills), level)
+	# The boss always leaves a flask (Magic or better when beaten in time)
+	rewards.append(LootGenerator.roll_item(item_level(level, kills),
+		ItemInstance.Rarity.MAGIC if on_time else -1, "flask"))
 	for i in kills:
 		if randf() < HORDE_ITEM_CHANCE:
 			rewards.append(LootGenerator.roll_item(item_level(level, i)))
@@ -155,13 +157,6 @@ func _on_boss_died(pos: Vector2) -> void:
 	# Materials, orbs and shards go straight to your stash; a recipe page drops on the ground.
 	extra_drops = scale_drops(CraftingDB.boss_drops(on_time), level)
 	horde_loot(extra_drops)
-	# A few potions: health and resource, better tiers at higher rift levels
-	var ptier := clampi(1 + int((level - 1) / 4.0), 1, PotionDef.MAX_TIER)
-	for kind in ["health", "health", "power"]:
-		var pid := PotionDef.make_id(kind, ptier)
-		var n := randi_range(1, 2) + (1 if on_time else 0)
-		GameState.add_potion(pid, n)
-		potion_drops[pid] = int(potion_drops.get(pid, 0)) + n
 	GameState.grant(extra_drops)
 	GameState.runs_cleared += 1
 	rune_drop = RuneDef.DB.random_drop(level, true)
@@ -505,12 +500,7 @@ func _show_result() -> void:
 		t += "[color=#4ade80][b]⚡ SPEED CLEAR BONUS LOOT ACHIEVED![/b][/color]\n"
 	else:
 		t += "[color=#888888]Time Limit (%s) exceeded - Standard Loot[/color]\n" % fmt_time(TIME_LIMIT)
-	t += "[color=#3d3545]──────────────────────────────[/color]\n"
-	t += "[b][color=#f3c66f]REWARDS ON THE GROUND:[/color][/b]\n"
-	for it in rewards:
-		var col: String = ItemInstance.RARITY_COLORS[it.rarity].to_html(false)
-		t += "  • [b][color=#%s]%s[/color][/b]  [color=#777777](%s)[/color]\n" % [
-			col, it.display_name, ItemInstance.Rarity.keys()[it.rarity].capitalize()]
+	# Gear is on the ground for all to see; only what went straight to the stash is listed
 	t += "[color=#3d3545]──────────────────────────────[/color]\n"
 	t += "[b][color=#f3c66f]STASH REWARDS DEPOSITED:[/color][/b]\n"
 	for k in extra_drops.get("shards", {}):
@@ -529,9 +519,6 @@ func _show_result() -> void:
 	if skill_gem_drop != "":
 		var sg := SkillTree.get_skill(skill_gem_drop)
 		t += "  • [color=#%s]💠 Skill Gem: %s[/color]\n" % [sg.color.to_html(false), sg.display_name]
-	for pid in potion_drops:
-		var pd := PotionDef.info(pid, player.class_def.power_name)
-		t += "  • [color=#%s]🧪 %d %s[/color]\n" % [Color(pd.color).to_html(false), potion_drops[pid], pd.name]
 	for gid in bonus_gems:
 		var g := GemDef.info(gid)
 		t += "  • [color=#%s]◆ %s[/color]\n" % [Color(g.color).to_html(false), g.name]

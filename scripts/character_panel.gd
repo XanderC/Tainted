@@ -5,15 +5,13 @@ extends PanelContainer
 ##   bag <-> bag (rearrange/swap), bag -> equipment slot (equip), equipment -> bag (unequip),
 ##   stash -> bag (take), and anything the current left panel accepts (e.g. buying a ware).
 ## Tapping an item selects it for the left panel (details, gems, blacksmith, merchant...).
-## Orbs from the Currency tab can be dropped onto worn gear to use them.
+## Currency, crafting materials and loose gems aren't carried: they are the account's, in the
+## shared stash (StashPanel). Orbs dragged from its Currency tab can be dropped on worn gear.
 
-const BAG_COLS := 8
-const BAG_CELL := Vector2(58, 58)
-## Equipment tab: one cell of the bag grid (Player.BAG_COLS x BAG_ROWS, gear spanning several).
-const GEAR_GRID_CELL := 36.0  # 10 x 6 cells fit under the bag tabs on a 720p screen
-## Cells shown in the gem, consumable and currency tabs (at least; more if there is more to show).
-const POUCH_CELLS := 24
+## One cell of the bag grid (Player.BAG_COLS x BAG_ROWS, gear spanning several).
+const GEAR_GRID_CELL := 36.0  # 10 x 6 cells fit under the paperdoll on a 720p screen
 const GEAR_CELL := Vector2(66, 66)
+const FLASK_CELL := Vector2(42, 66)  # flasks stand tall, as in the bag
 const LEFT_SLOTS := ["helmet", "chest", "gloves", "boots"]
 const RIGHT_SLOTS := ["amulet", "ring", "weapon", "offhand"]
 
@@ -25,13 +23,10 @@ var _class_lbl: Label
 var _left_col: VBoxContainer
 var _right_col: VBoxContainer
 var _summary: RichTextLabel
+var _flask_row: HBoxContainer  # the flask slots, under the character
 var _portrait: SubViewportContainer
 var _rig: RigSprite
-var _mats: VBoxContainer
-var _bag_grid: GridContainer  # the non-gear tabs: gems, consumables, currency
-var _bag_view: ItemGridView      # the Equipment tab: the bag itself, as a grid
-var bag_tab := "equipment"  # "equipment" | "skillgems" | "supports" | "gems" | "consumables" | "currency"
-var _tab_row: HBoxContainer
+var _bag_view: ItemGridView  # the bag, as a grid: all gear, flasks included
 
 
 func _ready() -> void:
@@ -108,25 +103,18 @@ func _ready() -> void:
 	_summary = UIKit.rich("", 15)
 	_summary.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	mid_v.add_child(_summary)
+	_flask_row = HBoxContainer.new()
+	_flask_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	_flask_row.add_theme_constant_override("separation", 6)
+	mid_v.add_child(_flask_row)
 	_right_col = VBoxContainer.new()
 	_right_col.add_theme_constant_override("separation", 6)
 	doll.add_child(_right_col)
 
-	# Bag tabs (Equipment, gems, consumables, currency), then crafting materials down the left
-	# side of the grid
-	_tab_row = HBoxContainer.new()
-	_tab_row.add_theme_constant_override("separation", 4)
-	v.add_child(_tab_row)
+	# The bag
 	var bag_row := HBoxContainer.new()
 	bag_row.add_theme_constant_override("separation", 10)
 	v.add_child(bag_row)
-	_mats = VBoxContainer.new()
-	_mats.add_theme_constant_override("separation", 6)
-	_mats.custom_minimum_size = Vector2(150, 0)
-	bag_row.add_child(_mats)
-	_bag_grid = UIKit.grid(BAG_COLS, 5)
-	_bag_grid.size_flags_horizontal = Control.SIZE_EXPAND | Control.SIZE_SHRINK_CENTER
-	bag_row.add_child(_bag_grid)
 	_bag_view = ItemGridView.new(player.bag, GEAR_GRID_CELL, "bag")
 	_bag_view.size_flags_horizontal = Control.SIZE_EXPAND | Control.SIZE_SHRINK_CENTER
 	_bag_view.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
@@ -155,63 +143,14 @@ func refresh() -> void:
 		if slot == "weapon":
 			_right_col.add_child(_set_toggle())
 		_right_col.add_child(_gear_cell(slot))
-	_left_col.add_child(_potion_slot_cell())
+	_left_col.add_child(_gear_cell("belt"))
+	UIKit.clear(_flask_row)
+	for i in Player.FLASK_SLOTS:
+		_flask_row.add_child(_flask_cell(i))
 
-	UIKit.clear(_tab_row)
-	for t in [["equipment", "Equipment"], ["skillgems", "Skill Gems"], ["supports", "Supports"], ["gems", "Gems"],
-			["consumables", "Consumables"], ["currency", "Currency"]]:
-		var active: bool = bag_tab == t[0]
-		var b := UIKit.button(t[1], Color(0.24, 0.18, 0.10) if active else Color(0.11, 0.10, 0.13),
-			Color(0.95, 0.82, 0.40) if active else Color(0.35, 0.28, 0.20), Vector2(0, 36), 13)
-		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		var id: String = t[0]
-		b.pressed.connect(func():
-			bag_tab = id
-			# gems go into the skill slots, so show those on the left (unless a vendor is open)
-			if id in ["skillgems", "supports"] and not menu.vendor_open() and not menu.current_panel() is SkillGemsPanel:
-				menu.show_panel("skills")
-			elif id == "gems" and not menu.vendor_open() and not menu.current_panel() is GemsPanel:
-				menu.show_panel("gems")  # item gems go into sockets shown there
-			else:
-				refresh()
-		)
-		_tab_row.add_child(b)
+	_bag_view.selected = menu.selected
+	_bag_view.refresh()
 
-	UIKit.clear(_bag_grid)
-	_bag_grid.visible = bag_tab != "equipment"
-	_bag_view.visible = bag_tab == "equipment"
-	if bag_tab == "consumables":
-		_fill_consumables()
-	elif bag_tab == "currency":
-		_fill_currency()
-	elif bag_tab == "skillgems":
-		_fill_gems(SkillGemsPanel.owned_skill_gems(), true)
-	elif bag_tab == "supports":
-		_fill_gems(SkillGemsPanel.owned_supports(), false)
-	elif bag_tab == "gems":
-		_fill_item_gems()
-	else:
-		_bag_view.selected = menu.selected
-		_bag_view.refresh()
-
-	# Crafting materials, one per line down the left of the grid
-	UIKit.clear(_mats)
-	_mats.add_child(UIKit.label("MATERIALS", 12, UIKit.TEXT_DIM))
-	for k in CraftingDB.MATERIALS:
-		var m: Dictionary = CraftingDB.MATERIALS[k]
-		var row := HBoxContainer.new()
-		row.add_theme_constant_override("separation", 6)
-		var icon := TextureRect.new()
-		icon.texture = IconFactory.material_icon(k, m.color)
-		icon.custom_minimum_size = Vector2(22, 22)
-		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		row.add_child(icon)
-		var name_l := UIKit.label(m.name, 13, m.color)
-		name_l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		row.add_child(name_l)
-		row.add_child(UIKit.label(str(GameState.material_count(k)), 14, Color(0.95, 0.92, 0.85)))
-		_mats.add_child(row)
 
 
 func _gear_cell(slot: String) -> DragSlot:
@@ -254,6 +193,7 @@ func _bag_accepts(d: Dictionary, at: Vector2i) -> bool:
 		match d.get("from", ""):
 			"bag": return player.bag.has(it) and not player.bag.plan_drop(it, at, player.bag).is_empty()
 			"gear": return player.can_unequip_to(String(d.get("slot", "")), at)
+			"flask": return player.can_unequip_flask_to(int(d.get("idx", -1)), at)
 			"stash": return GameState.can_stash_to_bag(it, at)
 		return false
 	var p := menu.current_panel()
@@ -268,106 +208,44 @@ func _bag_dropped(d: Dictionary, at: Vector2i) -> void:
 	match d.get("from", ""):
 		"bag": player.move_in_bag(it, at)
 		"gear": player.unequip_to(String(d.get("slot", "")), at)
+		"flask": player.unequip_flask_to(int(d.get("idx", -1)), at)
 		"stash": GameState.stash_to_bag(it, at)
 	menu.refresh()
 
 
-# ---------- potions ----------
+# ---------- flasks ----------
 
-func _potion_tip(id: String) -> String:
-	var p := PotionDef.info(id, player.class_def.power_name)
-	return "%s\n%s" % [p.get("name", id), p.get("desc", "")]
-
-
-## Potion slot under the armour: drag a potion stack here to drink it with the HUD button.
-func _potion_slot_cell() -> DragSlot:
-	var cell := DragSlot.new(GEAR_CELL)
-	var id := GameState.potion_slot
-	if id != "" and GameState.potion_count(id) > 0:
-		var p := PotionDef.info(id, player.class_def.power_name)
-		cell.setup(PotionDef.icon(id), p.color, Color(p.color).darkened(0.8), GameState.potion_count(id), "",
-			_potion_tip(id) + "\n(drink with the HUD potion button or Q)")
-		cell.payload = {"kind": "potion", "from": "slot", "id": id}
+## Flask slot i, under the character. The belt opens the first few (Player.flask_slot_count);
+## the rest are locked, and a flask left in one can't be drunk until a bigger belt opens it.
+## Drag a flask here from the bag (or another slot to swap), and back to the bag to take it off.
+func _flask_cell(i: int) -> DragSlot:
+	var it: ItemInstance = player.flasks[i]
+	var open := i < player.flask_slot_count()
+	var key: String = FlaskBar.KEYS[i]
+	var cell := UIKit.item_cell(it, it != null and it == menu.selected, FLASK_CELL)
+	if it == null:
+		cell.setup(null, Color(0.32, 0.26, 0.30) if open else Color(0.16, 0.14, 0.18), Color(0.09, 0.08, 0.11), 0,
+			("🧪\n%s" % key) if open else "🔒",
+			("Flask slot %d (%s) - drag a flask here" % [i + 1, key]) if open else "Wear a belt with more flask slots to open this one")
 	else:
-		cell.setup(null, Color(0.28, 0.24, 0.30), Color(0.09, 0.08, 0.11), 0, "🧪\nPotion",
-			"Potion slot - drag a potion here from Consumables")
+		cell.payload = {"kind": "item", "from": "flask", "idx": i, "item": it}
+		cell.clicked.connect(menu.select.bind(it))
+		cell.tooltip_text = "%s\n%s\n%s" % [it.display_name, it.flask_text(player.class_def.power_name),
+			"Drink with %s" % key if open else "Locked: your belt doesn't open this slot"]
+		if not open:
+			cell.modulate = Color(1, 1, 1, 0.45)
 	cell.can_accept = func(d: Dictionary) -> bool:
-		return d.get("kind", "") == "potion" and d.get("from", "") == "pouch"
+		var di: ItemInstance = d.get("item")
+		return d.get("kind", "") == "item" and di != null and di.is_flask() and d.get("from", "") in ["bag", "flask"] \
+			and not (d.get("from", "") == "flask" and int(d.get("idx", -1)) == i)
 	cell.on_drop = func(d: Dictionary) -> void:
-		GameState.set_potion_slot(d.get("id", ""))
+		var di: ItemInstance = d.get("item")
+		if player.equip_flask(di, i):
+			menu.select(di)
+		else:
+			menu.feedback("No room in the bag for the flask it replaces.")
+			menu.refresh()
 	return cell
-
-
-## Consumables tab: one cell per potion type owned. Tap or drag one onto the potion slot.
-func _fill_consumables() -> void:
-	var owned: Array[String] = []
-	for id in PotionDef.all_ids():
-		if GameState.potion_count(id) > 0:
-			owned.append(id)
-	for i in POUCH_CELLS:
-		var cell := DragSlot.new(BAG_CELL)
-		if i < owned.size():
-			var id := owned[i]
-			var p := PotionDef.info(id, player.class_def.power_name)
-			var slotted := id == GameState.potion_slot
-			cell.setup(PotionDef.icon(id), Color.WHITE if slotted else Color(p.color), Color(p.color).darkened(0.8),
-				GameState.potion_count(id), "", _potion_tip(id) + ("\n(in the potion slot)" if slotted else "\nTap or drag to the potion slot"))
-			cell.payload = {"kind": "potion", "from": "pouch", "id": id}
-			cell.clicked.connect(func(): GameState.set_potion_slot(id))
-		else:
-			cell.setup(null, UIKit.EMPTY_BORDER)
-		# Dragging the slotted potion back here empties the slot
-		cell.can_accept = func(d: Dictionary) -> bool:
-			return d.get("kind", "") == "potion" and d.get("from", "") == "slot"
-		cell.on_drop = func(_d: Dictionary) -> void:
-			GameState.set_potion_slot("")
-		_bag_grid.add_child(cell)
-
-
-## Currency tab: every orb with its count and shard progress. Drag one onto worn gear to use it.
-func _fill_currency() -> void:
-	for id in CraftingDB.ORB_ORDER:
-		var o: Dictionary = CraftingDB.ORBS[id]
-		var n := GameState.orb_count(id)
-		var sh := GameState.shard_count(id)
-		var cell := DragSlot.new(BAG_CELL)
-		var tip := "%s\n%s" % [o.name, o.desc]
-		if sh > 0:
-			tip += "\nShards: %d / %d" % [sh, Currency.SHARDS_PER_ORB]
-		cell.setup(CraftingDB.orb_icon(id), Color(o.color) if n > 0 else UIKit.EMPTY_BORDER, Color(0.08, 0.07, 0.10), n, "", tip)
-		if n <= 0:
-			cell.modulate = Color(1, 1, 1, 0.4)
-		else:
-			cell.payload = {"kind": "orb", "id": id}
-		if sh > 0:
-			var l := UIKit.label("%d/%d" % [sh, Currency.SHARDS_PER_ORB], 10, Color(0.85, 0.85, 0.95))
-			l.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
-			l.add_theme_color_override("font_outline_color", Color.BLACK)
-			l.add_theme_constant_override("outline_size", 4)
-			l.mouse_filter = Control.MOUSE_FILTER_IGNORE
-			l.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-			l.offset_left = 3
-			cell.add_child(l)
-		cell.clicked.connect(func(): menu.feedback("%s: %s" % [o.name, o.desc]))
-		_bag_grid.add_child(cell)
-
-
-## Skill Gems / Supports tabs: one cell per gem type owned (with its count and level), drag them
-## onto the Skills panel's slots and links; drop socketed gems back here to take them out.
-func _fill_gems(ids: Array[String], skills: bool) -> void:
-	var sp := menu.skills_panel()
-	var total := maxi(POUCH_CELLS, int(ceil(float(ids.size() + 1) / BAG_COLS)) * BAG_COLS)
-	for i in total:
-		var id: String = ids[i] if i < ids.size() else ""
-		_bag_grid.add_child(sp.pouch_skill_cell(id, BAG_CELL) if skills else sp.pouch_support_cell(id, BAG_CELL))
-
-
-## Gems tab: the item gem pouch. Drag gems onto an item's sockets in the Gems / Jeweler panel.
-func _fill_item_gems() -> void:
-	var ids := GemsPanel.owned_gems()
-	var total := maxi(POUCH_CELLS, int(ceil(float(ids.size() + 1) / BAG_COLS)) * BAG_COLS)
-	for i in total:
-		_bag_grid.add_child(GemsPanel.pouch_cell(menu, ids[i] if i < ids.size() else "", BAG_CELL))
 
 
 ## "1 | 2" switch above the hand slots: shows which weapon set is active and swaps sets.

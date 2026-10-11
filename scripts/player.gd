@@ -11,7 +11,12 @@ const SWING_TIME := 0.15
 const BAG_COLS := 10
 const BAG_ROWS := 6
 const BAG_SIZE := BAG_COLS * BAG_ROWS  # cells
-const SLOTS := ["weapon", "offhand", "helmet", "chest", "gloves", "boots", "ring", "amulet"]
+const SLOTS := ["weapon", "offhand", "helmet", "chest", "gloves", "boots", "ring", "amulet", "belt"]
+## Flask slots, Path of Exile style: the belt opens some of them (ItemBase.flask_slots); without
+## one there is NO_BELT_FLASKS. Flasks in slots beyond that stay put but can't be drunk.
+const FLASK_SLOTS := 5
+const NO_BELT_FLASKS := 1
+const FLASK_KEYS := [KEY_Q, KEY_E, KEY_R, KEY_T, KEY_F]
 ## Slots that change how the character looks (see RigSprite.GEAR_LAYERS).
 const VISIBLE_SLOTS := ["weapon", "helmet", "chest"]
 ## Slots that belong to a weapon set. Only the active set is in `equipment` (and gives stats);
@@ -25,7 +30,12 @@ var class_def: ClassDef
 var stats := StatBlock.new()
 var hp := 100.0
 var resource := 0.0  # Adrenaline / Mana, see class_def.power_*
-var _potion_cd := 0.0
+var flasks: Array = [null, null, null, null, null]  # ItemInstance or null, FLASK_SLOTS long
+var _flask_cd: Array[float] = [0.0, 0.0, 0.0, 0.0, 0.0]
+var _flask_cd_max: Array[float] = [1.0, 1.0, 1.0, 1.0, 1.0]
+## Flasks in effect: {source, t, life_rate, power_rate, warding}. Their buffs are StatBlock mods
+## under `source`, removed when t runs out.
+var _flask_effects: Array[Dictionary] = []
 var active_set := 0  # 0 = Set 1, 1 = Set 2
 var alt_set := {}    # inactive weapon set: slot -> ItemInstance
 var _swap_cd := 0.0
@@ -118,8 +128,11 @@ func _unhandled_input(event: InputEvent) -> void:
 			KEY_3: use_skill(3)
 			KEY_4: use_skill(4)
 			KEY_5: use_skill(5)
-			KEY_Q: drink_potion()
 			KEY_X: swap_weapon_set()
+			_:
+				var fi := FLASK_KEYS.find(event.keycode)
+				if fi != -1:
+					use_flask(fi)
 	elif event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
 		if not OS.has_feature("mobile") and not DisplayServer.is_touchscreen_available():
 			if event.pressed:
@@ -146,7 +159,7 @@ func _physics_process(delta: float) -> void:
 	_ring_t = maxf(_ring_t - delta, 0.0)
 	_whirlwind_t = maxf(_whirlwind_t - delta, 0.0)
 	_hurt_cd = maxf(_hurt_cd - delta, 0.0)
-	_potion_cd = maxf(_potion_cd - delta, 0.0)
+	_process_flasks(delta)
 	_swap_cd = maxf(_swap_cd - delta, 0.0)
 	_slow_t = maxf(_slow_t - delta, 0.0)
 	_hit_power_cd = maxf(_hit_power_cd - delta, 0.0)
@@ -359,27 +372,153 @@ func use_skill(i: int) -> void:
 			_do_cleave_skill(s)
 
 
-## Drink the potion in the potion slot. Returns false if empty, out of stock or on cooldown.
-func drink_potion() -> bool:
-	var id := GameState.potion_slot
-	if dead or id == "" or _potion_cd > 0.0 or GameState.potion_count(id) <= 0:
+# ---------- flasks ----------
+
+## How many flask slots can be drunk from: what the belt opens, or NO_BELT_FLASKS without one.
+func flask_slot_count() -> int:
+	var belt: ItemInstance = equipment.get("belt")
+	var n := belt.base.flask_slots if belt != null and belt.base.flask_slots > 0 else NO_BELT_FLASKS
+	return clampi(n, 1, FLASK_SLOTS)
+
+
+## Drink the flask in slot i. False if the slot is empty, closed (belt) or on cooldown.
+func use_flask(i: int) -> bool:
+	if dead or i < 0 or i >= flask_slot_count():
 		return false
-	var p := PotionDef.info(id, class_def.power_name)
-	if p.is_empty():
+	var it: ItemInstance = flasks[i]
+	if it == null or _flask_cd[i] > 0.0:
 		return false
-	if p.kind == "health":
-		hp = minf(hp + stats.get_stat("max_life") * float(p.amount), stats.get_stat("max_life"))
-	else:
-		gain_resource(float(p.amount))
-	GameState.add_potion(id, -1)
-	_potion_cd = PotionDef.COOLDOWN
+	var e := it.flask_effect()
+	_flask_cd[i] = float(e.cooldown)
+	_flask_cd_max[i] = maxf(float(e.cooldown), 0.01)
+	var source := RefCounted.new()
+	var fx := {"source": source, "t": float(e.duration), "life_rate": 0.0, "power_rate": 0.0, "warding": bool(e.warding)}
+	match String(e.kind):
+		"life":
+			var total: float = stats.get_stat("max_life") * float(e.amount)
+			if e.instant:
+				hp = minf(hp + total, stats.get_stat("max_life"))
+			else:
+				fx.life_rate = total / maxf(float(e.duration), 0.1)
+		"power":
+			if e.instant:
+				gain_resource(float(e.amount))
+			else:
+				fx.power_rate = float(e.amount) / maxf(float(e.duration), 0.1)
+		"utility":
+			var b: Dictionary = e.buff
+			stats.add_mod(String(b.stat), int(b.mod), float(b.value), source)
+	for d in e.during:
+		stats.add_mod(String(d.stat), int(d.mod), float(d.value), source)
+	if fx.warding:
+		_slow_t = 0.0
+	_flask_effects.append(fx)
 	if rig != null:
 		rig.pulse(0.10, 0.3)
 	return true
 
 
-func potion_cooldown_fraction() -> float:
-	return clampf(_potion_cd / PotionDef.COOLDOWN, 0.0, 1.0)
+## 1 just after drinking, down to 0 when slot i can be drunk again.
+func flask_cooldown_fraction(i: int) -> float:
+	return clampf(_flask_cd[i] / _flask_cd_max[i], 0.0, 1.0)
+
+
+func _process_flasks(delta: float) -> void:
+	for i in FLASK_SLOTS:
+		_flask_cd[i] = maxf(_flask_cd[i] - delta, 0.0)
+	var max_life := stats.get_stat("max_life")
+	for fx in _flask_effects.duplicate():
+		var step := minf(delta, float(fx.t))
+		if float(fx.life_rate) > 0.0:
+			hp = minf(hp + float(fx.life_rate) * step, max_life)
+		if float(fx.power_rate) > 0.0:
+			gain_resource(float(fx.power_rate) * step)
+		fx.t = float(fx.t) - delta
+		if float(fx.t) <= 0.0:
+			stats.remove_source(fx.source)
+			_flask_effects.erase(fx)
+
+
+## A Warding flask in effect: slows don't take hold.
+func slow_immune() -> bool:
+	return _flask_effects.any(func(fx): return bool(fx.warding))
+
+
+func is_worn(item: ItemInstance) -> bool:
+	return item != null and (equipment.values().has(item) or flasks.has(item))
+
+
+## Put a flask from the bag (or the ground) into flask slot i. What was there goes into the bag,
+## where the new one was if it fits; a flask already in another slot swaps with it.
+func equip_flask(item: ItemInstance, i: int) -> bool:
+	if item == null or not item.is_flask() or i < 0 or i >= FLASK_SLOTS:
+		return false
+	var j := flasks.find(item)
+	if j == i:
+		return true
+	if j != -1:
+		flasks[j] = flasks[i]
+		flasks[i] = item
+		inventory_changed.emit()
+		return true
+	var old: ItemInstance = flasks[i]
+	var at := bag.position_of(item)
+	if old != null:
+		var trial := bag.duplicate_grid()
+		trial.remove(item)
+		var spot := at if at != ItemGrid.NONE and trial.fits(old, at) else trial.find_free(old)
+		if spot == ItemGrid.NONE:
+			return false
+		bag.remove(item)
+		bag.place(old, spot)
+	else:
+		bag.remove(item)
+	flasks[i] = item
+	inventory_changed.emit()
+	return true
+
+
+## The first open, empty flask slot, or -1.
+func free_flask_slot() -> int:
+	for i in flask_slot_count():
+		if flasks[i] == null:
+			return i
+	return -1
+
+
+## Whether the flask in slot i could be dropped at `at` in the bag: into space, or swapping with a
+## single flask there.
+func can_unequip_flask_to(i: int, at: Vector2i) -> bool:
+	var it: ItemInstance = flasks[i] if i >= 0 and i < FLASK_SLOTS else null
+	if it == null:
+		return false
+	var plan := bag.plan_drop(it, at, null)
+	if plan.is_empty():
+		return false
+	var b: ItemInstance = plan.get("swap")
+	return b == null or b.is_flask()
+
+
+func unequip_flask_to(i: int, at: Vector2i) -> bool:
+	if not can_unequip_flask_to(i, at):
+		return false
+	var it: ItemInstance = flasks[i]
+	var b: ItemInstance = bag.plan_drop(it, at, null).get("swap")
+	if b != null:
+		bag.remove(b)
+	flasks[i] = b
+	bag.place(it, at)
+	inventory_changed.emit()
+	return true
+
+
+## Take the flask in slot i off into the first space in the bag it fits.
+func unequip_flask(i: int) -> bool:
+	var it: ItemInstance = flasks[i] if i >= 0 and i < FLASK_SLOTS else null
+	if it == null:
+		return false
+	var at := bag.find_free(it)
+	return at != ItemGrid.NONE and unequip_flask_to(i, at)
 
 
 ## Switch between weapon Set 1 and Set 2: the worn main / off hand go into the inactive set and
@@ -451,6 +590,8 @@ func on_enemy_killed(pos: Vector2) -> void:
 
 
 func apply_slow(seconds: float) -> void:
+	if slow_immune():
+		return
 	_slow_t = maxf(_slow_t, seconds)
 
 
@@ -826,6 +967,17 @@ func drop_gear_slot(slot: String) -> void:
 
 
 func pick_up(item: ItemInstance) -> bool:
+	if item.is_flask():
+		var fi := free_flask_slot()
+		if fi != -1:
+			flasks[fi] = item
+		elif bag.can_fit(item):
+			bag.add(item)
+		else:
+			return false
+		item_picked.emit(item)
+		inventory_changed.emit()
+		return true
 	var slot := equip_slot_for(item)
 	if can_equip(item) and not equipment.has(slot) and displaced_by(item, slot).is_empty():
 		equip_to(item, slot)
@@ -861,8 +1013,8 @@ func can_equip(item: ItemInstance) -> bool:
 ## Equipment slots `item` may go in (empty if the class can't use it).
 func valid_slots(item: ItemInstance) -> Array[String]:
 	var out: Array[String] = []
-	if not can_equip(item):
-		return out
+	if not can_equip(item) or item.is_flask():
+		return out  # flasks go in flask slots (equip_flask)
 	out.append(item.base.slot)
 	if item.base.slot == "weapon" and not item.base.two_handed and class_def.dual_wield:
 		out.append("offhand")
@@ -992,6 +1144,12 @@ func unequip(slot: String) -> bool:
 func drop_item(item: ItemInstance) -> void:
 	if bag.has(item):
 		drop_from_bag(item)
+		return
+	var fi := flasks.find(item)
+	if fi != -1:
+		flasks[fi] = null
+		item_dropped.emit(item)
+		inventory_changed.emit()
 		return
 	for s in equipment:
 		if equipment[s] == item:

@@ -4,7 +4,7 @@ extends Resource
 
 @export var id: String = ""
 @export var display_name: String = ""
-@export_enum("weapon", "offhand", "helmet", "chest", "gloves", "boots", "ring", "amulet") var slot: String = "weapon"
+@export_enum("weapon", "offhand", "helmet", "chest", "gloves", "boots", "ring", "amulet", "belt", "flask") var slot: String = "weapon"
 ## Weapons and shields: "sword", "axe", "mace", "dagger", "staff", "bow", "shield". "" for armour.
 ## Each class lists the types it may use (ClassDef.weapon_types).
 @export var weapon_type: String = ""
@@ -16,8 +16,21 @@ extends Resource
 ## Set this once you have art: res://assets/kenney/....png
 @export var icon: Texture2D
 ## Cells it takes in the bag and stash (columns x rows). Zero means the usual size for its kind,
-## from default_grid_size().
+## from bag_size().
 @export var grid_size := Vector2i.ZERO
+## How often it drops, against other bases (100 = usual).
+@export var weight := 100
+## Belts: how many flask slots wearing it opens (Player.FLASK_SLOTS at most).
+@export var flask_slots := 0
+## Flasks: what drinking it does. Keys:
+##   kind      - "life" | "power" | "utility"
+##   amount    - life: fraction of max life; power: resource; utility: the buff's value
+##   duration  - seconds the recovery takes / the buff lasts
+##   cooldown  - seconds before it can be used again
+##   stat, mod - utility: the stat buffed and how (StatBlock.ModType)
+##   text      - utility: the buff, with {v} for its value
+##   tier      - 1..3, for the icon
+@export var flask := {}
 
 
 const TYPE_NAMES := {
@@ -40,6 +53,7 @@ const TWO_HANDED_SIZES := {
 const SLOT_SIZES := {
 	"helmet": Vector2i(2, 2), "chest": Vector2i(2, 3), "gloves": Vector2i(2, 2),
 	"boots": Vector2i(2, 2), "ring": Vector2i(1, 1), "amulet": Vector2i(1, 1),
+	"belt": Vector2i(2, 1), "flask": Vector2i(1, 2),
 	"weapon": Vector2i(1, 3), "offhand": Vector2i(2, 2),
 }
 

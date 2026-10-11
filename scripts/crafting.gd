@@ -26,6 +26,11 @@ static func orb_block_reason(item: ItemInstance, orb: String) -> String:
 	if item.is_unique() and not UNIQUE_OK.has(orb):
 		return "Legendary and Set items can't be altered"
 	var n := item.affixes.size()
+	# A flask has room for one prefix and one suffix when Magic, two of each when Rare
+	var flask_full := false
+	if item.is_flask():
+		var room := LootGenerator.flask_affix_room(item)
+		flask_full = int(room.prefix) <= 0 and int(room.suffix) <= 0
 	match orb:
 		"transmute":
 			if item.rarity != R.NORMAL: return "Needs a Normal item"
@@ -33,7 +38,7 @@ static func orb_block_reason(item: ItemInstance, orb: String) -> String:
 			if item.rarity != R.MAGIC: return "Needs a Magic item"
 		"augment":
 			if item.rarity != R.MAGIC: return "Needs a Magic item"
-			if n >= ItemInstance.MAX_AFFIXES[R.MAGIC]: return "Item is full"
+			if n >= ItemInstance.MAX_AFFIXES[R.MAGIC] or flask_full: return "Item is full"
 		"regal":
 			if item.rarity != R.MAGIC: return "Needs a Magic item"
 		"alchemy", "chance":
@@ -42,7 +47,7 @@ static func orb_block_reason(item: ItemInstance, orb: String) -> String:
 			if item.rarity != R.RARE: return "Needs a Rare item"
 		"exalt":
 			if item.rarity != R.RARE: return "Needs a Rare item"
-			if n >= ItemInstance.MAX_AFFIXES[R.RARE]: return "Item is full"
+			if n >= ItemInstance.MAX_AFFIXES[R.RARE] or flask_full: return "Item is full"
 		"divine":
 			if item.affixes.is_empty() and item.powers.is_empty(): return "Item has no affixes"
 		"annul":
@@ -52,6 +57,7 @@ static func orb_block_reason(item: ItemInstance, orb: String) -> String:
 		"blessed":
 			if item.base.implicit_stat == "": return "Item has no implicit"
 		"jeweller":
+			if socket_cap(item) == 0: return "Belts and flasks have no sockets"
 			if socket_cap(item) <= 1 and item.sockets == 1: return "Can only ever have 1 socket"
 		"whetstone":
 			if not item.is_weapon(): return "Needs a weapon"
@@ -69,6 +75,8 @@ static func orb_block_reason(item: ItemInstance, orb: String) -> String:
 ## Most gem sockets an item of this slot can roll.
 static func socket_cap(item: ItemInstance) -> int:
 	var slot := item.base.slot
+	if slot in ["belt", "flask"]:
+		return 0
 	return 3 if slot in ["weapon", "chest"] else (1 if slot in ["ring", "amulet"] else 2)
 
 
@@ -184,6 +192,8 @@ static func _vaal(item: ItemInstance) -> String:
 			item.implicit_roll = minf(item.implicit_roll + 0.25, 1.5)
 			return "Corrupted: stronger implicit (+%d)" % int(item.implicit_value())
 		2:
+			if socket_cap(item) == 0:
+				return "Corrupted: no change"  # belts and flasks never take sockets
 			item.sockets = mini(item.sockets + 1, socket_cap(item) + 1)
 			return "Corrupted: extra socket (%d)" % item.sockets
 	if item.is_unique():

@@ -64,10 +64,11 @@ func _ready() -> void:
 		b.index = i
 		b.position = button_pos[i]
 		pad.add_child(b)
-	var potion := PotionButton.new()
-	potion.player = player
-	potion.position = Vector2(-370, -100)
-	pad.add_child(potion)
+	# Flask buttons, one per slot the belt opens, growing left from this corner
+	var flasks := FlaskBar.new()
+	flasks.player = player
+	flasks.position = Vector2(-292, -22)
+	pad.add_child(flasks)
 	var swap := WeaponSwapButton.new()
 	swap.player = player
 	swap.position = Vector2(-370, -160)

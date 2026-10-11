@@ -21,6 +21,8 @@ const SLOT_NAMES := {
 	"boots": "Boots",
 	"ring": "Finger Ring",
 	"amulet": "Amulet",
+	"belt": "Belt",
+	"flask": "Flask",
 }
 
 const SLOT_ICONS := {
@@ -32,6 +34,8 @@ const SLOT_ICONS := {
 	"boots": "👢",
 	"ring": "💍",
 	"amulet": "📿",
+	"belt": "🎗",
+	"flask": "🧪",
 }
 
 const GOLD := Color(0.95, 0.82, 0.45)
@@ -176,6 +180,13 @@ static func item_card(parent: Node, item: ItemInstance, compact := false, deltas
 	hv.add_child(base_lbl)
 
 	var txt := ""
+	if item.is_flask():
+		# What drinking it does, modifiers included, then the modifiers themselves below
+		var e := item.flask_effect()
+		var pn: String = GameState.player.class_def.power_name if is_instance_valid(GameState.player) else "Power"
+		txt += "[color=#f3e6c4]%s[/color]\n[color=#9ca3af]Cooldown %.1fs[/color]\n" % [item.flask_text(pn), float(e.cooldown)]
+	if item.base.flask_slots > 0:
+		txt += "[color=#f3e6c4]Opens %d flask slot%s[/color]\n" % [item.base.flask_slots, "" if item.base.flask_slots == 1 else "s"]
 	if item.quality > 0:
 		txt += "[color=#9ab0d0]Quality: +%d%%[/color]\n" % item.quality
 	if item.base.implicit_stat != "":

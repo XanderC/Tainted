@@ -22,8 +22,9 @@ func refresh() -> void:
 		_add_bulk_salvage()
 		return
 
-	var worn_now := player.equipment.values().has(it)
-	var worn: ItemInstance = null if worn_now else player.equipment.get(player.equip_slot_for(it))
+	var worn_now := player.is_worn(it)
+	# Flasks give nothing while worn, so there is nothing to compare
+	var worn: ItemInstance = null if worn_now or it.is_flask() else player.equipment.get(player.equip_slot_for(it))
 
 	if worn != null:
 		var deltas := UIKit.equip_deltas(player, it)
@@ -39,7 +40,7 @@ func refresh() -> void:
 		_add_salvage_warning(it)
 		return
 
-	if not worn_now:
+	if not worn_now and not it.is_flask():
 		if player.is_better_in_slot(it):
 			var up := PanelContainer.new()
 			var usb := UIKit.box(Color(0.10, 0.22, 0.14, 0.95), Color(0.35, 1.0, 0.50), 1, 6)
@@ -62,6 +63,8 @@ func refresh() -> void:
 		unequip.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		unequip.disabled = not player.can_fit(it)  # needs a space its shape fits
 		unequip.pressed.connect(func():
+			if player.flasks.has(it):
+				player.unequip_flask(player.flasks.find(it))
 			for s in player.equipment.keys():
 				if player.equipment[s] == it:
 					player.unequip(s)
@@ -80,7 +83,13 @@ func refresh() -> void:
 		elif it.base.two_handed and player.equipment.has("offhand"):
 			add_child(UIKit.label("Two-handed: your off-hand item goes back to the bag.", 13, UIKit.TEXT_DIM, true))
 		equip.pressed.connect(func():
-			player.equip_from_bag(it)
+			if it.is_flask():
+				# The first open, empty flask slot; with none, it swaps with the first flask
+				var fi := player.free_flask_slot()
+				if not player.equip_flask(it, fi if fi != -1 else 0):
+					menu.feedback("No room in the bag for the flask it replaces.")
+			else:
+				player.equip_from_bag(it)
 			menu.refresh()
 		)
 		acts.add_child(equip)

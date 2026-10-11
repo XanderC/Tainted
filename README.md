@@ -42,6 +42,43 @@ item covers a rectangle of cells, so what fits depends on shape as well as count
 - Tests: `godot --headless --path . res://scratch/test_item_grid.tscn` (logic);
   `res://scratch/capture_item_grid.tscn` (screenshots, needs a window).
 
+### Flasks and belts
+Potions are gone; flasks replace them, Path of Exile style. A flask is an item (1x2 in the bag)
+that is never used up: drink it from a flask slot and it goes on cooldown.
+- **Belts** (new gear slot) open flask slots: Rope 2, Leather 3, Heavy 4, Chain 5; no belt, 1.
+  Flasks in slots the belt doesn't open stay put but can't be drunk.
+- **Kinds**: Life and Power flasks recover over their duration (Small / Medium / Large); Utility
+  flasks give a timed buff: Granite (armour), Quicksilver (movement), Silver (attack speed),
+  Sulphur (damage).
+- **Modifiers**: Normal, Magic (one prefix + one suffix) and Rare (two of each). Prefixes change the
+  flask (Ample: more recovered, Seething: instant, Chemist's: shorter cooldown, Enduring: longer,
+  Potent: stronger buff); suffixes work while it is in effect (of Iron Skin, of Haste, of Fury,
+  of the Berserker, of Warding: clears and blocks slows). Orbs work on flasks. No sockets.
+- HUD: one button per open slot (`FlaskBar`), also Q E R T F. Flask slots sit under the character
+  in the inventory; drag flasks between them and the bag.
+- Flasks drop as loot (the boss always leaves one), and the Merchant sells Normal ones.
+  Old saves: each potion type owned became a Normal flask, the slotted one equipped.
+- Code: `ItemBase.flask` / `flask_slots`, `ItemInstance.flask_effect()`, `Player.use_flask()`,
+  flask affixes in `LootGenerator` (`AffixDef.slots`, `prefix`, `word`).
+- Test: `godot --headless --path . res://scratch/test_flasks.tscn`;
+  `res://scratch/capture_flasks.tscn` for screenshots.
+
+### Shared stash tabs: currency, materials, gems
+Orbs and shards, crafting materials, and loose skill, support and socket gems belong to the
+account, not a character (`GameState.SHARED_KEYS`, saved in the account file). The stash shows them
+in tabs: **Items** (the grid), **Currency**, **Materials** and **Gems**. The inventory keeps only
+Equipment and Consumables.
+- Gems are changed only at the stash (its Gems tab: skill slots and the tapped item's sockets
+  beside the shared gems) or socketed at the Jeweler (`GameState.gem_station`). Elsewhere the
+  Skills and Gems panels are view-only. Gem levels and what each character has socketed stay
+  that character's.
+- Orbs are still usable on any item from its details, or dragged from the Currency tab onto worn gear.
+- A new account gets the starting pools once (`_starter_pools`), not each new character.
+  Accounts from before this add every character's pools together the first time they load.
+- The tutorial altar sockets the first gem straight into the main attack slot.
+- Test: `godot --headless --path . res://scratch/test_shared_pools.tscn` (backs up and restores
+  the account file); `res://scratch/capture_stash_tabs.tscn` for screenshots.
+
 ### Warrior
 Tanky melee: 160 life, 20 armor, life regen. **Cleave** auto-attacks in a wide arc. Skill buttons (or keys 1-3 on desktop):
 1. **Whirl**: 360° spin for 180% damage, 4s cooldown

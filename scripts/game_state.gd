@@ -26,6 +26,8 @@ var show_hub_intro := false
 ## Set by the map editor's "Test in Game" (command line --test-map=<id>): rifts use only this map.
 var test_map := ""  # set when the tutorial ends: the town shows its welcome once
 
+# Shared by every character (saved in the account, shown in the stash's Currency, Materials and
+# Gems tabs): orbs, shards, crafting materials and loose gems. See SHARED_KEYS.
 var orbs := {}
 var shards := {}  # orb id -> shards (Currency.SHARDS_PER_ORB join into one orb)
 var materials := {}
@@ -56,10 +58,18 @@ var gem_xp := {}           # skill_id -> experience towards the next gem level
 var support_levels := {}   # support (rune) id -> level (1..SkillTree.GEM_MAX_LEVEL)
 var support_xp := {}       # support (rune) id -> experience towards the next level
 var skill_slots: Array = []  # SKILL_SLOTS x {"skill": skill_id or "", "supports": [rune ids]}
-var runes := {}            # support gems: rune_id -> count (int)
-var gems := {}             # gem_id -> count (int), see GemDef
-var potions := {}          # potion_id -> count (int), see PotionDef
-var potion_slot := ""      # potion type drunk by the HUD potion button
+var runes := {}            # support gems: rune_id -> count (int)  [shared]
+var gems := {}             # gem_id -> count (int), see GemDef     [shared]
+## Pools every character shares, saved in the account rather than each character. Loose skill
+## gems are shared too, but what is socketed in a character's skill slots and the gems' levels
+## stay that character's.
+const SHARED_KEYS := ["orbs", "shards", "materials", "skill_gems", "runes", "gems"]
+## Open while the stash or the Jeweler is: gems can only be socketed or swapped then.
+var gem_station := false
+## Flasks in the character's flask slots (Player.flasks), as saved: item dicts or null.
+var _pending_flasks: Array = []
+## Flasks made from an older save's potions that weren't put in a slot: they go in the bag.
+var _pending_loose_flasks: Array[ItemInstance] = []
 
 var _pending_inventory: Array = []
 var _pending_equipment := {}
@@ -77,9 +87,6 @@ func _ready() -> void:
 
 
 func _new_game() -> void:
-	orbs = CraftingDB.STARTING_CURRENCY.duplicate()
-	shards = {}
-	materials = CraftingDB.STARTING_MATERIALS.duplicate()
 	known_recipes.clear()
 	for id in CraftingDB.RECIPES:
 		if CraftingDB.RECIPES[id].source == "start":
@@ -92,9 +99,9 @@ func _new_game() -> void:
 	_pending_alt_set.clear()
 	_pending_active_set = 0
 
-	gems = {"ruby_1": 2, "topaz_1": 1, "sapphire_1": 1}
-	potions = {"health_1": 3}
-	potion_slot = "health_1"
+	# Every character starts with a Small Life Flask in the first flask slot
+	_pending_flasks = [_new_flask("small_life_flask").to_dict()]
+	_pending_loose_flasks.clear()
 
 	# Starting skill gems & points (one passive point per level gained, 99 at level 100)
 	skill_points = 0
@@ -108,16 +115,22 @@ func _new_game() -> void:
 	give_starter_skills()
 	tutorial_stage = TUTORIAL_DONE
 
-	# Starting support gems
-	runes = {
-		"rune_frost": 1,
-		"rune_fire": 2,
-		"rune_lightning": 2,
-		"rune_echo": 1,
-		"rune_vampiric": 1,
-		"rune_nova": 1,
-		"rune_brutality": 1,
-	}
+
+## What a brand-new account starts with in the shared pools. Given once, not per character, so
+## making characters is no way to farm orbs.
+func _starter_pools() -> void:
+	orbs = CraftingDB.STARTING_CURRENCY.duplicate()
+	shards = {}
+	materials = CraftingDB.STARTING_MATERIALS.duplicate()
+	gems = {"ruby_1": 2, "topaz_1": 1, "sapphire_1": 1}
+	runes = STARTER_RUNES.duplicate()
+	skill_gems = {}
+
+
+const STARTER_RUNES := {
+	"rune_frost": 1, "rune_fire": 2, "rune_lightning": 2, "rune_echo": 1,
+	"rune_vampiric": 1, "rune_nova": 1, "rune_brutality": 1,
+}
 
 
 ## The usual starting skill setup (new characters who skip the tutorial get this too; gems
@@ -510,32 +523,56 @@ func add_xp(amount: float) -> void:
 
 # ---------- gems ----------
 
-# ---------- potions ----------
+# ---------- flasks ----------
 
-func potion_count(id: String) -> int:
-	return int(potions.get(id, 0))
-
-
-func add_potion(id: String, amount: int = 1) -> void:
-	potions[id] = maxi(potion_count(id) + amount, 0)
-	if potions[id] == 0:
-		potions.erase(id)
-	_changed()
+## A Normal flask of the given base.
+func _new_flask(base_id: String, ilvl := 1) -> ItemInstance:
+	var it := ItemInstance.new()
+	it.base = LootGenerator.base_by_id(base_id)
+	it.ilvl = ilvl
+	it.display_name = it.base.display_name
+	return it
 
 
-func buy_potion(id: String) -> bool:
-	var p := PotionDef.info(id)
-	if p.is_empty() or not pay(p.price):
+## Buy a Normal flask from the Merchant.
+func buy_flask(base_id: String, price: Dictionary) -> bool:
+	if not is_instance_valid(player) or LootGenerator.base_by_id(base_id) == null:
 		return false
-	add_potion(id, 1)
+	var it := _new_flask(base_id, maxi(level, 1))
+	if not player.can_fit(it) or not pay(price):
+		return false
+	player.add_to_bag(it)
 	return true
 
 
-## Put a potion type into the potion slot ("" empties it).
-func set_potion_slot(id: String) -> void:
-	potion_slot = id
-	_changed()
+## Older saves had potion stacks (id -> count) and one potion type in the potion slot. Each type
+## owned becomes one Normal flask of the same kind and strength; the slotted one is worn.
+func _flasks_from_potions(potions: Dictionary, slotted: String) -> void:
+	const SIZES := ["small", "medium", "large"]
+	_pending_flasks = []
+	_pending_loose_flasks.clear()
+	var ids: Array = potions.keys()
+	ids.sort_custom(func(a, b): return String(a) == slotted and String(b) != slotted)
+	for id in ids:
+		if int(potions[id]) <= 0:
+			continue
+		var parts := String(id).rsplit("_", true, 1)
+		if parts.size() != 2:
+			continue
+		var kind := "life" if parts[0] == "health" else ("power" if parts[0] == "power" else "")
+		var tier := clampi(int(parts[1]), 1, 3)
+		if kind == "":
+			continue
+		var it := _new_flask("%s_%s_flask" % [SIZES[tier - 1], kind])
+		if String(id) == slotted and _pending_flasks.is_empty():
+			_pending_flasks.append(it.to_dict())
+		else:
+			_pending_loose_flasks.append(it)
+	if _pending_flasks.is_empty():
+		_pending_flasks.append(_new_flask("small_life_flask").to_dict())
 
+
+# ---------- socket gems and support gems ----------
 
 func gem_count(gem_id: String) -> int:
 	return int(gems.get(gem_id, 0))
@@ -900,7 +937,7 @@ func _migrate_to_skill_gems(data: Dictionary) -> void:
 	var old_runes: Dictionary = data.get("skill_runes", {})
 	var old_bar: Array = data.get("equipped_skills", [])
 	var refund := 0
-	skill_gems = {}
+	var owned := {}  # this character's skills as gems; loose skill gems are the account's
 	gem_levels = {}
 	gem_xp = {}
 	skill_slots = _empty_slots()
@@ -912,14 +949,16 @@ func _migrate_to_skill_gems(data: Dictionary) -> void:
 		else:
 			refund += int(old_unlocked[id])
 			gem_levels[String(id)] = clampi(int(old_unlocked[id]), 1, SkillTree.GEM_MAX_LEVEL)
-			skill_gems[String(id)] = 1
+			owned[String(id)] = true
 	for mods in data.get("skill_mods", {}).values():
 		refund += mods.size()
 	for i in mini(old_bar.size(), SKILL_SLOTS):
 		var id := String(old_bar[i])
-		if id != "" and skill_gems.has(id):
-			skill_gems.erase(id)
+		if id != "" and owned.has(id):
+			owned.erase(id)
 			skill_slots[i].skill = id
+	for id in owned:  # the ones not on the bar join the shared pool
+		skill_gems[id] = skill_gem_count(id) + 1
 	for id in old_runes:
 		var slot := slot_of(String(id))
 		for rid in old_runes[id]:
@@ -966,6 +1005,21 @@ func attach_player(p: Player) -> void:
 		if alt != null and slot in Player.SET_SLOTS:
 			p.alt_set[slot] = alt
 	p.active_set = _pending_active_set
+	p.flasks = [null, null, null, null, null]
+	for i in mini(_pending_flasks.size(), Player.FLASK_SLOTS):
+		if _pending_flasks[i] is Dictionary:
+			var f := ItemInstance.from_dict(_pending_flasks[i])
+			if f != null and f.is_flask():
+				p.flasks[i] = f
+	# Flasks an older save's potions turned into: into the bag, or the stash if it is full
+	var extra: Array[ItemInstance] = []
+	for f in _pending_loose_flasks:
+		if not p.bag.add(f):
+			extra.append(f)
+	_pending_loose_flasks.clear()
+	if not extra.is_empty():
+		_keep(extra)
+		_save_account()
 	for slot in _pending_equipment:
 		var it := ItemInstance.from_dict(_pending_equipment[slot])
 		if it != null:
@@ -1002,6 +1056,7 @@ func save() -> void:
 		_pending_inventory = inv
 		_pending_equipment = eq
 		_pending_alt_set = {}
+		_pending_flasks = player.flasks.map(func(f): return f.to_dict() if f != null else null)
 		for slot in player.alt_set:
 			_pending_alt_set[slot] = player.alt_set[slot].to_dict()
 		_pending_active_set = player.active_set
@@ -1011,7 +1066,6 @@ func save() -> void:
 
 	var data := {
 		"version": 2, "name": char_name, "class": char_class, "tutorial_stage": tutorial_stage,
-		"orbs": orbs, "shards": shards, "materials": materials,
 		"recipes": known_recipes, "runs_cleared": runs_cleared,
 		"rift_unlocked": rift_unlocked, "rift_level": rift_level,
 		"inventory": inv, "equipment": eq,
@@ -1022,16 +1076,12 @@ func save() -> void:
 		"xp": xp,
 		"skill_tree_version": 2,
 		"passive_nodes": passive_nodes,
-		"skill_gems": skill_gems,
 		"gem_levels": gem_levels,
 		"gem_xp": gem_xp,
 		"support_levels": support_levels,
 		"support_xp": support_xp,
 		"skill_slots": skill_slots,
-		"runes": runes,
-		"gems": gems,
-		"potions": potions,
-		"potion_slot": potion_slot,
+		"flasks": _pending_flasks,
 	}
 	_write_json(_char_path(char_id), data)
 	for c in characters:
@@ -1064,6 +1114,8 @@ func _save_account() -> void:
 		"characters": characters, "last": last_character,
 		"stash": stash.to_array(),
 		"stash_overflow": stash_overflow.map(func(i): return i.to_dict()),
+		"shared": {"orbs": orbs, "shards": shards, "materials": materials,
+			"skill_gems": skill_gems, "runes": runes, "gems": gems},
 	})
 
 
@@ -1072,6 +1124,8 @@ func _load_account() -> void:
 	var acc := _read_json(ACCOUNT_PATH)
 	if acc.is_empty():
 		_migrate_single_save()
+		_load_shared({})
+		_save_account()
 		return
 	characters.clear()
 	for c in acc.get("characters", []):
@@ -1080,6 +1134,7 @@ func _load_account() -> void:
 				"class": String(c.get("class", "warrior")), "level": int(c.get("level", 1))})
 	last_character = String(acc.get("last", ""))
 	_load_stash(acc.get("stash", []), acc.get("stash_overflow", []))
+	_load_shared(acc)
 
 
 func _load_stash(list: Array, overflow: Array = []) -> void:
@@ -1091,6 +1146,54 @@ func _load_stash(list: Array, overflow: Array = []) -> void:
 	# The old stash was a list of 60 items; what doesn't fit the grid waits in the overflow
 	stash_overflow.append_array(stash.load_array(list))
 	_settle_overflow()
+
+
+## The shared pools from the account. An account from before they were shared gathers them
+## from its characters -- every character's orbs, materials and loose gems added together -- and
+## takes them out of the character saves, once. A brand-new account gets the starting pools.
+func _load_shared(acc: Dictionary) -> void:
+	if acc.has("shared"):
+		var sh: Dictionary = acc.shared
+		orbs = _ints(sh.get("orbs", {}))
+		shards = _ints(sh.get("shards", {}))
+		materials = _ints(sh.get("materials", {}))
+		skill_gems = _ints(sh.get("skill_gems", {}))
+		runes = _ints(sh.get("runes", {}))
+		gems = _ints(sh.get("gems", {}))
+	elif characters.is_empty():
+		_starter_pools()
+	else:
+		for k in SHARED_KEYS:
+			set(k, {})
+		for c in characters:
+			var path := _char_path(String(c.id))
+			var data := _read_json(path)
+			if data.is_empty():
+				continue
+			var pools := {
+				"orbs": _ints(data.get("orbs", {})),
+				"shards": _ints(data.get("shards", {})),
+				"materials": _ints(data.get("materials", {})),
+				"skill_gems": _ints(data.get("skill_gems", {})),
+				# a character saved before these existed was given the starting ones on load
+				"runes": _ints(data.get("runes", STARTER_RUNES)),
+				"gems": _ints(data.get("gems", {"ruby_1": 2, "topaz_1": 1, "sapphire_1": 1})),
+			}
+			# Saves from before orbs were the money: their gold becomes orbs of the same worth
+			var gold := Currency.gold_to_orbs(int(data.get("gold", 0)))
+			for id in gold:
+				pools.orbs[id] = int(pools.orbs.get(id, 0)) + int(gold[id])
+			for k in SHARED_KEYS:
+				var pool: Dictionary = get(k)
+				for id in pools[k]:
+					pool[id] = int(pool.get(id, 0)) + int(pools[k][id])
+				data.erase(k)
+			data.erase("gold")
+			_write_json(path, data)
+		_save_account()
+	for id in orbs.keys():
+		if not CraftingDB.ORBS.has(id):
+			orbs.erase(id)
 
 
 ## The save from before characters existed becomes the first character; its stash becomes the
@@ -1142,8 +1245,8 @@ func create_character(new_name: String, class_id: String) -> String:
 	if name_block_reason(new_name) != "":
 		return ""
 	_new_game()
-	# New characters start the tutorial with no skills: they pick their first gem there
-	skill_gems = {}
+	# New characters start the tutorial with no skills socketed: they pick their first gem there.
+	# (Loose skill gems are the account's; they are left alone.)
 	skill_slots = _empty_slots()
 	tutorial_stage = 0
 	char_id = _new_char_id()
@@ -1201,17 +1304,8 @@ func peek_equipment(id: String) -> Dictionary:
 	return out
 
 
+## Load a character. The shared pools (SHARED_KEYS) are the account's, loaded in _load_account.
 func _apply_save(data: Dictionary) -> void:
-	orbs = _ints(data.get("orbs", {}))
-	shards = _ints(data.get("shards", {}))
-	for id in orbs.keys():
-		if not CraftingDB.ORBS.has(id):
-			orbs.erase(id)
-	# Saves from before orbs were the money: their gold becomes orbs of the same worth
-	var old_gold := Currency.gold_to_orbs(int(data.get("gold", 0)))
-	for id in old_gold:
-		orbs[id] = orb_count(id) + int(old_gold[id])
-	materials = _ints(data.get("materials", {}))
 	known_recipes.clear()
 	for id in data.get("recipes", []):
 		if CraftingDB.RECIPES.has(String(id)):
@@ -1228,10 +1322,6 @@ func _apply_save(data: Dictionary) -> void:
 	skill_points = int(data.get("skill_points", 3))
 	level = clampi(int(data.get("level", 1)), 1, MAX_LEVEL)
 	xp = float(data.get("xp", 0.0))
-	runes = _ints(data.get("runes", {
-		"rune_frost": 1, "rune_fire": 2, "rune_lightning": 2, "rune_echo": 1, "rune_vampiric": 1, "rune_nova": 1
-	}))
-	gems = _ints(data.get("gems", {"ruby_1": 2, "topaz_1": 1, "sapphire_1": 1}))
 	if int(data.get("skill_tree_version", 1)) < 2:
 		_migrate_to_skill_gems(data)
 	else:
@@ -1240,7 +1330,6 @@ func _apply_save(data: Dictionary) -> void:
 			# ranked passives from the Diablo style tree: refund for the new node tree
 			for id in data.get("unlocked_skills", {}):
 				skill_points += int(data.unlocked_skills[id])
-		skill_gems = _ints(data.get("skill_gems", {}))
 		gem_levels = _ints(data.get("gem_levels", {}))
 		gem_xp = data.get("gem_xp", {})
 		support_levels = _ints(data.get("support_levels", {}))
@@ -1248,8 +1337,11 @@ func _apply_save(data: Dictionary) -> void:
 		skill_slots = data.get("skill_slots", _empty_slots())
 	_fix_slots()
 	_fix_passive_points()
-	potions = _ints(data.get("potions", {"health_1": 3}))
-	potion_slot = String(data.get("potion_slot", "health_1"))
+	if data.has("flasks"):
+		_pending_flasks = data.flasks
+		_pending_loose_flasks.clear()
+	else:
+		_flasks_from_potions(data.get("potions", {"health_1": 3}), String(data.get("potion_slot", "health_1")))
 	tutorial_stage = int(data.get("tutorial_stage", TUTORIAL_DONE))  # older saves: already past it
 
 

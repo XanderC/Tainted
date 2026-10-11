@@ -3,7 +3,8 @@ extends Node2D
 ## First steps for a new character (MazeLibrary "Tutorial"): a short strip of rooms leading to the
 ## hub. Each stage shows a hint at the top of the screen and an arrow to where to go next:
 ##   ALTAR  - walk to the altar and pick a first skill gem
-##   SOCKET - open the bag and socket it into a skill slot
+##   SOCKET - (skipped: the altar sockets it into the main attack slot, since gems are changed
+##            at the stash in town and the tutorial has none)
 ##   FIGHT  - a training monster appears: kill it with the new skill
 ##   EQUIP  - it dropped an item: pick it up and equip it
 ##   PORTAL - step into the portal to reach Ashfall Outpost (the town)
@@ -21,8 +22,9 @@ const HINTS := {
 		"Walk to the glowing [color=#7dd3fc]altar[/color] and take your first skill gem.",
 	Stage.SOCKET: "[b]Socket your skill gem.[/b]\nTap [color=#ffd54a]🎒 BAG[/color] (top right), open the " +
 		"[color=#ffd54a]Skill Gems[/color] tab, and drag your gem onto the [color=#ffd54a]⚔ main attack[/color] slot in the Skills panel. Then close the bag.",
-	Stage.FIGHT: "[b]A Husk blocks the way![/b]\nWalk up to it and tap the big [color=#ffd54a]attack button[/color] " +
-		"(bottom right; Space or click on a computer) to use your skill. Hits build [color=#fb923c]Adrenaline[/color] for stronger skills later.",
+	Stage.FIGHT: "[b]A Husk blocks the way![/b]\nYour gem is in your [color=#ffd54a]⚔ main attack[/color] slot. Walk up to it and tap the big " +
+		"[color=#ffd54a]attack button[/color] (bottom right; Space or click on a computer). Hits build [color=#fb923c]Adrenaline[/color] for stronger skills later. " +
+		"(You change skill gems at the [color=#ffd54a]stash[/color] in town.)",
 	Stage.EQUIP: "[b]It dropped a Magic weapon![/b]\nWalk over it to pick it up, then equip it in place of your Rusty Sword: " +
 		"tap [color=#4ade80]Equip[/color] on the popup, or open your [color=#ffd54a]🎒 BAG[/color] and drag it onto the Main Hand slot.",
 	Stage.PORTAL: "[b]You're ready.[/b]\nStep into the [color=#c084fc]portal[/color] to reach Ashfall Outpost, your home base. " +
@@ -128,6 +130,11 @@ func _process(_delta: float) -> void:
 		and player.global_position.distance_to(_altar.global_position) < _altar.radius
 	match _stage():
 		Stage.SOCKET:
+			# Only a save made at this step lands here now: socket the gem taken at the altar for them
+			if GameState.slot_skill(0) == "":
+				for id in STARTER_GEMS:
+					if GameState.set_slot_skill(0, id):
+						break
 			for i in GameState.SKILL_SLOTS:
 				if GameState.slot_skill(i) != "":
 					_enter_stage(Stage.FIGHT)
@@ -334,10 +341,11 @@ func _gem_card(id: String) -> Control:
 	var b := UIKit.button("Take %s" % sk.display_name, sk.color.darkened(0.75), sk.color, Vector2(0, 52), 17)
 	b.pressed.connect(func():
 		GameState.add_skill_gem(id, 1)
+		GameState.set_slot_skill(0, id)  # straight into the main attack: gems change at the stash
 		_choice.get_parent().queue_free()
 		_choice = null
 		get_tree().paused = false
-		_enter_stage(Stage.SOCKET)
+		_enter_stage(Stage.FIGHT)
 	)
 	v.add_child(b)
 	return card
@@ -365,10 +373,11 @@ func _build_hud() -> void:
 		b.index = i
 		b.position = button_pos[i]
 		pad.add_child(b)
-	var potion := PotionButton.new()
-	potion.player = player
-	potion.position = Vector2(-370, -100)
-	pad.add_child(potion)
+	# Flask buttons, one per slot the belt opens, growing left from this corner
+	var flasks := FlaskBar.new()
+	flasks.player = player
+	flasks.position = Vector2(-292, -22)
+	pad.add_child(flasks)
 
 	var bars := HudBars.new()
 	bars.player = player

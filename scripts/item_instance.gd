@@ -57,6 +57,61 @@ func is_unique() -> bool:
 	return unique_id != ""
 
 
+func is_flask() -> bool:
+	return base != null and base.slot == "flask"
+
+
+# ---------- flasks ----------
+# A flask is drunk from a flask slot (Player.use_flask), never used up, on a cooldown. Its base
+# (ItemBase.flask) says what it does; its modifiers change that (prefixes) or add buffs that last
+# while it is in effect (suffixes). Worn flasks give no stats of their own.
+
+const FLASK_MIN_COOLDOWN := 0.4  # cooldown reduction stops at 60%
+
+
+## What drinking it does, modifiers included:
+##   kind, amount, duration, cooldown, instant (bool),
+##   buff {stat, mod, value} for a utility flask, during [{stat, mod, value}], warding (bool)
+func flask_effect() -> Dictionary:
+	var f: Dictionary = base.flask
+	var mods := {}
+	for a in affixes:
+		mods[String(a.stat)] = float(mods.get(String(a.stat), 0.0)) + float(a.value)
+	var kind := String(f.get("kind", "life"))
+	var amount := float(f.get("amount", 0.0)) * (1.0 + float(mods.get("flask_amount", 0.0)))
+	var instant := mods.has("flask_instant")
+	if instant:
+		amount *= 1.0 - float(mods.flask_instant)
+	var duration := float(f.get("duration", 3.0)) * (1.0 + float(mods.get("flask_duration", 0.0)))
+	var cooldown := float(f.get("cooldown", 8.0)) * maxf(1.0 - float(mods.get("flask_cooldown", 0.0)), FLASK_MIN_COOLDOWN)
+	var out := {"kind": kind, "amount": amount, "duration": duration, "cooldown": cooldown,
+		"instant": instant, "during": [], "warding": mods.has("flask_warding")}
+	if kind == "utility":
+		out.amount = float(f.get("amount", 0.0)) * (1.0 + float(mods.get("flask_effect", 0.0)))
+		out["buff"] = {"stat": String(f.get("stat", "")), "mod": int(f.get("mod", StatBlock.ModType.INCREASED)), "value": out.amount}
+	var I := StatBlock.ModType.INCREASED
+	for pair in [["flask_armor", "armor", StatBlock.ModType.FLAT], ["flask_move", "move_speed", I],
+			["flask_atk", "attack_speed", I], ["flask_dmg", "damage", I]]:
+		if mods.has(pair[0]):
+			out.during.append({"stat": pair[1], "mod": pair[2], "value": float(mods[pair[0]])})
+	return out
+
+
+## The flask's base effect as a line of text, e.g. "Recovers 30% of Life over 3.0s".
+func flask_text(power_name := "Power") -> String:
+	var e := flask_effect()
+	var over := "instantly" if e.instant else "over %.1fs" % e.duration
+	match String(e.kind):
+		"life":
+			return "Recovers %d%% of Life %s" % [int(round(float(e.amount) * 100.0)), over]
+		"power":
+			return "Recovers %d %s %s" % [int(round(float(e.amount))), power_name, over]
+	var t := String(base.flask.get("text", "{v}"))
+	var v: float = float(e.amount)
+	var shown := str(int(round(v * 100.0))) if int(base.flask.get("mod", 1)) != StatBlock.ModType.FLAT else str(int(round(v)))
+	return "%s for %.1fs" % [t.replace("{v}", shown), e.duration]
+
+
 # ---------- item level ----------
 # Higher item level = bigger numbers: the base's implicit grows with ilvl, affix ranges grow
 # with ilvl, and rolls lean towards the top of the range (see LootGenerator._roll_affix).
@@ -85,6 +140,8 @@ func implicit_value() -> float:
 
 
 func apply_to(stats: StatBlock) -> void:
+	if is_flask():
+		return  # a flask does its work when drunk (Player.use_flask), not by being worn
 	if base.implicit_stat != "":
 		stats.add_mod(base.implicit_stat, StatBlock.ModType.FLAT, implicit_value(), self)
 	for a in affixes:
@@ -177,6 +234,8 @@ static func from_dict(d: Dictionary) -> ItemInstance:
 
 ## Number of gem sockets a new item gets. Weapons and body armour can hold more.
 static func roll_sockets(slot: String, r: int) -> int:
+	if slot in ["belt", "flask"]:
+		return 0  # no gem sockets on belts and flasks
 	var cap := 3 if slot in ["weapon", "chest"] else (1 if slot in ["ring", "amulet"] else 2)  # shields: 2
 	var n := randi_range(0, 1)
 	if r == Rarity.MAGIC:

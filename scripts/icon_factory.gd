@@ -209,6 +209,12 @@ static func _inside(shape: String, id: String, p: Vector2) -> bool:
 			var pend := Vector2(p.x, p.y - 0.4).length() < 0.42
 			var core := Vector2(p.x, p.y - 0.4).length() < 0.16
 			return (chain or pend) and not core
+		"gear_belt":
+			# A strap with a square buckle
+			var strap := _rect(p, -0.95, 0.95, -0.22, 0.22)
+			var buckle := _rect(p, -0.34, 0.34, -0.42, 0.42)
+			var hole := _rect(p, -0.2, 0.2, -0.28, 0.28)
+			return (strap or buckle) and not hole
 		"rune_trans":
 			return absf(p.x) + absf(p.y) < 0.88
 		"rune_form":

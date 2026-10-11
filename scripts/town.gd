@@ -64,10 +64,11 @@ func _ready() -> void:
 	potion_pad.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	layer.add_child(potion_pad)
 	potion_pad.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT)
-	var potion := PotionButton.new()
-	potion.player = player
-	potion.position = Vector2(-110, -110)
-	potion_pad.add_child(potion)
+	# Flask buttons, one per slot the belt opens, growing left from this corner
+	var flasks := FlaskBar.new()
+	flasks.player = player
+	flasks.position = Vector2(-32, -32)
+	potion_pad.add_child(flasks)
 	var swap := WeaponSwapButton.new()
 	swap.player = player
 	swap.position = Vector2(-110, -170)
@@ -147,7 +148,7 @@ func _show_hub_intro() -> void:
 	v.add_child(UIKit.label("WELCOME TO ASHFALL OUTPOST", 24, UIKit.GOLD))
 	var t := UIKit.rich(
 		"This is your home base. Walk up to someone and tap [b]Talk[/b]:\n" +
-		"  • [color=#ffd54a]Merchant[/color] - buy skill gems, potions and orbs, and sell loot for orbs\n" +
+		"  • [color=#ffd54a]Merchant[/color] - buy skill gems, flasks and orbs, and sell loot for orbs\n" +
 		"  • [color=#ffd54a]Blacksmith[/color] - use orbs on items, salvage, and forge recipes and plans\n" +
 		"  • [color=#ffd54a]Stash Keeper[/color] - storage shared by all your characters\n" +
 		"  • [color=#ffd54a]Jeweler[/color] - combine and remove item gems\n" +

@@ -75,8 +75,6 @@ func open(panel: String = "details") -> void:
 ## Open a vendor ("stash", "shop", "smith", "jeweler") on the left. Only call this from that
 ## NPC's Talk action in town: vendors are never reachable from the inventory itself.
 func open_vendor(vendor: String) -> void:
-	if vendor == "jeweler":
-		_char.bag_tab = "gems"  # the gem pouch, ready to drag into sockets
 	_open_with(vendor, vendor)
 
 
@@ -84,6 +82,8 @@ func _open_with(panel: String, vendor: String) -> void:
 	if player.dead:
 		return
 	_vendor = vendor
+	# Gems are socketed and swapped only at the stash or the Jeweler (the shared gems show there)
+	GameState.gem_station = vendor in ["stash", "jeweler"]
 	selected = null
 	_stats_popup.visible = false
 	_feedback.visible = false
@@ -94,6 +94,7 @@ func _open_with(panel: String, vendor: String) -> void:
 
 
 func close() -> void:
+	GameState.gem_station = false
 	_root.visible = false
 	_stats_popup.visible = false
 	layer = 10
@@ -139,7 +140,7 @@ func select(item: ItemInstance) -> void:
 func refresh() -> void:
 	if _root == null or not _root.visible:
 		return
-	if selected != null and not player.inventory.has(selected) and not player.equipment.values().has(selected) \
+	if selected != null and not player.inventory.has(selected) and not player.is_worn(selected) \
 			and not GameState.stash.has(selected):
 		selected = null
 	_build_tabs()  # tab labels carry counts (runes, gems)

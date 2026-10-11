@@ -89,6 +89,56 @@ func _build_bases() -> void:
 	_base("bone_ring", "Bone Ring", "ring", Color(0.9, 0.9, 0.8))
 	_base("old_amulet", "Old Amulet", "amulet", Color(0.8, 0.7, 0.3))
 
+	# Belts: the better the base, the more flask slots it opens (and the rarer it drops)
+	_belt("rope_belt", "Rope Belt", 2, Color(0.62, 0.50, 0.32), "max_life", 10, 70)
+	_belt("leather_belt", "Leather Belt", 3, Color(0.50, 0.33, 0.20), "max_life", 20, 45)
+	_belt("heavy_belt", "Heavy Belt", 4, Color(0.45, 0.42, 0.40), "armor", 15, 25)
+	_belt("chain_belt", "Chain Belt", 5, Color(0.70, 0.72, 0.78), "armor", 10, 12)
+
+	# Flasks: drunk from a flask slot, never used up, on a cooldown. Life and Power flasks recover
+	# over their duration; Utility flasks give a buff for theirs.
+	var I := StatBlock.ModType.INCREASED
+	var life := Color(0.90, 0.15, 0.20)
+	var power := Color(1.0, 0.55, 0.10)
+	_flask("small_life_flask", "Small Life Flask", life, 35,
+		{"kind": "life", "amount": 0.30, "duration": 3.0, "cooldown": 8.0, "tier": 1})
+	_flask("medium_life_flask", "Medium Life Flask", life, 25,
+		{"kind": "life", "amount": 0.45, "duration": 3.0, "cooldown": 9.0, "tier": 2})
+	_flask("large_life_flask", "Large Life Flask", life, 15,
+		{"kind": "life", "amount": 0.60, "duration": 3.5, "cooldown": 10.0, "tier": 3})
+	_flask("small_power_flask", "Small Power Flask", power, 25,
+		{"kind": "power", "amount": 40.0, "duration": 3.0, "cooldown": 8.0, "tier": 1})
+	_flask("medium_power_flask", "Medium Power Flask", power, 18,
+		{"kind": "power", "amount": 70.0, "duration": 3.0, "cooldown": 9.0, "tier": 2})
+	_flask("large_power_flask", "Large Power Flask", power, 10,
+		{"kind": "power", "amount": 100.0, "duration": 3.5, "cooldown": 10.0, "tier": 3})
+	_flask("granite_flask", "Granite Flask", Color(0.62, 0.60, 0.58), 10,
+		{"kind": "utility", "stat": "armor", "mod": StatBlock.ModType.FLAT, "amount": 50.0,
+		"text": "+{v} Armour", "duration": 5.0, "cooldown": 15.0, "tier": 2})
+	_flask("quicksilver_flask", "Quicksilver Flask", Color(0.75, 0.85, 0.95), 10,
+		{"kind": "utility", "stat": "move_speed", "mod": I, "amount": 0.30,
+		"text": "{v}% Increased Movement Speed", "duration": 4.0, "cooldown": 15.0, "tier": 2})
+	_flask("silver_flask", "Silver Flask", Color(0.85, 0.85, 0.90), 8,
+		{"kind": "utility", "stat": "attack_speed", "mod": I, "amount": 0.20,
+		"text": "{v}% Increased Attack Speed", "duration": 5.0, "cooldown": 18.0, "tier": 2})
+	_flask("sulphur_flask", "Sulphur Flask", Color(0.95, 0.85, 0.30), 8,
+		{"kind": "utility", "stat": "damage", "mod": I, "amount": 0.25,
+		"text": "{v}% Increased Damage", "duration": 4.0, "cooldown": 18.0, "tier": 2})
+
+
+func _belt(id: String, name: String, slots: int, col: Color, imp_stat: String, imp_val: float, weight: int) -> void:
+	_base(id, name, "belt", col, imp_stat, imp_val)
+	bases[-1].flask_slots = slots
+	bases[-1].weight = weight
+
+
+func _flask(id: String, name: String, col: Color, weight: int, def: Dictionary) -> void:
+	_base(id, name, "flask", col)
+	var b := bases[-1]
+	b.flask = def
+	b.weight = weight
+	b.icon = IconFactory.potion_icon(id, col, int(def.get("tier", 1)))
+
 
 func _build_affixes() -> void:
 	var F := StatBlock.ModType.FLAT
@@ -103,6 +153,29 @@ func _build_affixes() -> void:
 	_affix("move_speed", "{v}% Increased Move Speed", "move_speed", I, 0.05, 0.15, true)
 	_affix("armor_flat", "+{v} Armor", "armor", F, 5, 30)
 	_affix("crit", "+{v}% Critical Chance", "crit_chance", F, 0.02, 0.08, true)
+
+	# Flask modifiers. Prefixes change the flask; suffixes work while it is in effect.
+	_flask_affix("fl_ample", "Ample", true, "{v}% Increased Amount Recovered", "flask_amount", 0.15, 0.35, true, ["life", "power"])
+	_flask_affix("fl_seething", "Seething", true, "Recovers Instantly, {v}% Less Amount Recovered", "flask_instant", 0.25, 0.25, true, ["life", "power"])
+	_flask_affix("fl_chemist", "Chemist's", true, "{v}% Reduced Cooldown", "flask_cooldown", 0.10, 0.25, true)
+	_flask_affix("fl_enduring", "Enduring", true, "{v}% Increased Duration", "flask_duration", 0.20, 0.45, true)
+	_flask_affix("fl_potent", "Potent", true, "{v}% Increased Effect", "flask_effect", 0.15, 0.35, true, ["utility"])
+	_flask_affix("fl_iron_skin", "of Iron Skin", false, "+{v} Armour during Effect", "flask_armor", 15, 45, false)
+	_flask_affix("fl_haste", "of Haste", false, "{v}% Increased Movement Speed during Effect", "flask_move", 0.06, 0.15, true)
+	_flask_affix("fl_fury", "of Fury", false, "{v}% Increased Attack Speed during Effect", "flask_atk", 0.05, 0.12, true)
+	_flask_affix("fl_berserker", "of the Berserker", false, "{v}% Increased Damage during Effect", "flask_dmg", 0.06, 0.15, true)
+	_flask_affix("fl_warding", "of Warding", false, "Removes and Prevents Slows during Effect", "flask_warding", 1, 1, false)
+
+
+## A flask modifier: `kinds` limits it to life / power / utility flasks (empty = any).
+func _flask_affix(id: String, word: String, prefix: bool, text: String, stat: String, lo: float, hi: float,
+		pct: bool, kinds: Array[String] = []) -> void:
+	_affix(id, text, stat, StatBlock.ModType.INCREASED, lo, hi, pct)
+	var a := affixes[-1]
+	a.slots = ["flask"]
+	a.flask_kinds = kinds
+	a.prefix = prefix
+	a.word = word
 
 
 # ---------- rolling ----------
@@ -120,7 +193,7 @@ func roll_item(ilvl: int = 1, forced_rarity: int = -1, slot: String = "") -> Ite
 		var usable := pool.filter(func(b): return b.weapon_type == "" or smart_class.weapon_types.has(b.weapon_type))
 		if not usable.is_empty():
 			pool = usable
-	item.base = pool.pick_random()
+	item.base = _pick_base(pool)
 	item.ilvl = ilvl
 	item.implicit_roll = ItemInstance.roll_implicit()
 	item.rarity = forced_rarity if forced_rarity >= 0 else _roll_rarity()
@@ -130,7 +203,7 @@ func roll_item(ilvl: int = 1, forced_rarity: int = -1, slot: String = "") -> Ite
 		ItemInstance.Rarity.MAGIC:
 			count = randi_range(1, 2)
 		ItemInstance.Rarity.RARE:
-			count = randi_range(3, 5)
+			count = randi_range(3, 4) if item.is_flask() else randi_range(3, 5)
 
 	roll_affixes(item, count)
 	item.display_name = _make_name(item)
@@ -155,9 +228,13 @@ func find_affix(id: String) -> AffixDef:
 
 
 ## Adds one random affix the item doesn't already have. Returns false if none are available.
+## Each kind of item draws from its own modifiers (AffixDef.fits); a flask also has room for one
+## prefix and one suffix when Magic, two of each when Rare.
 func add_random_affix(item: ItemInstance) -> bool:
 	var taken := item.affix_ids()
-	var candidates: Array = affixes.filter(func(a): return a.min_ilvl <= item.ilvl and not taken.has(a.id))
+	var room := flask_affix_room(item)
+	var candidates: Array = affixes.filter(func(a): return a.min_ilvl <= item.ilvl and not taken.has(a.id) \
+		and a.fits(item.base) and (not item.is_flask() or int(room["prefix" if a.prefix else "suffix"]) > 0))
 	var picked: AffixDef = _pick_weighted(candidates)
 	if picked == null:
 		return false
@@ -169,6 +246,17 @@ func roll_affixes(item: ItemInstance, count: int) -> void:
 	for i in count:
 		if not add_random_affix(item):
 			break
+
+
+## How many more prefixes and suffixes a flask can take: {"prefix": n, "suffix": n}.
+func flask_affix_room(item: ItemInstance) -> Dictionary:
+	var cap := 2 if item.rarity >= ItemInstance.Rarity.RARE else (1 if item.rarity == ItemInstance.Rarity.MAGIC else 0)
+	var room := {"prefix": cap, "suffix": cap}
+	for e in item.affixes:
+		var def := find_affix(String(e.id))
+		if def != null:
+			room["prefix" if def.prefix else "suffix"] -= 1
+	return room
 
 
 ## Re-rolls each existing affix's value inside its range, keeping which affixes it has.
@@ -211,6 +299,8 @@ func _pick_weighted(pool: Array) -> AffixDef:
 
 ## Affix value: the range grows with item level and the roll leans to the high end.
 func _roll_affix(a: AffixDef, item_level := 1) -> Dictionary:
+	if a.min_value == a.max_value and a.slots.has("flask"):
+		return make_entry(a, a.min_value)  # a fixed flask property (Seething, Warding)
 	var scale := ItemInstance.ilvl_scale(item_level, a.is_percent)
 	var v := lerpf(a.min_value, a.max_value, ItemInstance.ilvl_roll(item_level)) * scale
 	v = snappedf(v, 0.01) if a.is_percent else roundf(v)
@@ -228,7 +318,31 @@ func make_entry(a: AffixDef, v: float) -> Dictionary:
 	}
 
 
+## A base at random, the commoner ones more often (ItemBase.weight).
+func _pick_base(pool: Array) -> ItemBase:
+	var total := 0
+	for b in pool:
+		total += maxi(int(b.weight), 1)
+	var r := randi_range(1, total)
+	for b in pool:
+		r -= maxi(int(b.weight), 1)
+		if r <= 0:
+			return b
+	return pool.back()
+
+
 func _make_name(item: ItemInstance) -> String:
+	if item.is_flask() and item.rarity == ItemInstance.Rarity.MAGIC:
+		# Path of Exile style: "Ample Small Life Flask of Haste"
+		var pre := ""
+		var suf := ""
+		for e in item.affixes:
+			var def := find_affix(String(e.id))
+			if def != null and def.prefix:
+				pre = def.word + " "
+			elif def != null:
+				suf = " " + def.word
+		return pre + item.base.display_name + suf
 	if item.rarity == ItemInstance.Rarity.RARE:
 		return "%s %s %s" % [NAME_PREFIXES.pick_random(), item.base.display_name, NAME_SUFFIXES.pick_random()]
 	return item.base.display_name

@@ -2,17 +2,20 @@ class_name SkillGemsPanel
 extends MenuPanel
 ## Skill gems, Path of Exile style. Six skill slots (one HUD button each; slot 1 is the main
 ## attack): each holds a skill gem plus support gems in its links. Links open as you level
-## (GameState.links_unlocked). Loose gems live in the inventory's Skill Gems and Supports tabs
-## (CharacterPanel, built with pouch_skill_cell / pouch_support_cell). Everything is drag and drop:
-##   skill gem tab -> slot (socket it; a gem already there goes back to the tab)
-##   slot -> slot (swap the two slots), slot / link -> its inventory tab (take it out)
-##   supports tab -> link (link it; replaces what is there), link -> link (move / swap)
+## (GameState.links_unlocked). Loose gems are the account's, kept in the shared stash: gems can only
+## be socketed or swapped at the stash (GameState.gem_station), where the shared skill and support
+## gems show below the slots. Elsewhere the slots are view-only. At the stash, drag and drop:
+##   shared gems -> slot (socket it; a gem already there goes back to the shared gems)
+##   slot -> slot (swap the two slots), slot / link -> the shared gems (take it out)
+##   shared supports -> link (link it; replaces what is there), link -> link (move / swap)
 ## Skill and support gems level up while socketed. Tap any gem to see its details beside the slots.
 
 const CELL := Vector2(56, 56)
 const SLOT_CELL := Vector2(60, 60)
 
 var _sel := {}  # {"type": "skill" | "support", "id": String, "slot": int}
+## Shown inside another panel (the stash's Gems tab): tapping a gem doesn't switch panels.
+var embedded := false
 
 
 func panel_title() -> String:
@@ -34,8 +37,13 @@ func refresh() -> void:
 	sec.get_parent().size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	for i in GameState.SKILL_SLOTS:
 		sec.add_child(_slot_row(i, links))
-	sec.add_child(UIKit.label("Drag gems in from the Skill Gems and Supports tabs of your inventory.", 12, UIKit.TEXT_DIM, true))
+	if GameState.gem_station:
+		sec.add_child(UIKit.label("Drag gems between your slots and the shared gems below.", 12, UIKit.TEXT_DIM, true))
+	else:
+		sec.add_child(UIKit.label("🔒 Change skill and support gems at the stash in town.", 13, UIKit.TEXT_DIM, true))
 	_add_details(top)
+	if GameState.gem_station:
+		_add_pools()
 
 
 # ---------- slots ----------
@@ -80,7 +88,9 @@ func _skill_cell(skill_id: String, slot: int, sz: Vector2) -> DragSlot:
 		_overlay(cell, "%d" % GameState.gem_level(skill_id), 11, Color(1.0, 0.9, 0.5), VERTICAL_ALIGNMENT_TOP, HORIZONTAL_ALIGNMENT_LEFT)
 		cell.payload = {"kind": "skillgem", "from": "pouch" if slot < 0 else "slot", "slot": slot, "skill": skill_id}
 		cell.clicked.connect(_select.bind({"type": "skill", "id": skill_id, "slot": slot}))
-	if slot >= 0:
+	if slot >= 0 and not GameState.gem_station:
+		cell.payload = {}  # view-only away from the stash
+	elif slot >= 0:
 		cell.can_accept = func(d: Dictionary) -> bool:
 			return d.get("kind", "") == "skillgem" and not (d.get("from", "") == "slot" and int(d.get("slot", -1)) == slot)
 		cell.on_drop = func(d: Dictionary) -> void:
@@ -111,7 +121,9 @@ func _support_cell(rune_id: String, slot: int, idx: int, sz: Vector2) -> DragSlo
 		_overlay(cell, "%d" % GameState.support_level(rune_id), 11, Color(1.0, 0.9, 0.5), VERTICAL_ALIGNMENT_TOP, HORIZONTAL_ALIGNMENT_LEFT)
 		cell.payload = {"kind": "rune", "from": "pouch" if slot < 0 else "link", "slot": slot, "idx": idx, "rune_id": rune_id}
 		cell.clicked.connect(_select.bind({"type": "support", "id": rune_id, "slot": slot}))
-	if slot >= 0:
+	if slot >= 0 and not GameState.gem_station:
+		cell.payload = {}  # view-only away from the stash
+	elif slot >= 0:
 		cell.can_accept = func(d: Dictionary) -> bool:
 			return d.get("kind", "") == "rune" and not (d.get("from", "") == "link" and int(d.slot) == slot and int(d.idx) == idx)
 		cell.on_drop = func(d: Dictionary) -> void:
@@ -131,14 +143,31 @@ func _support_cell(rune_id: String, slot: int, idx: int, sz: Vector2) -> DragSlo
 ## Shows a gem's details here, switching the menu's left side to this panel if needed.
 func _select(sel: Dictionary) -> void:
 	_sel = sel
-	if menu.current_panel() != self:
+	if not embedded and menu.current_panel() != self:
 		menu.show_panel("skills")
 	else:
 		menu.refresh()
 
 
-## Inventory tab cells (CharacterPanel): a loose skill gem, a loose support, or an empty cell
-## (skill_id / rune_id ""). Each takes gems back out of slots and links.
+## The shared skill and support gems, below the slots while at the stash. Dropping a slotted gem
+## or linked support on them takes it back out.
+func _add_pools() -> void:
+	for pool in [["SHARED SKILL GEMS", owned_skill_gems(), true], ["SHARED SUPPORT GEMS", owned_supports(), false]]:
+		var sec := UIKit.section(self, pool[0])
+		var grid := UIKit.grid(POOL_COLS)
+		sec.add_child(grid)
+		var ids: Array[String] = pool[1]
+		var total := maxi(POOL_COLS, int(ceil(float(ids.size() + 1) / POOL_COLS)) * POOL_COLS)
+		for i in total:
+			var id: String = ids[i] if i < ids.size() else ""
+			grid.add_child(pouch_skill_cell(id, CELL) if pool[2] else pouch_support_cell(id, CELL))
+
+
+const POOL_COLS := 8
+
+
+## Pool cells: a loose skill gem, a loose support, or an empty cell (skill_id / rune_id "").
+## Each takes gems back out of slots and links.
 func pouch_skill_cell(skill_id: String, sz: Vector2) -> DragSlot:
 	if skill_id == "":
 		return _empty_pouch_cell(sz)
