@@ -1,0 +1,24 @@
+{
+	"maps": {
+		"bone_labyrinth": {
+			"kind": "rift",
+			"name": "Bone Labyrinth"
+		},
+		"scorched_halls": {
+			"kind": "rift",
+			"name": "Scorched Halls"
+		},
+		"sunken_courtyards": {
+			"kind": "rift",
+			"name": "Sunken Courtyards"
+		},
+		"tutorial": {
+			"kind": "special",
+			"name": "Tutorial"
+		},
+		"twin_oasis": {
+			"kind": "rift",
+			"name": "Twin Oasis"
+		}
+	}
+}

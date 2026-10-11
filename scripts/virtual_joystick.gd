@@ -33,15 +33,18 @@ func _input(event: InputEvent) -> void:
 			_center = event.position
 			_knob = event.position
 			queue_redraw()
+			get_viewport().set_input_as_handled()
 		elif not event.pressed and event.index == _touch_index:
 			_touch_index = -1
 			output = Vector2.ZERO
 			queue_redraw()
+			get_viewport().set_input_as_handled()
 	elif event is InputEventScreenDrag and event.index == _touch_index:
 		var d: Vector2 = (event.position - _center).limit_length(radius)
 		_knob = _center + d
 		output = d / radius
 		queue_redraw()
+		get_viewport().set_input_as_handled()
 
 
 func _draw() -> void:

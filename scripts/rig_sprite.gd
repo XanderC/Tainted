@@ -7,6 +7,12 @@ extends Node2D
 ##   weapon -> swaps the image of the rig's Sword object, which is bolted to the hand
 ##   helmet -> overlay that follows the Head
 ##   chest  -> overlays that follow the Body and both arms
+##   offhand -> set_offhand(): an off-hand weapon or a shield
+## Note: in this rig the Sword is gripped by the object named "Left Hand" (the hand on the right of
+## the screen when facing right); "Right Hand" is the other one (screen left).
+## Player rigs (weapon_from_gear) hold the MAIN weapon in the rig's own Sword (screen-right hand)
+## and the OFF-HAND weapon in the screen-left hand ("Right Hand", same grip as the Sword, copied
+## over); a shield is strapped to the screen-left hand.
 ## Gear art lives at  res://assets/gear/<slot>/<gear id>/<Object name>.png
 
 signal one_shot_finished(anim_name: String)
@@ -44,6 +50,18 @@ var _weapon_equipped := false
 var _weapon_tex: Texture2D = null
 var _gear := {}
 var _overlays: Array = []  # {sprite, obj, slot, z2}
+var _second_sprite: Sprite2D = null  # player rigs: off-hand weapon in the screen-left hand
+var _shield_sprite: Sprite2D = null
+var _off_id := ""
+var _off_shield := false
+var _off_tex: Texture2D = null  # off-hand art; null = the rig's own sword image
+var _lhand_i := -1
+var _rhand_i := -1
+
+## Shield size on the rig, in rig pixels (the body art is ~320 px).
+const SHIELD_HEIGHT := 200.0
+## Where the shield's centre sits relative to its hand's centre (rig pixels, facing right).
+const SHIELD_OFFSET := Vector2(0, 0)
 
 var _time := 0.0
 var _speed := 1.0
@@ -71,6 +89,8 @@ func _ready() -> void:
 		return
 	_n = rig.objects.size()
 	_sword_i = rig.objects.find("Sword")
+	_lhand_i = rig.objects.find("Left Hand")
+	_rhand_i = rig.objects.find("Right Hand")
 	_slash_i = rig.objects.find("SlashFX")
 	var first_anim: Dictionary = rig.animations.values()[0]
 	for i in _n:
@@ -221,6 +241,37 @@ func set_gear(slot: String, gear_id: String) -> void:
 		_apply_frame()
 
 
+## Off-hand item: a one-handed weapon (dual wield) or a shield. gear_id "" clears it.
+func set_offhand(gear_id_: String, is_shield: bool) -> void:
+	if rig == null or (gear_id_ == _off_id and is_shield == _off_shield):
+		return
+	_off_id = gear_id_
+	_off_shield = is_shield
+	_off_tex = null
+	if _shield_sprite != null:
+		remove_child(_shield_sprite)
+		_shield_sprite.queue_free()
+		_shield_sprite = null
+	if gear_id_ != "":
+		if is_shield:
+			_off_tex = _gear_texture("offhand", gear_id_, "Shield")
+			if _off_tex == null:
+				var b := LootGenerator.base_by_id(gear_id_)
+				_off_tex = b.icon if b != null else null
+			_shield_sprite = Sprite2D.new()
+			_shield_sprite.centered = false
+			add_child(_shield_sprite)
+		else:
+			_off_tex = _gear_texture("weapon", gear_id_, "Sword")
+			if _second_sprite == null and _rhand_i >= 0:
+				_second_sprite = Sprite2D.new()
+				_second_sprite.centered = false
+				add_child(_second_sprite)
+	_reorder()
+	if current_anim != "":
+		_apply_frame()
+
+
 func gear_id(slot: String) -> String:
 	return _gear.get(slot, "")
 
@@ -247,6 +298,14 @@ func _reorder() -> void:
 		entries.append([_z[i] * 2.0, _sprites[i]])
 	for ov in _overlays:
 		entries.append([ov["z2"], ov["sprite"]])
+	if _second_sprite != null:
+		entries.append([_z[_rhand_i] * 2.0 - 1.0, _second_sprite])  # just behind the hand holding it
+	if _shield_sprite != null:
+		# Carried in front of everything (the chibi head and front arm would hide it otherwise)
+		var top := 0.0
+		for e in entries:
+			top = maxf(top, e[0])
+		entries.append([top + 1.0, _shield_sprite])
 	entries.sort_custom(func(a, b): return a[0] < b[0])
 	for k in entries.size():
 		move_child(entries[k][1], k)
@@ -298,6 +357,11 @@ func _apply_frame() -> void:
 		s.scale = Vector2(data[o + 4], data[o + 5])
 		s.modulate.a = alpha
 
+	if _second_sprite != null:
+		_place_second_weapon(data, base)
+	if _shield_sprite != null:
+		_place_shield(data, base)
+
 	for ov in _overlays:
 		var o2: int = base + int(ov["obj"]) * STRIDE
 		var s2: Sprite2D = ov["sprite"]
@@ -311,3 +375,40 @@ func _apply_frame() -> void:
 		s2.rotation = data[o2 + 3]
 		s2.scale = Vector2(data[o2 + 4], data[o2 + 5])
 		s2.modulate.a = data[o2 + 6]
+
+
+func _xf(data: PackedFloat32Array, o: int) -> Transform2D:
+	return Transform2D(data[o + 3], Vector2(data[o + 4], data[o + 5]), 0.0, Vector2(data[o + 1], data[o + 2]))
+
+
+## Off-hand weapon in the screen-left hand ("Right Hand"): same grip the Sword has in "Left Hand".
+func _place_second_weapon(data: PackedFloat32Array, base: int) -> void:
+	var lo := base + _lhand_i * STRIDE
+	var so := base + _sword_i * STRIDE
+	var ro := base + _rhand_i * STRIDE
+	if _off_id == "" or _off_shield or _sword_i < 0 or _rhand_i < 0 or int(data[ro]) < 0 or data[ro + 6] <= 0.001 \
+			or int(data[so]) < 0 or int(data[lo]) < 0:
+		_second_sprite.visible = false
+		return
+	var tex: Texture2D = _off_tex if _off_tex != null else rig.textures[int(data[so])]
+	var sz := tex.get_size()
+	_second_sprite.texture = tex
+	_second_sprite.offset = Vector2(-sz.x * data[so + 8], -sz.y * (1.0 - data[so + 9]))
+	_second_sprite.transform = _xf(data, ro) * _xf(data, lo).affine_inverse() * _xf(data, so)
+	_second_sprite.visible = true
+
+
+## Shield strapped to the screen-left hand ("Right Hand", the off hand), upright.
+func _place_shield(data: PackedFloat32Array, base: int) -> void:
+	var ro := base + _rhand_i * STRIDE
+	if _off_tex == null or _rhand_i < 0 or int(data[ro]) < 0 or data[ro + 6] <= 0.001:
+		_shield_sprite.visible = false
+		return
+	var sz := _off_tex.get_size()
+	var hand_tex: Texture2D = rig.textures[int(data[ro])]
+	_shield_sprite.texture = _off_tex
+	_shield_sprite.offset = -sz * 0.5
+	_shield_sprite.rotation = 0.0
+	_shield_sprite.scale = Vector2.ONE * (SHIELD_HEIGHT / sz.y)
+	_shield_sprite.position = _xf(data, ro) * (hand_tex.get_size() * 0.5) + SHIELD_OFFSET
+	_shield_sprite.visible = true

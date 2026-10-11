@@ -1,28 +1,41 @@
 extends Node2D
-## Prototype arena: enemies spawn around you, drop loot, loot auto-equips.
-## Move: left-thumb joystick (or arrow keys / WASD-mapped ui_* on desktop).
-## Attack: automatic against the nearest enemy in range.
+## A rift run: hand-made mazes (MazeLibrary) full of monster packs. Fight your way through, step
+## into the portal for another random maze, and once enough monsters are dead (DungeonRun) the boss
+## appears. Move: left-thumb joystick (or arrow keys on desktop).
 
-const MAX_ENEMIES := 14
+const PACKS_PER_MAZE := 6        # how many of a maze's "m" spots get a monster pack
+const PACK_SIZE := Vector2i(3, 5)
+const PACK_AGGRO := 520.0        # packs wake when you come this close (or when one is hit)
+const PORTAL_REACH := 70.0
 
 var player: Player
 var hud: Label
 var drop_label: Label
 var death_label: Label
 var kills := 0
-var inventory_ui: InventoryUI
+const UpgradePopupUIScript = preload("res://scripts/upgrade_popup_ui.gd")
+
+var menu: GameMenu
+var skill_tree_ui: SkillTreeUI
+var upgrade_popup_ui: CanvasLayer
 var run: DungeonRun
-var _spawn_timer := 0.0
+var maze: MazeMap
+var portal: RiftPortal
+var mazes_visited := 0
+var _cam: Camera2D
+var _arrow: PortalArrow
+var _fade: ColorRect
+var _travelling := false
 var _bag_msg_cd := 0.0
 
 
 func _ready() -> void:
-	add_child(DesertMap.new())
 	y_sort_enabled = true  # characters and loot overlap correctly: lower on screen draws in front
 	player = Player.new()
-	player.class_def = ClassLibrary.warrior()
+	player.class_def = ClassLibrary.get_class_def(GameState.char_class)
 	add_child(player)
-	player.add_child(Camera2D.new())
+	_cam = Camera2D.new()
+	player.add_child(_cam)
 
 	var layer := CanvasLayer.new()
 	add_child(layer)
@@ -32,25 +45,44 @@ func _ready() -> void:
 	joy.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	player.joystick = joy
 
-	# Right-thumb skill buttons, arranged in an arc from the bottom-right corner.
+	# Right-thumb action buttons: large central Main Attack button (0) with skills 1-3 orbiting it
 	var pad := Control.new()
 	pad.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	layer.add_child(pad)
 	pad.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT)
-	var button_pos := {1: Vector2(-260, -130), 2: Vector2(-190, -260), 3: Vector2(-120, -130)}
+	var button_pos := {
+		0: Vector2(-155, -155),  # Primary Main Attack (135px)
+		1: Vector2(-280, -115),  # Skill 1 (96px)
+		2: Vector2(-245, -245),  # Skill 2 (96px)
+		3: Vector2(-115, -280),  # Skill 3 (96px)
+		4: Vector2(-385, -268),  # Skill 4
+		5: Vector2(-250, -372),  # Skill 5
+	}
 	for i in button_pos:
 		var b := SkillButton.new()
 		b.player = player
 		b.index = i
 		b.position = button_pos[i]
 		pad.add_child(b)
+	var potion := PotionButton.new()
+	potion.player = player
+	potion.position = Vector2(-370, -100)
+	pad.add_child(potion)
+	var swap := WeaponSwapButton.new()
+	swap.player = player
+	swap.position = Vector2(-370, -160)
+	pad.add_child(swap)
+
+	var bars := HudBars.new()
+	bars.player = player
+	layer.add_child(bars)
 
 	hud = Label.new()
-	hud.position = Vector2(16, 12)
+	hud.position = Vector2(16, 80)
 	layer.add_child(hud)
 
 	drop_label = Label.new()
-	drop_label.position = Vector2(16, 120)
+	drop_label.position = Vector2(16, 190)
 	layer.add_child(drop_label)
 
 	death_label = Label.new()
@@ -64,30 +96,61 @@ func _ready() -> void:
 	player.died.connect(func(): death_label.visible = true)
 	player.item_dropped.connect(_on_item_dropped)
 
+	_arrow = PortalArrow.new()
+	_arrow.player = player
+	layer.add_child(_arrow)
+	_fade = ColorRect.new()
+	_fade.color = Color(0.05, 0.0, 0.08, 0.0)
+	_fade.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	layer.add_child(_fade)
+	_fade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+
 	run = DungeonRun.new()
 	run.player = player
 	run.main = self
 	add_child(run)
+	run.boss_summoned.connect(func(_pos):
+		if portal != null:
+			portal.active = false
+	)
+	_load_maze()
 
-	inventory_ui = InventoryUI.new()
-	inventory_ui.player = player
-	add_child(inventory_ui)
+	menu = GameMenu.new()
+	menu.player = player
+	add_child(menu)
+
+	skill_tree_ui = SkillTreeUI.new()
+	skill_tree_ui.player = player
+	add_child(skill_tree_ui)
+
+	upgrade_popup_ui = UpgradePopupUIScript.new()
+	upgrade_popup_ui.player = player
+	add_child(upgrade_popup_ui)
 
 
 
 func _process(delta: float) -> void:
-	if not player.dead and run.spawning_allowed():
-		_spawn_timer -= delta
-		if _spawn_timer <= 0.0 and get_tree().get_nodes_in_group("enemies").size() < MAX_ENEMIES:
-			_spawn_enemy()
-			_spawn_timer = 1.2
+	if portal != null and portal.active and not _travelling and not player.dead \
+			and player.global_position.distance_to(portal.global_position) < PORTAL_REACH:
+		_travel()
 
 	_bag_msg_cd -= delta
 	for p in get_tree().get_nodes_in_group("pickups"):
-		if p.delay > 0.0:
+		if p.delay > 0.0 or p.has_meta("upgrade_dismissed"):
 			continue
 		if p.global_position.distance_to(player.global_position) < 48.0:
-			if player.pick_up(p.item):
+			if player.is_better_in_slot(p.item):
+				# Collect into bag immediately so movement/combat flows uninterrupted,
+				# and display the compact quick-equip popup.
+				if player.pick_up(p.item):
+					p.queue_free()
+					upgrade_popup_ui.prompt_upgrade(p.item, null)
+				else:
+					# Bag is completely full: prompt quick-equip from ground
+					p.set_meta("upgrade_dismissed", true)
+					upgrade_popup_ui.prompt_upgrade(p.item, p)
+				break
+			elif player.pick_up(p.item):
 				p.queue_free()
 			elif _bag_msg_cd <= 0.0:
 				drop_label.text = "Bag full!"
@@ -114,39 +177,89 @@ func return_to_town() -> void:
 	get_tree().change_scene_to_file("res://scenes/town.tscn")
 
 
-func _spawn_enemy() -> void:
+# ---------- mazes ----------
+
+## Replace the current maze with a random different one and fill it with monster packs.
+func _load_maze() -> void:
+	var prev := ""
+	if maze != null:
+		prev = maze.map_id
+		maze.queue_free()
+		portal.queue_free()
+		for e in get_tree().get_nodes_in_group("enemies"):
+			if not e.is_boss:
+				e.queue_free()
+	maze = MazeMap.new()
+	# The map editor's "Test in Game" plays one map over and over (GameState.test_map)
+	maze.setup(GameState.test_map if GameState.test_map != "" else MazeLibrary.random_name(prev))
+	add_child(maze)
+	mazes_visited += 1
+
+	portal = RiftPortal.new()
+	portal.position = maze.portal_pos
+	portal.active = run.state == DungeonRun.State.FIGHTING
+	add_child(portal)
+	_arrow.target = portal
+
+	player.global_position = maze.start_pos
+	_cam.limit_left = 0
+	_cam.limit_top = 0
+	_cam.limit_right = int(maze.cols * MazeMap.CELL)
+	_cam.limit_bottom = int(maze.rows * MazeMap.CELL)
+	_cam.reset_smoothing()
+
+	# Monster packs on some of the maze's "m" spots (never right next to the start)
+	var spots := maze.packs.filter(func(o): return Vector2(o.x, o.y).distance_to(maze.start_pos) > 450.0)
+	spots.shuffle()
+	for i in mini(PACKS_PER_MAZE, spots.size()):
+		var o: Dictionary = spots[i]
+		var n := randi_range(int(o.get("min", PACK_SIZE.x)), int(o.get("max", PACK_SIZE.y))) + int(run.level / 5.0)
+		var at := Vector2(float(o.x), float(o.y))
+		var pack := "pack_%d_%d" % [mazes_visited, i]
+		# Some packs are led by an Elite or a Legendary (MonsterAffix)
+		var lead_tier := MonsterAffix.roll_tier(run.level)
+		if lead_tier == MonsterAffix.Tier.LEGENDARY:
+			n += 1
+		for j in n:
+			_spawn_enemy(at + Vector2(randf_range(-50, 50), randf_range(-50, 50)), pack,
+				lead_tier if j == 0 else MonsterAffix.Tier.NORMAL)
+	run.announce("%s  —  maze %d" % [maze.map_name, mazes_visited], Color(0.85, 0.7, 1.0))
+
+
+## Step through the portal: fade out, new maze, fade in.
+func _travel() -> void:
+	_travelling = true
+	var t := create_tween()
+	t.tween_property(_fade, "color:a", 1.0, 0.35)
+	t.tween_callback(_load_maze)
+	t.tween_property(_fade, "color:a", 0.0, 0.45)
+	t.tween_callback(func(): _travelling = false)
+
+
+func _spawn_enemy(pos: Vector2, pack: String, tier := 0) -> Enemy:
 	var e := Enemy.new()
-	e.position = player.global_position + Vector2.from_angle(randf() * TAU) * randf_range(500.0, 700.0)
+	e.position = pos
 	e.target = player
-	e.max_hp = 25.0 + kills * 1.5
-	e.died.connect(_on_enemy_died)
+	e.maze = maze
+	e.aggro_range = PACK_AGGRO
+	e.pack = pack
+	var lvl := run.level
+	e.max_hp = (25.0 + kills * 1.5) * DungeonRun.hp_mult(lvl)
+	e.touch_damage *= DungeonRun.damage_mult(lvl)
+	e.speed *= DungeonRun.speed_mult(lvl)
+	if tier != MonsterAffix.Tier.NORMAL:
+		e.make_elite(tier, MonsterAffix.roll_affixes(tier, lvl))
+	e.died.connect(_on_enemy_died.bind(e.kill_weight()))
+	e.minion_spawned.connect(func(m: Enemy): m.died.connect(_on_enemy_died.bind(1)))
 	add_child(e)
+	e.add_to_group(pack)
+	return e
 
 
-func _on_enemy_died(pos: Vector2) -> void:
+## Normal monsters drop nothing (they still give XP); the boss drops all the loot (DungeonRun).
+func _on_enemy_died(_pos: Vector2, weight := 1) -> void:
 	kills += 1
-	run.on_enemy_killed()
-	if run.state == DungeonRun.State.FIGHTING:
-		_drop_currency(pos)
-	if run.state == DungeonRun.State.FIGHTING and randf() < 0.45:
-		var pk := LootPickup.new()
-		pk.item = LootGenerator.roll_item(1 + int(kills / 8.0))
-		pk.position = pos
-		add_child(pk)
-
-
-func _drop_currency(pos: Vector2) -> void:
-	var d := CraftingDB.monster_drops(1 + int(kills / 8.0))
-	if d.gold > 0:
-		spawn_currency("gold", "", d.gold, pos)
-	for k in d.materials:
-		spawn_currency("material", k, d.materials[k], pos)
-	for k in d.orbs:
-		spawn_currency("orb", k, d.orbs[k], pos)
-	if randf() < 0.02:
-		var r := GameState.random_unknown_recipe(["drop", "vendor"].pick_random())
-		if r != "":
-			spawn_currency("recipe", r, 1, pos)
+	run.on_enemy_killed(weight)
 
 
 func spawn_currency(kind: String, id: String, amount: int, pos: Vector2) -> void:
@@ -173,9 +286,9 @@ func _on_item_picked(item: ItemInstance) -> void:
 
 func _update_hud() -> void:
 	var s := player.stats
-	hud.text = "%s   HP %d / %d\nDMG %.1f   Atk/s %.2f   Crit %d%%\nArmor %d   Move %d\nGear: %d slots filled   Bag: %d/%d   Gold %d" % [
-		player.class_def.display_name, int(player.hp), int(s.get_stat("max_life")),
+	hud.text = "%s\nDMG %.1f   Atk/s %.2f   Crit %d%%\nArmor %d   Move %d\nGear: %d slots filled   Bag: %d/%d   Chaos %d" % [
+		player.class_def.display_name,
 		s.get_stat("damage"), s.get_stat("attack_speed"), int(round(s.get_stat("crit_chance") * 100.0)),
 		int(s.get_stat("armor")), int(s.get_stat("move_speed")),
-		player.equipment.size(), player.inventory.size(), Player.BAG_SIZE, GameState.gold,
+		player.equipment.size(), player.bag_item_count(), Player.BAG_SIZE, GameState.orb_count("chaos"),
 	]

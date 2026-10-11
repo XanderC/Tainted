@@ -10,6 +10,7 @@ var keepouts: Array[Vector3] = []  # x, y, radius: no random props inside these
 
 
 func _ready() -> void:
+	y_sort_enabled = true
 	texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 	_rng.seed = 424242
 	_add_ground()

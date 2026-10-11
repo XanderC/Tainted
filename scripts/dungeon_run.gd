@@ -1,7 +1,10 @@
 class_name DungeonRun
 extends Node
-## One dungeon instance: kill KILL_TARGET monsters to summon the boss, kill the boss to
-## finish. Finish under TIME_LIMIT for better rewards. All tuning numbers are here.
+## One rift run at GameState.rift_level: kill KILL_TARGET monsters to summon the boss, kill the
+## boss to finish. Only the boss drops loot: its own rewards plus everything the horde you killed
+## would have dropped (see horde_loot). Higher levels make monsters tougher and rewards richer. Finishing under
+## TIME_LIMIT gives bonus loot and, at your highest level, unlocks the next rift level.
+## All tuning numbers are here.
 
 signal boss_summoned(pos: Vector2)
 signal finished(on_time: bool)
@@ -23,7 +26,25 @@ const FAST_RARE_GUARANTEED := 1
 const FAST_EXTRA_ITEMS := 2
 const FAST_RARE_CHANCE := 0.5
 const FAST_ILVL_BONUS := 3
+const BOSS_LEGENDARY_CHANCE := 0.12  # +3% per rift level above 1, +10% for a fast clear
+const BOSS_SET_CHANCE := 0.08        # +2% per rift level above 1, +8% for a fast clear
+const PLAN_CHANCE := 0.25            # Legendary / Set plan: +3% per rift level above 1, +10% fast
 
+# The horde's share of the boss loot, rolled once per monster killed
+const HORDE_ITEM_CHANCE := 0.15   # chance per kill of an extra item from the boss
+const HORDE_RUNE_CHANCE := 0.06
+const HORDE_GEM_CHANCE := 0.08
+
+# Rift level scaling (level 1 = base game). See the static helpers below.
+const HP_GROWTH := 1.18        # monster & boss life x this per level
+const DAMAGE_GROWTH := 1.12    # monster & boss damage x this per level
+const SPEED_PER_LEVEL := 0.02  # +2% move speed per level (capped at +40%)
+const ILVL_PER_LEVEL := 2      # item level bonus per level
+const REWARD_PER_LEVEL := 0.25 # +25% shards / materials / orbs per level
+const EXTRA_ITEM_EVERY := 3    # one more boss item every N levels
+
+var level := 1
+var unlocked_next := false
 var state := State.FIGHTING
 var kills := 0
 var elapsed := 0.0
@@ -34,6 +55,12 @@ var on_time := false
 var rewards: Array[ItemInstance] = []
 var extra_drops := {}
 var recipe_drop := ""
+var plan_drop := ""  # Legendary / Set plan dropped by the boss, "" if none
+var rune_drop := ""
+var bonus_runes: Array[String] = []
+var bonus_gems: Array[String] = []
+var potion_drops := {}  # potion id -> count
+var skill_gem_drop := ""
 
 var _layer: CanvasLayer
 var _kill_label: Label
@@ -49,6 +76,7 @@ var _min_town_btn: Button
 
 
 func _ready() -> void:
+	level = clampi(GameState.rift_level, 1, GameState.rift_unlocked)
 	_build_hud()
 	player.died.connect(_on_player_died)
 	_update_hud()
@@ -64,10 +92,11 @@ func spawning_allowed() -> bool:
 	return state == State.FIGHTING
 
 
-func on_enemy_killed() -> void:
+## weight: how much the kill counts towards the boss (Elites and Legendaries count for more).
+func on_enemy_killed(weight := 1) -> void:
 	if state != State.FIGHTING:
 		return
-	kills += 1
+	kills = mini(kills + weight, KILL_TARGET)
 	if kills >= KILL_TARGET:
 		_summon_boss()
 
@@ -82,11 +111,15 @@ func _summon_boss() -> void:
 	b.is_boss = true
 	b.size_mult = 2.0
 	b.display_name = BOSS_NAME
-	b.max_hp = BOSS_HP
-	b.speed = BOSS_SPEED
-	b.touch_damage = BOSS_DAMAGE
+	b.max_hp = BOSS_HP * hp_mult(level)
+	b.speed = BOSS_SPEED * speed_mult(level)
+	b.touch_damage = BOSS_DAMAGE * damage_mult(level)
 	b.target = player
-	b.position = player.global_position + Vector2.from_angle(randf() * TAU) * 450.0
+	if main.maze != null:
+		b.maze = main.maze
+		b.position = main.maze.random_floor_near(player.global_position, 300.0, 520.0)
+	else:
+		b.position = player.global_position + Vector2.from_angle(randf() * TAU) * 450.0
 	b.died.connect(_on_boss_died)
 	b.hp_changed.connect(func(h, m): _boss_bar.value = maxf(h, 0.0) / m * 100.0)
 	main.add_child(b)
@@ -104,42 +137,138 @@ func _on_boss_died(pos: Vector2) -> void:
 	state = State.COMPLETE
 	on_time = elapsed <= TIME_LIMIT
 	_boss_box.visible = false
-	rewards = roll_rewards(on_time, 1 + int(kills / 8.0))
+	rewards = roll_rewards(on_time, item_level(level, kills), level)
+	for i in kills:
+		if randf() < HORDE_ITEM_CHANCE:
+			rewards.append(LootGenerator.roll_item(item_level(level, i)))
+	# Beating your highest rift in time opens the next one
+	if on_time and level >= GameState.rift_unlocked:
+		GameState.rift_unlocked = level + 1
+		GameState.rift_level = level + 1
+		unlocked_next = true
 	for i in rewards.size():
 		var pk := LootPickup.new()
 		pk.item = rewards[i]
 		pk.delay = 0.8
-		pk.position = pos + Vector2.from_angle(TAU * i / rewards.size() + 0.5) * 70.0
+		pk.position = pos + Vector2.from_angle(TAU * i / rewards.size() + 0.5) * (70.0 + 12.0 * (i % 3))
 		main.add_child(pk)
-	# Materials, orbs and gold go straight to your stash; a recipe page drops on the ground.
-	extra_drops = CraftingDB.boss_drops(on_time)
+	# Materials, orbs and shards go straight to your stash; a recipe page drops on the ground.
+	extra_drops = scale_drops(CraftingDB.boss_drops(on_time), level)
+	horde_loot(extra_drops)
+	# A few potions: health and resource, better tiers at higher rift levels
+	var ptier := clampi(1 + int((level - 1) / 4.0), 1, PotionDef.MAX_TIER)
+	for kind in ["health", "health", "power"]:
+		var pid := PotionDef.make_id(kind, ptier)
+		var n := randi_range(1, 2) + (1 if on_time else 0)
+		GameState.add_potion(pid, n)
+		potion_drops[pid] = int(potion_drops.get(pid, 0)) + n
 	GameState.grant(extra_drops)
 	GameState.runs_cleared += 1
+	rune_drop = RuneDef.DB.random_drop(level, true)
+	GameState.add_rune(rune_drop, 1)
+	# A skill gem the player is (or will soon be) able to use
+	var gems := SkillTree.active_skills().filter(func(s): return SkillTree.gem_level_req(s.id) <= GameState.level + 3)
+	if not gems.is_empty():
+		skill_gem_drop = gems.pick_random().id
+		GameState.add_skill_gem(skill_gem_drop, 1)
+	GameState.add_gem(GemDef.random_drop(mini(GemDef.MAX_TIER, 2 + int(level / 3.0) + (1 if on_time else 0))), 1)
 	recipe_drop = GameState.random_unknown_recipe("drop")
 	if recipe_drop == "":
 		recipe_drop = GameState.random_unknown_recipe("vendor")
 	if recipe_drop != "":
 		main.spawn_currency("recipe", recipe_drop, 1, pos + Vector2(0, 80))
+	# Legendary / Set plans: farm bosses to collect them all (better odds in harder / faster rifts)
+	if randf() < minf(PLAN_CHANCE + 0.03 * (level - 1) + (0.10 if on_time else 0.0), 0.7):
+		plan_drop = GameState.random_unknown_recipe("plan")
+		if plan_drop != "":
+			main.spawn_currency("recipe", plan_drop, 1, pos + Vector2(60, 90))
 	_show_result()
 	finished.emit(on_time)
 
 
-static func roll_rewards(fast: bool, ilvl: int) -> Array[ItemInstance]:
+# ---------- rift level scaling ----------
+
+static func hp_mult(lvl: int) -> float:
+	return pow(HP_GROWTH, lvl - 1)
+
+
+static func damage_mult(lvl: int) -> float:
+	return pow(DAMAGE_GROWTH, lvl - 1)
+
+
+static func speed_mult(lvl: int) -> float:
+	return 1.0 + minf(SPEED_PER_LEVEL * (lvl - 1), 0.4)
+
+
+static func reward_mult(lvl: int) -> float:
+	return 1.0 + REWARD_PER_LEVEL * (lvl - 1)
+
+
+## Item level for drops: grows with kills during the run and with the rift level.
+static func item_level(lvl: int, kill_count: int) -> int:
+	return 1 + int(kill_count / 8.0) + ILVL_PER_LEVEL * (lvl - 1)
+
+
+## Multiplies the shard, material and orb amounts of a drop table by the level's reward bonus.
+static func scale_drops(d: Dictionary, lvl: int) -> Dictionary:
+	var m := reward_mult(lvl)
+	for key in ["shards", "materials", "orbs"]:
+		var sub: Dictionary = d.get(key, {})
+		for k in sub:
+			sub[k] = int(round(int(sub[k]) * m))
+	return d
+
+
+## Adds what the monsters you killed would have dropped: their shards, materials and orbs into
+## `drops`, plus runes and gems (granted now, listed in the result).
+func horde_loot(drops: Dictionary) -> void:
+	for i in kills:
+		var d := scale_drops(CraftingDB.monster_drops(item_level(level, i)), level)
+		for key in ["shards", "materials", "orbs"]:
+			var into: Dictionary = drops[key]
+			for k in d[key]:
+				into[k] = int(into.get(k, 0)) + int(d[key][k])
+		if randf() < HORDE_RUNE_CHANCE:
+			var rid := RuneDef.DB.random_drop(level)
+			GameState.add_rune(rid, 1)
+			bonus_runes.append(rid)
+		if randf() < HORDE_GEM_CHANCE:
+			var gid := GemDef.random_drop(1 + int(i / 25.0) + int(level / 3.0))
+			GameState.add_gem(gid, 1)
+			bonus_gems.append(gid)
+
+
+static func roll_rewards(fast: bool, ilvl: int, rift_lvl: int = 1) -> Array[ItemInstance]:
 	var out: Array[ItemInstance] = []
 	var M := ItemInstance.Rarity.MAGIC
 	var R := ItemInstance.Rarity.RARE
+	var rare_bonus := 0.04 * (rift_lvl - 1)
+	for i in int((rift_lvl - 1) / float(EXTRA_ITEM_EVERY)):
+		out.append(LootGenerator.roll_item(ilvl, R if randf() < 0.4 + rare_bonus else M))
 	if fast:
 		var lvl := ilvl + FAST_ILVL_BONUS
 		for i in FAST_RARE_GUARANTEED:
 			out.append(LootGenerator.roll_item(lvl, R))
 		for i in FAST_EXTRA_ITEMS:
-			out.append(LootGenerator.roll_item(lvl, R if randf() < FAST_RARE_CHANCE else M))
+			out.append(LootGenerator.roll_item(lvl, R if randf() < FAST_RARE_CHANCE + rare_bonus else M))
 	else:
 		for i in STD_MAGIC:
 			out.append(LootGenerator.roll_item(ilvl, M))
-		if randf() < STD_RARE_CHANCE:
+		if randf() < STD_RARE_CHANCE + rare_bonus:
 			out.append(LootGenerator.roll_item(ilvl, R))
+	# Bosses are where Legendary and Set items mostly come from; better odds in harder / faster rifts
+	var lvl_bonus := float(rift_lvl - 1)
+	if randf() < minf(BOSS_LEGENDARY_CHANCE + 0.03 * lvl_bonus + (0.10 if fast else 0.0), 0.75):
+		_append_unique(out, ilvl, false)
+	if randf() < minf(BOSS_SET_CHANCE + 0.02 * lvl_bonus + (0.08 if fast else 0.0), 0.6):
+		_append_unique(out, ilvl, true)
 	return out
+
+
+static func _append_unique(out: Array[ItemInstance], ilvl: int, set_item: bool) -> void:
+	var u := UniqueItems.roll(ilvl, set_item, LootGenerator.smart_class)
+	if u != null:
+		out.append(u)
 
 
 func _on_player_died() -> void:
@@ -238,7 +367,7 @@ func _build_hud() -> void:
 	vb.add_child(rhdr)
 
 	var t_lbl := Label.new()
-	t_lbl.text = "🏆  DUNGEON CLEARED"
+	t_lbl.text = "🏆  RIFT CLEARED"
 	t_lbl.add_theme_font_size_override("font_size", 20)
 	t_lbl.add_theme_color_override("font_color", Color(0.95, 0.85, 0.45))
 	t_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -318,11 +447,11 @@ func _label(size: int) -> Label:
 func _update_hud() -> void:
 	match state:
 		State.FIGHTING:
-			_kill_label.text = "Slay the horde  %d / %d" % [kills, KILL_TARGET]
+			_kill_label.text = "Rift %d  —  Slay the horde  %d / %d" % [level, kills, KILL_TARGET]
 		State.BOSS:
-			_kill_label.text = "Defeat %s" % BOSS_NAME
+			_kill_label.text = "Rift %d  —  Defeat %s" % [level, BOSS_NAME]
 		State.COMPLETE:
-			_kill_label.text = "Dungeon cleared"
+			_kill_label.text = "Rift %d cleared" % level
 		State.FAILED:
 			_kill_label.text = "You have fallen"
 	_kill_bar.value = kills
@@ -337,6 +466,11 @@ func _update_hud() -> void:
 	else:
 		_time_label.text = "Bonus time over  (%s)" % fmt_time(elapsed)
 		_time_label.modulate = Color(0.7, 0.7, 0.7)
+
+
+## Big centre-screen message (maze names, boss awakening...).
+func announce(text: String, col: Color) -> void:
+	_show_banner(text, col)
 
 
 func _show_banner(text: String, col: Color) -> void:
@@ -360,6 +494,13 @@ func _toggle_result_minimized() -> void:
 
 func _show_result() -> void:
 	var t := "[color=#998877]Completion Time:[/color] [b]%s[/b]    [color=#998877]Kills:[/color] [b]%d[/b]\n" % [fmt_time(elapsed), kills]
+	t += "[color=#998877]Rift Level:[/color] [b]%d[/b]   [color=#998877]Rewards:[/color] [b]+%d%%[/b]\n" % [level, int(round((reward_mult(level) - 1.0) * 100.0))]
+	if unlocked_next:
+		t += "[color=#c084fc][b]🔓 RIFT LEVEL %d UNLOCKED![/b][/color]\n" % (level + 1)
+	elif on_time:
+		t += "[color=#998877]Highest rift unlocked: %d[/color]\n" % GameState.rift_unlocked
+	else:
+		t += "[color=#f87171]Clear in time to unlock the next rift level.[/color]\n"
 	if on_time:
 		t += "[color=#4ade80][b]⚡ SPEED CLEAR BONUS LOOT ACHIEVED![/b][/color]\n"
 	else:
@@ -372,15 +513,32 @@ func _show_result() -> void:
 			col, it.display_name, ItemInstance.Rarity.keys()[it.rarity].capitalize()]
 	t += "[color=#3d3545]──────────────────────────────[/color]\n"
 	t += "[b][color=#f3c66f]STASH REWARDS DEPOSITED:[/color][/b]\n"
-	t += "  • [color=#ffd933]🪙 %d Gold[/color]\n" % int(extra_drops.gold)
+	for k in extra_drops.get("shards", {}):
+		var sc: String = CraftingDB.ORBS[k].color.to_html(false)
+		t += "  • [color=#%s]%d %s Shards[/color]\n" % [sc, extra_drops.shards[k], CraftingDB.ORBS[k].short]
 	for k in extra_drops.materials:
 		var mc: String = CraftingDB.MATERIALS[k].color.to_html(false)
 		t += "  • [color=#%s]%d %s[/color]\n" % [mc, extra_drops.materials[k], CraftingDB.MATERIALS[k].name]
 	for k in extra_drops.orbs:
 		var oc: String = CraftingDB.ORBS[k].color.to_html(false)
 		t += "  • [color=#%s]%d %s[/color]\n" % [oc, extra_drops.orbs[k], CraftingDB.ORBS[k].name]
+	for rid in [rune_drop] + bonus_runes:
+		var rd := RuneDef.DB.get_rune(rid)
+		if rd != null:
+			t += "  • [color=#%s]%s %s[/color]\n" % [rd.rarity_color().to_html(false), rd.icon, rd.display_name]
+	if skill_gem_drop != "":
+		var sg := SkillTree.get_skill(skill_gem_drop)
+		t += "  • [color=#%s]💠 Skill Gem: %s[/color]\n" % [sg.color.to_html(false), sg.display_name]
+	for pid in potion_drops:
+		var pd := PotionDef.info(pid, player.class_def.power_name)
+		t += "  • [color=#%s]🧪 %d %s[/color]\n" % [Color(pd.color).to_html(false), potion_drops[pid], pd.name]
+	for gid in bonus_gems:
+		var g := GemDef.info(gid)
+		t += "  • [color=#%s]◆ %s[/color]\n" % [Color(g.color).to_html(false), g.name]
 	if recipe_drop != "":
 		t += "  • [color=#f59e0b]📜 Recipe: %s[/color]\n" % CraftingDB.RECIPES[recipe_drop].name
+	if plan_drop != "":
+		t += "  • [color=#%s]📜 Plan: %s[/color]\n" % [CraftingDB.recipe_color(plan_drop).to_html(false), CraftingDB.RECIPES[plan_drop].name]
 	t += "[color=#3d3545]──────────────────────────────[/color]\n"
 	t += "[color=#a8a29e]💡 Walk over ground items to collect them, then tap Return to Town.[/color]"
 	_result_text.text = t

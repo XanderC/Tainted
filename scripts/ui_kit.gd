@@ -1,0 +1,232 @@
+class_name UIKit
+extends RefCounted
+## Shared look and building blocks for the menu screens (GameMenu and its panels):
+## colours, panels, labels, item cards and stat comparison text.
+
+const STAT_LABELS := {
+	"max_life": "Max Life",
+	"damage": "Damage",
+	"attack_speed": "Attack Speed",
+	"armor": "Armor",
+	"crit_chance": "Critical Strike",
+	"move_speed": "Movement Speed",
+}
+
+const SLOT_NAMES := {
+	"helmet": "Helmet",
+	"chest": "Body Armor",
+	"weapon": "Main Hand",
+	"offhand": "Off Hand",
+	"gloves": "Gloves",
+	"boots": "Boots",
+	"ring": "Finger Ring",
+	"amulet": "Amulet",
+}
+
+const SLOT_ICONS := {
+	"helmet": "⛑",
+	"chest": "🛡",
+	"weapon": "⚔",
+	"offhand": "🛡",
+	"gloves": "🧤",
+	"boots": "👢",
+	"ring": "💍",
+	"amulet": "📿",
+}
+
+const GOLD := Color(0.95, 0.82, 0.45)
+const TEXT_DIM := Color(0.65, 0.58, 0.48)
+const EMPTY_BORDER := Color(0.20, 0.18, 0.24)
+
+
+static func box(bg: Color, border: Color, width := 1, corner := 6) -> StyleBoxFlat:
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = bg
+	sb.border_color = border
+	sb.set_border_width_all(width)
+	sb.set_corner_radius_all(corner)
+	return sb
+
+
+static func label(text: String, size := 14, col := Color(0.9, 0.88, 0.82), wrap := false) -> Label:
+	var l := Label.new()
+	l.text = text
+	l.add_theme_font_size_override("font_size", size)
+	l.add_theme_color_override("font_color", col)
+	if wrap:
+		l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	return l
+
+
+static func rich(text: String, size := 15) -> RichTextLabel:
+	var r := RichTextLabel.new()
+	r.bbcode_enabled = true
+	r.fit_content = true
+	r.scroll_active = false
+	r.add_theme_font_size_override("normal_font_size", size)
+	r.text = text
+	return r
+
+
+static func button(text: String, bg: Color, border: Color, min_size := Vector2(0, 46), font := 16) -> Button:
+	var b := Button.new()
+	b.text = text
+	b.custom_minimum_size = min_size
+	b.add_theme_font_size_override("font_size", font)
+	b.add_theme_stylebox_override("normal", box(bg, border, 2, 6))
+	return b
+
+
+## A bordered section with a title; returns the inner VBox to fill.
+static func section(parent: Control, title: String, expand := false) -> VBoxContainer:
+	var p := PanelContainer.new()
+	p.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	if expand:
+		p.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	var sb := box(Color(0.06, 0.05, 0.08, 0.95), Color(0.32, 0.26, 0.18), 1, 8)
+	sb.set_content_margin_all(10)
+	p.add_theme_stylebox_override("panel", sb)
+	parent.add_child(p)
+	var v := VBoxContainer.new()
+	v.add_theme_constant_override("separation", 8)
+	p.add_child(v)
+	if title != "":
+		v.add_child(label(title, 16, GOLD))
+	return v
+
+
+static func grid(cols: int, sep := 5) -> GridContainer:
+	var g := GridContainer.new()
+	g.columns = cols
+	g.add_theme_constant_override("h_separation", sep)
+	g.add_theme_constant_override("v_separation", sep)
+	return g
+
+
+## Empties a container. Children are hidden (so layouts skip them at once) and freed at the end
+## of the frame, which is safe even when called from one of those children's own signals.
+static func clear(c: Node) -> void:
+	for ch in c.get_children():
+		if ch is CanvasItem:
+			ch.visible = false
+		ch.queue_free()
+
+
+## Grid cell showing an item (or an empty slot when item is null). Payload / drop are set by the caller.
+static func item_cell(item: ItemInstance, selected: bool, size := Vector2(60, 60)) -> DragSlot:
+	var cell := DragSlot.new(size)
+	if item != null:
+		var col: Color = Color.WHITE if selected else ItemInstance.RARITY_COLORS[item.rarity]
+		cell.setup(item.base.icon, col, item.base.color.darkened(0.72), 0, item.display_name, item.display_name)
+	else:
+		cell.setup(null, EMPTY_BORDER)
+	return cell
+
+
+static func gem_tip(gid: String) -> String:
+	var g := GemDef.info(gid)
+	return "%s\n%s" % [g.get("name", gid), g.get("text", "")]
+
+
+# ---------- item cards & comparison ----------
+
+## Stat changes (stat -> delta) if `item` replaced what is worn in its slot.
+static func equip_deltas(player: Player, item: ItemInstance) -> Dictionary:
+	var cmp := player.preview_equip(item)
+	var d := {}
+	for k in STAT_LABELS:
+		d[k] = float(cmp["after"][k]) - float(cmp["before"][k])
+	return d
+
+
+## Green ▲ if equipping the selected item raises this stat, red ▼ if it lowers it.
+static func stat_arrow(stat: String, deltas: Dictionary) -> String:
+	if not deltas.has(stat):
+		return ""
+	var d: float = deltas[stat]
+	var eps := 0.005 if stat in ["crit_chance", "attack_speed"] else 0.5
+	if d > eps:
+		return " [color=#4ade80]▲[/color]"
+	if d < -eps:
+		return " [color=#f87171]▼[/color]"
+	return ""
+
+
+static func item_card(parent: Node, item: ItemInstance, compact := false, deltas := {}) -> void:
+	var rar_col: Color = ItemInstance.RARITY_COLORS[item.rarity]
+	var hdr := PanelContainer.new()
+	var hdr_sb := box(rar_col.darkened(0.75), rar_col, 1, 6)
+	hdr_sb.set_content_margin_all(8)
+	hdr.add_theme_stylebox_override("panel", hdr_sb)
+	parent.add_child(hdr)
+	var hv := VBoxContainer.new()
+	hv.add_theme_constant_override("separation", 2)
+	hdr.add_child(hv)
+	var name_lbl := label(item.display_name, 16 if compact else 19, rar_col, true)
+	name_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	hv.add_child(name_lbl)
+	var kind := item.base.type_label()
+	if kind == "":
+		kind = SLOT_NAMES.get(item.base.slot, item.base.slot.capitalize())
+	if item.is_unique():
+		kind = "%s %s" % ["Legendary" if item.rarity == ItemInstance.Rarity.LEGENDARY else "Set", kind]
+	var base_lbl := label("%s  •  Item Level %d" % [kind, item.ilvl],
+		13, Color(0.75, 0.70, 0.65), true)
+	base_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	hv.add_child(base_lbl)
+
+	var txt := ""
+	if item.quality > 0:
+		txt += "[color=#9ab0d0]Quality: +%d%%[/color]\n" % item.quality
+	if item.base.implicit_stat != "":
+		txt += "[color=#ffffff]+%d %s[/color]%s [color=#777777](implicit)[/color]\n" % [
+			int(item.implicit_value()), item.base.implicit_stat.replace("_", " ").capitalize(),
+			stat_arrow(item.base.implicit_stat, deltas)]
+	for a in item.affixes:
+		txt += "[color=#7ba6ff]• %s[/color]%s\n" % [a.text, stat_arrow(a.stat, deltas)]
+	if item.is_unique():
+		var worn: Array = GameState.player.equipment.values() if is_instance_valid(GameState.player) else []
+		txt += UniqueItems.card_bbcode(item, worn)
+	for i in item.sockets:
+		if i < item.gems.size():
+			var g := GemDef.info(item.gems[i])
+			txt += "[color=#%s]◆ %s[/color]%s\n" % [Color(g.get("color", Color.WHITE)).to_html(false),
+				g.get("text", "?"), stat_arrow(g.get("stat", ""), deltas)]
+		else:
+			txt += "[color=#666677]◇ Empty Socket[/color]\n"
+	if item.affixes.is_empty() and item.base.implicit_stat == "" and item.sockets == 0:
+		txt += "[color=#555555]No magical properties[/color]\n"
+	if item.corrupted:
+		txt += "[color=#e04848][b]Corrupted[/b][/color]\n"
+	if item.mirrored:
+		txt += "[color=#a8e6ff][b]Mirrored[/b][/color]\n"
+	parent.add_child(rich(txt))
+
+
+## "▲ +5 Damage" style list of what equipping `item` changes.
+static func delta_bbcode(player: Player, item: ItemInstance) -> String:
+	var deltas := equip_deltas(player, item)
+	var t := ""
+	for k in STAT_LABELS:
+		var d: float = deltas[k]
+		var txt := ""
+		match k:
+			"crit_chance":
+				var pct := int(round(d * 100.0))
+				if pct == 0:
+					continue
+				txt = "%+d%%" % pct
+			"attack_speed":
+				if absf(d) < 0.005:
+					continue
+				txt = "%+.2f /s" % d
+			_:
+				var whole := int(round(d))
+				if whole == 0:
+					continue
+				txt = "%+d" % whole
+		var col := "4ade80" if d > 0.0 else "f87171"
+		t += "[color=#%s]  %s %s %s[/color]\n" % [col, "▲" if d > 0.0 else "▼", txt, STAT_LABELS[k]]
+	if t == "":
+		t = "[color=#777777]  No changes to core combat stats[/color]\n"
+	return t

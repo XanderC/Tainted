@@ -1,17 +1,24 @@
 extends Node2D
-## The hub scene and the game's start scene. Walk up to an NPC and tap Talk.
+## The hub scene, entered from the character select screen. Walk up to an NPC and tap Talk.
 ## Blacksmith: orbs, salvage, recipes.  Merchant: buy and sell.  Stash keeper: shared storage.
-## Dungeon Gate: starts a dungeon instance (scenes/main.tscn).
+## Jeweler: combine gems into higher tiers and remove socketed gems.
+## Mystic: respec (refund every passive point, free).
+## Rift Gate: pick a rift level, then start a run (scenes/main.tscn).
 
 const DUNGEON_SCENE := "res://scenes/main.tscn"
 const SPAWN := Vector2(0, 360)
 
+const UpgradePopupUIScript = preload("res://scripts/upgrade_popup_ui.gd")
+
 var player: Player
-var inventory_ui: InventoryUI
-var crafting_ui: CraftingUI
-var stash_ui: StashUI
+var menu: GameMenu  # character screen + inventory / vendor panels
+var skill_tree_ui: SkillTreeUI
+var rift_ui: RiftSelectUI
+var respec_ui: RespecUI
+var upgrade_popup_ui: CanvasLayer
 var _hud: Label
 var _talk_btn: Button
+var _chars_btn: Button
 var _near: Interactable = null
 var _gate: Node2D
 
@@ -21,7 +28,7 @@ func _ready() -> void:
 	add_child(TownMap.new())
 
 	player = Player.new()
-	player.class_def = ClassLibrary.warrior()
+	player.class_def = ClassLibrary.get_class_def(GameState.char_class)
 	player.can_fight = false
 	player.position = SPAWN
 	add_child(player)
@@ -33,11 +40,17 @@ func _ready() -> void:
 	player.add_child(cam)
 
 	_add_npc("Blacksmith", "Craft & Salvage", Vector2(-560, -205), {"weapon": "battle_axe", "chest": "chain_mail", "helmet": "leather_cap"},
-		Color(1.0, 0.88, 0.78), "Talk to the Blacksmith", func(): crafting_ui.open("smith"))
+		Color(1.0, 0.88, 0.78), "Talk to the Blacksmith", func(): menu.open_vendor("smith"))
 	_add_npc("Merchant", "Buy & Sell", Vector2(580, -185), {"chest": "padded_vest", "helmet": "leather_cap"},
-		Color(0.82, 0.92, 1.0), "Talk to the Merchant", func(): crafting_ui.open("merchant"))
+		Color(0.82, 0.92, 1.0), "Talk to the Merchant", func(): menu.open_vendor("shop"))
 	_add_npc("Stash Keeper", "Shared Storage", Vector2(0, -270), {"helmet": "iron_helm", "weapon": "rusty_sword"},
-		Color(0.92, 0.85, 1.0), "Open the Stash", func(): stash_ui.open())
+		Color(0.92, 0.85, 1.0), "Open the Stash", func(): menu.open_vendor("stash"))
+	_add_npc("Battlemaster Brom", "Passive Tree", Vector2(-240, -160), {"weapon": "rusty_sword", "chest": "chain_mail", "helmet": "iron_helm"},
+		Color(0.95, 0.85, 0.7), "Open the Passive Tree", func(): skill_tree_ui.open())
+	_add_npc("Jeweler", "Gems", Vector2(280, -175), {"chest": "padded_vest", "helmet": "leather_cap"},
+		Color(0.80, 0.90, 1.0), "Talk to the Jeweler", func(): menu.open_vendor("jeweler"))
+	_add_npc("Mystic Seraphine", "Respec Skills", Vector2(-600, 150), {"chest": "padded_vest"},
+		Color(0.75, 0.85, 1.0), "Talk to the Mystic", func(): respec_ui.open())
 	_add_gate(Vector2(820, 220))
 
 	var layer := CanvasLayer.new()
@@ -47,12 +60,40 @@ func _ready() -> void:
 	joy.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	player.joystick = joy
 
+	var potion_pad := Control.new()
+	potion_pad.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	layer.add_child(potion_pad)
+	potion_pad.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT)
+	var potion := PotionButton.new()
+	potion.player = player
+	potion.position = Vector2(-110, -110)
+	potion_pad.add_child(potion)
+	var swap := WeaponSwapButton.new()
+	swap.player = player
+	swap.position = Vector2(-110, -170)
+	potion_pad.add_child(swap)
+
+	var bars := HudBars.new()
+	bars.player = player
+	layer.add_child(bars)
+
 	_hud = Label.new()
-	_hud.position = Vector2(16, 12)
+	_hud.position = Vector2(16, 80)
 	_hud.add_theme_font_size_override("font_size", 20)
 	_hud.add_theme_color_override("font_outline_color", Color.BLACK)
 	_hud.add_theme_constant_override("outline_size", 6)
 	layer.add_child(_hud)
+
+	_chars_btn = UIKit.button("👥", Color(0.12, 0.10, 0.15, 0.9), Color(0.65, 0.52, 0.30), Vector2(64, 56), 22)
+	_chars_btn.tooltip_text = "Character select"
+	_chars_btn.pressed.connect(_to_character_select)
+	layer.add_child(_chars_btn)
+	_chars_btn.anchor_left = 1.0
+	_chars_btn.anchor_right = 1.0
+	_chars_btn.offset_left = -336.0
+	_chars_btn.offset_right = -272.0
+	_chars_btn.offset_top = 16.0
+	_chars_btn.offset_bottom = 72.0
 
 	_talk_btn = Button.new()
 	_talk_btn.visible = false
@@ -68,21 +109,79 @@ func _ready() -> void:
 	_talk_btn.offset_top = -150
 	_talk_btn.offset_bottom = -70
 
-	inventory_ui = InventoryUI.new()
-	inventory_ui.player = player
-	add_child(inventory_ui)
-	crafting_ui = CraftingUI.new()
-	crafting_ui.player = player
-	add_child(crafting_ui)
-	stash_ui = StashUI.new()
-	stash_ui.player = player
-	add_child(stash_ui)
+	menu = GameMenu.new()
+	menu.player = player
+	add_child(menu)
+	respec_ui = RespecUI.new()
+	add_child(respec_ui)
+	rift_ui = RiftSelectUI.new()
+	rift_ui.enter_requested.connect(enter_dungeon)
+	add_child(rift_ui)
+	skill_tree_ui = SkillTreeUI.new()
+	skill_tree_ui.player = player
+	add_child(skill_tree_ui)
+	upgrade_popup_ui = UpgradePopupUIScript.new()
+	upgrade_popup_ui.player = player
+	add_child(upgrade_popup_ui)
+	if GameState.show_hub_intro:
+		GameState.show_hub_intro = false
+		_show_hub_intro()
+
+
+## First arrival from the tutorial: who is who in town, and where to go next.
+func _show_hub_intro() -> void:
+	var layer := CanvasLayer.new()
+	layer.layer = 30
+	add_child(layer)
+	var center := CenterContainer.new()
+	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	layer.add_child(center)
+	var panel := PanelContainer.new()
+	var sb := UIKit.box(Color(0.06, 0.05, 0.08, 0.96), Color(0.95, 0.80, 0.40), 2, 12)
+	sb.set_content_margin_all(18)
+	panel.add_theme_stylebox_override("panel", sb)
+	center.add_child(panel)
+	var v := VBoxContainer.new()
+	v.add_theme_constant_override("separation", 10)
+	panel.add_child(v)
+	v.add_child(UIKit.label("WELCOME TO ASHFALL OUTPOST", 24, UIKit.GOLD))
+	var t := UIKit.rich(
+		"This is your home base. Walk up to someone and tap [b]Talk[/b]:\n" +
+		"  • [color=#ffd54a]Merchant[/color] - buy skill gems, potions and orbs, and sell loot for orbs\n" +
+		"  • [color=#ffd54a]Blacksmith[/color] - use orbs on items, salvage, and forge recipes and plans\n" +
+		"  • [color=#ffd54a]Stash Keeper[/color] - storage shared by all your characters\n" +
+		"  • [color=#ffd54a]Jeweler[/color] - combine and remove item gems\n" +
+		"  • [color=#ffd54a]Battlemaster Brom[/color] - your passive tree (you get a point every level)\n" +
+		"  • [color=#ffd54a]Mystic Seraphine[/color] - reset your passive points for free\n\n" +
+		"When you're ready, step into the [color=#c084fc]Rift Gate[/color] (east) to fight through rifts for loot.", 16)
+	t.custom_minimum_size = Vector2(700, 0)
+	v.add_child(t)
+	var ok := UIKit.button("Let's go!", Color(0.14, 0.38, 0.18), Color(0.40, 1.0, 0.55), Vector2(0, 56), 20)
+	ok.pressed.connect(layer.queue_free)
+	v.add_child(ok)
 
 
 func _process(delta: float) -> void:
-	_hud.text = "Ashfall Outpost\nGold %d     Bag %d/%d" % [GameState.gold, player.inventory.size(), Player.BAG_SIZE]
+	_hud.text = "Ashfall Outpost\nChaos %d   Divine %d     Bag %d/%d" % [GameState.orb_count("chaos"), GameState.orb_count("divine"),
+		player.bag_item_count(), Player.BAG_SIZE]
 	if _gate:
 		_gate.queue_redraw()
+
+	for p in get_tree().get_nodes_in_group("pickups"):
+		if p.delay > 0.0 or p.has_meta("upgrade_dismissed"):
+			continue
+		if p.global_position.distance_to(player.global_position) < 48.0:
+			if player.is_better_in_slot(p.item):
+				if player.pick_up(p.item):
+					p.queue_free()
+					upgrade_popup_ui.prompt_upgrade(p.item, null)
+				else:
+					p.set_meta("upgrade_dismissed", true)
+					upgrade_popup_ui.prompt_upgrade(p.item, p)
+				break
+			elif player.pick_up(p.item):
+				p.queue_free()
+
 	var best: Interactable = null
 	var best_d := INF
 	for i in get_tree().get_nodes_in_group("interactables"):
@@ -90,9 +189,13 @@ func _process(delta: float) -> void:
 		if d < i.radius and d < best_d:
 			best = i
 			best_d = d
-	var any_open := inventory_ui.is_open() or crafting_ui.is_open() or stash_ui.is_open()
+	var any_open: bool = (menu != null and menu.is_open()) or \
+		(rift_ui != null and rift_ui.is_open()) or \
+		(respec_ui != null and respec_ui.is_open()) or \
+		(skill_tree_ui != null and skill_tree_ui.is_open())
 	_near = best
 	_talk_btn.visible = best != null and not any_open
+	_chars_btn.visible = not any_open and not get_tree().paused
 	if best != null:
 		_talk_btn.text = best.prompt
 
@@ -105,6 +208,11 @@ func _unhandled_input(event: InputEvent) -> void:
 func _interact() -> void:
 	if _near != null and _near.action.is_valid():
 		_near.action.call()
+
+
+func _to_character_select() -> void:
+	GameState.leave_character()
+	get_tree().change_scene_to_file(CharacterSelect.SCENE)
 
 
 func enter_dungeon() -> void:
@@ -162,9 +270,9 @@ func _add_npc(title: String, subtitle: String, pos: Vector2, gear: Dictionary, t
 func _add_gate(pos: Vector2) -> void:
 	var gate := Interactable.new()
 	gate.position = pos
-	gate.prompt = "Enter the Dungeon"
+	gate.prompt = "Enter the Rift"
 	gate.radius = 150.0
-	gate.action = enter_dungeon
+	gate.action = func(): rift_ui.open()
 	gate.z_index = -1  # flat on the ground
 	add_child(gate)
 	_gate = gate
@@ -177,7 +285,7 @@ func _add_gate(pos: Vector2) -> void:
 				Color(0.75, 0.4, 1.0, 0.85 - i * 0.15), 4.0)
 		gate.draw_circle(Vector2(0, -40), 18, Color(0.9, 0.7, 1.0, 0.55 + 0.25 * sin(t * 3.0))))
 	var l := Label.new()
-	l.text = "Dungeon Gate"
+	l.text = "Rift Gate"
 	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	l.add_theme_font_size_override("font_size", 18)
 	l.add_theme_color_override("font_color", Color(0.85, 0.6, 1.0))

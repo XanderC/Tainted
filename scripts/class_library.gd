@@ -1,6 +1,13 @@
 class_name ClassLibrary
 extends RefCounted
-## All playable classes. Add a new static func here to add a class.
+## All playable classes. Add a new static func here (and its id to CLASS_IDS) to add a class.
+
+const CLASS_IDS := ["warrior"]
+
+
+static func get_class_def(id: String) -> ClassDef:
+	match id:
+		_: return warrior()
 
 
 static func _skill(id: String, title: String, kind: SkillDef.Kind, cd: float, mult: float,
@@ -25,6 +32,8 @@ static func warrior() -> ClassDef:
 	var c := ClassDef.new()
 	c.id = "warrior"
 	c.display_name = "Warrior"
+	c.description = "A tough melee fighter who wades into packs with swords, axes and maces. " + \
+		"Fights with Adrenaline, built by landing hits and taking them."
 	c.color = Color(0.35, 0.5, 0.95)
 	c.base_stats = {
 		"max_life": 160.0,
@@ -35,6 +44,17 @@ static func warrior() -> ClassDef:
 		"crit_chance": 0.05,
 		"life_regen": 1.5,
 	}
+	# Swords, axes and maces: one-handed + shield, two one-handers, or one two-hander
+	c.weapon_types = ["sword", "axe", "mace", "shield"]
+	c.dual_wield = true
+	# Adrenaline: starts empty, built by generator attacks, slowly drains away
+	c.power_name = "Adrenaline"
+	c.power_color = Color(1.0, 0.55, 0.1)
+	c.power_max = 100.0
+	c.power_start = 0.0
+	c.power_decay = 2.5
+	c.power_on_hit = 3.0
+	c.power_per_life_lost = 50.0
 	# 0: basic auto-attack, a wide melee arc that hits every enemy in front
 	c.skills.append(_skill("cleave", "Cleave", SkillDef.Kind.CLEAVE, 0.0, 1.0, 105.0, 120.0,
 			Color(0.9, 0.9, 0.95)))

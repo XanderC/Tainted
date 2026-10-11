@@ -8,18 +8,30 @@ signal inventory_changed
 
 const SWING_TIME := 0.15
 const BAG_SIZE := 24
-const SLOTS := ["weapon", "helmet", "chest", "gloves", "boots", "ring", "amulet"]
+const SLOTS := ["weapon", "offhand", "helmet", "chest", "gloves", "boots", "ring", "amulet"]
 ## Slots that change how the character looks (see RigSprite.GEAR_LAYERS).
 const VISIBLE_SLOTS := ["weapon", "helmet", "chest"]
+## Slots that belong to a weapon set. Only the active set is in `equipment` (and gives stats);
+## the other set waits in `alt_set` until swap_weapon_set().
+const SET_SLOTS := ["weapon", "offhand"]
+const SWAP_COOLDOWN := 0.5
 const ATTACK_ANIMS := ["Slashing", "Run Slashing", "Slashing in The Air"]
 const HIT_DELAY := 0.12  # seconds into the swing animation when the blow lands
 
 var class_def: ClassDef
 var stats := StatBlock.new()
 var hp := 100.0
+var resource := 0.0  # Adrenaline / Mana, see class_def.power_*
+var _potion_cd := 0.0
+var active_set := 0  # 0 = Set 1, 1 = Set 2
+var alt_set := {}    # inactive weapon set: slot -> ItemInstance
+var _swap_cd := 0.0
+var _hit_power_cd := 0.0  # flat resource-on-hit at most every 0.5s
+var _slow_t := 0.0  # Frozen elites: move 40% slower while > 0
 var dead := false
 var inventory: Array[ItemInstance] = []
 var equipment := {}  # slot -> ItemInstance
+var item_powers := {}  # Legendary powers + set bonuses of the worn gear (UniqueItems.powers_of)
 var joystick: VirtualJoystick
 var rig: RigSprite
 var can_fight := true  # false in town
@@ -28,19 +40,29 @@ var skills: Array[SkillDef] = []
 var facing := Vector2.RIGHT
 
 var _cooldowns: Array[float] = []
-var _attack_cd := 0.0
-var _windup_t := 0.0
-var _windup_dir := Vector2.RIGHT
+var _mouse_attack_down := false
+var _whirlwind_t := 0.0
 var _hurt_cd := 0.0
 var _busy := false  # true while leaping
+
+# Buffs
 var _buff_active := false
 var _buff_t := 0.0
+var _iron_skin_active := false
+var _iron_skin_t := 0.0
+var _frenzy_stacks := 0
+var _frenzy_t := 0.0
+var _shield_slam_buff_t := 0.0
+
+# Drawing FX
 var _swing_t := 0.0
 var _swing_dir := Vector2.RIGHT
 var _swing_arc := 120.0
 var _swing_radius := 100.0
+var _swing_color := Color.WHITE
 var _ring_t := 0.0
 var _ring_radius := 100.0
+var _ring_color := Color.WHITE
 
 
 func _ready() -> void:
@@ -49,10 +71,9 @@ func _ready() -> void:
 	add_to_group("player")
 	for k in class_def.base_stats:
 		stats.set_base(String(k), class_def.base_stats[k])
-	for s in class_def.skills:
-		skills.append(s)
-		_cooldowns.append(0.0)
+
 	hp = stats.get_stat("max_life")
+	resource = class_def.power_start
 
 	var shape := CollisionShape2D.new()
 	var circle := CircleShape2D.new()
@@ -66,16 +87,44 @@ func _ready() -> void:
 	rig.weapon_from_gear = true  # weapon appears when equipped, not only during slashes
 	add_child(rig)
 	_sync_gear_visuals()
-	GameState.attach_player(self)  # restore saved gear and bag
+	while inventory.size() < BAG_SIZE:
+		inventory.append(null)
+	GameState.attach_player(self)  # restore saved gear, bag and skills
+
+
+func sync_skills_from_state() -> void:
+	_apply_passives()
+	skills.clear()
+	_cooldowns.clear()
+	var equipped: Array[SkillDef] = GameState.get_equipped_skills()
+	for s in equipped:
+		skills.append(s)
+		_cooldowns.append(0.0)
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	# Keyboard skills for desktop testing: 1, 2, 3
+	# Desktop key bindings: Space/J for Main Attack, 1-3 for Skills
 	if event is InputEventKey and event.pressed and not event.echo:
 		match event.keycode:
+			KEY_SPACE, KEY_J: use_skill(0)
 			KEY_1: use_skill(1)
 			KEY_2: use_skill(2)
 			KEY_3: use_skill(3)
+			KEY_4: use_skill(4)
+			KEY_5: use_skill(5)
+			KEY_Q: drink_potion()
+			KEY_X: swap_weapon_set()
+	elif event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
+		if not OS.has_feature("mobile") and not DisplayServer.is_touchscreen_available():
+			if event.pressed:
+				_mouse_attack_down = true
+				if can_fight and not dead and not _busy:
+					var mpos := get_global_mouse_position()
+					facing = (mpos - global_position).normalized()
+					rig.set_facing(facing.x)
+					use_skill(0)
+			else:
+				_mouse_attack_down = false
 
 
 func _physics_process(delta: float) -> void:
@@ -83,21 +132,44 @@ func _physics_process(delta: float) -> void:
 		return
 
 	hp = minf(hp + stats.get_stat("life_regen") * delta, stats.get_stat("max_life"))
+	var decay := 0.0 if passive("no_decay") > 0.0 and class_def.power_decay > 0.0 else class_def.power_decay
+	resource = clampf(resource - decay * delta, 0.0, max_resource())
 	for i in _cooldowns.size():
 		_cooldowns[i] = maxf(_cooldowns[i] - delta, 0.0)
 	_swing_t = maxf(_swing_t - delta, 0.0)
 	_ring_t = maxf(_ring_t - delta, 0.0)
+	_whirlwind_t = maxf(_whirlwind_t - delta, 0.0)
 	_hurt_cd = maxf(_hurt_cd - delta, 0.0)
-	if _buff_active:
-		_buff_t -= delta
-		if _buff_t <= 0.0:
-			_buff_active = false
-			stats.remove_source("battle_cry")
-	if _windup_t > 0.0:
-		_windup_t -= delta
-		if _windup_t <= 0.0:
-			_do_cleave()
+	_potion_cd = maxf(_potion_cd - delta, 0.0)
+	_swap_cd = maxf(_swap_cd - delta, 0.0)
+	_slow_t = maxf(_slow_t - delta, 0.0)
+	_hit_power_cd = maxf(_hit_power_cd - delta, 0.0)
+
+	_process_buffs(delta)
 	queue_redraw()
+
+	# Desktop continuous keys hold (Space/J for Main Attack, 1-3 for Skills / Channeling)
+	if can_fight and not dead and not _busy:
+		if _mouse_attack_down and (not Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT) or OS.has_feature("mobile")):
+			_mouse_attack_down = false
+		if Input.is_key_pressed(KEY_SPACE) or Input.is_key_pressed(KEY_J):
+			use_skill(0)
+		elif _mouse_attack_down:
+			var mpos := get_global_mouse_position()
+			facing = (mpos - global_position).normalized()
+			rig.set_facing(facing.x)
+			use_skill(0)
+
+		if Input.is_key_pressed(KEY_1):
+			use_skill(1)
+		elif Input.is_key_pressed(KEY_2):
+			use_skill(2)
+		elif Input.is_key_pressed(KEY_3):
+			use_skill(3)
+		elif Input.is_key_pressed(KEY_4):
+			use_skill(4)
+		elif Input.is_key_pressed(KEY_5):
+			use_skill(5)
 
 	if _busy:
 		return
@@ -107,45 +179,50 @@ func _physics_process(delta: float) -> void:
 		dir = joystick.output
 	if dir == Vector2.ZERO:
 		dir = Input.get_vector("ui_left", "ui_right", "ui_up", "ui_down")  # keyboard for desktop testing
-	velocity = dir * stats.get_stat("move_speed")
+	velocity = dir * stats.get_stat("move_speed") * (0.6 if _slow_t > 0.0 else 1.0)
 	move_and_slide()
 	if dir.length() > 0.1:
 		facing = dir.normalized()
 
-	# Stand / walk / run animation follows how fast we are actually moving.
-	var speed := velocity.length()
+	# Stand / walk / run / whirlwind animation
+	var cur_speed := velocity.length()
 	if not rig.is_busy():
 		rig.set_facing(facing.x)
-	if speed < 25.0:
+	if _whirlwind_t > 0.0:
+		var as_hz := stats.get_stat("attack_speed")
+		rig.play_loop("Slashing in The Air", maxf(1.4, 0.7 * as_hz))
+	elif cur_speed < 25.0:
 		rig.play_loop("Idle")
-	elif speed < stats.get_stat("move_speed") * 0.6:
-		rig.play_loop("Walking", clampf(speed / 110.0, 0.6, 1.3))
+	elif cur_speed < stats.get_stat("move_speed") * 0.6:
+		rig.play_loop("Walking", clampf(cur_speed / 110.0, 0.6, 1.3))
 	else:
-		rig.play_loop("Running", clampf(speed / 220.0, 0.8, 1.4))
-
-	# Basic attack: swing at the nearest enemy in reach; the blow lands mid-animation.
-	_attack_cd -= delta
-	if _attack_cd <= 0.0 and can_fight:
-		var basic := skills[0]
-		var target = _nearest_enemy(basic.radius)
-		if target != null:
-			facing = (target.global_position - global_position).normalized()
-			rig.set_facing(facing.x)
-			var as_hz := stats.get_stat("attack_speed")
-			var anim_speed := maxf(1.0, 0.42 * as_hz)  # keep the swing shorter than the attack interval
-			rig.play_once("Run Slashing" if speed > 25.0 else "Slashing", anim_speed)
-			_windup_dir = facing
-			_windup_t = HIT_DELAY / anim_speed
-			_attack_cd = 1.0 / maxf(as_hz, 0.1)
+		rig.play_loop("Running", clampf(cur_speed / 220.0, 0.8, 1.4))
 
 
-func _do_cleave() -> void:
-	var basic := skills[0]
-	_swing_dir = _windup_dir
-	_swing_arc = basic.arc_degrees
-	_swing_radius = basic.radius
-	_swing_t = SWING_TIME
-	_hit_area(global_position, _windup_dir, basic.radius, basic.arc_degrees, basic.damage_mult)
+func _process_buffs(delta: float) -> void:
+	if _buff_active:
+		_buff_t -= delta
+		if _buff_t <= 0.0:
+			_buff_active = false
+			stats.remove_source("battle_cry")
+
+	if _iron_skin_active:
+		_iron_skin_t -= delta
+		if _iron_skin_t <= 0.0:
+			_iron_skin_active = false
+			stats.remove_source("iron_skin")
+
+	if _shield_slam_buff_t > 0.0:
+		_shield_slam_buff_t -= delta
+		if _shield_slam_buff_t <= 0.0:
+			stats.remove_source("shield_slam")
+
+	if _frenzy_stacks > 0:
+		_frenzy_t -= delta
+		if _frenzy_t <= 0.0:
+			_frenzy_stacks = 0
+			stats.remove_source("frenzy")
+
 
 
 func _nearest_enemy(within: float):
@@ -159,50 +236,270 @@ func _nearest_enemy(within: float):
 	return best
 
 
-## Damage every enemy inside a cone (or full circle if arc >= 360).
-func _hit_area(origin: Vector2, dir: Vector2, radius: float, arc_deg: float, mult: float, stun := 0.0) -> void:
+## Damage every enemy inside a cone or full circle, handling element, runes, crits and leech.
+func _hit_area(origin: Vector2, dir: Vector2, hit_radius: float, arc_deg: float,
+		skill: SkillDef, stun_dur := 0.0, is_echo := false) -> void:
 	var half := deg_to_rad(arc_deg) * 0.5
+	var dtype := skill.get_effective_damage_type()
+	var ailment := skill.get_effective_ailment()
+	var leech := skill.get_effective_leech() + passive("leech")
+	var exec_bonus := skill.get_execute_bonus()
+	var rank := GameState.get_skill_rank(skill.id)
+	var mult := skill.get_effective_damage_mult(rank) * (0.50 if is_echo else 1.0)
+
+	var total_dealt := 0.0
+	var hits := 0
+
 	for e in get_tree().get_nodes_in_group("enemies"):
 		var to: Vector2 = e.global_position - origin
-		if to.length() > radius + 14.0:
+		if to.length() > hit_radius + 14.0:
 			continue
 		if arc_deg < 359.0 and absf(dir.angle_to(to)) > half:
 			continue
-		var crit := randf() < stats.get_stat("crit_chance")
+
+		var crit_chance := stats.get_stat("crit_chance") if passive("no_crit") <= 0.0 else 0.0
+		if exec_bonus > 0.0 and e.hp / e.max_hp < 0.35:
+			crit_chance += exec_bonus
+		var crit := randf() < crit_chance
+
 		var dmg := stats.get_stat("damage") * mult * (2.0 if crit else 1.0)
-		e.take_damage(dmg, crit)
-		if stun > 0.0:
-			e.stun(stun)
+		if e.hp / e.max_hp < 0.40:
+			dmg *= 1.0 + passive("execute")
+		e.take_damage(dmg, crit, dtype, ailment)
+		total_dealt += dmg
+		hits += 1
+
+		if stun_dur > 0.0:
+			e.stun(stun_dur)
+
+		if skill.kind == SkillDef.Kind.SUNDERING_STRIKE:
+			e.apply_sunder(5.0)
+
+	# Generator skills build resource when they connect
+	if not is_echo and skill.resource_gain > 0.0 and hits > 0:
+		gain_resource(skill.get_effective_gain() + 2.0 * float(mini(hits, 5) - 1))
+
+	# Life Leech Rune
+	if leech > 0.0 and total_dealt > 0.0:
+		var heal := total_dealt * leech
+		hp = minf(hp + heal, stats.get_stat("max_life"))
+
+	# Echo Rune aftershock
+	if not is_echo and skill.has_echo():
+		var t := create_tween()
+		t.tween_interval(0.24)
+		t.tween_callback(func():
+			if is_instance_valid(self):
+				_ring_t = SWING_TIME
+				_ring_radius = hit_radius * 0.9
+				_ring_color = skill.get_effective_color()
+				_hit_area(origin, dir, hit_radius, arc_deg, skill, 0.0, true)
+		)
 
 
-# ---------- skills ----------
+# ---------- Skills Execution ----------
 
 func use_skill(i: int) -> void:
-	if dead or _busy or not can_fight or i < 1 or i >= skills.size():
+	if dead or _busy or not can_fight or i < 0 or i >= skills.size():
 		return
 	if _cooldowns[i] > 0.0:
 		return
 	var s := skills[i]
-	_cooldowns[i] = s.cooldown
+	if s == null:  # empty action-bar slot
+		return
+	var rank := GameState.get_skill_rank(s.id)
+	var base_cd := s.get_effective_cooldown(rank)
+	var cd := base_cd
+	var cost := skill_cost(s)
+	if base_cd <= 0.0 and s.kind == SkillDef.Kind.WHIRLWIND:
+		# Rapid channeled hits (every ~0.20s scaled with attack speed); cost is per second
+		cd = 0.20 / maxf(stats.get_stat("attack_speed"), 0.5)
+		cost = skill_cost(s) * cd
+	elif base_cd <= 0.0:
+		cd = 1.0 / maxf(stats.get_stat("attack_speed"), 0.1)
+	if cost > resource:
+		return
+	resource -= cost
+	_cooldowns[i] = cd
+	if s.get_on_use_gain() > 0.0:
+		gain_resource(s.get_on_use_gain())
+	if s.get_on_use_heal() > 0.0:
+		hp = minf(hp + stats.get_stat("max_life") * s.get_on_use_heal(), stats.get_stat("max_life"))
+
 	match s.kind:
 		SkillDef.Kind.WHIRLWIND:
-			_ring_t = SWING_TIME * 2.0
-			_ring_radius = s.radius
-			rig.play_once("Slashing in The Air", 1.2)
-			_hit_area(global_position, facing, s.radius, 360.0, s.damage_mult)
+			_do_whirlwind(s)
 		SkillDef.Kind.LEAP_SLAM:
-			_leap(s)
+			_do_leap_slam(s)
 		SkillDef.Kind.BATTLE_CRY:
-			_battle_cry(s)
+			_do_battle_cry(s)
+		SkillDef.Kind.SHIELD_SLAM:
+			_do_shield_slam(s)
+		SkillDef.Kind.EARTHQUAKE:
+			_do_earthquake(s)
+		SkillDef.Kind.IRON_SKIN:
+			_do_iron_skin(s)
+		SkillDef.Kind.FRENZY:
+			_do_frenzy(s)
+		SkillDef.Kind.SUNDERING_STRIKE:
+			_do_sundering_strike(s)
+		SkillDef.Kind.BLADE_VORTEX:
+			_do_blade_vortex(s)
+		SkillDef.Kind.BATTLE_STANDARD:
+			_do_battle_standard(s)
+		SkillDef.Kind.CALL_ANCIENTS:
+			_do_call_ancients(s)
+		SkillDef.Kind.CLEAVE:
+			_do_cleave_skill(s)
+
+
+## Drink the potion in the potion slot. Returns false if empty, out of stock or on cooldown.
+func drink_potion() -> bool:
+	var id := GameState.potion_slot
+	if dead or id == "" or _potion_cd > 0.0 or GameState.potion_count(id) <= 0:
+		return false
+	var p := PotionDef.info(id, class_def.power_name)
+	if p.is_empty():
+		return false
+	if p.kind == "health":
+		hp = minf(hp + stats.get_stat("max_life") * float(p.amount), stats.get_stat("max_life"))
+	else:
+		gain_resource(float(p.amount))
+	GameState.add_potion(id, -1)
+	_potion_cd = PotionDef.COOLDOWN
+	if rig != null:
+		rig.pulse(0.10, 0.3)
+	return true
+
+
+func potion_cooldown_fraction() -> float:
+	return clampf(_potion_cd / PotionDef.COOLDOWN, 0.0, 1.0)
+
+
+## Switch between weapon Set 1 and Set 2: the worn main / off hand go into the inactive set and
+## the other set's weapons come out (only the active set counts for stats).
+func swap_weapon_set() -> bool:
+	if dead or (_swap_cd > 0.0 and not get_tree().paused):  # no cooldown while in the menu
+		return false
+	var old_max := stats.get_stat("max_life")
+	var outgoing := {}
+	for s in SET_SLOTS:
+		if equipment.has(s):
+			outgoing[s] = equipment[s]
+			equipment[s].remove_from(stats)
+			equipment.erase(s)
+	for s in alt_set:
+		equipment[s] = alt_set[s]
+		alt_set[s].apply_to(stats)
+	alt_set = outgoing
+	active_set = 1 - active_set
+	var new_max := stats.get_stat("max_life")
+	hp = clampf(hp * new_max / maxf(old_max, 1.0), 1.0, new_max)
+	_swap_cd = SWAP_COOLDOWN
+	_sync_gear_visuals()
+	inventory_changed.emit()
+	return true
+
+
+# ---------- passives (PassiveTree nodes, see GameState.passive_value) ----------
+
+## Total of a passive stat key over the allocated passive tree nodes.
+func passive(key: String) -> float:
+	return GameState.passive_value(key)
+
+
+func _apply_passives() -> void:
+	var old_max := stats.get_stat("max_life")
+	stats.remove_source("passives")
+	var mods := [
+		["armor", StatBlock.ModType.INCREASED, passive("armor_inc")],
+		["max_life", StatBlock.ModType.FLAT, passive("life_flat")],
+		["max_life", StatBlock.ModType.INCREASED, passive("life_inc")],
+		["move_speed", StatBlock.ModType.INCREASED, passive("move_inc")],
+		["crit_chance", StatBlock.ModType.FLAT, passive("crit")],
+		["damage", StatBlock.ModType.INCREASED, passive("damage_inc")],
+		["attack_speed", StatBlock.ModType.INCREASED, passive("attack_speed_inc")],
+		["life_regen", StatBlock.ModType.FLAT, passive("regen")],
+	]
+	for m in mods:
+		if m[2] != 0.0:
+			stats.add_mod(m[0], m[1], m[2], "passives")
+	var new_max := stats.get_stat("max_life")
+	hp = clampf(hp + maxf(new_max - old_max, 0.0), 0.0, new_max)
+
+
+## Retaliation: damage reflected to an enemy that hits you.
+func thorns() -> float:
+	return passive("thorns")
+
+
+## Rampage: a slain enemy bursts, hurting others nearby.
+func on_enemy_killed(pos: Vector2) -> void:
+	var pct := passive("rampage")
+	if pct <= 0.0:
+		return
+	var dmg := stats.get_stat("damage") * pct
+	for e in get_tree().get_nodes_in_group("enemies"):
+		if e.global_position.distance_to(pos) < 110.0:
+			e.call_deferred("take_damage", dmg)
+
+
+func apply_slow(seconds: float) -> void:
+	_slow_t = maxf(_slow_t, seconds)
+
+
+## Maximum Adrenaline / Mana: the class's plus passives.
+func max_resource() -> float:
+	return class_def.power_max + passive("power_max")
+
+
+## What a skill costs to use: base cost x linked supports' multipliers, less passive reductions.
+func skill_cost(s: SkillDef) -> float:
+	return s.get_effective_cost() * maxf(1.0 - passive("cost_red"), 0.2)
+
+
+func gain_resource(amount: float) -> void:
+	resource = minf(resource + amount, max_resource())
+
+
+## True when skill i has enough resource to be used (ignores cooldown).
+func can_afford(i: int) -> bool:
+	if i < 0 or i >= skills.size():
+		return false
+	var s := skills[i]
+	if s == null:
+		return false
+	if s.kind == SkillDef.Kind.WHIRLWIND and s.get_effective_cooldown(GameState.get_skill_rank(s.id)) <= 0.0:
+		return resource >= skill_cost(s) * 0.2
+	return resource >= skill_cost(s)
 
 
 func cooldown_fraction(i: int) -> float:
-	if i < 0 or i >= skills.size() or skills[i].cooldown <= 0.0:
+	if i < 0 or i >= skills.size() or skills[i] == null:
 		return 0.0
-	return clampf(_cooldowns[i] / skills[i].cooldown, 0.0, 1.0)
+	var rank := GameState.get_skill_rank(skills[i].id)
+	var max_cd := skills[i].get_effective_cooldown(rank)
+	if max_cd <= 0.0:
+		if skills[i].kind == SkillDef.Kind.WHIRLWIND:
+			max_cd = 0.20 / maxf(stats.get_stat("attack_speed"), 0.5)
+		else:
+			max_cd = 1.0 / maxf(stats.get_stat("attack_speed"), 0.1)
+	if max_cd <= 0.0:
+		return 0.0
+	return clampf(_cooldowns[i] / max_cd, 0.0, 1.0)
 
 
-func _leap(s: SkillDef) -> void:
+func _do_whirlwind(s: SkillDef) -> void:
+	_whirlwind_t = 0.28  # Keeps spin loop animation and cyclone ring active across ticks
+	_ring_t = 0.28
+	_ring_radius = s.get_effective_radius()
+	_ring_color = s.get_effective_color()
+	var as_hz := stats.get_stat("attack_speed")
+	rig.play_loop("Slashing in The Air", maxf(1.4, 0.7 * as_hz))
+	_hit_area(global_position, facing, s.get_effective_radius(), 360.0, s)
+
+
+func _do_leap_slam(s: SkillDef) -> void:
 	var dir := facing
 	var dist := s.max_range
 	var target = _nearest_enemy(s.max_range + 120.0)
@@ -221,30 +518,202 @@ func _leap(s: SkillDef) -> void:
 	t.tween_callback(func():
 		_busy = false
 		_ring_t = SWING_TIME * 2.0
-		_ring_radius = s.radius
+		_ring_radius = s.get_effective_radius()
+		_ring_color = s.get_effective_color()
 		rig.play_once("Slashing", 1.3)
-		_hit_area(global_position, facing, s.radius, 360.0, s.damage_mult, s.stun)
+		_hit_area(global_position, facing, s.get_effective_radius(), 360.0, s, s.stun)
 	)
 
 
-## Timed buff built on StatBlock: 25% MORE damage and +40 armor.
-func _battle_cry(s: SkillDef) -> void:
+func _do_battle_cry(s: SkillDef) -> void:
 	if _buff_active:
 		stats.remove_source("battle_cry")
-	stats.add_mod("damage", StatBlock.ModType.MORE, 0.25, "battle_cry")
-	stats.add_mod("armor", StatBlock.ModType.FLAT, 40.0, "battle_cry")
+	stats.add_mod("damage", StatBlock.ModType.MORE, 0.30, "battle_cry")
+	stats.add_mod("crit_chance", StatBlock.ModType.FLAT, 0.15, "battle_cry")
+	stats.add_mod("armor", StatBlock.ModType.FLAT, 35.0, "battle_cry")
 	_buff_active = true
 	_buff_t = s.duration
 	rig.pulse()
+	_ring_t = 0.4
+	_ring_radius = 180.0
+	_ring_color = s.get_effective_color()
 
 
-# ---------- health / items ----------
+func _do_shield_slam(s: SkillDef) -> void:
+	# Quick bash forward
+	facing = facing.normalized()
+	velocity = facing * 180.0
+	rig.play_once("Slashing", 1.5)
+	_swing_dir = facing
+	_swing_arc = s.get_effective_arc()
+	_swing_radius = s.get_effective_radius()
+	_swing_color = s.get_effective_color()
+	_swing_t = SWING_TIME * 1.5
+	_hit_area(global_position, facing, s.get_effective_radius(), s.get_effective_arc(), s, s.stun)
+
+	# Fortify buff
+	if _shield_slam_buff_t > 0.0:
+		stats.remove_source("shield_slam")
+	stats.add_mod("armor", StatBlock.ModType.FLAT, 30.0, "shield_slam")
+	_shield_slam_buff_t = s.duration
+
+
+func _do_earthquake(s: SkillDef) -> void:
+	rig.play_once("Slashing", 1.1)
+	_ring_t = SWING_TIME * 3.0
+	_ring_radius = s.get_effective_radius()
+	_ring_color = s.get_effective_color()
+	_hit_area(global_position, facing, s.get_effective_radius(), 360.0, s, 0.8)
+
+	# Lingering fractured ground zone
+	var zone := Node2D.new()
+	zone.global_position = global_position
+	get_parent().add_child(zone)
+	var z_col := s.get_effective_color()
+	var z_rad := s.get_effective_radius()
+	zone.draw.connect(func():
+		zone.draw_circle(Vector2.ZERO, z_rad, Color(z_col.r, z_col.g, z_col.b, 0.15))
+		zone.draw_arc(Vector2.ZERO, z_rad, 0.0, TAU, 36, Color(z_col.r, z_col.g, z_col.b, 0.6), 3.0)
+	)
+	zone.queue_redraw()
+	var t := zone.create_tween()
+	t.tween_interval(s.duration)
+	t.tween_property(zone, "modulate:a", 0.0, 0.4)
+	t.tween_callback(zone.queue_free)
+
+
+func _do_iron_skin(s: SkillDef) -> void:
+	if _iron_skin_active:
+		stats.remove_source("iron_skin")
+	stats.add_mod("armor", StatBlock.ModType.FLAT, 90.0, "iron_skin")
+	stats.add_mod("life_regen", StatBlock.ModType.FLAT, 10.0, "iron_skin")
+	_iron_skin_active = true
+	_iron_skin_t = s.duration
+	rig.pulse()
+	_ring_t = 0.3
+	_ring_radius = 80.0
+	_ring_color = s.get_effective_color()
+
+
+func _do_frenzy(s: SkillDef) -> void:
+	_frenzy_stacks = mini(_frenzy_stacks + 1, 5)
+	_frenzy_t = 6.0
+	stats.remove_source("frenzy")
+	stats.add_mod("attack_speed", StatBlock.ModType.INCREASED, _frenzy_stacks * 0.10, "frenzy")
+	stats.add_mod("move_speed", StatBlock.ModType.INCREASED, _frenzy_stacks * 0.05, "frenzy")
+
+	rig.play_once("Slashing", 1.8)
+	_swing_dir = facing
+	_swing_arc = s.get_effective_arc()
+	_swing_radius = s.get_effective_radius()
+	_swing_color = s.get_effective_color()
+	_swing_t = SWING_TIME
+	_hit_area(global_position, facing, s.get_effective_radius(), s.get_effective_arc(), s)
+
+
+func _do_sundering_strike(s: SkillDef) -> void:
+	rig.play_once("Slashing", 1.3)
+	_swing_dir = facing
+	_swing_arc = s.get_effective_arc()
+	_swing_radius = s.get_effective_radius()
+	_swing_color = s.get_effective_color()
+	_swing_t = SWING_TIME * 1.5
+	_hit_area(global_position, facing, s.get_effective_radius(), s.get_effective_arc(), s, 0.5)
+
+
+func _do_blade_vortex(s: SkillDef) -> void:
+	rig.play_once("Slashing in The Air", 1.4)
+	# Whirlwind axes outward
+	_ring_t = SWING_TIME * 2.0
+	_ring_radius = s.get_effective_radius()
+	_ring_color = s.get_effective_color()
+	_hit_area(global_position, facing, s.get_effective_radius(), 360.0, s)
+
+
+func _do_battle_standard(s: SkillDef) -> void:
+	rig.pulse()
+	_ring_t = 0.4
+	_ring_radius = s.get_effective_radius()
+	_ring_color = s.get_effective_color()
+
+	# Spawn Standard node on ground
+	var banner := Node2D.new()
+	banner.global_position = global_position
+	get_parent().add_child(banner)
+	var b_rad := s.get_effective_radius()
+	var b_col := s.get_effective_color()
+	banner.draw.connect(func():
+		banner.draw_circle(Vector2.ZERO, 16.0, b_col)
+		banner.draw_arc(Vector2.ZERO, b_rad, 0.0, TAU, 40, Color(b_col.r, b_col.g, b_col.b, 0.4), 2.5)
+	)
+	banner.queue_redraw()
+	var t := banner.create_tween()
+	t.tween_interval(s.duration)
+	t.tween_property(banner, "modulate:a", 0.0, 0.5)
+	t.tween_callback(banner.queue_free)
+
+	# Instant pulse damage
+	_hit_area(global_position, facing, s.get_effective_radius(), 360.0, s)
+
+
+## Call of the Ancients: Talic (Whirlwind), Korlic (Leap + Frenzy) and Madawc (Upheaval) fight for
+## the skill's duration. Their base hit is a third of the skill's damage; each style scales it.
+## [name, weapon, fighting style] - see AncientAlly
+const ANCIENTS := [["Talic", "rusty_sword", "whirlwind"], ["Korlic", "battle_axe", "frenzy"], ["Madawc", "battle_axe", "upheaval"]]
+
+
+func _do_call_ancients(s: SkillDef) -> void:
+	rig.pulse()
+	_ring_t = 0.4
+	_ring_radius = 120.0
+	_ring_color = Color(0.6, 0.85, 1.0)
+	var rank := GameState.get_skill_rank(s.id)
+	var per_hit := stats.get_stat("damage") * s.get_effective_damage_mult(rank) / 3.0
+	for i in ANCIENTS.size():
+		var a := AncientAlly.new()
+		a.owner_player = self
+		a.ancient_name = ANCIENTS[i][0]
+		a.weapon_id = ANCIENTS[i][1]
+		a.style = ANCIENTS[i][2]
+		a.damage = per_hit
+		a.lifetime = s.duration
+		a.follow_offset = Vector2.from_angle(TAU * i / 3.0 + 0.5) * 80.0
+		a.position = global_position + a.follow_offset
+		get_parent().add_child(a)
+
+
+func _do_cleave_skill(s: SkillDef) -> void:
+	var target = _nearest_enemy(s.get_effective_radius() + 30.0)
+	if target != null:
+		facing = (target.global_position - global_position).normalized()
+		rig.set_facing(facing.x)
+	var as_hz := stats.get_stat("attack_speed")
+	var anim_speed := maxf(1.0, 0.42 * as_hz)
+	var cur_speed := velocity.length()
+	rig.play_once("Run Slashing" if cur_speed > 25.0 else "Slashing", anim_speed)
+	_swing_dir = facing
+	_swing_arc = s.get_effective_arc()
+	_swing_radius = s.get_effective_radius()
+	_swing_color = s.get_effective_color()
+	_swing_t = SWING_TIME
+	_hit_area(global_position, facing, s.get_effective_radius(), s.get_effective_arc(), s)
+
+
+# ---------- Health & Items ----------
 
 func take_damage(amount: float) -> void:
 	if dead:
 		return
 	var armor := stats.get_stat("armor")
-	hp -= amount * 100.0 / (100.0 + armor)  # diminishing-returns armor
+	var taken := amount * 100.0 / (100.0 + armor)
+	hp -= taken
+	# Getting hit builds the class resource (Warrior: Adrenaline)
+	var gain := class_def.power_per_life_lost * taken / maxf(stats.get_stat("max_life"), 1.0)
+	if _hit_power_cd <= 0.0 and class_def.power_on_hit > 0.0:
+		gain += class_def.power_on_hit
+		_hit_power_cd = 0.5
+	if gain > 0.0:
+		gain_resource(gain)
 	if hp <= 0.0:
 		hp = 0.0
 		dead = true
@@ -255,13 +724,109 @@ func take_damage(amount: float) -> void:
 		_hurt_cd = 0.7
 
 
-## `inventory` is the bag only; worn items live in `equipment`.
-## Returns false (and takes nothing) if the bag is full.
+func bag_item_count() -> int:
+	var c := 0
+	for it in inventory:
+		if it != null:
+			c += 1
+	return c
+
+
+func has_empty_bag_slot() -> bool:
+	return _first_empty_slot() != -1
+
+
+func _first_empty_slot() -> int:
+	for i in BAG_SIZE:
+		if i >= inventory.size() or inventory[i] == null:
+			return i
+	return -1
+
+
+func add_to_bag(item: ItemInstance) -> bool:
+	var idx := _first_empty_slot()
+	if idx == -1:
+		return false
+	while inventory.size() < BAG_SIZE:
+		inventory.append(null)
+	inventory[idx] = item
+	inventory_changed.emit()
+	return true
+
+
+func remove_from_bag(item: ItemInstance) -> bool:
+	var idx := inventory.find(item)
+	if idx != -1:
+		inventory[idx] = null
+		inventory_changed.emit()
+		return true
+	return false
+
+
+func swap_bag_slots(idx_a: int, idx_b: int) -> void:
+	if idx_a < 0 or idx_a >= BAG_SIZE or idx_b < 0 or idx_b >= BAG_SIZE:
+		return
+	while inventory.size() < BAG_SIZE:
+		inventory.append(null)
+	var temp: ItemInstance = inventory[idx_a]
+	inventory[idx_a] = inventory[idx_b]
+	inventory[idx_b] = temp
+	inventory_changed.emit()
+
+
+func equip_bag_slot_to_gear(bag_idx: int, target_slot: String) -> bool:
+	if bag_idx < 0 or bag_idx >= BAG_SIZE or bag_idx >= inventory.size():
+		return false
+	return equip_to(inventory[bag_idx], target_slot)
+
+
+func unequip_gear_to_bag_slot(slot: String, bag_idx: int) -> bool:
+	if not equipment.has(slot) or bag_idx < 0 or bag_idx >= BAG_SIZE:
+		return false
+	while inventory.size() < BAG_SIZE:
+		inventory.append(null)
+	var gear_item: ItemInstance = equipment[slot]
+	var bag_item: ItemInstance = inventory[bag_idx]
+	if bag_item == null:
+		gear_item.remove_from(stats)
+		equipment.erase(slot)
+		inventory[bag_idx] = gear_item
+		hp = minf(hp, stats.get_stat("max_life"))
+		_sync_gear_visuals()
+		inventory_changed.emit()
+		return true
+	# Dropped onto a bag item that fits this slot: swap them
+	return equip_to(bag_item, slot)
+
+
+func drop_bag_slot(bag_idx: int) -> void:
+	if bag_idx < 0 or bag_idx >= BAG_SIZE or bag_idx >= inventory.size():
+		return
+	var item: ItemInstance = inventory[bag_idx]
+	if item == null:
+		return
+	inventory[bag_idx] = null
+	item_dropped.emit(item)
+	inventory_changed.emit()
+
+
+func drop_gear_slot(slot: String) -> void:
+	if not equipment.has(slot):
+		return
+	var item: ItemInstance = equipment[slot]
+	item.remove_from(stats)
+	equipment.erase(slot)
+	_sync_gear_visuals()
+	item_dropped.emit(item)
+	inventory_changed.emit()
+
+
 func pick_up(item: ItemInstance) -> bool:
-	if not equipment.has(item.base.slot):
-		equip(item)  # empty slot: wear it straight away
-	elif inventory.size() < BAG_SIZE:
-		inventory.append(item)
+	var slot := equip_slot_for(item)
+	if can_equip(item) and not equipment.has(slot) and displaced_by(item, slot).is_empty():
+		equip_to(item, slot)
+	elif has_empty_bag_slot():
+		add_to_bag(item)
 	else:
 		return false
 	item_picked.emit(item)
@@ -270,107 +835,388 @@ func pick_up(item: ItemInstance) -> bool:
 
 
 func equip(item: ItemInstance) -> void:
+	equip_to(item, equip_slot_for(item), true)
+
+
+# ---------- equipping rules: class weapon types, one/two-handed, dual wield ----------
+
+## "" when this class can use the item, otherwise the reason it can't.
+func equip_block_reason(item: ItemInstance) -> String:
+	if item == null:
+		return "Nothing to equip"
+	var wt := item.base.weapon_type
+	if wt != "" and not class_def.weapon_types.has(wt):
+		return "%ss cannot use %ss" % [class_def.display_name, ItemBase.TYPE_NAMES.get(wt, wt).to_lower()]
+	return ""
+
+
+func can_equip(item: ItemInstance) -> bool:
+	return equip_block_reason(item) == ""
+
+
+## Equipment slots `item` may go in (empty if the class can't use it).
+func valid_slots(item: ItemInstance) -> Array[String]:
+	var out: Array[String] = []
+	if not can_equip(item):
+		return out
+	out.append(item.base.slot)
+	if item.base.slot == "weapon" and not item.base.two_handed and class_def.dual_wield:
+		out.append("offhand")
+	return out
+
+
+## Slot used when equipping without choosing one (Equip button, auto-equip on pickup):
+## the first free valid slot, otherwise the main one.
+func equip_slot_for(item: ItemInstance) -> String:
+	var slots := valid_slots(item)
+	if slots.is_empty():
+		return item.base.slot
+	for s in slots:
+		if not equipment.has(s) and not (s == "offhand" and _main_is_two_handed()):
+			return s
+	return slots[0]
+
+
+func _main_is_two_handed() -> bool:
+	var w: ItemInstance = equipment.get("weapon")
+	return w != null and w.base.two_handed
+
+
+## Gear that has to come off for `item` to go into `slot` (two-handers need both hands free).
+func displaced_by(item: ItemInstance, slot: String) -> Array[ItemInstance]:
+	var out: Array[ItemInstance] = []
+	var cur: ItemInstance = equipment.get(slot)
+	if cur != null and cur != item:
+		out.append(cur)
+	if slot == "weapon" and item.base.two_handed and equipment.has("offhand"):
+		out.append(equipment["offhand"])
+	if slot == "offhand" and _main_is_two_handed() and equipment["weapon"] != item:
+		out.append(equipment["weapon"])
+	return out
+
+
+func _empty_bag_count() -> int:
+	var n := 0
+	for i in BAG_SIZE:
+		if i >= inventory.size() or inventory[i] == null:
+			n += 1
+	return n
+
+
+## Equip `item` (from the bag or the ground) into `slot`. Whatever it replaces goes into the item's
+## old bag slot or a free one; with allow_drop it is dropped on the ground if the bag is full.
+## Also moves a worn one-hander between main and off hand. Returns false if not allowed.
+func equip_to(item: ItemInstance, slot: String, allow_drop := false) -> bool:
+	if item == null or not valid_slots(item).has(slot):
+		return false
+	if equipment.get(slot) == item:
+		return true
+	while inventory.size() < BAG_SIZE:
+		inventory.append(null)
+
+	# Already worn in the other hand: swap hands (stats don't change)
+	for s in equipment.keys():
+		if equipment[s] == item:
+			var other: ItemInstance = equipment.get(slot)
+			if other != null and not valid_slots(other).has(s):
+				return false
+			equipment.erase(s)
+			if other != null:
+				equipment[s] = other
+			equipment[slot] = item
+			_sync_gear_visuals()
+			inventory_changed.emit()
+			return true
+
+	var out := displaced_by(item, slot)
+	var bag_idx := inventory.find(item)
+	var room := _empty_bag_count() + (1 if bag_idx != -1 else 0)
+	if out.size() > room and not allow_drop:
+		return false
+
 	var old_max := stats.get_stat("max_life")
-	var slot := item.base.slot
-	if equipment.has(slot):
-		equipment[slot].remove_from(stats)
+	for o in out:
+		o.remove_from(stats)
+		for s in equipment.keys():
+			if equipment[s] == o:
+				equipment.erase(s)
+	if bag_idx != -1:
+		inventory[bag_idx] = null
 	item.apply_to(stats)
 	equipment[slot] = item
+	for o in out:
+		if bag_idx != -1:
+			inventory[bag_idx] = o
+			bag_idx = -1
+		elif has_empty_bag_slot():
+			inventory[_first_empty_slot()] = o
+		else:
+			item_dropped.emit(o)  # bag full: drop it so nothing is lost
 	var new_max := stats.get_stat("max_life")
 	hp = clampf(hp + maxf(new_max - old_max, 0.0), 0.0, new_max)
 	_sync_gear_visuals()
-
-
-## Wear a bag item. Whatever was in that slot takes its place in the bag.
-func equip_from_bag(item: ItemInstance) -> void:
-	var idx := inventory.find(item)
-	if idx == -1:
-		return
-	var old = equipment.get(item.base.slot)
-	inventory.remove_at(idx)
-	if old != null:
-		inventory.insert(idx, old)
-	equip(item)  # equip() strips the old item's modifiers
 	inventory_changed.emit()
+	return true
 
 
-## Run `change` (a Callable that edits the item) with stat bookkeeping handled:
-## worn items have their modifiers removed first and re-applied after.
+func equip_from_bag(item: ItemInstance) -> void:
+	equip_to(item, equip_slot_for(item))
+
+
 func modify_item(item: ItemInstance, change: Callable) -> void:
-	var worn: bool = equipment.get(item.base.slot) == item
+	var worn: bool = equipment.values().has(item)
 	if worn:
 		item.remove_from(stats)
 	change.call()
 	if worn:
 		item.apply_to(stats)
 		hp = minf(hp, stats.get_stat("max_life"))
+		_sync_gear_visuals()  # an orb may have changed its Legendary power or base
 	inventory_changed.emit()
 
 
-## Move a worn item into the bag. Fails if the bag is full.
 func unequip(slot: String) -> bool:
-	if not equipment.has(slot) or inventory.size() >= BAG_SIZE:
+	if not equipment.has(slot) or not has_empty_bag_slot():
 		return false
-	var item: ItemInstance = equipment[slot]
-	item.remove_from(stats)
-	equipment.erase(slot)
-	inventory.append(item)
-	hp = minf(hp, stats.get_stat("max_life"))
-	_sync_gear_visuals()
-	inventory_changed.emit()
-	return true
+	var empty_idx := _first_empty_slot()
+	return unequip_gear_to_bag_slot(slot, empty_idx)
 
 
-## Remove a bag item; the game world spawns it on the ground.
 func drop_item(item: ItemInstance) -> void:
-	if inventory.has(item):
-		inventory.erase(item)
-		item_dropped.emit(item)
-		inventory_changed.emit()
+	var idx := inventory.find(item)
+	if idx != -1:
+		drop_bag_slot(idx)
+		return
+	for s in equipment:
+		if equipment[s] == item:
+			drop_gear_slot(s)
+			return
 
 
-## What would my stats be if I wore this? Leaves the real stats untouched.
-func preview_equip(item: ItemInstance) -> Dictionary:
+## Stats before / after equipping `item` (in `slot`, default: where Equip would put it).
+func preview_equip(item: ItemInstance, slot := "") -> Dictionary:
 	var keys := ["max_life", "damage", "attack_speed", "armor", "crit_chance", "move_speed"]
+	if slot == "":
+		slot = equip_slot_for(item)
 	var before := {}
 	var after := {}
 	for k in keys:
 		before[k] = stats.get_stat(k)
-	var old = equipment.get(item.base.slot)
-	if old != null:
-		old.remove_from(stats)
+	var out: Array = displaced_by(item, slot) if can_equip(item) else []
+	for o in out:
+		o.remove_from(stats)
 	item.apply_to(stats)
 	for k in keys:
 		after[k] = stats.get_stat(k)
 	item.remove_from(stats)
-	if old != null:
-		old.apply_to(stats)
+	for o in out:
+		o.apply_to(stats)
 	return {"before": before, "after": after}
 
 
-## Show what is worn: the character's weapon, helmet and chest layers follow equipment.
+## Returns true if the item is better in slot than what is currently equipped.
+func is_better_in_slot(item: ItemInstance) -> bool:
+	if item == null:
+		return false
+	if not can_equip(item):
+		return false
+	var slot := equip_slot_for(item)
+	if not equipment.has(slot) and displaced_by(item, slot).is_empty():
+		return true  # Empty slot is always an upgrade!
+	
+	var old: ItemInstance = equipment.get(slot)
+	if old == null:
+		old = displaced_by(item, slot)[0]
+	var cmp := preview_equip(item)
+	var before: Dictionary = cmp["before"]
+	var after: Dictionary = cmp["after"]
+
+	var d_dmg: float = after["damage"] - before["damage"]
+	var d_life: float = after["max_life"] - before["max_life"]
+	var d_armor: float = after["armor"] - before["armor"]
+	var d_crit: float = after["crit_chance"] - before["crit_chance"]
+	var d_as: float = after["attack_speed"] - before["attack_speed"]
+	var d_ms: float = after["move_speed"] - before["move_speed"]
+
+	# General combat rating delta
+	var score_delta := (d_dmg * 12.0) + (d_life * 3.0) + (d_armor * 4.0) + (d_crit * 400.0) + (d_as * 80.0) + (d_ms * 40.0)
+
+	if score_delta > 0.5:
+		return true
+
+	# Slot-specific primary role checks
+	match slot:
+		"weapon", "offhand":
+			if d_dmg > 0.0 or (d_dmg == 0.0 and d_as > 0.0):
+				return true
+		"chest", "helmet", "gloves", "boots":
+			if (d_armor > 0.0 and d_life >= 0.0) or (d_life > 0.0 and d_armor >= 0.0):
+				return true
+
+	# If stats are tied, compare rarity and item level
+	if absf(score_delta) <= 0.5:
+		if item.rarity > old.rarity:
+			return true
+		if item.rarity == old.rarity and item.ilvl > old.ilvl:
+			return true
+
+	return false
+
+
+## Generates a colored summary string explaining why this item is better in slot.
+func get_upgrade_summary(item: ItemInstance) -> String:
+	if item == null:
+		return ""
+	var slot := equip_slot_for(item)
+	if not equipment.has(slot) or equipment[slot] == null:
+		return "[color=#4ade80]Empty Slot! Immediate Upgrade[/color]"
+	var cmp := preview_equip(item)
+	var lines: Array[String] = []
+	var before: Dictionary = cmp["before"]
+	var after: Dictionary = cmp["after"]
+
+	for k in ["damage", "max_life", "armor", "crit_chance", "attack_speed", "move_speed"]:
+		var d: float = after[k] - before[k]
+		if absf(d) < 0.001:
+			continue
+		var label: String = UIKit.STAT_LABELS.get(k, k.capitalize())
+		var txt := ""
+		match k:
+			"crit_chance", "move_speed":
+				txt = "%+d%%" % int(round(d * 100.0))
+			"attack_speed":
+				txt = "%+.2f /s" % d
+			_:
+				txt = "%+d" % int(round(d))
+		var col := "4ade80" if d > 0.0 else "f87171"
+		lines.append("[color=#%s]%s %s[/color]" % [col, txt, label])
+
+	if lines.is_empty():
+		var old: ItemInstance = equipment[slot]
+		if item.rarity > old.rarity:
+			return "[color=#ffd700]Higher Rarity Tier (%s vs %s)[/color]" % [
+				ItemInstance.Rarity.keys()[item.rarity].capitalize(),
+				ItemInstance.Rarity.keys()[old.rarity].capitalize()
+			]
+		if item.ilvl > old.ilvl:
+			return "[color=#7ba6ff]Higher Item Level (iLvl %d vs %d)[/color]" % [item.ilvl, old.ilvl]
+		return "[color=#4ade80]Superior magical affixes[/color]"
+
+	return "\n".join(PackedStringArray(lines))
+
+
+## Generates a compact inline summary of upgrade deltas for small HUD popups (e.g. "+15 Damage   +5% Crit").
+func get_compact_upgrade_summary(item: ItemInstance) -> String:
+	if item == null:
+		return ""
+	var slot := equip_slot_for(item)
+	if not equipment.has(slot) or equipment[slot] == null:
+		return "[color=#4ade80]Empty Slot! Immediate Upgrade[/color]"
+	var cmp := preview_equip(item)
+	var parts: Array[String] = []
+	var before: Dictionary = cmp["before"]
+	var after: Dictionary = cmp["after"]
+
+	for k in ["damage", "max_life", "armor", "crit_chance", "attack_speed", "move_speed"]:
+		var d: float = after[k] - before[k]
+		if absf(d) < 0.001:
+			continue
+		var label: String = UIKit.STAT_LABELS.get(k, k.capitalize())
+		var txt := ""
+		match k:
+			"crit_chance", "move_speed":
+				txt = "%+d%%" % int(round(d * 100.0))
+			"attack_speed":
+				txt = "%+.2f/s" % d
+			_:
+				txt = "%+d" % int(round(d))
+		var col := "4ade80" if d > 0.0 else "f87171"
+		parts.append("[color=#%s]%s %s[/color]" % [col, txt, label])
+		if parts.size() >= 2:
+			break
+
+	if parts.is_empty():
+		return "[color=#4ade80]Superior Tier / Properties[/color]"
+	return "   ".join(PackedStringArray(parts))
+
+
+## Returns the display name of currently equipped gear in the item's slot.
+func get_replaced_gear_name(item: ItemInstance) -> String:
+	if item == null:
+		return "None"
+	var slot := equip_slot_for(item)
+	if not equipment.has(slot) or equipment[slot] == null:
+		return "Empty Slot"
+	return equipment[slot].display_name
+
+
+## Equips item directly. Places replaced gear into bag or drops onto world if bag is full.
+func equip_with_overflow(item: ItemInstance) -> ItemInstance:
+	var slot := equip_slot_for(item)
+	var out := displaced_by(item, slot)
+	if not equip_to(item, slot, true):
+		return null
+	return out[0] if not out.is_empty() else null
+
+
+## Shows worn gear on a rig: main weapon, helmet, chest and the off-hand item.
+static func dress_rig(r: RigSprite, gear: Dictionary) -> void:
+	for slot in VISIBLE_SLOTS:
+		var it = gear.get(slot)
+		r.set_gear(slot, it.base.id if it != null else "")
+	var off = gear.get("offhand")
+	r.set_offhand(off.base.id if off != null else "", off != null and off.base.weapon_type == "shield")
+
+
+## Called whenever the worn gear changes: redress the rig and recount Legendary powers and
+## set bonuses (item_powers, read through GameState.passive_value like passive tree stats).
 func _sync_gear_visuals() -> void:
+	item_powers = UniqueItems.powers_of(equipment.values())
+	if stats != null:
+		_apply_passives()
 	if rig == null:
 		return
-	for slot in VISIBLE_SLOTS:
-		var it = equipment.get(slot)
-		rig.set_gear(slot, it.base.id if it != null else "")
+	dress_rig(rig, equipment)
 
 
-# ---------- drawing (ground effects; the character itself is the rig) ----------
+# ---------- Drawing (Ground effects; character itself is the rig) ----------
 
 func _draw() -> void:
 	RigSprite.draw_shadow(self, 26.0)
 	if _buff_active:
 		draw_arc(Vector2.ZERO, 34.0, 0.0, TAU, 32, Color(1.0, 0.6, 0.2, 0.8), 4.0)
+	if _iron_skin_active:
+		draw_arc(Vector2.ZERO, 38.0, 0.0, TAU, 32, Color(0.7, 0.85, 1.0, 0.9), 4.5)
+	if _frenzy_stacks > 0:
+		for s in _frenzy_stacks:
+			var ang := (s / float(_frenzy_stacks)) * TAU
+			draw_circle(Vector2.from_angle(ang) * 28.0, 3.5, Color(1.0, 0.8, 0.2, 0.9))
+
 	if _swing_t > 0.0:
 		var a := _swing_t / SWING_TIME
-		var half := deg_to_rad(_swing_arc) * 0.5
-		var start := _swing_dir.angle() - half
-		var pts := PackedVector2Array([Vector2.ZERO])
-		for i in 13:
-			pts.append(Vector2.from_angle(start + half * 2.0 * float(i) / 12.0) * _swing_radius)
-		draw_colored_polygon(pts, Color(1, 1, 1, 0.30 * a))
+		if _swing_arc >= 359.0:
+			draw_circle(Vector2.ZERO, _swing_radius, Color(_swing_color.r, _swing_color.g, _swing_color.b, 0.30 * a))
+			draw_arc(Vector2.ZERO, _swing_radius, 0.0, TAU, 36, Color(_swing_color.r, _swing_color.g, _swing_color.b, 0.9 * a), 3.0)
+		else:
+			var half := deg_to_rad(_swing_arc) * 0.5
+			var start := _swing_dir.angle() - half
+			var pts := PackedVector2Array([Vector2.ZERO])
+			for i in 13:
+				pts.append(Vector2.from_angle(start + half * 2.0 * float(i) / 12.0) * _swing_radius)
+			draw_colored_polygon(pts, Color(_swing_color.r, _swing_color.g, _swing_color.b, 0.40 * a))
+			var edge_pts := PackedVector2Array()
+			for i in 13:
+				edge_pts.append(Vector2.from_angle(start + half * 2.0 * float(i) / 12.0) * _swing_radius)
+			draw_polyline(edge_pts, Color(_swing_color.r, _swing_color.g, _swing_color.b, 0.9 * a), 3.0)
+
 	if _ring_t > 0.0:
-		var a2 := _ring_t / (SWING_TIME * 2.0)
-		draw_arc(Vector2.ZERO, _ring_radius, 0.0, TAU, 48, Color(1.0, 0.8, 0.4, a2), 6.0)
+		var a2 := _ring_t / (SWING_TIME * 2.5)
+		draw_arc(Vector2.ZERO, _ring_radius, 0.0, TAU, 48,
+			Color(_ring_color.r, _ring_color.g, _ring_color.b, clampf(a2, 0.0, 1.0)), 6.0)
+
+	if _whirlwind_t > 0.0:
+		var spin_ang := float(Time.get_ticks_msec()) * 0.008
+		draw_arc(Vector2.ZERO, 145.0, 0.0, TAU, 48, Color(_ring_color.r, _ring_color.g, _ring_color.b, 0.5), 3.0)
+		for b in 3:
+			var b_ang := spin_ang + (b * TAU / 3.0)
+			draw_arc(Vector2.ZERO, 135.0, b_ang, b_ang + 1.1, 16, Color(1.0, 1.0, 1.0, 0.8), 3.0)

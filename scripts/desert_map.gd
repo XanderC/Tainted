@@ -30,6 +30,7 @@ var _bag: Array = []
 
 
 func _ready() -> void:
+	y_sort_enabled = true
 	texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 	_rng.seed = 1337
 	_add_ground()

@@ -1,9 +1,9 @@
 class_name CurrencyPickup
 extends Node2D
-## Orbs, materials, gold and recipe pages lying on the ground. Collected by walking near.
-## kind: "orb" | "material" | "gold" | "recipe"
+## Orbs, orb shards, materials and recipe pages lying on the ground. Collected by walking near.
+## kind: "orb" | "shard" | "material" | "recipe"
 
-var kind := "gold"
+var kind := "shard"
 var id := ""
 var amount := 1
 var delay := 0.3
@@ -25,16 +25,16 @@ func label_text() -> String:
 	match kind:
 		"orb": return "%s" % CraftingDB.ORBS[id].short
 		"material": return "%d %s" % [amount, CraftingDB.MATERIALS[id].name]
-		"recipe": return "Recipe: %s" % CraftingDB.RECIPES[id].name
-	return "%d Gold" % amount
+		"recipe": return "%s: %s" % ["Plan" if CraftingDB.is_plan(id) else "Recipe", CraftingDB.RECIPES[id].name]
+	return "%d %s Shards" % [amount, CraftingDB.ORBS.get(id, {}).get("short", "Orb")]
 
 
 func color() -> Color:
 	match kind:
 		"orb": return CraftingDB.ORBS[id].color
 		"material": return CraftingDB.MATERIALS[id].color
-		"recipe": return Color(0.9, 0.75, 0.5)
-	return Color(1.0, 0.85, 0.2)
+		"recipe": return CraftingDB.recipe_color(id)
+	return CraftingDB.ORBS.get(id, {}).get("color", Color(1.0, 0.85, 0.2))
 
 
 ## Hands the contents to the player. Returns a message to show.
@@ -44,10 +44,10 @@ func collect() -> String:
 		"material": GameState.add_material(id, amount)
 		"recipe":
 			if not GameState.learn_recipe(id):
-				GameState.add_gold(40)
-				return "Recipe already known: +40 Gold"
-			return "Learned recipe: %s" % CraftingDB.RECIPES[id].name
-		_: GameState.add_gold(amount)
+				GameState.add_shards("alchemy", 5)
+				return "Already known: +5 Alchemy Shards"
+			return "Learned %s: %s" % ["plan" if CraftingDB.is_plan(id) else "recipe", CraftingDB.RECIPES[id].name]
+		_: GameState.add_shards(id, amount)
 	return "+" + label_text()
 
 

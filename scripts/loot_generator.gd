@@ -5,12 +5,18 @@ extends Node
 
 var bases: Array[ItemBase] = []
 var affixes: Array[AffixDef] = []
+## Set by GameState when the player loads: most drops are things this class can use.
+var smart_class: ClassDef = null
+const SMART_LOOT_CHANCE := 0.85
 
 const RARITY_WEIGHTS := {
 	ItemInstance.Rarity.NORMAL: 60,
 	ItemInstance.Rarity.MAGIC: 30,
 	ItemInstance.Rarity.RARE: 10,
 }
+## Chance that a random drop (no forced rarity) is a Legendary / Set item instead.
+const LEGENDARY_CHANCE := 0.012
+const SET_CHANCE := 0.010
 const NAME_PREFIXES := ["Grim", "Blighted", "Ashen", "Cursed", "Vile", "Hollow", "Wretched", "Sundered"]
 const NAME_SUFFIXES := ["of Woe", "of the Pit", "of Ruin", "of Dusk", "of Torment", "of Rot"]
 
@@ -23,7 +29,8 @@ func _ready() -> void:
 
 # ---------- database ----------
 
-func _base(id: String, name: String, slot: String, col: Color, imp_stat := "", imp_val := 0.0) -> void:
+func _base(id: String, name: String, slot: String, col: Color, imp_stat := "", imp_val := 0.0,
+		wtype := "", two_hand := false) -> void:
 	var b := ItemBase.new()
 	b.id = id
 	b.display_name = name
@@ -31,10 +38,14 @@ func _base(id: String, name: String, slot: String, col: Color, imp_stat := "", i
 	b.color = col
 	b.implicit_stat = imp_stat
 	b.implicit_value = imp_val
+	b.weapon_type = wtype
+	b.two_handed = two_hand
 	# Inventory / ground icon, if art exists for this base (assets/gear/<slot>/<id>/icon.png)
 	var icon_path := "res://assets/gear/%s/%s/icon.png" % [slot, id]
 	if ResourceLoader.exists(icon_path):
 		b.icon = load(icon_path)
+	else:
+		b.icon = IconFactory.item_icon(id, slot, col)
 	bases.append(b)
 
 
@@ -54,8 +65,20 @@ func _affix(id: String, text: String, stat: String, type: int, lo: float, hi: fl
 
 
 func _build_bases() -> void:
-	_base("rusty_sword", "Rusty Sword", "weapon", Color(0.7, 0.7, 0.75), "damage", 5)
-	_base("battle_axe", "Battle Axe", "weapon", Color(0.6, 0.55, 0.5), "damage", 8)
+	# One-handed weapons (main hand, or off hand for classes that dual wield)
+	_base("rusty_sword", "Rusty Sword", "weapon", Color(0.7, 0.7, 0.75), "damage", 5, "sword")
+	_base("hand_axe", "Hand Axe", "weapon", Color(0.62, 0.55, 0.48), "damage", 6, "axe")
+	_base("iron_mace", "Iron Mace", "weapon", Color(0.55, 0.55, 0.6), "damage", 6, "mace")
+	_base("dagger", "Dagger", "weapon", Color(0.75, 0.75, 0.8), "damage", 4, "dagger")
+	# Two-handed weapons: stronger than one one-hander, close to two of them
+	_base("battle_axe", "Battle Axe", "weapon", Color(0.6, 0.55, 0.5), "damage", 14, "axe", true)
+	_base("greatsword", "Greatsword", "weapon", Color(0.78, 0.78, 0.85), "damage", 13, "sword", true)
+	_base("war_maul", "War Maul", "weapon", Color(0.5, 0.48, 0.5), "damage", 15, "mace", true)
+	_base("oak_staff", "Oak Staff", "weapon", Color(0.55, 0.40, 0.25), "damage", 10, "staff", true)
+	_base("hunting_bow", "Hunting Bow", "weapon", Color(0.60, 0.45, 0.30), "damage", 9, "bow", true)
+	# Shields (off hand)
+	_base("wooden_shield", "Wooden Shield", "offhand", Color(0.55, 0.40, 0.25), "armor", 12, "shield")
+	_base("tower_shield", "Tower Shield", "offhand", Color(0.60, 0.62, 0.68), "armor", 22, "shield")
 	_base("leather_cap", "Leather Cap", "helmet", Color(0.55, 0.4, 0.25), "armor", 5)
 	_base("iron_helm", "Iron Helm", "helmet", Color(0.6, 0.6, 0.65), "armor", 10)
 	_base("padded_vest", "Padded Vest", "chest", Color(0.5, 0.4, 0.3), "armor", 10)
@@ -84,12 +107,21 @@ func _build_affixes() -> void:
 # ---------- rolling ----------
 
 func roll_item(ilvl: int = 1, forced_rarity: int = -1, slot: String = "") -> ItemInstance:
+	if forced_rarity < 0 and slot == "":
+		var r := randf()
+		if r < LEGENDARY_CHANCE + SET_CHANCE:
+			var u := UniqueItems.roll(ilvl, r >= LEGENDARY_CHANCE, smart_class)
+			if u != null:
+				return u
 	var item := ItemInstance.new()
-	if slot != "":
-		item.base = bases.filter(func(b): return b.slot == slot).pick_random()
-	else:
-		item.base = bases.pick_random()
+	var pool := bases.filter(func(b): return slot == "" or b.slot == slot)
+	if smart_class != null and randf() < SMART_LOOT_CHANCE:
+		var usable := pool.filter(func(b): return b.weapon_type == "" or smart_class.weapon_types.has(b.weapon_type))
+		if not usable.is_empty():
+			pool = usable
+	item.base = pool.pick_random()
 	item.ilvl = ilvl
+	item.implicit_roll = ItemInstance.roll_implicit()
 	item.rarity = forced_rarity if forced_rarity >= 0 else _roll_rarity()
 
 	var count := 0
@@ -101,6 +133,7 @@ func roll_item(ilvl: int = 1, forced_rarity: int = -1, slot: String = "") -> Ite
 
 	roll_affixes(item, count)
 	item.display_name = _make_name(item)
+	item.sockets = ItemInstance.roll_sockets(item.base.slot, item.rarity)
 	return item
 
 
@@ -127,7 +160,7 @@ func add_random_affix(item: ItemInstance) -> bool:
 	var picked: AffixDef = _pick_weighted(candidates)
 	if picked == null:
 		return false
-	item.affixes.append(_roll_affix(picked))
+	item.affixes.append(_roll_affix(picked, item.ilvl))
 	return true
 
 
@@ -142,7 +175,7 @@ func reroll_values(item: ItemInstance) -> void:
 	for i in item.affixes.size():
 		var def := find_affix(item.affixes[i].id)
 		if def != null:
-			item.affixes[i] = _roll_affix(def)
+			item.affixes[i] = _roll_affix(def, item.ilvl)
 
 
 func rename(item: ItemInstance) -> void:
@@ -175,8 +208,10 @@ func _pick_weighted(pool: Array) -> AffixDef:
 	return pool.back()
 
 
-func _roll_affix(a: AffixDef) -> Dictionary:
-	var v := randf_range(a.min_value, a.max_value)
+## Affix value: the range grows with item level and the roll leans to the high end.
+func _roll_affix(a: AffixDef, item_level := 1) -> Dictionary:
+	var scale := ItemInstance.ilvl_scale(item_level, a.is_percent)
+	var v := lerpf(a.min_value, a.max_value, ItemInstance.ilvl_roll(item_level)) * scale
 	v = snappedf(v, 0.01) if a.is_percent else roundf(v)
 	return make_entry(a, v)
 
