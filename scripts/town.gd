@@ -2,6 +2,7 @@ extends Node2D
 ## The hub scene, entered from the character select screen. Walk up to an NPC and tap Talk.
 ## Blacksmith: recipes and plans (paid in orbs).  Merchant: buy and sell.  Stash keeper: shared storage and currency.
 ## Jeweler: combine gems into higher tiers and remove socketed gems.
+## Sage: identifies every item in your bag and stash, free.
 ## Rift Gate: pick a rift level, then start a run (scenes/main.tscn).
 
 const DUNGEON_SCENE := "res://scenes/main.tscn"
@@ -47,6 +48,8 @@ func _ready() -> void:
 		Color(0.95, 0.85, 0.7), "Open the Passive Tree", func(): skill_tree_ui.open())
 	_add_npc("Jeweler", "Gems", Vector2(280, -175), {"chest": "padded_vest", "helmet": "leather_cap"},
 		Color(0.80, 0.90, 1.0), "Talk to the Jeweler", func(): menu.open_vendor("jeweler"))
+	_add_npc("Sage Aldous", "Identify", Vector2(-600, 150), {"chest": "padded_vest"},
+		Color(0.93, 0.88, 0.72), "Talk to the Sage", _identify_all)
 	_add_gate(Vector2(820, 220))
 
 	var layer := CanvasLayer.new()
@@ -157,26 +160,25 @@ func _show_hub_intro() -> void:
 	v.add_child(ok)
 
 
+## An item's name plate was tapped and the player reached it (LootPickup). False when there's no room.
+func take_loot(p: LootPickup) -> bool:
+	var better := player.is_better_in_slot(p.item)
+	if player.pick_up(p.item):
+		p.queue_free()
+		if better and player.inventory.has(p.item):
+			upgrade_popup_ui.prompt_upgrade(p.item, null)
+		return true
+	if better:
+		upgrade_popup_ui.prompt_upgrade(p.item, p)
+		return true
+	return false
+
+
 func _process(delta: float) -> void:
 	_hud.text = "Ashfall Outpost\nChaos %d   Divine %d     Bag %d/%d cells" % [GameState.orb_count("chaos"), GameState.orb_count("divine"),
 		player.bag_cells_used(), Player.BAG_SIZE]
 	if _gate:
 		_gate.queue_redraw()
-
-	for p in get_tree().get_nodes_in_group("pickups"):
-		if p.delay > 0.0 or p.has_meta("upgrade_dismissed"):
-			continue
-		if p.global_position.distance_to(player.global_position) < 48.0:
-			if player.is_better_in_slot(p.item):
-				if player.pick_up(p.item):
-					p.queue_free()
-					upgrade_popup_ui.prompt_upgrade(p.item, null)
-				else:
-					p.set_meta("upgrade_dismissed", true)
-					upgrade_popup_ui.prompt_upgrade(p.item, p)
-				break
-			elif player.pick_up(p.item):
-				p.queue_free()
 
 	var best: Interactable = null
 	var best_d := INF
@@ -217,6 +219,14 @@ func enter_dungeon() -> void:
 
 
 # ---------- building the town's people ----------
+
+## The Sage: identify everything at once, then show the bag so you can see what you found.
+func _identify_all() -> void:
+	var n := GameState.identify_all(player)
+	menu.open()
+	menu.feedback("The Sage identified %d item%s." % [n, "" if n == 1 else "s"] if n > 0
+		else "The Sage finds nothing left to identify.")
+
 
 func _add_npc(title: String, subtitle: String, pos: Vector2, gear: Dictionary, tint: Color, prompt: String, action: Callable) -> void:
 	var npc := Interactable.new()

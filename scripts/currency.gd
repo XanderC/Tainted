@@ -9,6 +9,7 @@ const SHARDS_PER_ORB := 20
 ## What the Merchant sells each orb for: [paid with orb, how many].
 ## Exalted, Divine, Annulment and Mirror are never sold: they only drop.
 const VENDOR_ORBS := {
+	"identify": ["transmute", 1],
 	"alteration": ["transmute", 2],
 	"augment": ["alteration", 1],
 	"chance": ["alteration", 2],

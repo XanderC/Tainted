@@ -19,6 +19,10 @@ static func orb_block_reason(item: ItemInstance, orb: String) -> String:
 		return NOT_ITEM_ORBS[orb]
 	if item == null:
 		return "Pick an item"
+	if orb == "identify":
+		return "" if not item.identified else "Already identified"
+	if not item.identified:
+		return "Identify it first"
 	if item.corrupted:
 		return "Corrupted items can't be changed"
 	if item.mirrored:
@@ -101,6 +105,9 @@ static func apply_orb(player: Player, item: ItemInstance, orb: String) -> Dictio
 ## Applies an orb's effect. Returns a message when the result is worth telling ("" otherwise).
 static func _do_orb(item: ItemInstance, orb: String) -> String:
 	match orb:
+		"identify":
+			item.identify()
+			return "Identified: %s" % item.display_name
 		"transmute":
 			item.rarity = R.MAGIC
 			LootGenerator.roll_affixes(item, randi_range(1, 2))

@@ -1005,6 +1005,23 @@ func attach_player(p: Player) -> void:
 	p.inventory_changed.emit()
 
 
+## The Sage in town: identifies everything in the bag and the stash, free. Returns how many.
+func identify_all(p: Player) -> int:
+	var all: Array[ItemInstance] = stash.items()
+	all.append_array(stash_overflow)
+	if p != null:
+		all.append_array(p.inventory)
+	var n := 0
+	for it in all:
+		if it != null and it.identify():
+			n += 1
+	if n > 0:
+		_changed()
+		if p != null:
+			p.inventory_changed.emit()
+	return n
+
+
 func _changed() -> void:
 	changed.emit()
 	_queue_save()

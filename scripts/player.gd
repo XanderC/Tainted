@@ -51,6 +51,12 @@ var inventory: Array[ItemInstance]:
 var equipment := {}  # slot -> ItemInstance
 var item_powers := {}  # Legendary powers + set bonuses of the worn gear (UniqueItems.powers_of)
 var joystick: VirtualJoystick
+# walk_to(): walking on your own to a spot, e.g. an item whose label was tapped
+var _walking := false
+var _walk_target := Vector2.ZERO
+var _walk_reach := 0.0
+var _walk_time := 0.0
+var _walk_arrive: Callable
 var rig: RigSprite
 var can_fight := true  # false in town
 
@@ -198,6 +204,7 @@ func _physics_process(delta: float) -> void:
 		dir = joystick.output
 	if dir == Vector2.ZERO:
 		dir = Input.get_vector("ui_left", "ui_right", "ui_up", "ui_down")  # keyboard for desktop testing
+	dir = _walk_step(dir, delta)
 	velocity = dir * stats.get_stat("move_speed") * (0.6 if _slow_t > 0.0 else 1.0)
 	move_and_slide()
 	if dir.length() > 0.1:
@@ -966,6 +973,34 @@ func drop_gear_slot(slot: String) -> void:
 	inventory_changed.emit()
 
 
+## Walk to `pos` on your own (e.g. to an item whose label was tapped) and call `on_arrive` once
+## within `reach`. Moving yourself cancels it, and so does getting stuck.
+func walk_to(pos: Vector2, reach: float, on_arrive: Callable) -> void:
+	_walk_target = pos
+	_walk_reach = reach
+	_walk_arrive = on_arrive
+	_walk_time = 0.0
+	_walking = true
+
+
+func _walk_step(dir: Vector2, delta: float) -> Vector2:
+	if not _walking:
+		return dir
+	if dir != Vector2.ZERO:
+		_walking = false  # the player took over
+		return dir
+	var to := _walk_target - global_position
+	_walk_time += delta
+	if to.length() <= _walk_reach:
+		_walking = false
+		_walk_arrive.call()
+		return Vector2.ZERO
+	if _walk_time > 2.0 + to.length() / maxf(stats.get_stat("move_speed"), 1.0) * 2.0:
+		_walking = false  # stuck on something
+		return Vector2.ZERO
+	return to.normalized()
+
+
 func pick_up(item: ItemInstance) -> bool:
 	if item.is_flask():
 		var fi := free_flask_slot()
@@ -1000,6 +1035,8 @@ func equip(item: ItemInstance) -> void:
 func equip_block_reason(item: ItemInstance) -> String:
 	if item == null:
 		return "Nothing to equip"
+	if not item.identified:
+		return "Identify it first"
 	var wt := item.base.weapon_type
 	if wt != "" and not class_def.weapon_types.has(wt):
 		return "%ss cannot use %ss" % [class_def.display_name, ItemBase.TYPE_NAMES.get(wt, wt).to_lower()]

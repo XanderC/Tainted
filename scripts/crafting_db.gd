@@ -11,6 +11,8 @@ const R := ItemInstance.Rarity
 #   value - worth in Orbs of Transmutation (old gold conversion)
 #   drop  - relative drop weight
 const ORBS := {
+	"identify": {"name": "Scroll of Identify", "short": "Identify", "tag": "ID", "color": Color(0.93, 0.86, 0.66),
+		"desc": "Reveal an unidentified item's modifiers. Use it anywhere: tap the item in your bag", "value": 1, "drop": 400},
 	"transmute": {"name": "Orb of Transmutation", "short": "Transmute", "tag": "Trans", "color": Color(0.6, 0.7, 1.0),
 		"desc": "Normal item to Magic with 1-2 affixes", "value": 1, "drop": 300},
 	"alteration": {"name": "Orb of Alteration", "short": "Alteration", "tag": "Alt", "color": Color(0.5, 0.9, 0.9),
@@ -51,7 +53,7 @@ const ORBS := {
 		"desc": "Create a mirrored copy of an item (the copy can't be changed)", "value": 5000, "drop": 1},
 }
 ## Display order of orbs (cheapest first).
-const ORB_ORDER := ["transmute", "alteration", "augment", "chance", "jeweller", "armourer", "whetstone",
+const ORB_ORDER := ["identify", "transmute", "alteration", "augment", "chance", "jeweller", "armourer", "whetstone",
 	"blessed", "scour", "regret", "alchemy", "regal", "chaos", "gemcutter", "vaal", "annul", "exalt", "divine", "mirror"]
 
 
@@ -142,7 +144,7 @@ static func recipe_color(recipe_id: String) -> Color:
 	return Color(0.9, 0.75, 0.5)
 
 
-const STARTING_CURRENCY := {"transmute": 8, "alteration": 6, "augment": 3, "chance": 1, "armourer": 2, "whetstone": 1}
+const STARTING_CURRENCY := {"identify": 5, "transmute": 8, "alteration": 6, "augment": 3, "chance": 1, "armourer": 2, "whetstone": 1}
 
 
 ## Drops from one normal monster kill. Returns {"shards": {...}, "orbs": {...}}.
@@ -162,6 +164,8 @@ static func monster_drops(ilvl: int) -> Dictionary:
 		_add(out.orbs, "alteration", 3)
 	if randf() < 0.22:
 		out.orbs[_weighted_orb()] = 1
+	if randf() < 0.12:
+		_add(out.orbs, "identify", 1)
 	return out
 
 
@@ -185,6 +189,7 @@ static func boss_drops(fast: bool) -> Dictionary:
 	_add(out.shards, "chaos", 10 * ((randi_range(1, 2) if fast else 1) + (randi_range(1, 2) if fast else 1)))
 	_add(out.orbs, "alteration", 3 * (randi_range(2, 4) if fast else randi_range(1, 2)))
 	_add(out.shards, "alteration", 7 * randi_range(4, 8))
+	_add(out.orbs, "identify", randi_range(2, 4) * m)
 	var n := 6 if fast else 3
 	for i in n:
 		var id := _weighted_orb()

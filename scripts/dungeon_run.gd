@@ -151,6 +151,7 @@ func _on_boss_died(pos: Vector2) -> void:
 	for i in rewards.size():
 		var pk := LootPickup.new()
 		pk.item = rewards[i]
+		pk.item.unidentify()  # Magic and better: a scroll or the Sage reveals it
 		pk.delay = 0.8
 		pk.position = pos + Vector2.from_angle(TAU * i / rewards.size() + 0.5) * (70.0 + 12.0 * (i % 3))
 		main.add_child(pk)

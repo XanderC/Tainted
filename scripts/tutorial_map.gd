@@ -25,7 +25,7 @@ const HINTS := {
 	Stage.FIGHT: "[b]A Husk blocks the way![/b]\nYour gem is in your [color=#ffd54a]⚔ main attack[/color] slot. Walk up to it and tap the big " +
 		"[color=#ffd54a]attack button[/color] (bottom right; Space or click on a computer). Hits build [color=#fb923c]Adrenaline[/color] for stronger skills later. " +
 		"(You change skill gems at the [color=#ffd54a]stash[/color] in town.)",
-	Stage.EQUIP: "[b]It dropped a Magic weapon![/b]\nWalk over it to pick it up, then equip it in place of your Rusty Sword: " +
+	Stage.EQUIP: "[b]It dropped a Magic weapon![/b]\nTap its name on the ground to pick it up, then equip it in place of your Rusty Sword: " +
 		"tap [color=#4ade80]Equip[/color] on the popup, or open your [color=#ffd54a]🎒 BAG[/color] and drag it onto the Main Hand slot.",
 	Stage.PORTAL: "[b]You're ready.[/b]\nStep into the [color=#c084fc]portal[/color] to reach Ashfall Outpost, your home base. " +
 		"Its traders, crafters and the Rift Gate await.",
@@ -145,22 +145,19 @@ func _process(_delta: float) -> void:
 		Stage.PORTAL:
 			if not busy and player.global_position.distance_to(portal.global_position) < PORTAL_REACH:
 				_finish()
-	_pickups()
 
 
-## Walk over loot to take it. Unlike a rift, it always goes into the bag (never straight into an
-## empty slot) so equipping it is part of the lesson; upgrades offer a quick-equip popup.
-func _pickups() -> void:
-	for p in get_tree().get_nodes_in_group("pickups"):
-		if p.delay > 0.0 or p.has_meta("upgrade_dismissed"):
-			continue
-		if p.global_position.distance_to(player.global_position) < 48.0:
-			if player.add_to_bag(p.item):
-				var it: ItemInstance = p.item
-				p.queue_free()
-				if player.is_better_in_slot(it):
-					upgrade_popup_ui.prompt_upgrade(it, null)
-			break
+## Tap an item's name plate to take it (LootPickup). Unlike a rift, it always goes into the bag
+## (never straight into an empty slot) so equipping it is part of the lesson; upgrades offer a
+## quick-equip popup. False when there's no room.
+func take_loot(p: LootPickup) -> bool:
+	if not player.add_to_bag(p.item):
+		return false
+	var it: ItemInstance = p.item
+	p.queue_free()
+	if player.is_better_in_slot(it):
+		upgrade_popup_ui.prompt_upgrade(it, null)
+	return true
 
 
 func _unhandled_input(event: InputEvent) -> void:

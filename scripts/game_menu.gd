@@ -82,6 +82,8 @@ func _open_with(panel: String, vendor: String) -> void:
 	if player.dead:
 		return
 	_vendor = vendor
+	if vendor == "stash":
+		(_get_panel("stash") as StashPanel).tab = "items"
 	# Gems are socketed and swapped only at the stash or the Jeweler (the shared gems show there)
 	GameState.gem_station = vendor in ["stash", "jeweler"]
 	selected = null
@@ -193,18 +195,29 @@ func _get_panel(panel_name: String) -> MenuPanel:
 	return p
 
 
+## One row of tabs: the vendor's panel then PLAYER_PANELS. At the stash it is Items, Skills,
+## Currency, Gems instead (Items and Currency are the two tabs of the StashPanel).
 func _build_tabs() -> void:
 	UIKit.clear(_tabs_row)
-	var names: Array = []
-	if _vendor != "":
-		names.append(_vendor)
-	names.append_array(PLAYER_PANELS)
-	for n in names:
+	var tabs: Array = []  # [panel name, stash tab or ""]
+	if _vendor == "stash":
+		tabs = [["stash", "items"], ["skills", ""], ["stash", "currency"], ["gems", ""]]
+	else:
+		if _vendor != "":
+			tabs.append([_vendor, ""])
+		for n in PLAYER_PANELS:
+			tabs.append([n, ""])
+	var stash := _panels.get("stash") as StashPanel
+	for t in tabs:
+		var n: String = t[0]
+		var stash_tab: String = t[1]
 		var p := _get_panel(n)
 		p.visible = n == _current
-		var active: bool = n == _current
+		var active: bool = n == _current and (stash_tab == "" or stash.tab == stash_tab)
 		var b := Button.new()
 		b.text = p.panel_title()
+		if stash_tab != "":
+			b.text = "📦 Items" if stash_tab == "items" else "💰 Currency"
 		b.custom_minimum_size = Vector2(0, 42)
 		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		b.add_theme_font_size_override("font_size", 15)
@@ -212,7 +225,11 @@ func _build_tabs() -> void:
 			Color(0.24, 0.18, 0.10) if active else Color(0.11, 0.10, 0.13),
 			Color(0.95, 0.82, 0.40) if active else Color(0.35, 0.28, 0.20), 2 if active else 1, 6))
 		b.add_theme_color_override("font_color", Color(1.0, 0.95, 0.70) if active else Color(0.70, 0.65, 0.60))
-		b.pressed.connect(show_panel.bind(n))
+		b.pressed.connect(func():
+			if stash_tab != "":
+				(_get_panel("stash") as StashPanel).tab = stash_tab
+			show_panel(n)
+		)
 		_tabs_row.add_child(b)
 
 

@@ -34,6 +34,11 @@ const RARITY_COLORS := {
 @export var corrupted: bool = false
 ## Made by a Mirror of Kalandra: can't be changed.
 @export var mirrored: bool = false
+## Diablo style: Magic and better gear drops unidentified. Its modifiers are hidden, it shows only
+## its base name, and it can't be worn or crafted on until a Scroll of Identify (or the Sage in
+## town) reveals it. `hidden_name` holds its real name meanwhile.
+@export var identified: bool = true
+var hidden_name := ""
 
 const MAX_QUALITY := 20
 const IMPLICIT_ROLL := [0.9, 1.1]
@@ -156,9 +161,36 @@ func remove_from(stats: StatBlock) -> void:
 	stats.remove_source(self)
 
 
+## Whether this item drops unidentified (Magic and better gear; flasks never).
+func can_be_unidentified() -> bool:
+	return rarity != Rarity.NORMAL and not is_flask()
+
+
+## Hide its modifiers and real name until identified.
+func unidentify() -> void:
+	if identified and can_be_unidentified():
+		identified = false
+		hidden_name = display_name
+		display_name = base.display_name
+
+
+## Reveal its modifiers and real name. False if it was already identified.
+func identify() -> bool:
+	if identified:
+		return false
+	identified = true
+	display_name = hidden_name if hidden_name != "" else display_name
+	hidden_name = ""
+	return true
+
+
 func get_tooltip() -> String:
 	var lines: Array[String] = []
 	lines.append("%s  (%s, ilvl %d)" % [display_name, Rarity.keys()[rarity].capitalize(), ilvl])
+	if not identified:
+		lines.append("Unidentified")
+		return "
+".join(PackedStringArray(lines))
 	if quality > 0:
 		lines.append("Quality: +%d%%" % quality)
 	if base.implicit_stat != "":
@@ -200,6 +232,8 @@ func to_dict() -> Dictionary:
 		"implicit_roll": implicit_roll,
 		"corrupted": corrupted,
 		"mirrored": mirrored,
+		"identified": identified,
+		"hidden_name": hidden_name,
 	}
 
 
@@ -217,6 +251,8 @@ static func from_dict(d: Dictionary) -> ItemInstance:
 	it.implicit_roll = float(d.get("implicit_roll", 1.0))
 	it.corrupted = bool(d.get("corrupted", false))
 	it.mirrored = bool(d.get("mirrored", false))
+	it.identified = bool(d.get("identified", true))
+	it.hidden_name = String(d.get("hidden_name", ""))
 	var pw: Dictionary = d.get("powers", {})
 	for k in pw:
 		it.powers[String(k)] = float(pw[k])

@@ -23,7 +23,8 @@ func refresh() -> void:
 	var worn: ItemInstance = null if worn_now or it.is_flask() else player.equipment.get(player.equip_slot_for(it))
 
 	if worn != null:
-		var deltas := UIKit.equip_deltas(player, it)
+		# Unidentified: comparing would give its hidden modifiers away
+		var deltas := UIKit.equip_deltas(player, it) if it.identified else {}
 		var row := HBoxContainer.new()
 		row.add_theme_constant_override("separation", 8)
 		add_child(row)
@@ -32,7 +33,7 @@ func refresh() -> void:
 	else:
 		UIKit.item_card(self, it)
 
-	if not worn_now and not it.is_flask():
+	if not worn_now and not it.is_flask() and it.identified:
 		if player.is_better_in_slot(it):
 			var up := PanelContainer.new()
 			var usb := UIKit.box(Color(0.10, 0.22, 0.14, 0.95), Color(0.35, 1.0, 0.50), 1, 6)
@@ -44,6 +45,20 @@ func refresh() -> void:
 			add_child(up)
 		var cmp := UIKit.section(self, "EQUIPPING THIS ITEM:")
 		cmp.add_child(UIKit.rich(UIKit.delta_bbcode(player, it)))
+
+	# Unidentified: a Scroll of Identify works anywhere (the Sage in town does it for free)
+	if not it.identified:
+		var have := GameState.orb_count("identify")
+		var ident := UIKit.button("📜 Identify  (%d scroll%s)" % [have, "" if have == 1 else "s"],
+			Color(0.22, 0.19, 0.12), Color(0.93, 0.86, 0.66), Vector2(0, 52), 18)
+		ident.disabled = have <= 0
+		ident.pressed.connect(func():
+			menu.feedback(Crafting.apply_orb(player, it, "identify").msg)
+			menu.refresh()
+		)
+		add_child(ident)
+		if have <= 0:
+			add_child(UIKit.label("No Scrolls of Identify. Buy them from the Merchant, or the Sage in town identifies everything for free.", 13, UIKit.TEXT_DIM, true))
 
 	var acts := HBoxContainer.new()
 	acts.add_theme_constant_override("separation", 8)
@@ -90,8 +105,8 @@ func refresh() -> void:
 		)
 		acts.add_child(drop)
 
-	# Currency is used at the stash, selling and salvaging at the Merchant
-	add_child(UIKit.label("💰 Use currency on this item from the stash's Currency tab in town. Sell it at the Merchant.", 13, UIKit.TEXT_DIM, true))
+	# Currency is used at the stash (Scrolls of Identify anywhere), selling at the Merchant
+	add_child(UIKit.label("💰 Use currency on this item at the stash in town (Currency tab). Sell it at the Merchant.", 13, UIKit.TEXT_DIM, true))
 
 
 func _column(row: HBoxContainer, title: String) -> VBoxContainer:

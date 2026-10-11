@@ -28,7 +28,8 @@ func _notification(what: int) -> void:
 func _input(event: InputEvent) -> void:
 	if event is InputEventScreenTouch:
 		var vp := get_viewport_rect().size
-		if event.pressed and _touch_index == -1 and event.position.x < vp.x * 0.45:
+		# A touch on an item's name plate is for the plate (picking it up), not the stick
+		if event.pressed and _touch_index == -1 and event.position.x < vp.x * 0.45 				and not LootPickup.plate_at(get_viewport(), event.position):
 			_touch_index = event.index
 			_center = event.position
 			_knob = event.position

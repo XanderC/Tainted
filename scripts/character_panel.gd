@@ -6,7 +6,7 @@ extends PanelContainer
 ##   stash -> bag (take), and anything the current left panel accepts (e.g. buying a ware).
 ## Tapping an item selects it for the left panel (details, gems, blacksmith, merchant...).
 ## Currency and loose gems aren't carried: they are the account's, in the
-## shared stash (StashPanel). Orbs dragged from its Currency tab can be dropped on worn gear.
+## shared stash (StashPanel), whose Currency tab is where orbs are used.
 
 ## One cell of the bag grid (Player.BAG_COLS x BAG_ROWS, gear spanning several).
 const GEAR_GRID_CELL := 46.0  # 10 x 6 cells fill the space under the paperdoll on a 720p-tall screen
@@ -163,16 +163,10 @@ func _gear_cell(slot: String) -> DragSlot:
 		cell.payload = {"kind": "item", "from": "gear", "slot": slot, "item": it}
 		cell.clicked.connect(menu.select.bind(it))
 	cell.can_accept = func(d: Dictionary) -> bool:
-		if d.get("kind", "") == "orb":  # use currency on worn gear
-			return it != null and Crafting.orb_block_reason(it, String(d.id)) == ""
 		var di: ItemInstance = d.get("item")
 		return d.get("kind", "") == "item" and d.get("from", "") in ["bag", "gear"] and di != null \
 			and player.valid_slots(di).has(slot)
 	cell.on_drop = func(d: Dictionary) -> void:
-		if d.get("kind", "") == "orb":
-			menu.feedback(Crafting.apply_orb(player, it, String(d.id)).msg)
-			menu.select(it)
-			return
 		var di: ItemInstance = d.get("item")
 		if player.equip_to(di, slot):
 			menu.select(di)

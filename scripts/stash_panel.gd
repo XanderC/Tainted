@@ -1,24 +1,23 @@
 class_name StashPanel
 extends MenuPanel
-## The shared (account-wide) stash, in tabs:
+## The shared (account-wide) stash. At the stash the menu's tab row is Items, Skills, Currency,
+## Gems (GameMenu._build_tabs); Items and Currency are this panel, Skills and Gems are the usual
+## gem panels, which can change gems here (GameState.gem_station).
 ##   Items     - a grid like the bag, bigger. Drag gear between it and the bag on the right, or
 ##               within the stash to rearrange; dropping onto one item swaps the two.
-##   Currency  - every orb, with shards, and the one place currency is used: tap an item (in
-##               the bag, worn, or in the Items tab), then tap an orb to use it on that item, or
-##               drag an orb onto worn gear.
-##   Gems      - the gem station: your skill slots and the sockets of the item tapped in your
-##               bag, beside the shared skill, support and socket gems. Gems can only be changed
-##               here (or socketed at the Jeweler).
+##   Currency  - the one place currency is used. Drag a piece of gear into the slot (or tap it),
+##               pick an orb, then tap Use. After a use the item shows before and after.
 ## Everything here is shared by all your characters.
 
 const CELL := 44.0
-const TABS := [["items", "📦 Items"], ["currency", "💰 Currency"], ["gems", "💠 Gems"]]
-const ORB_CELL := Vector2(64, 64)
+const ORB_CELL := Vector2(60, 60)
+const BENCH_SLOT := Vector2(150, 150)
 
-var tab := "items"
-# Built once and kept, so a gem tapped in them stays selected between refreshes
-var _skills: SkillGemsPanel
-var _sockets: GemsPanel
+var tab := "items"  # "items" | "currency"
+var _orb := ""  # the orb picked on the Currency tab
+# The item as it was before the last orb used on it, to show what changed
+var _before: ItemInstance = null
+var _before_of: ItemInstance = null
 
 
 func panel_title() -> String:
@@ -26,34 +25,11 @@ func panel_title() -> String:
 
 
 func refresh() -> void:
-	# The embedded gem panels outlive a refresh; everything else is rebuilt
-	for c in get_children():
-		if c == _skills or c == _sockets:
-			remove_child(c)
-		else:
-			c.queue_free()
-	_add_tabs()
-	match tab:
-		"currency": _show_currency()
-		"gems": _show_gems()
-		_: _show_items()
-
-
-func _add_tabs() -> void:
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 4)
-	add_child(row)
-	for t in TABS:
-		var active: bool = tab == t[0]
-		var b := UIKit.button(t[1], Color(0.24, 0.18, 0.10) if active else Color(0.11, 0.10, 0.13),
-			Color(0.95, 0.82, 0.40) if active else Color(0.35, 0.28, 0.20), Vector2(0, 40), 14)
-		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		var id: String = t[0]
-		b.pressed.connect(func():
-			tab = id
-			menu.refresh()
-		)
-		row.add_child(b)
+	UIKit.clear(self)
+	if tab == "currency":
+		_show_currency()
+	else:
+		_show_items()
 
 
 # ---------- items ----------
@@ -102,83 +78,187 @@ func _show_items() -> void:
 			)
 			row.add_child(cell)
 
-	if menu.selected != null and GameState.stash.has(menu.selected):
+	if menu.selected != null:
 		UIKit.item_card(self, menu.selected, true)
 
 
 # ---------- currency ----------
 
 func _show_currency() -> void:
-	# The item currency is used on: whatever is tapped in the bag, worn, or in the Items tab
+	# The item on the bench is the menu's selection: dragged into the slot, or tapped anywhere
 	var it := menu.selected
-	if it != null:
-		var target := UIKit.section(self, "USING CURRENCY ON")
-		UIKit.item_card(target, it, true)
+	if it != _before_of:
+		_before = null
+		_before_of = null
 	var sec := UIKit.section(self, "CURRENCY")
-	sec.add_child(UIKit.label(
-		"Tap an orb to use it on this item." if it != null else
-		"Shared by all your characters. Tap an item in your bag or gear (or in the Items tab), then tap an orb to use it on it. You can also drag an orb onto gear you're wearing.",
-		13, UIKit.TEXT_DIM, true))
-	var grid := UIKit.grid(6)
-	sec.add_child(grid)
-	for id in CraftingDB.ORB_ORDER:
-		var o: Dictionary = CraftingDB.ORBS[id]
-		var n := GameState.orb_count(id)
-		var sh := GameState.shard_count(id)
-		var cell := DragSlot.new(ORB_CELL)
-		var tip := "%s\n%s" % [o.name, o.desc]
-		if sh > 0:
-			tip += "\nShards: %d / %d" % [sh, Currency.SHARDS_PER_ORB]
-		# With an item picked, an orb that can't be used on it is dimmed and says why
-		var on_item := it != null and not Crafting.NOT_ITEM_ORBS.has(id)
-		var why := Crafting.orb_block_reason(it, id) if on_item else ""
-		if why != "":
-			tip += "\n" + why
-		cell.setup(CraftingDB.orb_icon(id), Color(o.color) if n > 0 else UIKit.EMPTY_BORDER, Color(0.08, 0.07, 0.10), n, "", tip)
-		if n <= 0 or (it != null and (not on_item or why != "")):
-			cell.modulate = Color(1, 1, 1, 0.4)
-		if n > 0:
-			cell.payload = {"kind": "orb", "id": id}
-		if sh > 0:
-			var l := UIKit.label("%d/%d" % [sh, Currency.SHARDS_PER_ORB], 10, Color(0.85, 0.85, 0.95))
-			l.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
-			l.add_theme_color_override("font_outline_color", Color.BLACK)
-			l.add_theme_constant_override("outline_size", 4)
-			l.mouse_filter = Control.MOUSE_FILTER_IGNORE
-			l.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-			l.offset_left = 3
-			cell.add_child(l)
-		cell.clicked.connect(func():
-			if not on_item:
-				menu.feedback("%s: %s" % [o.name, o.desc])
-				return
-			var res := Crafting.apply_orb(player, it, id)
-			menu.feedback(res.msg)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 12)
+	sec.add_child(row)
+
+	var left := VBoxContainer.new()
+	left.add_theme_constant_override("separation", 8)
+	left.custom_minimum_size.x = BENCH_SLOT.x
+	row.add_child(left)
+	left.add_child(_bench_slot(it))
+	var why := _use_block_reason(it)
+	var have := GameState.orb_count(_orb) if _orb != "" else 0
+	var use := UIKit.button("✨ Use %s" % CraftingDB.ORBS[_orb].short if _orb != "" else "✨ Use",
+		Color(0.12, 0.18, 0.30), Color(0.55, 0.75, 1.0), Vector2(0, 52), 15)
+	use.disabled = why != ""
+	use.pressed.connect(_use.bind(it))
+	left.add_child(use)
+	if _orb != "":
+		left.add_child(UIKit.label("You have %d" % have, 13, UIKit.TEXT_DIM))
+	if why != "":
+		left.add_child(UIKit.label(why, 13, Color(0.95, 0.55, 0.45), true))
+	if it != null:
+		var clear := UIKit.button("✕ Take out", Color(0.16, 0.12, 0.12), Color(0.50, 0.35, 0.30), Vector2(0, 40), 14)
+		clear.pressed.connect(func():
+			menu.selected = null
 			menu.refresh()
 		)
-		grid.add_child(cell)
+		left.add_child(clear)
+
+	var right := VBoxContainer.new()
+	right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	right.add_theme_constant_override("separation", 6)
+	row.add_child(right)
+	if it == null:
+		right.add_child(UIKit.rich("[color=#8a7f6e]Drag a piece of gear from your bag, your equipment or the Items tab " +
+			"into the slot (or tap it), pick an orb below, then tap Use.\n\nThe item's details show here, " +
+			"and after each use you see it before and after.[/color]", 15))
+	elif _before != null:
+		var cols := HBoxContainer.new()
+		cols.add_theme_constant_override("separation", 8)
+		right.add_child(cols)
+		UIKit.item_card(_column(cols, "BEFORE"), _before, true)
+		UIKit.item_card(_column(cols, "AFTER"), it, true)
+		var changes := _changes(_before, it)
+		if changes != "":
+			right.add_child(UIKit.rich(changes, 14))
+	else:
+		UIKit.item_card(right, it, true)
+
+	sec.add_child(UIKit.label("Tap an orb to pick it. Dimmed orbs can't be used on this item.", 13, UIKit.TEXT_DIM, true))
+	var flow := HFlowContainer.new()
+	flow.add_theme_constant_override("h_separation", 5)
+	flow.add_theme_constant_override("v_separation", 5)
+	sec.add_child(flow)
+	for id in CraftingDB.ORB_ORDER:
+		flow.add_child(_orb_cell(id, it))
+	if _orb != "":
+		var o: Dictionary = CraftingDB.ORBS[_orb]
+		sec.add_child(UIKit.rich("[color=#%s][b]%s[/b][/color]  [color=#bdb6aa]%s[/color]" % [
+			Color(o.color).to_html(false), o.name, o.desc], 14))
 
 
-# ---------- gems ----------
-
-func _show_gems() -> void:
-	if _skills == null:
-		_skills = SkillGemsPanel.new()
-		_skills.embedded = true
-		_sockets = GemsPanel.new()
-		_sockets.embedded = true
-		for p in [_skills, _sockets]:
-			p.menu = menu
-			p.player = player
-	add_child(_skills)
-	_skills.refresh()
-	add_child(_sockets)
-	_sockets.refresh()
+## The slot gear is dragged into. It holds a reference: the item stays where it is.
+func _bench_slot(it: ItemInstance) -> DragSlot:
+	var slot := DragSlot.new(BENCH_SLOT)
+	if it != null:
+		slot.setup(it.base.icon, ItemInstance.RARITY_COLORS[it.rarity], it.base.color.darkened(0.72), 0, it.display_name, it.display_name)
+	else:
+		slot.setup(null, Color(0.40, 0.34, 0.26), Color(0.08, 0.07, 0.10), 0, "Drag gear here", "Drag a piece of gear here")
+	slot.can_accept = func(d: Dictionary) -> bool:
+		return d.get("kind", "") == "item" and d.get("item") != null
+	slot.on_drop = func(d: Dictionary) -> void:
+		menu.selected = d.item
+		menu.refresh()
+	return slot
 
 
-func _notification(what: int) -> void:
-	# The gem panels are kept out of the tree on the other tabs; free them with the stash
-	if what == NOTIFICATION_PREDELETE:
-		for p in [_skills, _sockets]:
-			if p != null and not p.is_inside_tree():
-				p.free()
+func _orb_cell(id: String, it: ItemInstance) -> DragSlot:
+	var o: Dictionary = CraftingDB.ORBS[id]
+	var n := GameState.orb_count(id)
+	var sh := GameState.shard_count(id)
+	var cell := DragSlot.new(ORB_CELL)
+	var tip := "%s\n%s" % [o.name, o.desc]
+	if sh > 0:
+		tip += "\nShards: %d / %d" % [sh, Currency.SHARDS_PER_ORB]
+	var why := Crafting.orb_block_reason(it, id) if it != null else ""
+	if why != "":
+		tip += "\n" + why
+	var border: Color = Color.WHITE if id == _orb else (Color(o.color) if n > 0 else UIKit.EMPTY_BORDER)
+	cell.setup(CraftingDB.orb_icon(id), border, Color(0.20, 0.18, 0.28) if id == _orb else Color(0.08, 0.07, 0.10), n, "", tip)
+	if n <= 0 or why != "":
+		cell.modulate = Color(1, 1, 1, 0.4)
+	if sh > 0:
+		var l := UIKit.label("%d/%d" % [sh, Currency.SHARDS_PER_ORB], 10, Color(0.85, 0.85, 0.95))
+		l.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
+		l.add_theme_color_override("font_outline_color", Color.BLACK)
+		l.add_theme_constant_override("outline_size", 4)
+		l.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		l.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		l.offset_left = 3
+		cell.add_child(l)
+	cell.clicked.connect(func():
+		_orb = id
+		menu.refresh()
+	)
+	return cell
+
+
+## "" when the picked orb can be used on the item now, otherwise what is missing.
+func _use_block_reason(it: ItemInstance) -> String:
+	if _orb == "":
+		return "Pick an orb"
+	if Crafting.NOT_ITEM_ORBS.has(_orb):
+		return Crafting.NOT_ITEM_ORBS[_orb]
+	if it == null:
+		return "Put an item in the slot"
+	if GameState.orb_count(_orb) <= 0:
+		return "You have none"
+	return Crafting.orb_block_reason(it, _orb)
+
+
+func _use(it: ItemInstance) -> void:
+	var before := ItemInstance.from_dict(it.to_dict())
+	var res := Crafting.apply_orb(player, it, _orb)
+	if res.ok:
+		_before = before
+		_before_of = it
+	menu.feedback(res.msg)
+	menu.refresh()
+
+
+## What an orb changed: lines gained in green, lines lost in red.
+func _changes(a: ItemInstance, b: ItemInstance) -> String:
+	var la := _lines(a)
+	var lb := _lines(b)
+	var t := ""
+	for l in lb:
+		if not la.has(l):
+			t += "[color=#4ade80]+ %s[/color]\n" % l
+	for l in la:
+		if not lb.has(l):
+			t += "[color=#f87171]− %s[/color]\n" % l
+	return t.strip_edges()
+
+
+func _lines(it: ItemInstance) -> Array[String]:
+	var out: Array[String] = [ItemInstance.Rarity.keys()[it.rarity].capitalize()]
+	if it.base.implicit_stat != "":
+		out.append("+%d %s (implicit)" % [int(it.implicit_value()), it.base.implicit_stat.replace("_", " ").capitalize()])
+	if it.quality > 0:
+		out.append("Quality +%d%%" % it.quality)
+	if it.sockets > 0:
+		out.append("%d socket%s" % [it.sockets, "" if it.sockets == 1 else "s"])
+	if it.corrupted:
+		out.append("Corrupted")
+	if not it.identified:
+		out.append("Unidentified")
+		return out
+	for af in it.affixes:
+		out.append(String(af.text))
+	return out
+
+
+func _column(row: HBoxContainer, title: String) -> VBoxContainer:
+	var col := VBoxContainer.new()
+	col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	col.add_theme_constant_override("separation", 4)
+	row.add_child(col)
+	var l := UIKit.label(title, 12, Color(0.60, 0.55, 0.48))
+	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	col.add_child(l)
+	return col

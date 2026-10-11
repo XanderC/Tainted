@@ -26,7 +26,6 @@ var _cam: Camera2D
 var _arrow: PortalArrow
 var _fade: ColorRect
 var _travelling := false
-var _bag_msg_cd := 0.0
 
 
 func _ready() -> void:
@@ -134,29 +133,6 @@ func _process(delta: float) -> void:
 	if portal != null and portal.active and not _travelling and not player.dead \
 			and player.global_position.distance_to(portal.global_position) < PORTAL_REACH:
 		_travel()
-
-	_bag_msg_cd -= delta
-	for p in get_tree().get_nodes_in_group("pickups"):
-		if p.delay > 0.0 or p.has_meta("upgrade_dismissed"):
-			continue
-		if p.global_position.distance_to(player.global_position) < 48.0:
-			if player.is_better_in_slot(p.item):
-				# Collect into bag immediately so movement/combat flows uninterrupted,
-				# and display the compact quick-equip popup.
-				if player.pick_up(p.item):
-					p.queue_free()
-					upgrade_popup_ui.prompt_upgrade(p.item, null)
-				else:
-					# Bag is completely full: prompt quick-equip from ground
-					p.set_meta("upgrade_dismissed", true)
-					upgrade_popup_ui.prompt_upgrade(p.item, p)
-				break
-			elif player.pick_up(p.item):
-				p.queue_free()
-			elif _bag_msg_cd <= 0.0:
-				drop_label.text = "Bag full!"
-				drop_label.modulate = Color(1.0, 0.4, 0.4)
-				_bag_msg_cd = 2.0
 
 	for p in get_tree().get_nodes_in_group("currency_pickups"):
 		if p.delay <= 0.0 and p.global_position.distance_to(player.global_position) < 70.0:
@@ -270,6 +246,22 @@ func spawn_currency(kind: String, id: String, amount: int, pos: Vector2) -> void
 	c.amount = amount
 	c.position = pos + Vector2.from_angle(randf() * TAU) * randf_range(20.0, 55.0)
 	add_child(c)
+
+
+## An item's name plate was tapped and the player reached it (LootPickup). Upgrades get the
+## quick-equip popup; with the bag full an upgrade can still be equipped from the ground.
+## False when there's no room for it.
+func take_loot(p: LootPickup) -> bool:
+	var better := player.is_better_in_slot(p.item)
+	if player.pick_up(p.item):
+		p.queue_free()
+		if better and player.inventory.has(p.item):
+			upgrade_popup_ui.prompt_upgrade(p.item, null)
+		return true
+	if better:
+		upgrade_popup_ui.prompt_upgrade(p.item, p)
+		return true
+	return false
 
 
 func _on_item_dropped(item: ItemInstance) -> void:

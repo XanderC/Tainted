@@ -17,9 +17,13 @@ func _ready() -> void:
 
 	menu.open_vendor("stash")
 	var stash := menu.current_panel() as StashPanel
-	for t in ["currency", "materials", "gems"]:
+	for t in ["items", "currency"]:
 		stash.tab = t
-		menu.refresh()
+		menu.show_panel("stash")
+		await _settle()
+		_shot("stash_%s.png" % t)
+	for t in ["skills", "gems"]:  # the gem panels, as the stash's Skills and Gems tabs
+		menu.show_panel(t)
 		await _settle()
 		_shot("stash_%s.png" % t)
 	get_tree().quit(0)

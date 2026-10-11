@@ -179,6 +179,13 @@ Content is data: add orbs and recipes in `crafting_db.gd`; orb rules live in `cr
 `GameState.reset_save()` or delete that file (on desktop: Godot's user data folder for "Tainted").
 
 
+### Identifying
+Magic, Rare, Legendary and Set gear from rift loot drops unidentified (`ItemInstance.identified`):
+it shows only its base name, its modifiers are hidden, and it can't be worn or crafted on.
+A **Scroll of Identify** (a currency in the stash, dropped by monsters and bosses, sold by the
+Merchant) identifies one item, anywhere, from the item's details. The **Sage** in town identifies
+everything in your bag and stash at once, free. Flasks and Normal items are always identified.
+
 ## Town: Ashfall Outpost (scenes/town.tscn, scripts/town.gd, town_map.gd)
 
 The game starts here, and you return here after a dungeon (leaving, or dying). Walk up to an NPC
@@ -186,6 +193,7 @@ and tap the Talk button at the bottom (or press E):
 
 - **Blacksmith** (west): recipes and plans.
 - **Merchant** (east): buy and sell.
+- **Sage** (south-west): identifies every item in your bag and stash, free.
 - **Stash Keeper** (north): shared storage, 60 slots, saved with the account so every future character sees it.
 - **Dungeon Gate** (east, by the pyramid): starts a dungeon instance.
 
