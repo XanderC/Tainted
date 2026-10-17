@@ -3,7 +3,9 @@ extends Resource
 ## A single rolled item: a base + rarity + rolled affixes. Serializable for saves.
 ## Legendary and Set items (UniqueItems) also carry a unique id; Legendaries have rolled powers.
 
-enum Rarity { NORMAL, MAGIC, RARE, LEGENDARY, SET }
+## RUNEWORD: a Normal item whose sockets hold a runeword's runes (Runewords). Last, so saves keep
+## their numbers.
+enum Rarity { NORMAL, MAGIC, RARE, LEGENDARY, SET, RUNEWORD }
 
 const RARITY_COLORS := {
 	Rarity.NORMAL: Color(0.9, 0.9, 0.9),
@@ -11,6 +13,7 @@ const RARITY_COLORS := {
 	Rarity.RARE: Color(1.0, 0.85, 0.3),
 	Rarity.LEGENDARY: Color(1.0, 0.55, 0.15),
 	Rarity.SET: Color(0.30, 0.95, 0.40),
+	Rarity.RUNEWORD: Color(0.78, 0.70, 0.47),  # Diablo II's runeword gold
 }
 
 @export var base: ItemBase
@@ -24,8 +27,12 @@ const RARITY_COLORS := {
 @export var gems: Array[String] = []
 ## Legendary / Set item id (UniqueItems), "" for ordinary items.
 @export var unique_id: String = ""
-## Legendary power values: stat key -> value (see UniqueItems).
+## Legendary power values: stat key -> value (see UniqueItems). A runeword's bonuses go here too.
 @export var powers: Dictionary = {}
+## Runeword id (Runewords), "" if the item isn't one. Its rolled stat bonuses are in rw_mods,
+## each {stat, mod_type, value, text}; its other bonuses in powers.
+@export var runeword_id: String = ""
+@export var rw_mods: Array[Dictionary] = []
 ## Quality 0..MAX_QUALITY % (Whetstone / Armourer's Scrap): raises the implicit stat.
 @export var quality: int = 0
 ## Implicit roll: the implicit is multiplied by this (rolled IMPLICIT_ROLL on drop, Blessed Orb rerolls it).
@@ -60,6 +67,15 @@ func is_weapon() -> bool:
 
 func is_unique() -> bool:
 	return unique_id != ""
+
+
+func is_runeword() -> bool:
+	return runeword_id != ""
+
+
+## A socketed gem or rune, as it works in this item (a rune's weapon or armour stat).
+func socket_info(gid: String) -> Dictionary:
+	return GemDef.info(gid, base.slot if base != null else "")
 
 
 func is_flask() -> bool:
@@ -152,9 +168,11 @@ func apply_to(stats: StatBlock) -> void:
 	for a in affixes:
 		stats.add_mod(a.stat, a.mod_type, a.value, self)
 	for gid in gems:
-		var g := GemDef.info(gid)
+		var g := socket_info(gid)
 		if not g.is_empty():
 			stats.add_mod(g.stat, g.mod, g.value, self)
+	for m in rw_mods:
+		stats.add_mod(m.stat, m.mod_type, m.value, self)
 
 
 func remove_from(stats: StatBlock) -> void:
@@ -197,12 +215,18 @@ func get_tooltip() -> String:
 		lines.append("Implicit: +%d %s" % [int(implicit_value()), base.implicit_stat.replace("_", " ")])
 	for a in affixes:
 		lines.append(a.text)
-	if not powers.is_empty():
+	if is_runeword():
+		lines.append("Runeword: " + Runewords.rune_names(runeword_id))
+		for m in rw_mods:
+			lines.append(m.text)
+		if not powers.is_empty():
+			lines.append(PassiveTree.stat_text(powers))
+	elif not powers.is_empty():
 		lines.append("Legendary: " + PassiveTree.stat_text(powers))
 	if UniqueItems.set_of(unique_id) != "":
 		lines.append("Set: " + String(UniqueItems.SETS[UniqueItems.set_of(unique_id)].name))
 	for i in sockets:
-		lines.append(("Socket: " + GemDef.info(gems[i]).get("text", "?")) if i < gems.size() else "Empty socket")
+		lines.append(("Socket: " + socket_info(gems[i]).get("text", "?")) if i < gems.size() else "Empty socket")
 	if corrupted:
 		lines.append("Corrupted")
 	if mirrored:
@@ -210,7 +234,7 @@ func get_tooltip() -> String:
 	return "\n".join(PackedStringArray(lines))
 
 
-const MAX_AFFIXES := {Rarity.NORMAL: 0, Rarity.MAGIC: 2, Rarity.RARE: 6, Rarity.LEGENDARY: 6, Rarity.SET: 6}
+const MAX_AFFIXES := {Rarity.NORMAL: 0, Rarity.MAGIC: 2, Rarity.RARE: 6, Rarity.LEGENDARY: 6, Rarity.SET: 6, Rarity.RUNEWORD: 0}
 
 
 func affix_ids() -> Array:
@@ -228,6 +252,8 @@ func to_dict() -> Dictionary:
 		"gems": gems,
 		"unique": unique_id,
 		"powers": powers,
+		"runeword": runeword_id,
+		"rw_mods": rw_mods.map(func(m): return {"stat": m.stat, "mod_type": int(m.mod_type), "value": m.value, "text": m.text}),
 		"quality": quality,
 		"implicit_roll": implicit_roll,
 		"corrupted": corrupted,
@@ -260,22 +286,32 @@ static func from_dict(d: Dictionary) -> ItemInstance:
 		var def := LootGenerator.find_affix(String(a.get("id", "")))
 		if def != null:
 			it.affixes.append(LootGenerator.make_entry(def, float(a.get("value", def.min_value))))
+	it.runeword_id = String(d.get("runeword", ""))
+	for m in d.get("rw_mods", []):
+		it.rw_mods.append({"stat": String(m.get("stat", "")), "mod_type": int(m.get("mod_type", 0)),
+			"value": float(m.get("value", 0.0)), "text": String(m.get("text", ""))})
 	# Items saved before gems existed get their sockets rolled once on load
-	it.sockets = int(d.get("sockets", roll_sockets(b.slot, it.rarity)))
+	it.sockets = int(d.get("sockets", roll_sockets(b, it.rarity)))
 	for gid in d.get("gems", []):
 		if not GemDef.info(String(gid)).is_empty() and it.gems.size() < it.sockets:
 			it.gems.append(String(gid))
 	return it
 
 
-## Number of gem sockets a new item gets. Weapons and body armour can hold more.
-static func roll_sockets(slot: String, r: int) -> int:
-	if slot in ["belt", "flask"]:
-		return 0  # no gem sockets on belts and flasks
-	var cap := 3 if slot in ["weapon", "chest"] else (1 if slot in ["ring", "amulet"] else 2)  # shields: 2
-	var n := randi_range(0, 1)
-	if r == Rarity.MAGIC:
-		n = randi_range(1, 2)
-	elif r >= Rarity.RARE:
-		n = randi_range(1, 3)
-	return mini(n, cap)
+## Number of sockets a new item gets, up to its base's ItemBase.max_sockets(). Each socket past
+## the first is less likely than the one before, so a 6-socket item is a find. A Normal item drops
+## with sockets often enough to make runeword bases; Magic and better always have at least one.
+static func roll_sockets(b: ItemBase, r: int) -> int:
+	var cap := b.max_sockets()
+	if cap <= 0:
+		return 0
+	var n := 0
+	if r != Rarity.NORMAL or randf() < 0.6:
+		n = 1
+		while n < cap and randf() < SOCKET_STEP_CHANCE:
+			n += 1
+	return n
+
+
+## Chance of each socket past the first when an item drops (so 6 sockets is ~0.55^5, about 5%).
+const SOCKET_STEP_CHANCE := 0.55

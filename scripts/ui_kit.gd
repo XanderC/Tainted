@@ -174,6 +174,8 @@ static func item_card(parent: Node, item: ItemInstance, compact := false, deltas
 		kind = SLOT_NAMES.get(item.base.slot, item.base.slot.capitalize())
 	if item.is_unique():
 		kind = "%s %s" % ["Legendary" if item.rarity == ItemInstance.Rarity.LEGENDARY else "Set", kind]
+	elif item.is_runeword():
+		kind = "Runeword %s" % kind
 	var base_lbl := label("%s  •  Item Level %d" % [kind, item.ilvl],
 		13, Color(0.75, 0.70, 0.65), true)
 	base_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -200,11 +202,13 @@ static func item_card(parent: Node, item: ItemInstance, compact := false, deltas
 	if item.is_unique() and item.identified:
 		var worn: Array = GameState.player.equipment.values() if is_instance_valid(GameState.player) else []
 		txt += UniqueItems.card_bbcode(item, worn)
+	txt += Runewords.card_bbcode(item)
 	for i in item.sockets:
 		if i < item.gems.size():
-			var g := GemDef.info(item.gems[i])
-			txt += "[color=#%s]◆ %s[/color]%s\n" % [Color(g.get("color", Color.WHITE)).to_html(false),
-				g.get("text", "?"), stat_arrow(g.get("stat", ""), deltas)]
+			var g := item.socket_info(item.gems[i])
+			var rune_name := "%s: " % g.get("short", "") if g.get("rune", false) else ""
+			txt += "[color=#%s]◆ %s%s[/color]%s\n" % [Color(g.get("color", Color.WHITE)).to_html(false),
+				rune_name, g.get("text", "?"), stat_arrow(g.get("stat", ""), deltas)]
 		else:
 			txt += "[color=#666677]◇ Empty Socket[/color]\n"
 	if item.affixes.is_empty() and item.base.implicit_stat == "" and item.sockets == 0:

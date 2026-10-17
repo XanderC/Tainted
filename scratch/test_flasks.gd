@@ -177,7 +177,7 @@ func _ready() -> void:
 	full.affixes = [LootGenerator.make_entry(LootGenerator.find_affix("fl_ample"), 0.2),
 		LootGenerator.make_entry(LootGenerator.find_affix("fl_haste"), 0.1)]
 	check(Crafting.orb_block_reason(full, "augment") == "Item is full", "a Magic flask with a prefix and suffix is full")
-	check(ItemInstance.roll_sockets("flask", ItemInstance.Rarity.RARE) == 0, "flasks roll no sockets")
+	check(ItemInstance.roll_sockets(item("small_life_flask").base, ItemInstance.Rarity.RARE) == 0, "flasks roll no sockets")
 
 	print("flasks: %d checks, %d failed" % [_checks, _fails])
 	get_tree().quit(1 if _fails > 0 else 0)

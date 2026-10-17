@@ -70,6 +70,29 @@ func bag_size() -> Vector2i:
 	return SLOT_SIZES.get(slot, Vector2i.ONE)
 
 
+## Most sockets an item of this base can have. Big items take more, Diablo / Path of Exile style:
+## two-handed weapons (staves and bows included) and body armour up to 6, so they can hold the
+## longest runewords; one-handed swords, axes and maces and shields 4; daggers and helmets 3;
+## gloves and boots 2; rings and amulets 1; belts and flasks none.
+func max_sockets() -> int:
+	match slot:
+		"belt", "flask":
+			return 0
+		"ring", "amulet":
+			return 1
+		"gloves", "boots":
+			return 2
+		"helmet":
+			return 3
+		"chest":
+			return 6
+	if two_handed:
+		return 6
+	if weapon_type == "dagger":
+		return 3
+	return 4  # one-handed swords, axes, maces; shields
+
+
 ## e.g. "Two-Handed Axe", "One-Handed Sword", "Shield", or "" for armour.
 func type_label() -> String:
 	if weapon_type == "":

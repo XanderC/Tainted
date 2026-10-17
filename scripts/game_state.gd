@@ -352,6 +352,10 @@ func sell_item(item: ItemInstance) -> Dictionary:
 	var r := Currency.sell_value(item)
 	player.remove_from_bag(item)
 	grant_currency(r)
+	# Runes come back out: selling a half-built runeword (or a "Sell All") mustn't lose a high rune
+	for gid in item.gems:
+		if SocketRune.is_rune(gid):
+			gems[gid] = gem_count(gid) + 1
 	return r
 
 
@@ -576,24 +580,26 @@ func socket_gem(item: ItemInstance, idx: int, gem_id: String) -> bool:
 		gems[gem_id] = gem_count(gem_id) - 1
 		if gems[gem_id] <= 0:
 			gems.erase(gem_id)
+		# The right runes in the right order turn a Normal item into a runeword
+		Runewords.refresh(item)
 	)
 	_changed()
 	return true
 
 
-## Jeweler: turn GemDef.COMBINE_COUNT gems into one of the next tier, `times` times (or as
-## many as possible when times <= 0). Returns how many were made.
+## Jeweler: turn GemDef.combine_count_of gems (or runes) into one of the next tier, `times` times
+## (or as many as possible when times <= 0). Returns how many were made.
 func combine_gems(gem_id: String, times: int = 1) -> int:
-	var g := GemDef.info(gem_id)
-	if g.is_empty() or g.tier >= GemDef.MAX_TIER:
+	var up := GemDef.next_id(gem_id)
+	if up == "":
 		return 0
-	var cost := GemDef.combine_cost(g.tier)
+	var need := GemDef.combine_count_of(gem_id)
+	var cost := GemDef.combine_cost_of(gem_id)
 	var made := 0
-	while (times <= 0 or made < times) and gem_count(gem_id) >= GemDef.COMBINE_COUNT and can_afford(cost):
-		gems[gem_id] = gem_count(gem_id) - GemDef.COMBINE_COUNT
+	while (times <= 0 or made < times) and gem_count(gem_id) >= need and can_afford(cost):
+		gems[gem_id] = gem_count(gem_id) - need
 		for oid in cost:
 			orbs[oid] = orb_count(oid) - int(cost[oid])
-		var up := GemDef.make_id(g.type, g.tier + 1)
 		gems[up] = gem_count(up) + 1
 		made += 1
 	if gem_count(gem_id) <= 0:
@@ -611,6 +617,8 @@ func unsocket_gem(item: ItemInstance, idx: int) -> bool:
 		var gid: String = item.gems[idx]
 		item.gems.remove_at(idx)
 		gems[gid] = gem_count(gid) + 1
+		# Taking a rune out of a runeword breaks it: the item is plain again, the runes kept
+		Runewords.refresh(item)
 	)
 	_changed()
 	return true

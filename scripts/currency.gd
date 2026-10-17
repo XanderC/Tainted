@@ -74,7 +74,7 @@ static func sell_value(item: ItemInstance) -> Dictionary:
 	match item.rarity:
 		ItemInstance.Rarity.MAGIC: shards["alteration"] = 3 + bonus
 		ItemInstance.Rarity.RARE: shards["alchemy"] = 4 + bonus
-		ItemInstance.Rarity.LEGENDARY, ItemInstance.Rarity.SET:
+		ItemInstance.Rarity.LEGENDARY, ItemInstance.Rarity.SET, ItemInstance.Rarity.RUNEWORD:
 			orbs["alchemy"] = 1
 			shards["chaos"] = 5 + bonus
 		_: shards["transmute"] = 2 + bonus

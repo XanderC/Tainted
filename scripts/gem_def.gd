@@ -27,8 +27,11 @@ static func make_id(type: String, tier: int) -> String:
 	return "%s_%d" % [type, tier]
 
 
-## Returns {} for an unknown id.
-static func info(id: String) -> Dictionary:
+## Returns {} for an unknown id. Runes (SocketRune) share the gems' pool and sockets, so their ids
+## come through here too; `slot` picks a rune's weapon or armour stat ("" describes both).
+static func info(id: String, slot: String = "") -> Dictionary:
+	if SocketRune.is_rune(id):
+		return SocketRune.info(id, slot)
 	var parts := id.rsplit("_", true, 1)
 	if parts.size() != 2 or not TYPES.has(parts[0]):
 		return {}
@@ -49,22 +52,49 @@ static func info(id: String) -> Dictionary:
 
 
 static func icon(id: String) -> Texture2D:
+	if SocketRune.is_rune(id):
+		return SocketRune.icon(id)
 	var g := info(id)
 	if g.is_empty():
 		return null
 	return IconFactory.gem_icon(id, g.color, g.tier)
 
 
-## Every gem id, ordered by type then tier (used for pouch ordering).
+## Every gem id, ordered by type then tier, then the runes in ladder order (used for pouch ordering).
 static func all_ids() -> Array[String]:
 	var ids: Array[String] = []
 	for type in TYPES:
 		for tier in range(1, MAX_TIER + 1):
 			ids.append(make_id(type, tier))
+	ids.append_array(SocketRune.all_ids())
 	return ids
 
 
 const COMBINE_COUNT := 3
+
+
+# ---------- combining, for gems and runes alike ----------
+
+## How many of this gem or rune the Jeweler combines into one of the next.
+static func combine_count_of(id: String) -> int:
+	return SocketRune.combine_count(id) if SocketRune.is_rune(id) else COMBINE_COUNT
+
+
+## The gem or rune one tier up, or "" at the top.
+static func next_id(id: String) -> String:
+	if SocketRune.is_rune(id):
+		return SocketRune.next_id(id)
+	var g := info(id)
+	if g.is_empty() or int(g.tier) >= MAX_TIER:
+		return ""
+	return make_id(String(g.type), int(g.tier) + 1)
+
+
+## Orbs the Jeweler charges for one combine of this gem or rune.
+static func combine_cost_of(id: String) -> Dictionary:
+	if SocketRune.is_rune(id):
+		return SocketRune.combine_cost(id)
+	return combine_cost(int(info(id).get("tier", 1)))
 
 
 ## Orbs the Jeweler charges to combine COMBINE_COUNT gems of `tier` into one of tier + 1.

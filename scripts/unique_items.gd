@@ -123,7 +123,7 @@ static func make(uid: String, ilvl: int) -> ItemInstance:
 	it.implicit_roll = ItemInstance.roll_implicit()
 	if legendary:
 		reroll_powers(it)
-	it.sockets = ItemInstance.roll_sockets(b.slot, it.rarity)
+	it.sockets = ItemInstance.roll_sockets(b, it.rarity)
 	return it
 
 

@@ -36,6 +36,14 @@ static func gem_icon(id: String, col: Color, tier: int) -> Texture2D:
 	return _cache[key]
 
 
+## A rune (SocketRune): a rounded stone with a carved glyph unique to the rune.
+static func socket_rune_icon(id: String, col: Color) -> Texture2D:
+	var key := "srune:" + id
+	if not _cache.has(key):
+		_cache[key] = _render(id, "socket_rune", col)
+	return _cache[key]
+
+
 static func recipe_icon(id: String) -> Texture2D:
 	var key := "recipe:" + id
 	if not _cache.has(key):
@@ -221,6 +229,19 @@ static func _inside(shape: String, id: String, p: Vector2) -> bool:
 			return maxf(absf(p.x) * 0.866 + absf(p.y) * 0.5, absf(p.y)) < 0.82
 		"rune_mod":
 			return p.length() < 0.82
+		"socket_rune":
+			# A rounded stone tablet with a glyph cut into it: a stave plus two strokes picked
+			# by the rune's id, so every rune reads differently.
+			var stone := absf(p.x) < 0.62 and absf(p.y) < 0.82 \
+				and Vector2(maxf(absf(p.x) - 0.36, 0.0), maxf(absf(p.y) - 0.56, 0.0)).length() < 0.26
+			var h := absi(id.hash())
+			var stave := absf(p.x) < 0.06 and absf(p.y) < 0.55
+			var a1 := _rot(p, 35.0 + float(h % 4) * 25.0)
+			var a2 := _rot(p, -35.0 - float((h / 4) % 4) * 25.0)
+			var y1 := -0.3 + float((h / 16) % 3) * 0.25
+			var stroke1 := absf(a1.x) < 0.05 and absf(a1.y - y1) < 0.28 and p.x > -0.02
+			var stroke2 := absf(a2.x) < 0.05 and absf(a2.y + y1 * 0.6) < 0.28 and p.x < 0.02
+			return stone and not (stave or stroke1 or stroke2)
 		"scroll":
 			# Parchment with rolled ends
 			var sheet := _rect(p, -0.55, 0.55, -0.62, 0.62)

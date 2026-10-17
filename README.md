@@ -80,6 +80,28 @@ Equipment and Consumables.
 - Test: `godot --headless --path . res://scratch/test_shared_pools.tscn` (backs up and restores
   the account file); `res://scratch/capture_stash_tabs.tscn` for screenshots.
 
+### Runes and runewords
+Diablo II style. **Runes** (`SocketRune`, ids `srune_<name>`; the support gems already use
+`rune_`) go into sockets like socket gems and share their pool and UI: socket them at the stash or
+the Jeweler. Each rune gives one stat in a weapon and another in armour or jewellery.
+- The ladder runs El to Zod (33 runes). Higher runes are stronger and rarer: a rift drops up to
+  rank 8 at level 1 and two more ranks per level; every boss drops one (3 ranks better), and each
+  monster killed has a small chance. The Jeweler combines 3 of a rune (2 from rank 21 up) into the
+  next, for orbs.
+- **Runewords** (`Runewords`): put exactly a runeword's runes, in order, into a **Normal** item of a
+  kind it fits with **exactly** that many sockets, and it becomes that runeword (gold name): it
+  rolls bonuses (passive keys like a Legendary's power, plus flat damage or armour) on top of the
+  runes' own stats. Taking a rune out breaks it; the runes are kept. Orbs can't alter a runeword.
+  Tapping a rune in the Gems panel lists the runewords it is part of.
+- 28 runewords from 2 to 6 runes (Steel, Stealth, Spirit, Insight, Enigma, Grief, Infinity, Last
+  Wish, Breath of the Dying...). Six-rune ones need a 6-socket two-handed weapon or body armour.
+- **Sockets**: up to 6 on two-handed weapons (staves and bows too) and body armour, 4 on one-handed
+  swords, axes, maces and shields, 3 on daggers and helmets, 2 on gloves and boots, 1 on rings and
+  amulets (`ItemBase.max_sockets`). Each socket past the first is rarer on drop; Normal items drop
+  with sockets often enough to be runeword bases, and the Jeweller's Orb rerolls up to the limit.
+- Selling an item gives its runes back (socket gems are still lost).
+- Test: `godot --headless --path . res://scratch/test_runewords.tscn`.
+
 ### Warrior
 Tanky melee: 160 life, 20 armor, life regen. **Cleave** auto-attacks in a wide arc. Skill buttons (or keys 1-3 on desktop):
 1. **Whirl**: 360° spin for 180% damage, 4s cooldown

@@ -65,9 +65,9 @@ func _add_sockets() -> void:
 		)
 		sec.add_child(rm)
 	# What the gems currently add
-	var lines := ""
+	var lines := Runewords.card_bbcode(it)
 	for gid in it.gems:
-		var g := GemDef.info(gid)
+		var g := it.socket_info(gid)
 		lines += "[color=#%s]◆ %s[/color]  [color=#888888](%s)[/color]\n" % [Color(g.color).to_html(false), g.text, g.name]
 	if lines != "":
 		sec.add_child(UIKit.rich(lines, 14))
@@ -94,8 +94,14 @@ func _socket_cell(it: ItemInstance, i: int) -> DragSlot:
 		return d.get("kind", "") == "gem" and d.get("from", "") == "pouch"
 	cell.on_drop = func(d: Dictionary) -> void:
 		var gid: String = d.get("gem_id", "")
+		var was := it.runeword_id
 		if GameState.socket_gem(it, i, gid):
-			menu.feedback("Socketed %s." % GemDef.info(gid).get("name", gid))
+			if it.is_runeword() and it.runeword_id != was:
+				menu.feedback("The runes awaken: %s!" % it.display_name)
+			elif was != "" and not it.is_runeword():
+				menu.feedback("The runeword is broken.")
+			else:
+				menu.feedback("Socketed %s." % GemDef.info(gid).get("name", gid))
 		menu.refresh()
 	return cell
 
@@ -137,23 +143,35 @@ func _add_gem_details() -> void:
 		menu.refresh()
 	)
 	head.add_child(close)
-	var t := "[color=#%s][b]%s[/b][/color]   [color=#888888]Tier %d / %d  •  You own %d[/color]\n" % [
-		Color(g.color).to_html(false), g.text, int(g.tier), GemDef.MAX_TIER, GameState.gem_count(_sel_gem)]
+	var is_rune: bool = g.get("rune", false)
+	var t := "[color=#%s][b]%s[/b][/color]   [color=#888888]%s  •  You own %d[/color]\n" % [
+		Color(g.color).to_html(false), g.text,
+		"Rune %d / %d" % [int(g.tier), SocketRune.LADDER.size()] if is_rune else "Tier %d / %d" % [int(g.tier), GemDef.MAX_TIER],
+		GameState.gem_count(_sel_gem)]
 	var it := menu.selected
 	if it != null and it.sockets > 0:
 		var free: int = it.sockets - it.gems.size()
+		var adds: String = it.socket_info(_sel_gem).get("text", g.text)
 		if free > 0:
-			t += "[color=#4ade80]Socketing it adds %s to %s[/color]%s\n" % [g.text, it.display_name,
+			t += "[color=#4ade80]Socketing it adds %s to %s[/color]%s\n" % [adds, it.display_name,
 				" (you're wearing it)" if player.equipment.values().has(it) else ""]
 		else:
 			t += "[color=#f59e0b]%s has no free socket: drop it on a socket to swap gems.[/color]\n" % it.display_name
 	elif it == null:
 		t += "[color=#9ca3af]Tap an item to open its sockets, then drag this gem onto one.[/color]\n"
-	if int(g.tier) < GemDef.MAX_TIER:
-		var nxt := GemDef.info(GemDef.make_id(String(g.type), int(g.tier) + 1))
-		t += "[color=#888888]Next tier: %s gives %s (combine %d at the Jeweler)[/color]" % [nxt.name, nxt.text, GemDef.COMBINE_COUNT]
+	var nxt_id := GemDef.next_id(_sel_gem)
+	if nxt_id != "":
+		var nxt := GemDef.info(nxt_id)
+		t += "[color=#888888]Next: %s gives %s (combine %d at the Jeweler)[/color]" % [nxt.name, nxt.text, GemDef.combine_count_of(_sel_gem)]
 	else:
-		t += "[color=#888888]The highest tier.[/color]"
+		t += "[color=#888888]The highest %s.[/color]" % ("rune" if is_rune else "tier")
+	if is_rune:
+		# Runewords it is part of: fill a Normal item's sockets with exactly these runes, in order
+		var rws := Runewords.using_rune(_sel_gem)
+		if not rws.is_empty():
+			t += "\n[color=#c7b377]Runewords (Normal item, exactly that many sockets, runes in order):[/color]"
+			for rw in rws:
+				t += "\n[color=#c7b377]• %s[/color]" % Runewords.recipe_text(rw)
 	v.add_child(UIKit.rich(t, 14))
 
 
@@ -204,8 +222,10 @@ static func pouch_cell(m: GameMenu, gid: String, sz: Vector2, owner: GemsPanel =
 	cell.can_accept = func(d: Dictionary) -> bool:
 		return d.get("kind", "") == "gem" and d.get("from", "") == "socket"
 	cell.on_drop = func(d: Dictionary) -> void:
-		if GameState.unsocket_gem(d.get("item"), int(d.get("idx", -1))):
-			m.feedback("Gem returned to the shared gems.")
+		var item: ItemInstance = d.get("item")
+		var rw := item.display_name if item != null and item.is_runeword() else ""
+		if GameState.unsocket_gem(item, int(d.get("idx", -1))):
+			m.feedback("%s is broken; the rune is back in the shared gems." % rw if rw != "" else "Gem returned to the shared gems.")
 		m.refresh()
 	return cell
 
@@ -213,7 +233,7 @@ static func pouch_cell(m: GameMenu, gid: String, sz: Vector2, owner: GemsPanel =
 # ---------- jeweler: combine ----------
 
 func _add_combine() -> void:
-	var sec := UIKit.section(self, "COMBINE GEMS  —  %d of a gem make 1 of the next tier" % GemDef.COMBINE_COUNT)
+	var sec := UIKit.section(self, "COMBINE GEMS & RUNES  —  %d of a gem (or low rune) make 1 of the next" % GemDef.COMBINE_COUNT)
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 10)
 	sec.add_child(row)
@@ -240,20 +260,21 @@ func _add_combine() -> void:
 	var info := UIKit.label("Drop a gem here (or tap one in the shared gems) to see what it becomes.", 14, UIKit.TEXT_DIM, true)
 	info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var can := false
+	var up := GemDef.next_id(_combine_gem) if not g.is_empty() else ""
 	if g.is_empty():
 		out_cell.setup(null, Color(0.25, 0.25, 0.32))
-	elif g.tier >= GemDef.MAX_TIER:
+	elif up == "":
 		out_cell.setup(null, Color(0.25, 0.25, 0.32))
-		info.text = "%s is already the highest tier." % g.name
+		info.text = "%s is already the highest." % g.name
 	else:
-		var up := GemDef.make_id(g.type, g.tier + 1)
 		var ug := GemDef.info(up)
-		var cost := GemDef.combine_cost(g.tier)
+		var need := GemDef.combine_count_of(_combine_gem)
+		var cost := GemDef.combine_cost_of(_combine_gem)
 		var have := GameState.gem_count(_combine_gem)
-		can = have >= GemDef.COMBINE_COUNT and GameState.can_afford(cost)
+		can = have >= need and GameState.can_afford(cost)
 		out_cell.setup(GemDef.icon(up), ug.color, Color(ug.color).darkened(0.82), 0, "", UIKit.gem_tip(up))
 		var cost_txt := ", ".join(PackedStringArray(cost.keys().map(func(k): return "%d %s" % [int(cost[k]), Currency.orb_name(k)])))
-		info.text = "%d × %s ➜ 1 %s (%s)\nHave %d  •  %s each" % [GemDef.COMBINE_COUNT, g.name, ug.name, ug.text, have, cost_txt]
+		info.text = "%d × %s ➜ 1 %s (%s)\nHave %d  •  %s each" % [need, g.name, ug.name, ug.text, have, cost_txt]
 		info.add_theme_color_override("font_color", Color(0.85, 0.90, 1.0) if can else Color(0.95, 0.55, 0.50))
 	row.add_child(out_cell)
 	row.add_child(info)
@@ -269,7 +290,7 @@ func _add_combine() -> void:
 		b.disabled = not can
 		b.pressed.connect(func():
 			var made := GameState.combine_gems(_combine_gem, times)
-			var nxt := GemDef.info(GemDef.make_id(g.type, g.tier + 1))
+			var nxt := GemDef.info(up)
 			menu.feedback("Created %d %s!" % [made, nxt.get("name", "")] if made > 0 else "Not enough gems or orbs.")
 			menu.refresh()
 		)

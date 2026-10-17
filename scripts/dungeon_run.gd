@@ -34,6 +34,10 @@ const PLAN_CHANCE := 0.25            # Legendary / Set plan: +3% per rift level 
 const HORDE_ITEM_CHANCE := 0.15   # chance per kill of an extra item from the boss
 const HORDE_RUNE_CHANCE := 0.06
 const HORDE_GEM_CHANCE := 0.08
+## Runes (SocketRune) for runewords: per monster killed, and one from every boss, rolled
+## BOSS_SOCKET_RUNE_BOOST ranks higher (within what the rift level can drop).
+const HORDE_SOCKET_RUNE_CHANCE := 0.05
+const BOSS_SOCKET_RUNE_BOOST := 3
 
 # Rift level scaling (level 1 = base game). See the static helpers below.
 const HP_GROWTH := 1.18        # monster & boss life x this per level
@@ -168,6 +172,9 @@ func _on_boss_died(pos: Vector2) -> void:
 		skill_gem_drop = gems.pick_random().id
 		GameState.add_skill_gem(skill_gem_drop, 1)
 	GameState.add_gem(GemDef.random_drop(mini(GemDef.MAX_TIER, 2 + int(level / 3.0) + (1 if on_time else 0))), 1)
+	var boss_rune := SocketRune.random_drop(level, BOSS_SOCKET_RUNE_BOOST)
+	GameState.add_gem(boss_rune, 1)
+	bonus_gems.append(boss_rune)
 	recipe_drop = GameState.random_unknown_recipe("drop")
 	if recipe_drop == "":
 		recipe_drop = GameState.random_unknown_recipe("vendor")
@@ -232,6 +239,10 @@ func horde_loot(drops: Dictionary) -> void:
 			var gid := GemDef.random_drop(1 + int(i / 25.0) + int(level / 3.0))
 			GameState.add_gem(gid, 1)
 			bonus_gems.append(gid)
+		if randf() < HORDE_SOCKET_RUNE_CHANCE:
+			var srid := SocketRune.random_drop(level)
+			GameState.add_gem(srid, 1)
+			bonus_gems.append(srid)
 
 
 static func roll_rewards(fast: bool, ilvl: int, rift_lvl: int = 1) -> Array[ItemInstance]:

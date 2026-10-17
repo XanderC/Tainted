@@ -29,6 +29,8 @@ static func orb_block_reason(item: ItemInstance, orb: String) -> String:
 		return "Mirrored items can't be changed"
 	if item.is_unique() and not UNIQUE_OK.has(orb):
 		return "Legendary and Set items can't be altered"
+	if item.is_runeword():
+		return "Runeword items can't be altered (take a rune out to break the runeword)"
 	var n := item.affixes.size()
 	# A flask has room for one prefix and one suffix when Magic, two of each when Rare
 	var flask_full := false
@@ -76,12 +78,9 @@ static func orb_block_reason(item: ItemInstance, orb: String) -> String:
 	return ""
 
 
-## Most gem sockets an item of this slot can roll.
+## Most sockets an item can roll (ItemBase.max_sockets: up to 6 on two-handed weapons and body armour).
 static func socket_cap(item: ItemInstance) -> int:
-	var slot := item.base.slot
-	if slot in ["belt", "flask"]:
-		return 0
-	return 3 if slot in ["weapon", "chest"] else (1 if slot in ["ring", "amulet"] else 2)
+	return item.base.max_sockets()
 
 
 ## Spends one orb and applies it. Returns {"ok": bool, "msg": String}.

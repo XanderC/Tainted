@@ -207,7 +207,7 @@ func roll_item(ilvl: int = 1, forced_rarity: int = -1, slot: String = "") -> Ite
 
 	roll_affixes(item, count)
 	item.display_name = _make_name(item)
-	item.sockets = ItemInstance.roll_sockets(item.base.slot, item.rarity)
+	item.sockets = ItemInstance.roll_sockets(item.base, item.rarity)
 	return item
 
 
