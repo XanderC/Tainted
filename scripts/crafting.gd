@@ -30,7 +30,7 @@ static func orb_block_reason(item: ItemInstance, orb: String) -> String:
 	if item.is_unique() and not UNIQUE_OK.has(orb):
 		return "Legendary and Set items can't be altered"
 	if item.is_runeword():
-		return "Runeword items can't be altered (take a rune out to break the runeword)"
+		return "Runeword items can't be altered"
 	var n := item.affixes.size()
 	# A flask has room for one prefix and one suffix when Magic, two of each when Rare
 	var flask_full := false

@@ -352,10 +352,12 @@ func sell_item(item: ItemInstance) -> Dictionary:
 	var r := Currency.sell_value(item)
 	player.remove_from_bag(item)
 	grant_currency(r)
-	# Runes come back out: selling a half-built runeword (or a "Sell All") mustn't lose a high rune
-	for gid in item.gems:
-		if SocketRune.is_rune(gid):
-			gems[gid] = gem_count(gid) + 1
+	# Loose runes come back out: selling a half-built runeword (or a "Sell All") mustn't lose a
+	# high rune. A runeword's runes are set in it for good and go with it.
+	if not item.is_runeword():
+		for gid in item.gems:
+			if SocketRune.is_rune(gid):
+				gems[gid] = gem_count(gid) + 1
 	return r
 
 
@@ -568,6 +570,8 @@ func add_gem(gem_id: String, amount: int = 1) -> void:
 func socket_gem(item: ItemInstance, idx: int, gem_id: String) -> bool:
 	if item == null or not is_instance_valid(player) or gem_count(gem_id) <= 0 or item.sockets <= 0:
 		return false
+	if item.is_runeword():
+		return false  # a runeword's runes are set for good; its sockets are all full anyway
 	if idx >= item.gems.size() and item.gems.size() >= item.sockets:
 		return false
 	player.modify_item(item, func():
@@ -609,15 +613,17 @@ func combine_gems(gem_id: String, times: int = 1) -> int:
 	return made
 
 
-## Take the gem out of socket `idx` and return it to the pouch.
+## Take the gem out of socket `idx` and return it to the pouch. Never from a runeword: once the
+## runes have formed one they are set in the item for good (Diablo II style).
 func unsocket_gem(item: ItemInstance, idx: int) -> bool:
 	if item == null or not is_instance_valid(player) or idx < 0 or idx >= item.gems.size():
+		return false
+	if item.is_runeword():
 		return false
 	player.modify_item(item, func():
 		var gid: String = item.gems[idx]
 		item.gems.remove_at(idx)
 		gems[gid] = gem_count(gid) + 1
-		# Taking a rune out of a runeword breaks it: the item is plain again, the runes kept
 		Runewords.refresh(item)
 	)
 	_changed()

@@ -54,7 +54,10 @@ func _add_sockets() -> void:
 	sec.add_child(row)
 	for i in it.sockets:
 		row.add_child(_socket_cell(it, i))
-	if jeweler and not it.gems.is_empty():
+	if it.is_runeword():
+		sec.add_child(UIKit.label("The runes of a runeword are set for good: they can't be taken out or swapped.",
+			13, Color(0.78, 0.70, 0.47), true))
+	elif jeweler and not it.gems.is_empty():
 		var rm := UIKit.button("Remove All Gems", Color(0.28, 0.12, 0.12), Color(0.95, 0.45, 0.45), Vector2(0, 44), 15)
 		rm.pressed.connect(func():
 			var n := 0
@@ -82,7 +85,7 @@ func _socket_cell(it: ItemInstance, i: int) -> DragSlot:
 		var gid: String = it.gems[i]
 		var g := GemDef.info(gid)
 		cell.setup(GemDef.icon(gid), Color.WHITE if gid == _sel_gem else g.color, Color(g.color).darkened(0.82), 0, "",
-			UIKit.gem_tip(gid) + "\n(drag back to the pouch to remove)")
+			UIKit.gem_tip(gid) + ("\n(set in the runeword for good)" if it.is_runeword() else "\n(drag back to the pouch to remove)"))
 		cell.payload = {"kind": "gem", "from": "socket", "idx": i, "item": it}
 		cell.clicked.connect(func():
 			_sel_gem = gid
@@ -90,8 +93,8 @@ func _socket_cell(it: ItemInstance, i: int) -> DragSlot:
 		)
 	else:
 		cell.setup(null, Color(0.45, 0.50, 0.70), Color(0.06, 0.06, 0.10), 0, "◇", "Empty socket - drop a gem here")
-	if not GameState.gem_station:
-		cell.payload = {}  # view-only away from the stash and the Jeweler
+	if not GameState.gem_station or it.is_runeword():
+		cell.payload = {}  # view-only away from the stash and the Jeweler, and a runeword's runes are set
 		return cell
 	cell.can_accept = func(d: Dictionary) -> bool:
 		return d.get("kind", "") == "gem" and d.get("from", "") == "pouch"
@@ -100,9 +103,7 @@ func _socket_cell(it: ItemInstance, i: int) -> DragSlot:
 		var was := it.runeword_id
 		if GameState.socket_gem(it, i, gid):
 			if it.is_runeword() and it.runeword_id != was:
-				menu.feedback("The runes awaken: %s!" % it.display_name)
-			elif was != "" and not it.is_runeword():
-				menu.feedback("The runeword is broken.")
+				menu.feedback("The runes awaken: %s! Its runes are now set for good." % it.display_name)
 			elif Runewords.why_not(it) != "":
 				menu.feedback(Runewords.why_not(it))
 			else:
@@ -227,10 +228,8 @@ static func pouch_cell(m: GameMenu, gid: String, sz: Vector2, owner: GemsPanel =
 	cell.can_accept = func(d: Dictionary) -> bool:
 		return d.get("kind", "") == "gem" and d.get("from", "") == "socket"
 	cell.on_drop = func(d: Dictionary) -> void:
-		var item: ItemInstance = d.get("item")
-		var rw := item.display_name if item != null and item.is_runeword() else ""
-		if GameState.unsocket_gem(item, int(d.get("idx", -1))):
-			m.feedback("%s is broken; the rune is back in the shared gems." % rw if rw != "" else "Gem returned to the shared gems.")
+		if GameState.unsocket_gem(d.get("item"), int(d.get("idx", -1))):
+			m.feedback("Gem returned to the shared gems.")
 		m.refresh()
 	return cell
 

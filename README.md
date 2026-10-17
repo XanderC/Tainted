@@ -91,7 +91,9 @@ the Jeweler. Each rune gives one stat in a weapon and another in armour or jewel
 - **Runewords** (`Runewords`): put exactly a runeword's runes, in order, into a **Normal** item of a
   kind it fits with **exactly** that many sockets, and it becomes that runeword (gold name): it
   rolls bonuses (passive keys like a Legendary's power, plus flat damage or armour) on top of the
-  runes' own stats. Taking a rune out breaks it; the runes are kept. Orbs can't alter a runeword.
+  runes' own stats. Once formed it is **permanent**: its runes can't be taken out or swapped, and
+  orbs can't alter it. Until then runes come out freely, and when an item's runes spell a runeword
+  it can't become (not Normal, wrong socket count or kind) the Gems panel says why.
   Tapping a rune in the Gems panel lists the runewords it is part of.
 - 28 runewords from 2 to 6 runes (Steel, Stealth, Spirit, Insight, Enigma, Grief, Infinity, Last
   Wish, Breath of the Dying...). Six-rune ones need a 6-socket two-handed weapon or body armour.
@@ -99,7 +101,8 @@ the Jeweler. Each rune gives one stat in a weapon and another in armour or jewel
   swords, axes, maces and shields, 3 on daggers and helmets, 2 on gloves and boots, 1 on rings and
   amulets (`ItemBase.max_sockets`). Each socket past the first is rarer on drop; Normal items drop
   with sockets often enough to be runeword bases, and the Jeweller's Orb rerolls up to the limit.
-- Selling an item gives its runes back (socket gems are still lost).
+- Selling an item gives its loose runes back (socket gems are still lost); a runeword's runes are
+  sold with it.
 - Test: `godot --headless --path . res://scratch/test_runewords.tscn`.
 
 ### Warrior

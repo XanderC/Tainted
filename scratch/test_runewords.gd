@@ -126,13 +126,22 @@ func _ready() -> void:
 	check(copy.rw_mods.size() == 1 and is_equal_approx(float(copy.rw_mods[0].value), float(mail.rw_mods[0].value)), "save keeps its rolls")
 	check(copy.gems == mail.gems, "save keeps its runes")
 
-	# --- taking a rune out breaks it ---
-	GameState.unsocket_gem(mail, 1)
-	check(not mail.is_runeword() and mail.rarity == ItemInstance.Rarity.NORMAL, "broken: Normal again")
-	check(mail.display_name == mail.base.display_name and mail.powers.is_empty(), "broken: name and powers gone")
-	check(GameState.gem_count(rune("eth")) == 1, "the rune is back in the pool")
-	check(float(p.item_powers.get("move_inc", 0.0)) == 0.0, "worn: its powers stop")
+	# --- a runeword's runes are set for good ---
+	GameState.gems.clear()
+	check(not GameState.unsocket_gem(mail, 1), "a rune can't be taken out of a runeword")
+	check(mail.is_runeword() and mail.gems == [rune("tal"), rune("eth")], "the runeword stays whole")
+	check(GameState.gem_count(rune("eth")) == 0, "nothing came back to the pool")
+	GameState.add_gem(rune("el"), 1)
+	check(not GameState.socket_gem(mail, 0, rune("el")), "nor swapped for another rune")
+	check(mail.gems[0] == rune("tal") and GameState.gem_count(rune("el")) == 1, "the swap changed nothing")
+	check(float(p.item_powers.get("move_inc", 0.0)) >= 0.10, "worn: its powers still count")
 	p.unequip("chest")
+
+	# --- until it forms, runes come out freely ---
+	var loose := item("chain_mail", 2)
+	p.add_to_bag(loose)
+	socket_all(loose, ["tal"])
+	check(GameState.unsocket_gem(loose, 0) and loose.gems.is_empty(), "a rune comes out of a plain item")
 
 	# --- only the exact recipe ---
 	var wrong := item("chain_mail", 2)
@@ -202,10 +211,16 @@ func _ready() -> void:
 		check(gp.get_child_count() > 0, "the Gems panel builds with a runeword and a rune picked")
 	menu.close()
 
-	# --- selling hands the runes back ---
+	# --- selling: a runeword's runes go with it, loose runes come back ---
 	GameState.gems.clear()
 	GameState.sell_item(sword)
-	check(GameState.gem_count(rune("jah")) == 3 and GameState.gem_count(rune("ber")) == 1, "selling returns the runes")
+	check(GameState.gem_count(rune("jah")) == 0 and GameState.gem_count(rune("ber")) == 0, "a sold runeword keeps its runes")
+	var half := item("greatsword", 6)
+	check(p.add_to_bag(half), "a half-built base goes in the bag")
+	socket_all(half, ["jah", "mal"])
+	GameState.gems.clear()
+	GameState.sell_item(half)
+	check(GameState.gem_count(rune("jah")) == 1 and GameState.gem_count(rune("mal")) == 1, "selling a plain item returns its runes")
 
 	print("runewords: %d checks, %d failed" % [_checks, _fails])
 	get_tree().quit(1 if _fails > 0 else 0)

@@ -3,8 +3,9 @@ extends RefCounted
 ## Runewords, Diablo II style. Put exactly a runeword's runes, in order, into a Normal item of a
 ## kind it allows with exactly that many sockets, and the item becomes that runeword: it takes the
 ## runeword's name and colour (ItemInstance.Rarity.RUNEWORD) and rolls its bonuses, on top of what
-## each rune gives in its socket (SocketRune). Taking a rune out breaks it again and the runes are
-## kept (GameState.unsocket_gem -> refresh).
+## each rune gives in its socket (SocketRune). Once formed it is permanent, Diablo II style: its
+## runes can't be taken out or swapped (GameState.socket_gem / unsocket_gem refuse), orbs can't
+## alter it, and selling it sells its runes with it.
 ##
 ## Bonuses:
 ##   powers - passive stat keys (PassiveTree.stat_text), [min, max], summed through Player.item_powers
