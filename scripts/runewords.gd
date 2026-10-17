@@ -132,6 +132,43 @@ static func match_item(item: ItemInstance) -> String:
 	return ""
 
 
+## When an item's runes spell a runeword (in order, from the first socket) but the item can't
+## become it, why: "Steel needs a Normal (white) item; this is Legendary". "" otherwise, including
+## when it already is that runeword. Keeps a runeword that silently fails to form from looking broken.
+static func why_not(item: ItemInstance) -> String:
+	if item == null or item.base == null or item.is_runeword():
+		return ""
+	var keys: Array = []
+	for gid in item.gems:
+		if not SocketRune.is_rune(gid):
+			return ""
+		keys.append(SocketRune.key_of(gid))
+	if keys.is_empty():
+		return ""
+	# Part-way through a longer runeword that starts with these runes: nothing to warn about yet
+	if item.gems.size() < item.sockets:
+		for id in LIST:
+			var longer: Array = LIST[id].runes
+			if longer.size() > keys.size() and longer.slice(0, keys.size()) == keys:
+				return ""
+	for id in LIST:
+		var rw: Dictionary = LIST[id]
+		if Array(rw.runes) != keys:
+			continue
+		if item.is_unique() or item.rarity != ItemInstance.Rarity.NORMAL:
+			# A Magic or Rare base can be made Normal; a Legendary or Set item can't
+			var hint := "" if item.is_unique() else " An Orb of Scouring makes it Normal."
+			return "%s needs a Normal (white) item; this one is %s.%s" % [rw.name,
+				ItemInstance.Rarity.keys()[item.rarity].capitalize(), hint]
+		if not fits(rw, item.base):
+			return "%s only goes in a %s." % [rw.name, types_text(id)]
+		if item.sockets != rw.runes.size():
+			return "%s needs exactly %d sockets; this item has %d." % [rw.name, rw.runes.size(), item.sockets]
+		if not item.identified:
+			return "Identify the item first."
+	return ""
+
+
 ## Makes the item what its runes now spell: a runeword forms, breaks, or stays as it is.
 ## Returns "formed", "broken" or "".
 static func refresh(item: ItemInstance) -> String:

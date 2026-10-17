@@ -152,9 +152,32 @@ func _ready() -> void:
 	socket_all(helm, ["tal", "eth"])
 	check(not helm.is_runeword(), "a helmet isn't body armour: nothing")
 
+	# --- and it says why ---
+	check(Runewords.why_not(magic).contains("Normal") and Runewords.why_not(magic).contains("Scouring"), "Magic: needs Normal, scour it")
+	check(Runewords.why_not(roomy).contains("exactly 2"), "a spare socket: says it needs exactly 2")
+	check(Runewords.why_not(helm).contains("Body Armour"), "wrong kind: says where it goes")
+	check(Runewords.why_not(wrong) == "", "wrong order spells nothing")
+	var legend := item("battle_axe", 2, ItemInstance.Rarity.LEGENDARY)
+	legend.unique_id = "executioners_due"
+	p.add_to_bag(legend)
+	socket_all(legend, ["tir", "el"])
+	check(not legend.is_runeword() and Runewords.why_not(legend).contains("Legendary")
+		and not Runewords.why_not(legend).contains("Scouring"), "a Legendary: says so, no scouring hint")
+	var three := item("battle_axe", 3)
+	p.add_to_bag(three)
+	socket_all(three, ["tir", "el"])
+	check(Runewords.why_not(three).contains("exactly 2 sockets") and Runewords.why_not(three).contains("has 3"),
+		"Tir El in a 3-socket weapon: Steel needs exactly 2")
+	# Eth Tir is how Grief starts: in a roomier weapon that's progress, not a mistake
+	var grief_base := item("greatsword", 5)
+	p.add_to_bag(grief_base)
+	socket_all(grief_base, ["eth", "tir"])
+	check(Runewords.why_not(grief_base) == "", "part-way through Grief: no warning")
+
 	# --- six sockets ---
+	p.bag.clear()  # room for a 2x4 greatsword
 	var sword := item("greatsword", 6)
-	p.add_to_bag(sword)
+	check(p.add_to_bag(sword), "the greatsword goes in the bag")
 	socket_all(sword, ["jah", "mal", "jah", "sur", "jah", "ber"])
 	check(sword.runeword_id == "last_wish", "Last Wish in a 6-socket greatsword")
 	var short_sword := item("rusty_sword", 4)

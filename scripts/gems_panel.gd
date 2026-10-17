@@ -66,6 +66,9 @@ func _add_sockets() -> void:
 		sec.add_child(rm)
 	# What the gems currently add
 	var lines := Runewords.card_bbcode(it)
+	var why := Runewords.why_not(it)
+	if why != "":
+		lines += "[color=#f59e0b]⚠ %s[/color]\n" % why
 	for gid in it.gems:
 		var g := it.socket_info(gid)
 		lines += "[color=#%s]◆ %s[/color]  [color=#888888](%s)[/color]\n" % [Color(g.color).to_html(false), g.text, g.name]
@@ -100,6 +103,8 @@ func _socket_cell(it: ItemInstance, i: int) -> DragSlot:
 				menu.feedback("The runes awaken: %s!" % it.display_name)
 			elif was != "" and not it.is_runeword():
 				menu.feedback("The runeword is broken.")
+			elif Runewords.why_not(it) != "":
+				menu.feedback(Runewords.why_not(it))
 			else:
 				menu.feedback("Socketed %s." % GemDef.info(gid).get("name", gid))
 		menu.refresh()
