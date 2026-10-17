@@ -22,7 +22,8 @@ Top-down mobile ARPG prototype (Godot 4.3+, GDScript, GL Compatibility renderer)
 Tap **Bag** (top right) or press **I**. The game pauses while it's open.
 - Tap a bag item to inspect it. You get its stats, a green/red list of what changes if you equip it, and the item you're currently wearing in that slot.
 - **Equip** by dragging it onto its equipment slot (the old item takes its bag space). **Drop** by
-  dragging it onto the 🗑 Drop box beside the bag (from the bag, the paperdoll or a flask slot); it
+  dragging it onto the 🗑 Drop box at the bottom right of the inventory (from the bag, the paperdoll
+  or a flask slot); it
   lands on the ground and you can't re-pick it for 1.5s. The item panel has no Equip or Drop buttons.
 - Tap an equipped item to **Unequip** it (needs a space in the bag its shape fits), or drag it back
   into the bag.
@@ -59,8 +60,8 @@ that is never used up: drink it from a flask slot and it goes on cooldown.
   flask (Ample: more recovered, Seething: instant, Chemist's: shorter cooldown, Enduring: longer,
   Potent: stronger buff); suffixes work while it is in effect (of Iron Skin, of Haste, of Fury,
   of the Berserker, of Warding: clears and blocks slows). Orbs work on flasks. No sockets.
-- HUD: one button per open slot (`FlaskBar`), also Q E R T F. Flask slots sit under the character
-  in the inventory; drag flasks between them and the bag.
+- HUD: one button per open slot (`FlaskBar`), also Q E R T F. Flask slots stand in a column on the
+  left of the inventory, one beside each armour slot; drag flasks between them and the bag.
 - Flasks drop as loot (the boss always leaves one), and the Merchant sells Normal ones.
   Old saves: each potion type owned became a Normal flask, the slotted one equipped.
 - Code: `ItemBase.flask` / `flask_slots`, `ItemInstance.flask_effect()`, `Player.use_flask()`,

@@ -3,7 +3,7 @@ extends PanelContainer
 ## Right half of the GameMenu: character header, equipment paperdoll, summary stats, the bag grid
 ## and currencies. Everything is drag and drop:
 ##   bag <-> bag (rearrange/swap), bag -> equipment slot (equip), equipment -> bag (unequip),
-##   stash -> bag (take), anything -> the drop box beside the bag (drop on the ground), and
+##   stash -> bag (take), anything -> the drop box at the bottom right (drop on the ground), and
 ##   anything the current left panel accepts (e.g. buying a ware).
 ## Tapping an item selects it for the left panel (details, gems, blacksmith, merchant...).
 ## Currency and loose gems aren't carried: they are the account's, in the
@@ -13,7 +13,7 @@ extends PanelContainer
 const GEAR_GRID_CELL := 46.0  # 10 x 6 cells fill the space under the paperdoll on a 720p-tall screen
 const GEAR_CELL := Vector2(60, 60)  # five down each side: their height sets how much the bag gets
 const FLASK_CELL := Vector2(40, 60)  # flasks stand tall, as in the bag
-const DROP_BOX_SIZE := Vector2(76, 76)  # the drop box, at the bottom right of the bag
+const DROP_BOX_SIZE := Vector2(76, 76)  # the drop box, at the bottom right of the panel
 const LEFT_SLOTS := ["helmet", "chest", "gloves", "boots"]
 const RIGHT_SLOTS := ["amulet", "ring", "weapon", "offhand"]
 
@@ -25,7 +25,7 @@ var _class_lbl: Label
 var _left_col: VBoxContainer
 var _right_col: VBoxContainer
 var _summary: RichTextLabel
-var _flask_row: HBoxContainer  # the flask slots, under the character
+var _flask_col: VBoxContainer  # the flask slots, a column left of the armour slots, row for row
 var _portrait: SubViewportContainer
 var _rig: RigSprite
 var _bag_view: ItemGridView  # the bag, as a grid: all gear, flasks included
@@ -71,6 +71,11 @@ func _ready() -> void:
 	var doll := HBoxContainer.new()
 	doll.add_theme_constant_override("separation", 10)
 	v.add_child(doll)
+	# Flask slots stand left of the armour, one beside each armour slot: as tall as a gear slot and
+	# spaced the same, so the five line up with helmet, chest, gloves, boots and belt
+	_flask_col = VBoxContainer.new()
+	_flask_col.add_theme_constant_override("separation", 6)
+	doll.add_child(_flask_col)
 	_left_col = VBoxContainer.new()
 	_left_col.add_theme_constant_override("separation", 6)
 	doll.add_child(_left_col)
@@ -105,10 +110,6 @@ func _ready() -> void:
 	_summary = UIKit.rich("", 15)
 	_summary.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	mid_v.add_child(_summary)
-	_flask_row = HBoxContainer.new()
-	_flask_row.alignment = BoxContainer.ALIGNMENT_CENTER
-	_flask_row.add_theme_constant_override("separation", 6)
-	mid_v.add_child(_flask_row)
 	_right_col = VBoxContainer.new()
 	_right_col.add_theme_constant_override("separation", 6)
 	doll.add_child(_right_col)
@@ -116,7 +117,7 @@ func _ready() -> void:
 	# The bag
 	var bag_row := HBoxContainer.new()
 	bag_row.add_theme_constant_override("separation", 10)
-	bag_row.alignment = BoxContainer.ALIGNMENT_CENTER  # the bag and its drop box, centred together
+	bag_row.alignment = BoxContainer.ALIGNMENT_CENTER
 	v.add_child(bag_row)
 	_bag_view = ItemGridView.new(player.bag, GEAR_GRID_CELL, "bag")
 	_bag_view.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
@@ -125,14 +126,28 @@ func _ready() -> void:
 	_bag_view.on_drop_at = _bag_dropped
 	_bag_view.item_clicked.connect(func(it: ItemInstance): menu.select(it))
 	bag_row.add_child(_bag_view)
-	bag_row.add_child(_drop_box())
+
+	# The drop box, pinned to the panel's bottom-right corner over the scrolling content (a layer
+	# that lets every other touch through to what is under it)
+	var overlay := Control.new()
+	overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(overlay)
+	var box := _drop_box()
+	overlay.add_child(box)
+	box.anchor_left = 1.0
+	box.anchor_top = 1.0
+	box.anchor_right = 1.0
+	box.anchor_bottom = 1.0
+	box.offset_left = -DROP_BOX_SIZE.x
+	box.offset_top = -DROP_BOX_SIZE.y
+	box.offset_right = 0.0
+	box.offset_bottom = 0.0
 
 
-## At the bottom right of the bag: drag gear here (from the bag, the paperdoll or a flask slot) to drop it on the
-## ground. Replaces the Drop button the item panel used to have.
+## At the bottom right of the panel: drag gear here (from the bag, the paperdoll or a flask slot)
+## to drop it on the ground. Replaces the Drop button the item panel used to have.
 func _drop_box() -> DragSlot:
 	var box := DragSlot.new(DROP_BOX_SIZE)
-	box.size_flags_vertical = Control.SIZE_SHRINK_END  # level with the bottom of the bag
 	box.setup(null, Color(0.55, 0.22, 0.20), Color(0.13, 0.06, 0.06), 0, "", "Drag an item here to drop it on the ground")
 	var lbl := UIKit.label("🗑\nDROP", 14, Color(0.85, 0.45, 0.40))
 	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -172,9 +187,9 @@ func refresh() -> void:
 			_right_col.add_child(_set_toggle())
 		_right_col.add_child(_gear_cell(slot))
 	_left_col.add_child(_gear_cell("belt"))
-	UIKit.clear(_flask_row)
+	UIKit.clear(_flask_col)
 	for i in Player.FLASK_SLOTS:
-		_flask_row.add_child(_flask_cell(i))
+		_flask_col.add_child(_flask_cell(i))
 
 	_bag_view.selected = menu.selected
 	_bag_view.refresh()
@@ -237,7 +252,7 @@ func _bag_dropped(d: Dictionary, at: Vector2i) -> void:
 
 # ---------- flasks ----------
 
-## Flask slot i, under the character. The belt opens the first few (Player.flask_slot_count);
+## Flask slot i, in the column left of the armour. The belt opens the first few (Player.flask_slot_count);
 ## the rest are locked, and a flask left in one can't be drunk until a bigger belt opens it.
 ## Drag a flask here from the bag (or another slot to swap), and back to the bag to take it off.
 func _flask_cell(i: int) -> DragSlot:
