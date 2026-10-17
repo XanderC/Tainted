@@ -1001,25 +1001,12 @@ func _walk_step(dir: Vector2, delta: float) -> Vector2:
 	return to.normalized()
 
 
+## Picked-up loot, flasks included, always goes into the bag: equipping is only ever done by
+## dragging an item onto its slot. False when it fits nowhere.
 func pick_up(item: ItemInstance) -> bool:
-	if item.is_flask():
-		var fi := free_flask_slot()
-		if fi != -1:
-			flasks[fi] = item
-		elif bag.can_fit(item):
-			bag.add(item)
-		else:
-			return false
-		item_picked.emit(item)
-		inventory_changed.emit()
-		return true
-	var slot := equip_slot_for(item)
-	if can_equip(item) and not equipment.has(slot) and displaced_by(item, slot).is_empty():
-		equip_to(item, slot)
-	elif bag.can_fit(item):
-		bag.add(item)
-	else:
+	if not bag.can_fit(item):
 		return false
+	bag.add(item)
 	item_picked.emit(item)
 	inventory_changed.emit()
 	return true

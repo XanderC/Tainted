@@ -152,10 +152,10 @@ func _ready() -> void:
 		"unequipped into the bag")
 	check(p.equip_flask(p.flasks[1], 0) and p.flasks[1] == null, "move a flask between slots")
 
-	# --- picking one up fills an empty open slot ---
+	# --- picking one up puts it in the bag, even with a slot free: equipping is only by dragging ---
 	p.flasks = [null, null, null, null, null]
 	var found := item("large_life_flask")
-	check(p.pick_up(found) and p.flasks[0] == found, "picked-up flask goes into an empty slot")
+	check(p.pick_up(found) and p.bag.has(found) and p.flasks[0] == null, "picked-up flask goes into the bag, not a slot")
 
 	# --- old potions become flasks ---
 	GameState._flasks_from_potions({"health_2": 4, "power_1": 2, "health_1": 0}, "health_2")

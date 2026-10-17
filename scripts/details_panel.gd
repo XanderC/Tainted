@@ -1,7 +1,8 @@
 class_name DetailsPanel
 extends MenuPanel
 ## Default inventory panel: the selected item's card side by side with what is worn in that
-## slot (green/red arrows per stat), the stat changes, and Equip / Drop actions. Selling and
+## slot (green/red arrows per stat), the stat changes, and Unequip for worn gear (equipping and
+## dropping are drag and drop: onto a slot, or the drop box beside the bag). Selling and
 ## currency happen in town: the Merchant and the stash.
 
 
@@ -79,31 +80,15 @@ func refresh() -> void:
 		if unequip.disabled:
 			add_child(UIKit.label("⚠ Bag full! Free a slot to unequip.", 14, Color(0.95, 0.40, 0.40)))
 	else:
-		var equip := UIKit.button("⚔ Equip", Color(0.20, 0.16, 0.08), Color(0.85, 0.70, 0.30), Vector2(0, 52), 18)
-		equip.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		# Equipping and dropping are drag and drop: onto an equipment (or flask) slot, or onto the
+		# drop box beside the bag (CharacterPanel)
 		var reason := player.equip_block_reason(it)
 		if reason != "":
-			equip.disabled = true
 			add_child(UIKit.label("⛔ " + reason, 15, Color(0.95, 0.40, 0.40)))
 		elif it.base.two_handed and player.equipment.has("offhand"):
 			add_child(UIKit.label("Two-handed: your off-hand item goes back to the bag.", 13, UIKit.TEXT_DIM, true))
-		equip.pressed.connect(func():
-			if it.is_flask():
-				# The first open, empty flask slot; with none, it swaps with the first flask
-				var fi := player.free_flask_slot()
-				if not player.equip_flask(it, fi if fi != -1 else 0):
-					menu.feedback("No room in the bag for the flask it replaces.")
-			else:
-				player.equip_from_bag(it)
-			menu.refresh()
-		)
-		acts.add_child(equip)
-		var drop := UIKit.button("🗑 Drop", Color(0.20, 0.08, 0.08), Color(0.70, 0.25, 0.25), Vector2(100, 52), 17)
-		drop.pressed.connect(func():
-			player.drop_item(it)
-			menu.select(null)
-		)
-		acts.add_child(drop)
+		add_child(UIKit.label("Drag it onto %s to equip it, or onto 🗑 Drop beside the bag to drop it." % (
+			"a flask slot" if it.is_flask() else "its equipment slot"), 13, UIKit.TEXT_DIM, true))
 
 	# Currency is used at the stash (Scrolls of Identify anywhere), selling at the Merchant
 	add_child(UIKit.label("💰 Use currency on this item at the stash in town (Currency tab). Sell it at the Merchant.", 13, UIKit.TEXT_DIM, true))

@@ -21,9 +21,14 @@ Top-down mobile ARPG prototype (Godot 4.3+, GDScript, GL Compatibility renderer)
 ### Inventory
 Tap **Bag** (top right) or press **I**. The game pauses while it's open.
 - Tap a bag item to inspect it. You get its stats, a green/red list of what changes if you equip it, and the item you're currently wearing in that slot.
-- **Equip** swaps it in place (the old item takes its bag slot). **Drop** puts it on the ground; you can't re-pick it for 1.5s.
-- Tap an equipped item to **Unequip** it (needs a space in the bag its shape fits).
-- Items for an empty slot are worn immediately. Loot with no space its shape fits stays on the ground.
+- **Equip** by dragging it onto its equipment slot (the old item takes its bag space). **Drop** by
+  dragging it onto the 🗑 Drop box beside the bag (from the bag, the paperdoll or a flask slot); it
+  lands on the ground and you can't re-pick it for 1.5s. The item panel has no Equip or Drop buttons.
+- Tap an equipped item to **Unequip** it (needs a space in the bag its shape fits), or drag it back
+  into the bag.
+- Equipping is only ever done by dragging: picked-up loot (flasks too) always goes into the bag,
+  even when its slot is empty, and an upgrade shows a popup saying so. Loot with no space its
+  shape fits stays on the ground.
 - When you have real icons, set `icon` on an `ItemBase` and the bag shows the sprite instead of text.
 
 ### Bag and stash grids

@@ -54,13 +54,19 @@ func _ready() -> void:
 			img.save_png("C:/Users/simon/.gemini/antigravity-ide/brain/42db83ca-0e9d-4806-81ab-575bc706c24f/scratch/compact_upgrade_popup.png")
 			print("Saved screenshot to compact_upgrade_popup.png")
 
-	# 4. Test Equip Now button
-	popup_ui._on_equip_pressed()
-	assert(not popup_ui.is_open(), "Popup should close after equip")
-	assert(player.equipment["weapon"] == rare_sword, "Rare sword must now be equipped!")
-	assert(player.inventory.has(basic_sword), "Previous basic sword must now be safely swapped into bag!")
-	print("Equip success! Current weapon: ", player.equipment["weapon"].display_name, " (DMG: ", player.stats.get_stat("damage"), ")")
-	print("Bag contains swapped old gear: ", basic_sword.display_name)
+	# 4. Picking up never equips
+	# Equipping is only by dragging: picking it up left it in the bag, and the popup only says how
+	assert(player.inventory.has(rare_sword), "The picked-up upgrade must be in the bag")
+	assert(player.equipment["weapon"] == basic_sword, "Picking up must never equip it")
+	assert(not popup_ui.has_method("_on_equip_pressed"), "The popup has no Equip action")
+	assert(popup_ui._hint_lbl.text.contains("drag"), "The popup says to drag it onto its slot")
+	popup_ui.close()
+	# An empty slot doesn't change that
+	var helm_drop := LootGenerator.roll_item(5, ItemInstance.Rarity.MAGIC, "helmet")
+	assert(not player.equipment.has("helmet"), "No helmet worn yet")
+	assert(player.pick_up(helm_drop), "Helmet picked up")
+	assert(not player.equipment.has("helmet") and player.inventory.has(helm_drop), "Even into an empty slot, pickup goes to the bag")
+	print("Upgrades stay in the bag until dragged onto their slot")
 
 	# 5. Test auto-dismiss
 	var helm_upgrade := LootGenerator.roll_item(10, ItemInstance.Rarity.MAGIC, "helmet")

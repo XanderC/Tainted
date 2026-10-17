@@ -3,7 +3,8 @@ extends CanvasLayer
 ## Diablo / Path of Exile style "Better in Slot" Upgrade Popup.
 ## Appears as a sleek, non-intrusive compact card when an item drops or is collected
 ## that is superior to current gear. Does NOT pause gameplay or block controls.
-## Allows one-tap quick-equipping or salvaging on the fly, and auto-dismisses smoothly.
+## Says how to equip it (drag it onto its slot: the only way to equip anything) and
+## auto-dismisses smoothly.
 
 signal upgrade_resolved(action: String, item: ItemInstance)
 
@@ -18,7 +19,7 @@ var _delta_lbl: RichTextLabel
 var _replaces_lbl: Label
 var _timer_bar: ProgressBar
 
-var _btn_equip: Button
+var _hint_lbl: Label
 var _btn_dismiss: Button
 
 var _current_item: ItemInstance = null
@@ -154,20 +155,13 @@ func _build_ui() -> void:
 	_replaces_lbl.add_theme_color_override("font_color", Color(0.65, 0.60, 0.55))
 	outer.add_child(_replaces_lbl)
 
-	# 4. ACTION ROW: Quick Equip
-	var act_row := HBoxContainer.new()
-	act_row.add_theme_constant_override("separation", 8)
-	outer.add_child(act_row)
-
-	_btn_equip = Button.new()
-	_btn_equip.text = "⚡ Equip Now"
-	_btn_equip.custom_minimum_size = Vector2(130, 32)
-	_btn_equip.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_btn_equip.add_theme_font_size_override("font_size", 13)
-	var eq_sb := _make_stylebox(Color(0.12, 0.32, 0.18), Color(0.35, 1.0, 0.50), 1, 6)
-	_btn_equip.add_theme_stylebox_override("normal", eq_sb)
-	_btn_equip.pressed.connect(_on_equip_pressed)
-	act_row.add_child(_btn_equip)
+	# 4. HOW TO EQUIP: equipping is only ever by dragging the item onto its slot
+	_hint_lbl = Label.new()
+	_hint_lbl.text = "Open your 🎒 Bag and drag it onto its slot to equip it."
+	_hint_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_hint_lbl.add_theme_font_size_override("font_size", 12)
+	_hint_lbl.add_theme_color_override("font_color", Color(0.55, 0.95, 0.65))
+	outer.add_child(_hint_lbl)
 
 
 	# 5. TIMER PROGRESS BAR: Visual countdown before auto-dismiss
@@ -198,30 +192,6 @@ func _populate_ui(item: ItemInstance) -> void:
 	var old_name := player.get_replaced_gear_name(item)
 	_replaces_lbl.text = "Replaces: %s" % old_name
 
-	if _current_pickup != null:
-		_btn_equip.text = "⚡ Equip & Swap"
-	else:
-		_btn_equip.text = "⚡ Equip Now"
-
-
-# ==============================================================================
-# ACTIONS
-# ==============================================================================
-
-func _on_equip_pressed() -> void:
-	if _current_item == null or player == null:
-		close()
-		return
-
-	var it: ItemInstance = _current_item
-	var pk: LootPickup = _current_pickup
-
-	player.equip_with_overflow(it)
-	if pk != null and is_instance_valid(pk):
-		pk.queue_free()
-
-	upgrade_resolved.emit("equip", it)
-	close()
 
 
 func _make_stylebox(bg: Color, border: Color, width := 1, corner := 6) -> StyleBoxFlat:

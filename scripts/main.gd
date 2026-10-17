@@ -248,20 +248,17 @@ func spawn_currency(kind: String, id: String, amount: int, pos: Vector2) -> void
 	add_child(c)
 
 
-## An item's name plate was tapped and the player reached it (LootPickup). Upgrades get the
-## quick-equip popup; with the bag full an upgrade can still be equipped from the ground.
+## An item's name plate was tapped and the player reached it (LootPickup). It goes into the bag;
+## an upgrade also gets the popup saying so (equipping is only by dragging it onto its slot).
 ## False when there's no room for it.
 func take_loot(p: LootPickup) -> bool:
 	var better := player.is_better_in_slot(p.item)
-	if player.pick_up(p.item):
-		p.queue_free()
-		if better and player.inventory.has(p.item):
-			upgrade_popup_ui.prompt_upgrade(p.item, null)
-		return true
+	if not player.pick_up(p.item):
+		return false
+	p.queue_free()
 	if better:
-		upgrade_popup_ui.prompt_upgrade(p.item, p)
-		return true
-	return false
+		upgrade_popup_ui.prompt_upgrade(p.item, null)
+	return true
 
 
 func _on_item_dropped(item: ItemInstance) -> void:

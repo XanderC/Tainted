@@ -26,7 +26,7 @@ const HINTS := {
 		"[color=#ffd54a]attack button[/color] (bottom right; Space or click on a computer). Hits build [color=#fb923c]Adrenaline[/color] for stronger skills later. " +
 		"(You change skill gems at the [color=#ffd54a]stash[/color] in town.)",
 	Stage.EQUIP: "[b]It dropped a Magic weapon![/b]\nTap its name on the ground to pick it up, then equip it in place of your Rusty Sword: " +
-		"tap [color=#4ade80]Equip[/color] on the popup, or open your [color=#ffd54a]🎒 BAG[/color] and drag it onto the Main Hand slot.",
+		"open your [color=#ffd54a]🎒 BAG[/color] and drag it onto the Main Hand slot.",
 	Stage.PORTAL: "[b]You're ready.[/b]\nStep into the [color=#c084fc]portal[/color] to reach Ashfall Outpost, your home base. " +
 		"Its traders, crafters and the Rift Gate await.",
 }
@@ -147,9 +147,9 @@ func _process(_delta: float) -> void:
 				_finish()
 
 
-## Tap an item's name plate to take it (LootPickup). Unlike a rift, it always goes into the bag
-## (never straight into an empty slot) so equipping it is part of the lesson; upgrades offer a
-## quick-equip popup. False when there's no room.
+## Tap an item's name plate to take it (LootPickup). As everywhere, it goes into the bag
+## (never straight into an empty slot) so equipping it is part of the lesson; upgrades get a
+## popup saying how to equip them. False when there's no room.
 func take_loot(p: LootPickup) -> bool:
 	if not player.add_to_bag(p.item):
 		return false

@@ -3,7 +3,8 @@ extends PanelContainer
 ## Right half of the GameMenu: character header, equipment paperdoll, summary stats, the bag grid
 ## and currencies. Everything is drag and drop:
 ##   bag <-> bag (rearrange/swap), bag -> equipment slot (equip), equipment -> bag (unequip),
-##   stash -> bag (take), and anything the current left panel accepts (e.g. buying a ware).
+##   stash -> bag (take), anything -> the drop box beside the bag (drop on the ground), and
+##   anything the current left panel accepts (e.g. buying a ware).
 ## Tapping an item selects it for the left panel (details, gems, blacksmith, merchant...).
 ## Currency and loose gems aren't carried: they are the account's, in the
 ## shared stash (StashPanel), whose Currency tab is where orbs are used.
@@ -12,6 +13,7 @@ extends PanelContainer
 const GEAR_GRID_CELL := 46.0  # 10 x 6 cells fill the space under the paperdoll on a 720p-tall screen
 const GEAR_CELL := Vector2(60, 60)  # five down each side: their height sets how much the bag gets
 const FLASK_CELL := Vector2(40, 60)  # flasks stand tall, as in the bag
+const DROP_BOX_WIDTH := 64.0  # the drop box beside the bag, as tall as the bag
 const LEFT_SLOTS := ["helmet", "chest", "gloves", "boots"]
 const RIGHT_SLOTS := ["amulet", "ring", "weapon", "offhand"]
 
@@ -114,14 +116,40 @@ func _ready() -> void:
 	# The bag
 	var bag_row := HBoxContainer.new()
 	bag_row.add_theme_constant_override("separation", 10)
+	bag_row.alignment = BoxContainer.ALIGNMENT_CENTER  # the bag and its drop box, centred together
 	v.add_child(bag_row)
 	_bag_view = ItemGridView.new(player.bag, GEAR_GRID_CELL, "bag")
-	_bag_view.size_flags_horizontal = Control.SIZE_EXPAND | Control.SIZE_SHRINK_CENTER
+	_bag_view.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	_bag_view.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 	_bag_view.can_accept_at = _bag_accepts
 	_bag_view.on_drop_at = _bag_dropped
 	_bag_view.item_clicked.connect(func(it: ItemInstance): menu.select(it))
 	bag_row.add_child(_bag_view)
+	bag_row.add_child(_drop_box())
+
+
+## Beside the bag: drag gear here (from the bag, the paperdoll or a flask slot) to drop it on the
+## ground. Replaces the Drop button the item panel used to have.
+func _drop_box() -> DragSlot:
+	var box := DragSlot.new(Vector2(DROP_BOX_WIDTH, Player.BAG_ROWS * GEAR_GRID_CELL))
+	box.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+	box.setup(null, Color(0.55, 0.22, 0.20), Color(0.13, 0.06, 0.06), 0, "", "Drag an item here to drop it on the ground")
+	var lbl := UIKit.label("🗑\n\nDROP", 15, Color(0.85, 0.45, 0.40))
+	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	box.add_child(lbl)
+	box.can_accept = func(d: Dictionary) -> bool:
+		return d.get("kind", "") == "item" and d.get("item") != null and d.get("from", "") in ["bag", "gear", "flask"]
+	box.on_drop = func(d: Dictionary) -> void:
+		var it: ItemInstance = d.get("item")
+		player.drop_item(it)
+		menu.feedback("Dropped %s." % it.display_name)
+		if menu.selected == it:
+			menu.select(null)
+		else:
+			menu.refresh()
+	return box
 
 
 func refresh() -> void:
