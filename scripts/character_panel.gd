@@ -13,7 +13,7 @@ extends PanelContainer
 const GEAR_GRID_CELL := 46.0  # 10 x 6 cells fill the space under the paperdoll on a 720p-tall screen
 const GEAR_CELL := Vector2(60, 60)  # five down each side: their height sets how much the bag gets
 const FLASK_CELL := Vector2(40, 60)  # flasks stand tall, as in the bag
-const DROP_BOX_WIDTH := 64.0  # the drop box beside the bag, as tall as the bag
+const DROP_BOX_SIZE := Vector2(76, 76)  # the drop box, at the bottom right of the bag
 const LEFT_SLOTS := ["helmet", "chest", "gloves", "boots"]
 const RIGHT_SLOTS := ["amulet", "ring", "weapon", "offhand"]
 
@@ -128,13 +128,13 @@ func _ready() -> void:
 	bag_row.add_child(_drop_box())
 
 
-## Beside the bag: drag gear here (from the bag, the paperdoll or a flask slot) to drop it on the
+## At the bottom right of the bag: drag gear here (from the bag, the paperdoll or a flask slot) to drop it on the
 ## ground. Replaces the Drop button the item panel used to have.
 func _drop_box() -> DragSlot:
-	var box := DragSlot.new(Vector2(DROP_BOX_WIDTH, Player.BAG_ROWS * GEAR_GRID_CELL))
-	box.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+	var box := DragSlot.new(DROP_BOX_SIZE)
+	box.size_flags_vertical = Control.SIZE_SHRINK_END  # level with the bottom of the bag
 	box.setup(null, Color(0.55, 0.22, 0.20), Color(0.13, 0.06, 0.06), 0, "", "Drag an item here to drop it on the ground")
-	var lbl := UIKit.label("🗑\n\nDROP", 15, Color(0.85, 0.45, 0.40))
+	var lbl := UIKit.label("🗑\nDROP", 14, Color(0.85, 0.45, 0.40))
 	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
