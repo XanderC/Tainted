@@ -198,9 +198,10 @@ func refresh() -> void:
 func _gear_cell(slot: String) -> DragSlot:
 	var it: ItemInstance = player.equipment.get(slot)
 	var cell := UIKit.item_cell(it, it != null and it == menu.selected, GEAR_CELL)
+	cell.size_flags_horizontal = Control.SIZE_SHRINK_CENTER  # never stretched by the column's width
 	if it == null:
 		cell.setup(null, Color(0.28, 0.24, 0.30), Color(0.09, 0.08, 0.11), 0,
-			"%s\n%s" % [UIKit.SLOT_ICONS.get(slot, ""), UIKit.SLOT_NAMES.get(slot, slot)], UIKit.SLOT_NAMES.get(slot, slot))
+			UIKit.SLOT_NAMES.get(slot, slot), UIKit.SLOT_NAMES.get(slot, slot))  # name only: two lines at most, so it fits the slot
 	else:
 		cell.payload = {"kind": "item", "from": "gear", "slot": slot, "item": it}
 		cell.clicked.connect(menu.select.bind(it))
@@ -259,8 +260,9 @@ func _flask_cell(i: int) -> DragSlot:
 	var open := i < player.flask_slot_count()
 	var key: String = FlaskBar.KEYS[i]
 	var cell := UIKit.item_cell(it, it != null and it == menu.selected, FLASK_CELL)
+	cell.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	if it == null:
-		cell.setup(null, Color(0.32, 0.26, 0.30) if open else Color(0.16, 0.14, 0.18), Color(0.09, 0.08, 0.11), 0,
+		cell.setup(null, Color(0.28, 0.24, 0.30), Color(0.09, 0.08, 0.11), 0,
 			("🧪\n%s" % key) if open else "🔒",
 			("Flask slot %d (%s) - drag a flask here" % [i + 1, key]) if open else "Wear a belt with more flask slots to open this one")
 	else:
@@ -285,14 +287,16 @@ func _flask_cell(i: int) -> DragSlot:
 
 
 ## "1 | 2" switch above the hand slots: shows which weapon set is active and swaps sets.
-## The hand slots always show (and equip into) the active set.
+## The hand slots always show (and equip into) the active set. Exactly as wide as a slot, so it
+## doesn't widen the column.
 func _set_toggle() -> HBoxContainer:
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 2)
+	row.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	for i in 2:
 		var active := player.active_set == i
 		var b := UIKit.button(str(i + 1), Color(0.24, 0.18, 0.10) if active else Color(0.11, 0.10, 0.13),
-			Color(0.95, 0.82, 0.40) if active else Color(0.35, 0.28, 0.20), Vector2(32, 30), 14)
+			Color(0.95, 0.82, 0.40) if active else Color(0.35, 0.28, 0.20), Vector2((GEAR_CELL.x - 2) / 2, 26), 14)
 		var alt_names := []
 		for s in player.alt_set:
 			alt_names.append(player.alt_set[s].display_name)
