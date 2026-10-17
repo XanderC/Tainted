@@ -61,7 +61,8 @@ that is never used up: drink it from a flask slot and it goes on cooldown.
   Potent: stronger buff); suffixes work while it is in effect (of Iron Skin, of Haste, of Fury,
   of the Berserker, of Warding: clears and blocks slows). Orbs work on flasks. No sockets.
 - HUD: one button per open slot (`FlaskBar`), also Q E R T F. Flask slots stand in a column on the
-  left of the inventory, one beside each armour slot; drag flasks between them and the bag.
+  left of the bag, under the armour slots and the same size as every equipment slot; drag flasks
+  between them and the bag.
 - Flasks drop as loot (the boss always leaves one), and the Merchant sells Normal ones.
   Old saves: each potion type owned became a Normal flask, the slotted one equipped.
 - Code: `ItemBase.flask` / `flask_slots`, `ItemInstance.flask_effect()`, `Player.use_flask()`,

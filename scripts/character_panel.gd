@@ -11,8 +11,8 @@ extends PanelContainer
 
 ## One cell of the bag grid (Player.BAG_COLS x BAG_ROWS, gear spanning several).
 const GEAR_GRID_CELL := 46.0  # 10 x 6 cells fill the space under the paperdoll on a 720p-tall screen
-const GEAR_CELL := Vector2(60, 60)  # five down each side: their height sets how much the bag gets
-const FLASK_CELL := Vector2(40, 60)  # flasks stand tall, as in the bag
+const GEAR_CELL := Vector2(50, 50)  # every equipment and flask slot: five flasks fit down the bag's side
+const FLASK_CELL := GEAR_CELL  # flask slots are the same size as every equipment slot
 const DROP_BOX_SIZE := Vector2(76, 76)  # the drop box, at the bottom right of the panel
 const LEFT_SLOTS := ["helmet", "chest", "gloves", "boots"]
 const RIGHT_SLOTS := ["amulet", "ring", "weapon", "offhand"]
@@ -25,7 +25,7 @@ var _class_lbl: Label
 var _left_col: VBoxContainer
 var _right_col: VBoxContainer
 var _summary: RichTextLabel
-var _flask_col: VBoxContainer  # the flask slots, a column left of the armour slots, row for row
+var _flask_col: VBoxContainer  # the flask slots, down the left of the bag, under the armour slots
 var _portrait: SubViewportContainer
 var _rig: RigSprite
 var _bag_view: ItemGridView  # the bag, as a grid: all gear, flasks included
@@ -71,11 +71,6 @@ func _ready() -> void:
 	var doll := HBoxContainer.new()
 	doll.add_theme_constant_override("separation", 10)
 	v.add_child(doll)
-	# Flask slots stand left of the armour, one beside each armour slot: as tall as a gear slot and
-	# spaced the same, so the five line up with helmet, chest, gloves, boots and belt
-	_flask_col = VBoxContainer.new()
-	_flask_col.add_theme_constant_override("separation", 6)
-	doll.add_child(_flask_col)
 	_left_col = VBoxContainer.new()
 	_left_col.add_theme_constant_override("separation", 6)
 	doll.add_child(_left_col)
@@ -114,13 +109,17 @@ func _ready() -> void:
 	_right_col.add_theme_constant_override("separation", 6)
 	doll.add_child(_right_col)
 
-	# The bag
+	# The bag, with the flask slots down its left: under the left equipment column and the same
+	# size as every equipment slot
 	var bag_row := HBoxContainer.new()
 	bag_row.add_theme_constant_override("separation", 10)
-	bag_row.alignment = BoxContainer.ALIGNMENT_CENTER
 	v.add_child(bag_row)
+	_flask_col = VBoxContainer.new()
+	_flask_col.add_theme_constant_override("separation", 6)
+	_flask_col.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+	bag_row.add_child(_flask_col)
 	_bag_view = ItemGridView.new(player.bag, GEAR_GRID_CELL, "bag")
-	_bag_view.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	_bag_view.size_flags_horizontal = Control.SIZE_EXPAND | Control.SIZE_SHRINK_CENTER  # centred in the rest
 	_bag_view.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 	_bag_view.can_accept_at = _bag_accepts
 	_bag_view.on_drop_at = _bag_dropped
@@ -252,7 +251,7 @@ func _bag_dropped(d: Dictionary, at: Vector2i) -> void:
 
 # ---------- flasks ----------
 
-## Flask slot i, in the column left of the armour. The belt opens the first few (Player.flask_slot_count);
+## Flask slot i, in the column down the left of the bag. The belt opens the first few (Player.flask_slot_count);
 ## the rest are locked, and a flask left in one can't be drunk until a bigger belt opens it.
 ## Drag a flask here from the bag (or another slot to swap), and back to the bag to take it off.
 func _flask_cell(i: int) -> DragSlot:
