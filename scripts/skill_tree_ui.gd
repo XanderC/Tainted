@@ -68,8 +68,7 @@ func toggle() -> void:
 
 
 func _build_ui() -> void:
-	_btn_open = UIKit.button("✦ PASSIVES", Color(0.12, 0.10, 0.15, 0.9), Color(0.85, 0.65, 0.3), Vector2(120, 56), 17)
-	_btn_open.add_theme_color_override("font_color", Color(1.0, 0.9, 0.6))
+	_btn_open = UIKit.stone_button("✦ PASSIVES", Vector2(120, 56), 17)
 	_btn_open.pressed.connect(open)
 	add_child(_btn_open)
 	_btn_open.anchor_left = 1.0

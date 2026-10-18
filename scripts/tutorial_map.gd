@@ -362,19 +362,16 @@ func _build_hud() -> void:
 	pad.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	layer.add_child(pad)
 	pad.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT)
-	var button_pos := {0: Vector2(-155, -155), 1: Vector2(-280, -115), 2: Vector2(-245, -245),
-		3: Vector2(-115, -280), 4: Vector2(-385, -268), 5: Vector2(-250, -372)}
-	for i in button_pos:
+	for i in SkillButton.CENTRES:
 		var b := SkillButton.new()
 		b.player = player
 		b.index = i
-		b.position = button_pos[i]
+		b.position = SkillButton.pad_position(i)
 		pad.add_child(b)
-	# Flask buttons, one per slot the belt opens, growing left from this corner
+	# The flask row, between the orbs at the bottom centre
 	var flasks := FlaskBar.new()
 	flasks.player = player
-	flasks.position = Vector2(-292, -22)
-	pad.add_child(flasks)
+	layer.add_child(flasks)
 
 	var bars := HudBars.new()
 	bars.player = player

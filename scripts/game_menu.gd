@@ -234,12 +234,7 @@ func _build_tabs() -> void:
 
 
 func _build() -> void:
-	_open_btn = Button.new()
-	_open_btn.text = "🎒 BAG"
-	_open_btn.custom_minimum_size = Vector2(110, 56)
-	_open_btn.add_theme_font_size_override("font_size", 20)
-	_open_btn.add_theme_stylebox_override("normal", UIKit.box(Color(0.12, 0.10, 0.15, 0.9), Color(0.65, 0.52, 0.30), 2, 6))
-	_open_btn.add_theme_color_override("font_color", Color(0.95, 0.88, 0.70))
+	_open_btn = UIKit.stone_button("🎒 BAG", Vector2(110, 56), 20)
 	_open_btn.pressed.connect(open)
 	add_child(_open_btn)
 	_open_btn.anchor_left = 1.0

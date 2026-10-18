@@ -51,6 +51,8 @@ func _input(event: InputEvent) -> void:
 func _draw() -> void:
 	if _touch_index == -1:
 		return
-	draw_circle(_center, radius, Color(1, 1, 1, 0.10))
-	draw_arc(_center, radius, 0.0, TAU, 48, Color(1, 1, 1, 0.25), 3.0)
-	draw_circle(_knob, 42.0, Color(1, 1, 1, 0.35))
+	# The base is centred on the touch, and the knob moves inside its opening
+	var s := radius * 0.42 / float(HudArt.HOLES["joy_frame"][1])
+	HudArt.frame(self, "joy_frame", _center, s, Color(1, 1, 1, 0.9))
+	var knob := _center + (_knob - _center) * 0.2
+	HudArt.disc(self, "joy_knob", knob, radius * 0.4)

@@ -49,28 +49,19 @@ func _ready() -> void:
 	pad.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	layer.add_child(pad)
 	pad.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT)
-	var button_pos := {
-		0: Vector2(-155, -155),  # Primary Main Attack (135px)
-		1: Vector2(-280, -115),  # Skill 1 (96px)
-		2: Vector2(-245, -245),  # Skill 2 (96px)
-		3: Vector2(-115, -280),  # Skill 3 (96px)
-		4: Vector2(-385, -268),  # Skill 4
-		5: Vector2(-250, -372),  # Skill 5
-	}
-	for i in button_pos:
+	for i in SkillButton.CENTRES:
 		var b := SkillButton.new()
 		b.player = player
 		b.index = i
-		b.position = button_pos[i]
+		b.position = SkillButton.pad_position(i)
 		pad.add_child(b)
-	# Flask buttons, one per slot the belt opens, growing left from this corner
+	# The flask row, between the orbs at the bottom centre
 	var flasks := FlaskBar.new()
 	flasks.player = player
-	flasks.position = Vector2(-292, -22)
-	pad.add_child(flasks)
+	layer.add_child(flasks)
 	var swap := WeaponSwapButton.new()
 	swap.player = player
-	swap.position = Vector2(-370, -160)
+	swap.position = Vector2(-137, -358)
 	pad.add_child(swap)
 
 	var bars := HudBars.new()

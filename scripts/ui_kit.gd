@@ -81,6 +81,32 @@ static func button(text: String, bg: Color, border: Color, min_size := Vector2(0
 	return b
 
 
+## A button in the HUD's stone style (the pack's menu button, stretched with its corners kept).
+static func stone_button(text: String, min_size := Vector2(0, 46), font := 16) -> Button:
+	var b := Button.new()
+	b.text = text
+	b.custom_minimum_size = min_size
+	b.add_theme_font_size_override("font_size", font)
+	b.add_theme_color_override("font_color", Color(0.95, 0.88, 0.70))
+	b.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.8))
+	b.add_theme_constant_override("outline_size", 3)
+	var normal := _stone_box("menu_btn")
+	var pressed := _stone_box("menu_btn_pressed")
+	b.add_theme_stylebox_override("normal", normal)
+	b.add_theme_stylebox_override("hover", normal)
+	b.add_theme_stylebox_override("pressed", pressed)
+	b.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+	return b
+
+
+static func _stone_box(art: String) -> StyleBoxTexture:
+	var s := StyleBoxTexture.new()
+	s.texture = HudArt.tex(art)
+	s.set_texture_margin_all(14.0)
+	s.set_content_margin_all(8.0)
+	return s
+
+
 ## A bordered section with a title; returns the inner VBox to fill.
 static func section(parent: Control, title: String, expand := false) -> VBoxContainer:
 	var p := PanelContainer.new()

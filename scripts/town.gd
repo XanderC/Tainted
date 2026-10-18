@@ -63,11 +63,10 @@ func _ready() -> void:
 	potion_pad.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	layer.add_child(potion_pad)
 	potion_pad.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT)
-	# Flask buttons, one per slot the belt opens, growing left from this corner
+	# The flask row, between the orbs at the bottom centre
 	var flasks := FlaskBar.new()
 	flasks.player = player
-	flasks.position = Vector2(-32, -32)
-	potion_pad.add_child(flasks)
+	layer.add_child(flasks)
 	var swap := WeaponSwapButton.new()
 	swap.player = player
 	swap.position = Vector2(-110, -170)
@@ -84,7 +83,7 @@ func _ready() -> void:
 	_hud.add_theme_constant_override("outline_size", 6)
 	layer.add_child(_hud)
 
-	_chars_btn = UIKit.button("👥", Color(0.12, 0.10, 0.15, 0.9), Color(0.65, 0.52, 0.30), Vector2(64, 56), 22)
+	_chars_btn = UIKit.stone_button("👥", Vector2(64, 56), 22)
 	_chars_btn.tooltip_text = "Character select"
 	_chars_btn.pressed.connect(_to_character_select)
 	layer.add_child(_chars_btn)
