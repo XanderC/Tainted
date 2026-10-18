@@ -26,6 +26,8 @@ SKINS = {
     "battlemaster": ("medieval-warrior-chibi", "Medieval Commander"),
     "jeweler": ("gnome", "Gnome_2"),
     "sage": ("seer", "Seer_1"),
+    "caravan_master": ("persian", "Persian_and_Arab_Warriors_2"),
+    "caravan_guard": ("mercenaries", "Mercenaries_1"),
     # Undead
     "zombie_villager_1": ("zombie-villager", "Zombie_Villager_1"),
     "zombie_villager_2": ("zombie-villager", "Zombie_Villager_2"),

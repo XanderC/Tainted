@@ -14,14 +14,17 @@ extends RefCounted
 ##     {"type": "prop", "x", "y", "sprite", "scale", "solid"},  # a picture from assets/tiles/<theme>
 ##     {"type": "tile", "x", "y", "sprite", "scale"},  # flat ground piece (land_ / road_), x, y = top-left
 ##     {"type": "npc", "x", "y", "id", "name", "dialogue"},
-##     {"type": "trigger", "x", "y", "radius", "id", "text"}    # a story event when the player walks in
+##     {"type": "trigger", "x", "y", "radius", "id", "text"},   # a story event when the player walks in
+##     {"type": "waypoint", "x", "y"},                           # story zones: the zone's waypoint
+##     {"type": "boss", "x", "y", "id", "name", "kind", "skin", "hp", "size"},  # a quest boss
+##     {"type": "quest_object", "x", "y", "id", "sprite", "scale", "prompt", "text"}  # used for a quest
 ##   ]
 ## }
 
 const DIR := "res://maps/"
 const FORMAT := 1
 const KINDS := ["rift", "story", "special"]
-const OBJECT_TYPES := ["start", "portal", "pack", "marker", "prop", "tile", "npc", "trigger"]
+const OBJECT_TYPES := ["start", "portal", "pack", "marker", "prop", "tile", "npc", "trigger", "waypoint", "boss", "quest_object"]
 
 static var _cache := {}
 

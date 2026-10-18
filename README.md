@@ -27,6 +27,24 @@ The art (`assets/appearance`) is cut from the CraftPix chibi packs by `tools/bui
 the packs draw hair and beards into each head, so the tool separates them from a bald base head and
 turns them grey for tinting. Rerun it with the folder of zips to add styles (the tables at its top).
 
+### Story: acts, zones and quests
+Act 1 is being built (Diablo / Path of Exile style). Story zones are open areas (`scripts/zone.gd`,
+listed in `scripts/act_db.gd`) built from map files, with every monster pack placed (they return
+each visit), an area level, exits to other zones and town, a waypoint, NPCs, quest objects, story
+triggers and quest bosses (who stay dead once their quest is past them). The 🌀 TOWN button opens a
+town portal: back to Ashfall, and the portal there returns you to the same spot. Dying in a zone
+sends you to its waypoint.
+
+Quests (`scripts/quest_db.gd` for the content, `scripts/quests.gd` for the rules) have steps (talk,
+reach a spot, enter a zone, touch a waypoint, kill monsters of a kind, kill a boss, use an object)
+and rewards (experience, orbs, passive points, items). NPCs with quest business show a gold ! or ?
+and talk first (`DialogueUI`); the tracker (top left) shows what to do next and opens the quest log
+(also J). Progress is saved per character.
+So far: **Into the Wastes** (main, Brom) and **The Lost Caravan** (side, Caravan Master Hesk, with
+Vesh the Raider Captain), in **The Dune Wastes**, reached by the west road out of Ashfall.
+Zone maps come from `tools/gen_zones.py`; tweak them in the map editor (rerunning the script
+overwrites them).
+
 ### Monsters and townsfolk
 Town NPCs and monsters are whole characters from the CraftPix chibi packs drawn on the game's rig
 (`assets/skins`, copied by `tools/import_skins.py`; add a line to its table for more). Each pack of

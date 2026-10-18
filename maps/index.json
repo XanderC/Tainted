@@ -4,6 +4,10 @@
 			"kind": "rift",
 			"name": "Bone Labyrinth"
 		},
+		"dune_wastes": {
+			"kind": "story",
+			"name": "The Dune Wastes"
+		},
 		"scorched_halls": {
 			"kind": "rift",
 			"name": "Scorched Halls"

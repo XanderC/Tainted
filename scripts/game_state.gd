@@ -7,6 +7,7 @@ extends Node
 signal changed
 signal skills_changed
 signal leveled_up(level: int)
+signal quests_changed
 
 const SAVE_PATH := "user://tainted_save.json"  # the single save from before characters existed
 const ACCOUNT_PATH := "user://tainted_account.json"
@@ -35,6 +36,15 @@ var known_recipes: Array[String] = []
 var runs_cleared := 0
 var rift_unlocked := 1  # highest rift level the player may enter (beat a level on time to unlock the next)
 var rift_level := 1     # level chosen at the rift gate for the next run
+## The story (Quests, ActDB): quest id -> progress; zones whose waypoint you've touched; and the
+## town portal you left open ({"zone", "x", "y"}, or {} for none)
+var quests := {}
+var waypoints: Array = []
+var town_portal := {}
+## Where the next Zone scene loads and where in it you arrive: "start", "waypoint", "portal" (the
+## town portal spot) or the zone you came from (arrive at the exit back to it)
+var current_zone := ""
+var zone_entry := "start"
 var player: Player
 ## The shared stash is a grid like the bag (ItemGrid), bigger.
 const STASH_COLS := 12
@@ -95,6 +105,9 @@ func _new_game() -> void:
 	runs_cleared = 0
 	rift_unlocked = 1
 	rift_level = 1
+	quests = {}
+	waypoints = []
+	town_portal = {}
 	_pending_inventory.clear()
 	_pending_equipment.clear()
 	_pending_alt_set.clear()
@@ -1075,6 +1088,7 @@ func save() -> void:
 		"version": 2, "name": char_name, "class": char_class, "tutorial_stage": tutorial_stage,
 		"recipes": known_recipes, "runs_cleared": runs_cleared,
 		"rift_unlocked": rift_unlocked, "rift_level": rift_level,
+		"quests": quests, "waypoints": waypoints, "town_portal": town_portal,
 		"inventory": inv, "equipment": eq,
 		"alt_weapon_set": _pending_alt_set, "active_weapon_set": _pending_active_set,
 		# Skills & Runes
@@ -1341,6 +1355,9 @@ func _apply_save(data: Dictionary) -> void:
 	runs_cleared = int(data.get("runs_cleared", 0))
 	rift_unlocked = maxi(1, int(data.get("rift_unlocked", 1)))
 	rift_level = clampi(int(data.get("rift_level", 1)), 1, rift_unlocked)
+	quests = data.get("quests", {})
+	waypoints = data.get("waypoints", [])
+	town_portal = data.get("town_portal", {})
 	_pending_inventory = data.get("inventory", [])
 	_pending_equipment = data.get("equipment", {})
 	_pending_alt_set = data.get("alt_weapon_set", {})

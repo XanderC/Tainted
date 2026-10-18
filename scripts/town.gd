@@ -4,9 +4,17 @@ extends Node2D
 ## Jeweler: combine gems into higher tiers and remove socketed gems.
 ## Sage: identifies every item in your bag and stash, free.
 ## Rift Gate: pick a rift level, then start a run (scenes/main.tscn).
+## The story: NPCs with quest business talk first (DialogueUI), the west road leads to the Dune
+## Wastes (Zone), a waypoint travels to zones you've found, and a town portal opened out there
+## brings you back to where you were.
 
 const DUNGEON_SCENE := "res://scenes/main.tscn"
 const SPAWN := Vector2(0, 360)
+const WEST_EXIT := Vector2(-940, 620)  # the road out to the Dune Wastes
+const WEST_EXIT_ZONE := "dune_wastes"
+const WAYPOINT := Vector2(260, 300)
+const PORTAL := Vector2(-80, 470)  # where an open town portal stands
+const EXIT_REACH := 70.0
 
 const UpgradePopupUIScript = preload("res://scripts/upgrade_popup_ui.gd")
 
@@ -20,6 +28,11 @@ var _talk_btn: Button
 var _chars_btn: Button
 var _near: Interactable = null
 var _gate: Node2D
+var dialogue: DialogueUI
+var quest_log: QuestLogUI
+var waypoint_ui: WaypointUI
+var _exits: Array = []  # [{"node", "target", "entry"}]
+var _leaving := false
 
 
 func _ready() -> void:
@@ -29,8 +42,9 @@ func _ready() -> void:
 	player = Player.new()
 	player.class_def = ClassLibrary.get_class_def(GameState.char_class)
 	player.can_fight = false
-	player.position = SPAWN
+	player.position = _arrival()
 	add_child(player)
+	player.item_dropped.connect(_on_item_dropped)
 	var cam := Camera2D.new()
 	cam.limit_left = int(TownMap.CAM_LIMIT.position.x)
 	cam.limit_right = int(TownMap.CAM_LIMIT.end.x)
@@ -44,7 +58,14 @@ func _ready() -> void:
 	_add_npc("Battlemaster Brom", "Passive Tree", Vector2(-240, -160), "battlemaster", "Open the Passive Tree", func(): skill_tree_ui.open())
 	_add_npc("Jeweler", "Gems", Vector2(280, -175), "jeweler", "Talk to the Jeweler", func(): menu.open_vendor("jeweler"))
 	_add_npc("Sage Aldous", "Identify", Vector2(-600, 150), "sage", "Talk to the Sage", _identify_all)
+	_add_npc("Caravan Master Hesk", "Caravans", Vector2(-330, 250), "caravan_master", "Talk to Hesk",
+		func(): dialogue.open("hesk"), "hesk")
 	_add_gate(Vector2(820, 220))
+	_add_exit(WEST_EXIT, WEST_EXIT_ZONE, "town", "→ " + ActDB.zone_name(WEST_EXIT_ZONE))
+	if GameState.town_portal.get("zone", "") != "":
+		_add_exit(PORTAL, String(GameState.town_portal["zone"]), "portal",
+			"🌀 Portal to " + ActDB.zone_name(String(GameState.town_portal["zone"])))
+	_add_waypoint(WAYPOINT)
 
 	var layer := CanvasLayer.new()
 	add_child(layer)
@@ -70,12 +91,18 @@ func _ready() -> void:
 	bars.player = player
 	layer.add_child(bars)
 
+	var info := VBoxContainer.new()
+	info.position = Vector2(16, 12)
+	info.add_theme_constant_override("separation", 6)
+	layer.add_child(info)
 	_hud = Label.new()
-	_hud.position = Vector2(16, 80)
 	_hud.add_theme_font_size_override("font_size", 20)
 	_hud.add_theme_color_override("font_outline_color", Color.BLACK)
 	_hud.add_theme_constant_override("outline_size", 6)
-	layer.add_child(_hud)
+	info.add_child(_hud)
+	var tracker := QuestTracker.new()
+	tracker.open_log.connect(func(): quest_log.open())
+	info.add_child(tracker)
 
 	_chars_btn = UIKit.stone_button("👥", Vector2(64, 56), 22)
 	_chars_btn.tooltip_text = "Character select"
@@ -114,6 +141,14 @@ func _ready() -> void:
 	upgrade_popup_ui = UpgradePopupUIScript.new()
 	upgrade_popup_ui.player = player
 	add_child(upgrade_popup_ui)
+	dialogue = DialogueUI.new()
+	dialogue.player = player
+	add_child(dialogue)
+	quest_log = QuestLogUI.new()
+	add_child(quest_log)
+	waypoint_ui = WaypointUI.new()
+	waypoint_ui.here = ActDB.TOWN
+	add_child(waypoint_ui)
 	if GameState.show_hub_intro:
 		GameState.show_hub_intro = false
 		_show_hub_intro()
@@ -166,6 +201,14 @@ func _process(delta: float) -> void:
 		player.bag_cells_used(), Player.BAG_SIZE]
 	if _gate:
 		_gate.queue_redraw()
+	if not _leaving and not get_tree().paused:
+		for e in _exits:
+			if player.global_position.distance_to(e["node"].global_position) < EXIT_REACH:
+				_leaving = true
+				if e["entry"] == "portal":
+					GameState.town_portal = {}  # a portal closes once you go back through it
+				ActDB.travel(get_tree(), e["target"], e["entry"])
+				return
 
 	var best: Interactable = null
 	var best_d := INF
@@ -176,7 +219,9 @@ func _process(delta: float) -> void:
 			best_d = d
 	var any_open: bool = (menu != null and menu.is_open()) or \
 		(rift_ui != null and rift_ui.is_open()) or \
-\
+		(dialogue != null and dialogue.is_open()) or \
+		(quest_log != null and quest_log.is_open()) or \
+		(waypoint_ui != null and waypoint_ui.is_open()) or \
 		(skill_tree_ui != null and skill_tree_ui.is_open())
 	_near = best
 	_talk_btn.visible = best != null and not any_open
@@ -215,13 +260,26 @@ func _identify_all() -> void:
 		else "The Sage finds nothing left to identify.")
 
 
-## An NPC drawn as `skin`, a character from the packs (assets/skins).
-func _add_npc(title: String, subtitle: String, pos: Vector2, skin: String, prompt: String, action: Callable) -> void:
+## An NPC drawn as `skin`, a character from the packs (assets/skins). `npc_id` (QuestDB, default:
+## the skin) is who they are in the story: with quest business they talk first, their own action
+## (the vendor, say) one of the choices; a gold ! or ? over their head says so.
+func _add_npc(title: String, subtitle: String, pos: Vector2, skin: String, prompt: String, action: Callable,
+		npc_id := "") -> void:
+	if npc_id == "":
+		npc_id = skin
 	var npc := Interactable.new()
 	npc.position = pos
 	npc.prompt = prompt
-	npc.action = action
+	npc.action = func():
+		if Quests.npc_options(npc_id).is_empty() or npc_id == "hesk":
+			action.call()
+		else:
+			dialogue.open(npc_id, [{"label": prompt, "action": action}])
 	add_child(npc)
+	var mk := QuestMarker.new()
+	mk.npc_id = npc_id
+	mk.position = Vector2(0, -150)
+	npc.add_child(mk)
 
 	var rig := RigSprite.new()
 	rig.base_scale = 0.2
@@ -256,6 +314,69 @@ func _add_npc(title: String, subtitle: String, pos: Vector2, skin: String, promp
 	name_l.position = Vector2(-80, -150)
 	name_l.z_index = 5
 	npc.add_child(name_l)
+
+
+## Where you appear: at the waypoint, the town portal, the road back from a zone, or the usual spot.
+func _arrival() -> Vector2:
+	match GameState.zone_entry:
+		"waypoint": return WAYPOINT + Vector2(0, 90)
+		"portal": return PORTAL + Vector2(0, -110)
+		WEST_EXIT_ZONE: return WEST_EXIT + Vector2(150, 0)
+	return SPAWN
+
+
+## A way out of town: walk into it (target zone, and where to arrive there).
+func _add_exit(pos: Vector2, target: String, entry: String, text: String) -> void:
+	var p := RiftPortal.new()
+	p.position = pos
+	add_child(p)
+	var l := Label.new()
+	l.text = text
+	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	l.add_theme_font_size_override("font_size", 16)
+	l.add_theme_color_override("font_color", Color(0.85, 0.7, 1.0))
+	l.add_theme_color_override("font_outline_color", Color.BLACK)
+	l.add_theme_constant_override("outline_size", 6)
+	l.size = Vector2(300, 24)
+	l.position = Vector2(-150, -110)
+	p.add_child(l)
+	_exits.append({"node": p, "target": target, "entry": entry})
+
+
+## The town's waypoint stone: travel to any zone whose waypoint you've touched.
+func _add_waypoint(pos: Vector2) -> void:
+	var w := Interactable.new()
+	w.position = pos
+	w.prompt = "Waypoint"
+	w.radius = 140.0
+	w.action = func(): waypoint_ui.open()
+	w.z_index = -1
+	add_child(w)
+	w.draw.connect(func():
+		var t := Time.get_ticks_msec() / 1000.0
+		w.draw_set_transform(Vector2.ZERO, 0.0, Vector2(1.0, 0.5))
+		w.draw_circle(Vector2.ZERO, 70, Color(0.15, 0.18, 0.22, 0.85))
+		w.draw_arc(Vector2.ZERO, 70, 0, TAU, 48, Color(0.55, 0.85, 1.0, 0.9), 5.0)
+		w.draw_set_transform(Vector2.ZERO)
+		var glow := Color(0.5, 0.85, 1.0, 0.45 + 0.25 * sin(t * 2.5))
+		w.draw_rect(Rect2(-14, -95, 28, 95), Color(0.22, 0.20, 0.24))
+		w.draw_rect(Rect2(-14, -95, 28, 95), glow, false, 3.0)
+		w.draw_circle(Vector2(0, -105), 14, glow)
+	)
+	var redraw := Timer.new()
+	redraw.wait_time = 0.05
+	redraw.autostart = true
+	redraw.timeout.connect(w.queue_redraw)
+	w.add_child(redraw)
+
+
+## Dropped from the bag (the Drop box) or a quest reward with no room: it lands at your feet.
+func _on_item_dropped(item: ItemInstance) -> void:
+	var pk := LootPickup.new()
+	pk.item = item
+	pk.delay = 1.5
+	pk.position = player.global_position + player.facing * 90.0
+	add_child(pk)
 
 
 func _add_gate(pos: Vector2) -> void:
