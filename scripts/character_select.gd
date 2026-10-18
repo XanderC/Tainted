@@ -62,7 +62,7 @@ func _build() -> void:
 	# LEFT: the character list
 	var left := PanelContainer.new()
 	left.custom_minimum_size = Vector2(400, 0)
-	var lsb := UIKit.box(Color(0.07, 0.06, 0.09, 0.97), Color(0.42, 0.33, 0.20), 2, 10)
+	var lsb := UIKit.window_box(10)
 	lsb.set_content_margin_all(10)
 	left.add_theme_stylebox_override("panel", lsb)
 	cols.add_child(left)
@@ -82,7 +82,7 @@ func _build() -> void:
 	# RIGHT: the stage (the character standing there) and its info / the creation form
 	var right := PanelContainer.new()
 	right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	var rsb := UIKit.box(Color(0.08, 0.05, 0.07, 0.97), Color(0.55, 0.25, 0.20), 2, 10)
+	var rsb := UIKit.window_box(10, Color(1.0, 0.8, 0.8))
 	rsb.set_content_margin_all(14)
 	right.add_theme_stylebox_override("panel", rsb)
 	cols.add_child(right)

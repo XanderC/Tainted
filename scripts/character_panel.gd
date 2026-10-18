@@ -33,7 +33,7 @@ var _bag_view: ItemGridView  # the bag, as a grid: all gear, flasks included
 
 func _ready() -> void:
 	clip_contents = true
-	var sb := UIKit.box(Color(0.07, 0.06, 0.09, 0.97), Color(0.48, 0.38, 0.22), 2, 10)
+	var sb := UIKit.window_box(10)
 	sb.set_content_margin_all(10)
 	add_theme_stylebox_override("panel", sb)
 

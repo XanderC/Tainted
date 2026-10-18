@@ -55,7 +55,7 @@ func _build() -> void:
 	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	var panel := PanelContainer.new()
 	panel.custom_minimum_size = Vector2(560, 0)
-	var sb := UIKit.box(Color(0.07, 0.05, 0.10, 0.98), Color(0.70, 0.40, 1.0), 3, 12)
+	var sb := UIKit.window_box(18, Color(0.85, 0.65, 1.0))
 	sb.set_content_margin_all(18)
 	panel.add_theme_stylebox_override("panel", sb)
 	center.add_child(panel)

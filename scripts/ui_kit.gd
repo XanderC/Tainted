@@ -77,7 +77,15 @@ static func button(text: String, bg: Color, border: Color, min_size := Vector2(0
 	b.text = text
 	b.custom_minimum_size = min_size
 	b.add_theme_font_size_override("font_size", font)
-	b.add_theme_stylebox_override("normal", box(bg, border, 2, 6))
+	# Stone face, coloured by the accent the caller chose (green for allocate, red for close, ...)
+	var tint := Color(1, 1, 1).lerp(Color(border.r, border.g, border.b), 0.7)
+	b.add_theme_stylebox_override("normal", stone_box("menu_btn", tint))
+	b.add_theme_stylebox_override("hover", stone_box("menu_btn", tint.lightened(0.1)))
+	b.add_theme_stylebox_override("pressed", stone_box("menu_btn_pressed", tint))
+	b.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+	b.add_theme_color_override("font_color", Color(0.95, 0.90, 0.78))
+	b.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.8))
+	b.add_theme_constant_override("outline_size", 3)
 	return b
 
 
@@ -100,10 +108,26 @@ static func stone_button(text: String, min_size := Vector2(0, 46), font := 16) -
 
 
 static func _stone_box(art: String) -> StyleBoxTexture:
+	return stone_box(art, Color.WHITE)
+
+
+## The stone button face (`art` is "menu_btn" or "menu_btn_pressed"), recoloured by `tint`.
+static func stone_box(art: String, tint := Color.WHITE) -> StyleBoxTexture:
 	var s := StyleBoxTexture.new()
 	s.texture = HudArt.tex(art)
 	s.set_texture_margin_all(14.0)
 	s.set_content_margin_all(8.0)
+	s.modulate_color = tint
+	return s
+
+
+## The stone window frame, stretched with its border kept. `tint` recolours it (a rift's purple, say).
+static func window_box(content := 10.0, tint := Color.WHITE) -> StyleBoxTexture:
+	var s := StyleBoxTexture.new()
+	s.texture = HudArt.tex("window_frame")
+	s.set_texture_margin_all(24.0)
+	s.set_content_margin_all(content)
+	s.modulate_color = tint
 	return s
 
 

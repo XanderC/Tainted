@@ -221,9 +221,11 @@ func _build_tabs() -> void:
 		b.custom_minimum_size = Vector2(0, 42)
 		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		b.add_theme_font_size_override("font_size", 15)
-		b.add_theme_stylebox_override("normal", UIKit.box(
-			Color(0.24, 0.18, 0.10) if active else Color(0.11, 0.10, 0.13),
-			Color(0.95, 0.82, 0.40) if active else Color(0.35, 0.28, 0.20), 2 if active else 1, 6))
+		var face := UIKit.stone_box("menu_btn", Color(1.0, 0.85, 0.5) if active else Color(0.55, 0.55, 0.62))
+		b.add_theme_stylebox_override("normal", face)
+		b.add_theme_stylebox_override("hover", face)
+		b.add_theme_stylebox_override("pressed", UIKit.stone_box("menu_btn_pressed"))
+		b.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 		b.add_theme_color_override("font_color", Color(1.0, 0.95, 0.70) if active else Color(0.70, 0.65, 0.60))
 		b.pressed.connect(func():
 			if stash_tab != "":
@@ -264,7 +266,7 @@ func _build() -> void:
 	_left_frame.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_left_frame.size_flags_stretch_ratio = 1.0
 	_left_frame.clip_contents = true
-	var lsb := UIKit.box(Color(0.07, 0.06, 0.09, 0.97), Color(0.42, 0.33, 0.20), 2, 10)
+	var lsb := UIKit.window_box(10)
 	lsb.set_content_margin_all(10)
 	_left_frame.add_theme_stylebox_override("panel", lsb)
 	cols.add_child(_left_frame)

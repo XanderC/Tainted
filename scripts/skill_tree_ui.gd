@@ -90,7 +90,7 @@ func _build_ui() -> void:
 	var win := PanelContainer.new()
 	win.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT, Control.PRESET_MODE_MINSIZE, 8)
 	win.clip_contents = true
-	var win_sb := UIKit.box(Color(0.07, 0.06, 0.09, 0.98), Color(0.42, 0.32, 0.20), 3, 10)
+	var win_sb := UIKit.window_box(10)
 	win_sb.set_content_margin_all(10)
 	win.add_theme_stylebox_override("panel", win_sb)
 	_root.add_child(win)
