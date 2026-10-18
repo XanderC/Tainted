@@ -38,18 +38,12 @@ func _ready() -> void:
 	cam.limit_bottom = int(TownMap.CAM_LIMIT.end.y)
 	player.add_child(cam)
 
-	_add_npc("Blacksmith", "Craft", Vector2(-560, -205), {"weapon": "battle_axe", "chest": "chain_mail", "helmet": "leather_cap"},
-		Color(1.0, 0.88, 0.78), "Talk to the Blacksmith", func(): menu.open_vendor("smith"))
-	_add_npc("Merchant", "Buy & Sell", Vector2(580, -185), {"chest": "padded_vest", "helmet": "leather_cap"},
-		Color(0.82, 0.92, 1.0), "Talk to the Merchant", func(): menu.open_vendor("shop"))
-	_add_npc("Stash Keeper", "Shared Storage", Vector2(0, -270), {"helmet": "iron_helm", "weapon": "rusty_sword"},
-		Color(0.92, 0.85, 1.0), "Open the Stash", func(): menu.open_vendor("stash"))
-	_add_npc("Battlemaster Brom", "Passive Tree", Vector2(-240, -160), {"weapon": "rusty_sword", "chest": "chain_mail", "helmet": "iron_helm"},
-		Color(0.95, 0.85, 0.7), "Open the Passive Tree", func(): skill_tree_ui.open())
-	_add_npc("Jeweler", "Gems", Vector2(280, -175), {"chest": "padded_vest", "helmet": "leather_cap"},
-		Color(0.80, 0.90, 1.0), "Talk to the Jeweler", func(): menu.open_vendor("jeweler"))
-	_add_npc("Sage Aldous", "Identify", Vector2(-600, 150), {"chest": "padded_vest"},
-		Color(0.93, 0.88, 0.72), "Talk to the Sage", _identify_all)
+	_add_npc("Blacksmith", "Craft", Vector2(-560, -205), "blacksmith", "Talk to the Blacksmith", func(): menu.open_vendor("smith"))
+	_add_npc("Merchant", "Buy & Sell", Vector2(580, -185), "merchant", "Talk to the Merchant", func(): menu.open_vendor("shop"))
+	_add_npc("Stash Keeper", "Shared Storage", Vector2(0, -270), "stash_keeper", "Open the Stash", func(): menu.open_vendor("stash"))
+	_add_npc("Battlemaster Brom", "Passive Tree", Vector2(-240, -160), "battlemaster", "Open the Passive Tree", func(): skill_tree_ui.open())
+	_add_npc("Jeweler", "Gems", Vector2(280, -175), "jeweler", "Talk to the Jeweler", func(): menu.open_vendor("jeweler"))
+	_add_npc("Sage Aldous", "Identify", Vector2(-600, 150), "sage", "Talk to the Sage", _identify_all)
 	_add_gate(Vector2(820, 220))
 
 	var layer := CanvasLayer.new()
@@ -221,7 +215,8 @@ func _identify_all() -> void:
 		else "The Sage finds nothing left to identify.")
 
 
-func _add_npc(title: String, subtitle: String, pos: Vector2, gear: Dictionary, tint: Color, prompt: String, action: Callable) -> void:
+## An NPC drawn as `skin`, a character from the packs (assets/skins).
+func _add_npc(title: String, subtitle: String, pos: Vector2, skin: String, prompt: String, action: Callable) -> void:
 	var npc := Interactable.new()
 	npc.position = pos
 	npc.prompt = prompt
@@ -230,11 +225,8 @@ func _add_npc(title: String, subtitle: String, pos: Vector2, gear: Dictionary, t
 
 	var rig := RigSprite.new()
 	rig.base_scale = 0.2
-	rig.weapon_from_gear = true
-	rig.modulate = tint
+	rig.skin = skin
 	npc.add_child(rig)
-	for slot in gear:
-		rig.set_gear(slot, gear[slot])
 	rig.play_loop("Idle")
 	rig.randomize_phase()
 	rig.set_facing(-1.0 if pos.x > 0 else 1.0)  # face the plaza

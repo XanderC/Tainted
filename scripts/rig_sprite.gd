@@ -29,6 +29,13 @@ const GEAR_LAYERS := {
 }
 
 @export var rig_dir := "res://assets/rigs/zombie"
+## A whole character from the packs (assets/skins/<id>, tools/import_skins.py) drawn on this rig:
+## town NPCs and monsters. "" = the rig's own art.
+@export var skin := ""
+const SKIN_ROOT := "res://assets/skins/"
+const SKIN_PARTS := ["Head", "Face 01", "Face 02", "Face 03", "Body", "Left Arm", "Right Arm",
+	"Left Hand", "Right Hand", "Left Leg", "Right Leg", "Sword", "SlashFX"]
+static var _skin_cache := {}
 @export var base_scale := 0.2
 ## true (player): the weapon is shown whenever one is equipped and hidden otherwise.
 ## false (enemies): the animation data decides; this pack only shows the sword while slashing.
@@ -109,7 +116,21 @@ func _ready() -> void:
 		_pivot_of.append(Vector2(-1, -1))
 	_update_scale()
 	_reorder()
+	if skin != "":
+		set_part_overrides(skin_parts(skin))
 	_start(_loop_anim, 1.0)
+
+
+## A skin's part textures by part name (loaded once and shared).
+static func skin_parts(id: String) -> Dictionary:
+	if not _skin_cache.has(id):
+		var d := {}
+		for p in SKIN_PARTS:
+			var path: String = SKIN_ROOT + id + "/" + p + ".png"
+			if ResourceLoader.exists(path):
+				d[p] = load(path)
+		_skin_cache[id] = d
+	return _skin_cache[id]
 
 
 # ---------------------------------------------------------------- animation API

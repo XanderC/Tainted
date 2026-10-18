@@ -27,6 +27,14 @@ The art (`assets/appearance`) is cut from the CraftPix chibi packs by `tools/bui
 the packs draw hair and beards into each head, so the tool separates them from a bald base head and
 turns them grey for tinting. Rerun it with the folder of zips to add styles (the tables at its top).
 
+### Monsters and townsfolk
+Town NPCs and monsters are whole characters from the CraftPix chibi packs drawn on the game's rig
+(`assets/skins`, copied by `tools/import_skins.py`; add a line to its table for more). Each pack of
+monsters in a rift is one kind (`scripts/monster_kinds.gd`): zombies, rotting villagers, skeletons
+and goblins from rift 1, then ghouls, mummies, orcs, orc shamans, gnolls, dark elves, draugr, fallen
+crusaders, devils and ghost knights deeper in, each with its own speed, life and damage. Each rift's
+boss is one of eight (a minotaur, a stone golem, an ogre, a lich, a death knight and three demons).
+
 ### Inventory
 Tap **Bag** (top right) or press **I**. The game pauses while it's open.
 - Laid out like Path of Exile's: the equipment paperdoll on top, each slot shaped like what it holds

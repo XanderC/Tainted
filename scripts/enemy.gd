@@ -15,6 +15,8 @@ var rig: RigSprite
 var is_boss := false
 var size_mult := 1.0  # boss = 2.0
 var display_name := "Zombie"
+var kind := "zombie"  # MonsterKinds id (set_kind)
+var skin := ""  # the character art (RigSprite.skin); "" = the rig's own zombie
 ## Maze rifts: path around walls via the maze, and wait until the player comes near.
 var maze: MazeMap = null
 var aggro_range := 0.0  # 0 = always hunting the player
@@ -69,7 +71,10 @@ func _ready() -> void:
 	rig = RigSprite.new()
 	rig.base_scale = 0.18 * size_mult
 	rig.frame_skip = 2  # 30 fps is plenty for a crowd
-	if is_boss:
+	rig.skin = skin
+	if skin != "":
+		_tint = Color.WHITE  # the pack art reads as hostile on its own
+	if is_boss and skin == "":
 		_tint = Color(0.75, 0.55, 1.0)
 	elif tier != MonsterAffix.Tier.NORMAL:
 		_tint = Color(MonsterAffix.TIERS[tier].color).lerp(Color.WHITE, 0.55)
@@ -421,7 +426,19 @@ func make_elite(new_tier: int, new_affixes: Array[String]) -> void:
 	size_mult *= float(t.size)
 	if has_affix("fast"):
 		speed *= 1.5
-	display_name = MonsterAffix.legendary_name() if tier == MonsterAffix.Tier.LEGENDARY else "Elite Zombie"
+	display_name = MonsterAffix.legendary_name() if tier == MonsterAffix.Tier.LEGENDARY else "Elite " + display_name
+
+
+## Make this a monster of MonsterKinds `id`: its name, art and stat multipliers. Call after the
+## base stats are set and before make_elite and adding it.
+func set_kind(id: String) -> void:
+	var k: Dictionary = MonsterKinds.KINDS.get(id, MonsterKinds.KINDS["zombie"])
+	kind = id
+	display_name = String(k["name"])
+	skin = MonsterKinds.skin_for(id)
+	max_hp *= float(k["hp"])
+	speed *= float(k["speed"])
+	touch_damage *= float(k["damage"])
 
 
 func has_affix(id: String) -> bool:
@@ -542,6 +559,9 @@ func _summon_minions() -> void:
 		m.touch_damage = touch_damage / float(t.damage)
 		m.speed = speed
 		m.position = global_position + Vector2.from_angle(randf() * TAU) * 60.0
+		m.kind = kind  # summoned minions are of its kind
+		m.display_name = display_name.trim_prefix("Elite ")
+		m.skin = MonsterKinds.skin_for(kind)
 		minion_spawned.emit(m)  # the rift counts minions as normal kills
 		get_parent().add_child(m)
 		m.wake()

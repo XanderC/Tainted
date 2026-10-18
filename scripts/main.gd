@@ -204,6 +204,9 @@ func _travel() -> void:
 	t.tween_callback(func(): _travelling = false)
 
 
+var _pack_kind := {}  # pack -> MonsterKinds id: a pack is all one kind of monster
+
+
 func _spawn_enemy(pos: Vector2, pack: String, tier := 0) -> Enemy:
 	var e := Enemy.new()
 	e.position = pos
@@ -215,6 +218,9 @@ func _spawn_enemy(pos: Vector2, pack: String, tier := 0) -> Enemy:
 	e.max_hp = (25.0 + kills * 1.5) * DungeonRun.hp_mult(lvl)
 	e.touch_damage *= DungeonRun.damage_mult(lvl)
 	e.speed *= DungeonRun.speed_mult(lvl)
+	if not _pack_kind.has(pack):
+		_pack_kind[pack] = MonsterKinds.random_kind(lvl)
+	e.set_kind(_pack_kind[pack])
 	if tier != MonsterAffix.Tier.NORMAL:
 		e.make_elite(tier, MonsterAffix.roll_affixes(tier, lvl))
 	e.died.connect(_on_enemy_died.bind(e.kill_weight()))

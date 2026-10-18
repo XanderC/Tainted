@@ -217,6 +217,7 @@ func _spawn_monster() -> void:
 	e.touch_damage = 4.0
 	e.speed = 85.0
 	e.display_name = "Husk"
+	e.skin = "zombie_villager_1"
 	e.died.connect(func(pos: Vector2):
 		_drop_reward(pos)
 		_enter_stage(Stage.EQUIP)

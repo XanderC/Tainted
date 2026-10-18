@@ -16,7 +16,9 @@ const TIME_LIMIT := 240.0       # seconds; beat it for the bonus rewards
 const BOSS_HP := 700.0
 const BOSS_SPEED := 85.0
 const BOSS_DAMAGE := 22.0
-const BOSS_NAME := "The Grave Warden"
+var boss_kind := MonsterKinds.random_boss()  # this rift's boss (MonsterKinds.BOSSES)
+var boss_name: String:
+	get: return String(MonsterKinds.BOSSES[boss_kind]["name"])
 
 # Rewards. Standard: 2 Magic items, plus a chance at a Rare.
 # Under the time limit: 1 guaranteed Rare, 2 more items that are each Rare or Magic, and higher item level.
@@ -113,7 +115,8 @@ func _summon_boss() -> void:
 	var b := Enemy.new()
 	b.is_boss = true
 	b.size_mult = 2.0
-	b.display_name = BOSS_NAME
+	b.display_name = boss_name
+	b.skin = String(MonsterKinds.BOSSES[boss_kind]["skin"])
 	b.max_hp = BOSS_HP * hp_mult(level)
 	b.speed = BOSS_SPEED * speed_mult(level)
 	b.touch_damage = BOSS_DAMAGE * damage_mult(level)
@@ -127,10 +130,10 @@ func _summon_boss() -> void:
 	b.hp_changed.connect(func(h, m): _boss_bar.value = maxf(h, 0.0) / m * 100.0)
 	main.add_child(b)
 	boss = b
-	_boss_name.text = BOSS_NAME
+	_boss_name.text = boss_name
 	_boss_bar.value = 100.0
 	_boss_box.visible = true
-	_show_banner("%s awakens!" % BOSS_NAME, Color(0.85, 0.6, 1.0))
+	_show_banner("%s awakens!" % boss_name, Color(0.85, 0.6, 1.0))
 	boss_summoned.emit(b.position)
 
 
@@ -456,7 +459,7 @@ func _update_hud() -> void:
 		State.FIGHTING:
 			_kill_label.text = "Rift %d  —  Slay the horde  %d / %d" % [level, kills, KILL_TARGET]
 		State.BOSS:
-			_kill_label.text = "Rift %d  —  Defeat %s" % [level, BOSS_NAME]
+			_kill_label.text = "Rift %d  —  Defeat %s" % [level, boss_name]
 		State.COMPLETE:
 			_kill_label.text = "Rift %d cleared" % level
 		State.FAILED:
