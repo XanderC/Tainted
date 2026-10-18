@@ -34,6 +34,12 @@ monsters in a rift is one kind (`scripts/monster_kinds.gd`): zombies, rotting vi
 and goblins from rift 1, then ghouls, mummies, orcs, orc shamans, gnolls, dark elves, draugr, fallen
 crusaders, devils and ghost knights deeper in, each with its own speed, life and damage. Each rift's
 boss is one of eight (a minotaur, a stone golem, an ogre, a lich, a death knight and three demons).
+Archers (bandit archers and skeleton archers from rift 2, wild elf archers, outlaw rangers and
+skeleton hunters deeper in) keep their distance, back away when you close in, and shoot when they
+have a clear line through the maze; their arrows stop at walls. They are drawn on a second rig,
+`assets/rigs/archer` (baked from an archer pack's `Animations.scml` with `tools/spriter_to_json.py`),
+which any skin with a bow uses automatically; it shoots where the sword rig slashes, so archer
+classes can reuse the same animation calls later.
 
 ### Inventory
 Tap **Bag** (top right) or press **I**. The game pauses while it's open.

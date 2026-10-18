@@ -16,6 +16,12 @@ var is_boss := false
 var size_mult := 1.0  # boss = 2.0
 var display_name := "Zombie"
 var kind := "zombie"  # MonsterKinds id (set_kind)
+## Archers keep between KEEP_AWAY and SHOOT_RANGE from the player and shoot when they have a clear line
+var ranged := false
+var _shot_cd := 1.0
+const SHOOT_RANGE := 430.0
+const KEEP_AWAY := 230.0
+const SHOT_INTERVAL := 2.0
 var skin := ""  # the character art (RigSprite.skin); "" = the rig's own zombie
 ## Maze rifts: path around walls via the maze, and wait until the player comes near.
 var maze: MazeMap = null
@@ -134,6 +140,9 @@ func _physics_process(delta: float) -> void:
 		if _dead:
 			return
 
+	if ranged and _ranged_step(delta, to_player, cur_speed):
+		return
+
 	# In a maze, follow the grid path around walls; otherwise walk straight at the player
 	var goal := target.global_position
 	if maze != null:
@@ -166,6 +175,43 @@ func _physics_process(delta: float) -> void:
 			take_damage(target.thorns())
 		_touch_cd = 1.0
 		rig.play_once("Slashing", 1.4)
+
+
+## An archer in range with a clear line: hold or back off, and shoot. False when it should walk
+## closer instead (too far, or a wall in the way).
+func _ranged_step(delta: float, to_player: Vector2, cur_speed: float) -> bool:
+	_shot_cd -= delta
+	var d := to_player.length()
+	var clear := maze == null or maze.line_clear(global_position + Vector2(0, -20), target.global_position + Vector2(0, -20))
+	if d > SHOOT_RANGE or not clear:
+		return false
+	if d < KEEP_AWAY:
+		velocity = -to_player.normalized() * cur_speed * 0.8  # back off
+		move_and_slide()
+		rig.play_loop("Walking")
+	else:
+		velocity = Vector2.ZERO
+		rig.play_loop("Idle")
+	if not rig.is_busy():
+		rig.set_facing(to_player.x)
+	if _shot_cd <= 0.0:
+		_shot_cd = SHOT_INTERVAL * randf_range(0.85, 1.15)
+		rig.play_once("Shooting", 1.3)
+		get_tree().create_timer(0.35, false).timeout.connect(_loose_arrow)
+	return true
+
+
+func _loose_arrow() -> void:
+	if _dead or not is_instance_valid(target) or get_parent() == null:
+		return
+	var a := EnemyArrow.new()
+	a.texture = RigSprite.skin_parts(skin).get("Arrow")
+	a.global_position = global_position + Vector2(0, -26 * size_mult)
+	a.dir = (target.global_position + Vector2(0, -14) - a.global_position).normalized()
+	a.damage = touch_damage
+	a.target = target
+	a.maze = maze
+	get_parent().add_child(a)
 
 
 func _process_ailments(delta: float) -> void:
@@ -436,6 +482,7 @@ func set_kind(id: String) -> void:
 	kind = id
 	display_name = String(k["name"])
 	skin = MonsterKinds.skin_for(id)
+	ranged = bool(k.get("ranged", false))
 	max_hp *= float(k["hp"])
 	speed *= float(k["speed"])
 	touch_damage *= float(k["damage"])
@@ -562,6 +609,7 @@ func _summon_minions() -> void:
 		m.kind = kind  # summoned minions are of its kind
 		m.display_name = display_name.trim_prefix("Elite ")
 		m.skin = MonsterKinds.skin_for(kind)
+		m.ranged = ranged
 		minion_spawned.emit(m)  # the rift counts minions as normal kills
 		get_parent().add_child(m)
 		m.wake()

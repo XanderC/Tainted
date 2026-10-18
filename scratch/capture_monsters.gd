@@ -10,12 +10,12 @@ func _ready() -> void:
 		ids.append(d)
 	ids.sort()
 	ids.push_front("")
-	var cols := 14
+	var cols := 15
 	for i in ids.size():
 		var r := RigSprite.new()
-		r.base_scale = 0.17
+		r.base_scale = 0.15
 		r.skin = ids[i]
-		r.position = Vector2(60 + (i % cols) * 112, 150 + (i / cols) * 170)
+		r.position = Vector2(55 + (i % cols) * 105, 130 + (i / cols) * 145)
 		add_child(r)
 		r.play_loop("Idle")
 		var l := Label.new()
@@ -28,4 +28,10 @@ func _ready() -> void:
 	await get_tree().create_timer(0.3).timeout
 	get_viewport().get_texture().get_image().save_png(ProjectSettings.globalize_path("res://scratch/monsters.png"))
 	print("saved monsters")
+	for r in get_children():
+		if r is RigSprite:
+			r.play_once("Slashing", 1.0)  # archers shoot
+	await get_tree().create_timer(0.3).timeout
+	get_viewport().get_texture().get_image().save_png(ProjectSettings.globalize_path("res://scratch/monsters_attack.png"))
+	print("saved monsters_attack")
 	get_tree().quit(0)

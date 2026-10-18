@@ -34,7 +34,12 @@ const GEAR_LAYERS := {
 @export var skin := ""
 const SKIN_ROOT := "res://assets/skins/"
 const SKIN_PARTS := ["Head", "Face 01", "Face 02", "Face 03", "Body", "Left Arm", "Right Arm",
-	"Left Hand", "Right Hand", "Left Leg", "Right Leg", "Sword", "SlashFX"]
+	"Left Hand", "Right Hand", "Left Leg", "Right Leg", "Sword", "SlashFX", "Bow", "Arrow"]
+## Archers (a skin with a Bow) use this rig: the same body, a bow and arrow instead of the sword,
+## and Shooting animations where the sword rig slashes.
+const ARCHER_RIG := "res://assets/rigs/archer"
+## Animation names asked for that this rig doesn't have -> its own (sword rig names -> archer rig)
+const ANIM_ALIASES := {"Slashing": "Shooting", "Run Slashing": "Run Shooting", "Slashing in The Air": "Shooting in The Air"}
 static var _skin_cache := {}
 @export var base_scale := 0.2
 ## true (player): the weapon is shown whenever one is equipped and hidden otherwise.
@@ -52,6 +57,7 @@ var _tex_of: Array = []
 var _pivot_of := PackedVector2Array()
 var _z := PackedFloat32Array()
 var _sword_i := -1
+var _bow_i := -1  # archer rig: the bow is always held (its animations only show it while shooting)
 var _slash_i := -1
 var _weapon_equipped := false
 var _weapon_tex: Texture2D = null
@@ -95,12 +101,15 @@ static func draw_shadow(ci: CanvasItem, radius: float) -> void:
 func _ready() -> void:
 	# The art is drawn large and shown small; mipmaps stop it shimmering.
 	texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+	if is_archer_skin(skin):
+		rig_dir = ARCHER_RIG
 	rig = RigData.load_rig(rig_dir)
 	if rig == null:
 		set_process(false)
 		return
 	_n = rig.objects.size()
 	_sword_i = rig.objects.find("Sword")
+	_bow_i = rig.objects.find("Bow")
 	_lhand_i = rig.objects.find("Left Hand")
 	_rhand_i = rig.objects.find("Right Hand")
 	_slash_i = rig.objects.find("SlashFX")
@@ -121,6 +130,21 @@ func _ready() -> void:
 	_start(_loop_anim, 1.0)
 
 
+## Whether skin `id` is an archer (drawn on the archer rig).
+static func is_archer_skin(id: String) -> bool:
+	return id != "" and ResourceLoader.exists(SKIN_ROOT + id + "/Bow.png")
+
+
+## The rig's name for an animation (an archer shoots where a swordsman slashes); "" if it has none.
+func anim_name_for(wanted: String) -> String:
+	if rig == null:
+		return ""
+	if rig.animations.has(wanted):
+		return wanted
+	var alias: String = ANIM_ALIASES.get(wanted, "")
+	return alias if rig.animations.has(alias) else ""
+
+
 ## A skin's part textures by part name (loaded once and shared).
 static func skin_parts(id: String) -> Dictionary:
 	if not _skin_cache.has(id):
@@ -137,7 +161,8 @@ static func skin_parts(id: String) -> Dictionary:
 
 ## Locomotion-style animation that repeats. Ignored while a one-shot is playing, and resumed after it.
 func play_loop(anim_name: String, speed := 1.0) -> void:
-	if rig == null or not rig.animations.has(anim_name):
+	anim_name = anim_name_for(anim_name)
+	if anim_name == "":
 		return
 	_loop_anim = anim_name
 	_loop_speed = speed
@@ -151,7 +176,8 @@ func play_loop(anim_name: String, speed := 1.0) -> void:
 
 ## Attack / hurt / death. Interrupts what is playing, then returns to the loop (or holds the last frame).
 func play_once(anim_name: String, speed := 1.0, hold_last := false) -> void:
-	if rig == null or not rig.animations.has(anim_name):
+	anim_name = anim_name_for(anim_name)
+	if anim_name == "":
 		return
 	_oneshot = anim_name
 	_oneshot_hold = hold_last
@@ -418,6 +444,8 @@ func _apply_frame() -> void:
 				alpha = 1.0 if _weapon_equipped else 0.0
 		elif i == _slash_i and weapon_from_gear and not _weapon_equipped:
 			alpha = 0.0
+		elif i == _bow_i:
+			alpha = 1.0
 		if alpha <= 0.001:
 			s.visible = false
 			continue

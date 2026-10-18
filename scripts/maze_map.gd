@@ -98,6 +98,15 @@ func cell_center(c: Vector2i) -> Vector2:
 	return Vector2((c.x + 0.5) * CELL, (c.y + 0.5) * CELL)
 
 
+## Whether a straight line from `from` to `to` crosses no wall (an archer's clear shot).
+func line_clear(from: Vector2, to: Vector2) -> bool:
+	var steps := int(from.distance_to(to) / (CELL * 0.25)) + 1
+	for i in steps + 1:
+		if is_wall(world_to_cell(from.lerp(to, float(i) / steps))):
+			return false
+	return true
+
+
 ## Where a monster at `from` should head next to reach `to` (straight there once close).
 func path_next(from: Vector2, to: Vector2) -> Vector2:
 	var a := world_to_cell(from)

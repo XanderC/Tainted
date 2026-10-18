@@ -4,7 +4,8 @@ extends RefCounted
 ## of monsters is all one kind. Deeper rifts (min_level) add the tougher kinds; stats are
 ## multipliers on the rift's normal monster.
 
-## id: name, skin ("" = the rig's own zombie), min_level, hp / speed / damage multipliers
+## id: name, skin ("" = the rig's own zombie), min_level, hp / speed / damage multipliers.
+## "ranged": archers keep their distance and shoot (Enemy); their damage is per arrow.
 const KINDS := {
 	"zombie": {"name": "Zombie", "skin": "", "min_level": 1, "hp": 1.0, "speed": 1.0, "damage": 1.0},
 	"villager": {"name": "Rotting Villager", "skins": ["zombie_villager_1", "zombie_villager_2", "zombie_villager_3"], "min_level": 1, "hp": 0.9, "speed": 0.9, "damage": 0.9},
@@ -21,6 +22,12 @@ const KINDS := {
 	"skeleton_crusader": {"name": "Fallen Crusader", "skins": ["skeleton_crusader_1", "skeleton_crusader_2"], "min_level": 6, "hp": 1.5, "speed": 0.95, "damage": 1.35},
 	"devil": {"name": "Devil", "skin": "devil", "min_level": 7, "hp": 1.3, "speed": 1.2, "damage": 1.45},
 	"ghost_knight": {"name": "Ghost Knight", "skin": "ghost_knight", "min_level": 8, "hp": 1.6, "speed": 1.05, "damage": 1.5},
+	# Archers
+	"bandit_archer": {"name": "Bandit Archer", "skins": ["archer_1", "archer_2", "archer_3", "archer_guy"], "min_level": 2, "hp": 0.7, "speed": 1.0, "damage": 0.9, "ranged": true},
+	"skeleton_archer": {"name": "Skeleton Archer", "skins": ["skeleton_archer_1", "skeleton_archer_2", "skeleton_archer_3", "undead_archer_1", "undead_archer_2", "undead_archer_3"], "min_level": 2, "hp": 0.65, "speed": 0.95, "damage": 0.9, "ranged": true},
+	"elf_archer": {"name": "Wild Elf Archer", "skins": ["elf_archer_1", "elf_archer_2", "elf_archer_3"], "min_level": 4, "hp": 0.75, "speed": 1.2, "damage": 1.1, "ranged": true},
+	"outlaw_ranger": {"name": "Outlaw Ranger", "skins": ["forest_ranger_1", "forest_ranger_2"], "min_level": 5, "hp": 0.85, "speed": 1.1, "damage": 1.2, "ranged": true},
+	"skeleton_hunter": {"name": "Skeleton Hunter", "skins": ["skeleton_hunter_1", "skeleton_hunter_2", "skeleton_hunter_3"], "min_level": 6, "hp": 0.9, "speed": 1.0, "damage": 1.35, "ranged": true},
 }
 
 ## Rift bosses: id -> name, skin. One is picked for each rift.
