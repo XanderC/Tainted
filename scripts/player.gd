@@ -11,7 +11,7 @@ const SWING_TIME := 0.15
 const BAG_COLS := 10
 const BAG_ROWS := 6
 const BAG_SIZE := BAG_COLS * BAG_ROWS  # cells
-const SLOTS := ["weapon", "offhand", "helmet", "chest", "gloves", "boots", "ring", "amulet", "belt"]
+const SLOTS := ["weapon", "offhand", "helmet", "chest", "gloves", "boots", "ring", "ring2", "amulet", "belt"]  # two ring slots
 ## Flask slots, Path of Exile style: the belt opens some of them (ItemBase.flask_slots); without
 ## one there is NO_BELT_FLASKS. Flasks in slots beyond that stay put but can't be drunk.
 const FLASK_SLOTS := 5
@@ -1042,6 +1042,8 @@ func valid_slots(item: ItemInstance) -> Array[String]:
 	out.append(item.base.slot)
 	if item.base.slot == "weapon" and not item.base.two_handed and class_def.dual_wield:
 		out.append("offhand")
+	if item.base.slot == "ring":
+		out.append("ring2")  # a ring fits either ring slot
 	return out
 
 

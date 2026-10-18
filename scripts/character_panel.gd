@@ -16,7 +16,8 @@ const DROP_BOX_SIZE := Vector2(76, 76)  # the drop box, at the bottom right of t
 const DOLL_U := 36.0  # the paperdoll's unit: each slot is a whole number of these
 const DOLL_GAP := Vector2(32, 6)  # between slots across (so the doll is as wide as the bag) and down
 ## Each slot's place on the paperdoll as [column, top, width, height]: the top in px, the rest in
-## units. Columns: 0 weapon and gloves, 1 ring, 2 helmet / body / belt, 3 amulet, 4 off hand and boots.
+## units. Columns: 0 weapon and gloves, 1 a ring, 2 helmet / body / belt, 3 amulet and the other ring,
+## 4 off hand and boots.
 const DOLL := {
 	"weapon": [0, 0.0, 2, 4],
 	"gloves": [0, 156.0, 2, 2],
@@ -25,6 +26,7 @@ const DOLL := {
 	"chest": [2, 78.0, 2, 3],
 	"belt": [2, 192.0, 2, 1],
 	"amulet": [3, 36.0, 1, 1],
+	"ring2": [3, 114.0, 1, 1],
 	"offhand": [4, 0.0, 2, 4],
 	"boots": [4, 156.0, 2, 2],
 }

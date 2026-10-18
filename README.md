@@ -21,7 +21,8 @@ Top-down mobile ARPG prototype (Godot 4.3+, GDScript, GL Compatibility renderer)
 ### Inventory
 Tap **Bag** (top right) or press **I**. The game pauses while it's open.
 - Laid out like Path of Exile's: the equipment paperdoll on top, each slot shaped like what it holds
-  (weapon and off hand 2x4, body 2x3, helmet, gloves and boots 2x2, belt 2x1, ring and amulet 1x1),
+  (weapon and off hand 2x4, body 2x3, helmet, gloves and boots 2x2, belt 2x1, two rings and an
+  amulet 1x1; a ring fits either ring slot),
   the five flask slots in a row under the belt, and the bag grid under that. The weapon-set switch
   (I / II) is in the header.
 - Tap a bag item to inspect it. You get its stats, a green/red list of what changes if you equip it, and the item you're currently wearing in that slot.
