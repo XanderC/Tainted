@@ -137,7 +137,7 @@ static func window_box(content := 20.0, tint := Color.WHITE, header := false) ->
 		s.texture_margin_right = 24.0
 		s.texture_margin_top = 80.0
 		s.texture_margin_bottom = 24.0
-		s.content_margin_top = 14.0
+		s.content_margin_top = 19.0  # centres the header row on the band
 	else:
 		s.texture = HudArt.tex("window_frame")
 		s.set_texture_margin_all(24.0)
@@ -148,7 +148,7 @@ static func window_box(content := 20.0, tint := Color.WHITE, header := false) ->
 ## The height of a window's header row, which sits on the title band, and the gap under it that
 ## keeps the body clear of the band.
 const HEADER_ROW_H := 50.0
-const HEADER_GAP := 14.0
+const HEADER_GAP := 9.0
 
 
 static func header_gap() -> Control:
