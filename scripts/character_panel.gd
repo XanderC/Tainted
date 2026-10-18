@@ -47,11 +47,13 @@ func _ready() -> void:
 	# Header: level, class, Stats popup, Close
 	var header := HBoxContainer.new()
 	header.add_theme_constant_override("separation", 10)
+	header.custom_minimum_size = Vector2(0, UIKit.HEADER_ROW_H)
 	v.add_child(header)
+	v.add_child(UIKit.header_gap())
 	_level_lbl = UIKit.label("1", 20, Color(1.0, 0.92, 0.6))
 	_level_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_level_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_level_lbl.custom_minimum_size = Vector2(46, 46)
+	_level_lbl.custom_minimum_size = Vector2(44, 44)
 	var lvl_box := PanelContainer.new()
 	lvl_box.add_theme_stylebox_override("panel", UIKit.box(Color(0.10, 0.08, 0.12), Color(0.95, 0.80, 0.40), 2, 23))
 	lvl_box.add_child(_level_lbl)
@@ -59,10 +61,11 @@ func _ready() -> void:
 	_class_lbl = UIKit.label("", 20, UIKit.GOLD)
 	_class_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	header.add_child(_class_lbl)
-	var stats_btn := UIKit.button("📜 Stats", Color(0.16, 0.12, 0.10), Color(0.75, 0.58, 0.30), Vector2(110, 48), 17)
+	var stats_btn := UIKit.button("📜 Stats", Color(0.16, 0.12, 0.10), Color(0.75, 0.58, 0.30), Vector2(100, 43), 16)
+	stats_btn.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	stats_btn.pressed.connect(func(): menu.toggle_stats())
 	header.add_child(stats_btn)
-	var close_btn := UIKit.close_button()
+	var close_btn := UIKit.close_button(1.0)
 	close_btn.pressed.connect(func(): menu.close())
 	header.add_child(close_btn)
 

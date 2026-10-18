@@ -220,6 +220,7 @@ func _build_tabs() -> void:
 			b.text = "📦 Items" if stash_tab == "items" else "💰 Currency"
 		b.custom_minimum_size = Vector2(0, 42)
 		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		b.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		b.add_theme_font_size_override("font_size", 15)
 		# Sunk into the title band; the open tab is the one lit up
 		var face := UIKit.stone_box("menu_btn", Color(1.0, 0.82, 0.45)) if active else UIKit.inset_box(6)
@@ -279,7 +280,9 @@ func _build() -> void:
 	_left_body.add_child(_left_title)
 	_tabs_row = HBoxContainer.new()
 	_tabs_row.add_theme_constant_override("separation", 6)
+	_tabs_row.custom_minimum_size = Vector2(0, UIKit.HEADER_ROW_H)
 	_left_body.add_child(_tabs_row)
+	_left_body.add_child(UIKit.header_gap())
 	_feedback = UIKit.label("", 15, Color(1.0, 0.85, 0.40), true)
 	_feedback.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_feedback.visible = false

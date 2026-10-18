@@ -141,6 +141,19 @@ static func window_box(content := 20.0, tint := Color.WHITE, header := false) ->
 	return s
 
 
+## The height of a window's header row, which sits on the title band, and the gap under it that
+## keeps the body clear of the band.
+const HEADER_ROW_H := 50.0
+const HEADER_GAP := 14.0
+
+
+static func header_gap() -> Control:
+	var c := Control.new()
+	c.custom_minimum_size = Vector2(0, HEADER_GAP)
+	c.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	return c
+
+
 ## The pack's stone close button, for a window's header.
 static func close_button(scale := 1.2) -> TextureButton:
 	var b := TextureButton.new()

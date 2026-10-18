@@ -99,16 +99,19 @@ func _build_ui() -> void:
 
 	var header := HBoxContainer.new()
 	header.add_theme_constant_override("separation", 14)
+	header.custom_minimum_size = Vector2(0, UIKit.HEADER_ROW_H)
 	outer.add_child(header)
+	outer.add_child(UIKit.header_gap())
 	var cls_name := player.class_def.display_name if player != null and player.class_def != null else "Warrior"
 	header.add_child(UIKit.label("✦ %s PASSIVE TREE" % cls_name.to_upper(), 22, Color(0.95, 0.85, 0.55)))
 	_points_label = UIKit.label("", 19, Color(1.0, 0.85, 0.30))
 	_points_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	header.add_child(_points_label)
-	_respec_btn = UIKit.button("", Color(0.12, 0.18, 0.30), Color(0.55, 0.75, 1.0), Vector2(170, 52), 18)
+	_respec_btn = UIKit.button("", Color(0.12, 0.18, 0.30), Color(0.55, 0.75, 1.0), Vector2(150, 43), 17)
+	_respec_btn.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	_respec_btn.pressed.connect(_on_respec)
 	header.add_child(_respec_btn)
-	var close_btn := UIKit.close_button()
+	var close_btn := UIKit.close_button(1.0)
 	close_btn.pressed.connect(close)
 	header.add_child(close_btn)
 
