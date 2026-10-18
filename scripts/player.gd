@@ -8,8 +8,8 @@ signal inventory_changed
 
 const SWING_TIME := 0.15
 ## The bag is a grid: gear takes several cells (ItemBase.bag_size), so what fits depends on shape.
-const BAG_COLS := 10
-const BAG_ROWS := 6
+const BAG_COLS := 12  # like Path of Exile: 12 x 5
+const BAG_ROWS := 5
 const BAG_SIZE := BAG_COLS * BAG_ROWS  # cells
 const SLOTS := ["weapon", "offhand", "helmet", "chest", "gloves", "boots", "ring", "ring2", "amulet", "belt"]  # two ring slots
 ## Flask slots, Path of Exile style: the belt opens some of them (ItemBase.flask_slots); without

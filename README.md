@@ -23,11 +23,11 @@ Tap **Bag** (top right) or press **I**. The game pauses while it's open.
 - Laid out like Path of Exile's: the equipment paperdoll on top, each slot shaped like what it holds
   (weapon and off hand 2x4, body 2x3, helmet, gloves and boots 2x2, belt 2x1, two rings and an
   amulet 1x1; a ring fits either ring slot),
-  the five flask slots in a row under the belt, and the bag grid under that. The weapon-set switch
+  the five flask slots in a row under the belt, and the 12 x 5 bag grid under that. The weapon-set switch
   (I / II) is in the header.
 - Tap a bag item to inspect it. You get its stats, a green/red list of what changes if you equip it, and the item you're currently wearing in that slot.
 - **Equip** by dragging it onto its equipment slot (the old item takes its bag space). **Drop** by
-  dragging it onto the 🗑 Drop box at the bottom right of the inventory (from the bag, the paperdoll
+  dragging it onto the 🗑 Drop box under the boots, beside the flasks (from the bag, the paperdoll
   or a flask slot); it
   lands on the ground and you can't re-pick it for 1.5s. The item panel has no Equip or Drop buttons.
 - Tap an equipped item to **Unequip** it (needs a space in the bag its shape fits), or drag it back
@@ -38,7 +38,7 @@ Tap **Bag** (top right) or press **I**. The game pauses while it's open.
 - When you have real icons, set `icon` on an `ItemBase` and the bag shows the sprite instead of text.
 
 ### Bag and stash grids
-The bag (10 x 6 cells) and the shared stash (12 x 10) are Diablo / Path of Exile style grids: each
+The bag (12 x 5 cells) and the shared stash (12 x 10) are Diablo / Path of Exile style grids: each
 item covers a rectangle of cells, so what fits depends on shape as well as count.
 - Sizes come from `ItemBase.bag_size()`: rings and amulets 1x1, dagger 1x2, one-handed swords,
   axes and maces 1x3, staff 1x4, bow and battle axe 2x3, greatsword and war maul 2x4, helmet,

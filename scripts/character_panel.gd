@@ -4,34 +4,33 @@ extends PanelContainer
 ## paperdoll (each slot shaped like what it holds, the flasks in a row under the belt) and the bag
 ## grid under it. Everything is drag and drop:
 ##   bag <-> bag (rearrange/swap), bag -> equipment slot (equip), equipment -> bag (unequip),
-##   stash -> bag (take), anything -> the drop box at the bottom right (drop on the ground), and
+##   stash -> bag (take), anything -> the drop box under the boots (drop on the ground), and
 ##   anything the current left panel accepts (e.g. buying a ware).
 ## Tapping an item selects it for the left panel (details, gems, blacksmith, merchant...).
 ## Currency and loose gems aren't carried: they are the account's, in the
 ## shared stash (StashPanel), whose Currency tab is where orbs are used.
 
 ## One cell of the bag grid (Player.BAG_COLS x BAG_ROWS, gear spanning several).
-const GEAR_GRID_CELL := 42.0  # 10 x 6 cells fit under the paperdoll on a 720p-tall screen
-const DROP_BOX_SIZE := Vector2(76, 76)  # the drop box, at the bottom right of the panel
-const DOLL_U := 36.0  # the paperdoll's unit: each slot is a whole number of these
-const DOLL_GAP := Vector2(32, 6)  # between slots across (so the doll is as wide as the bag) and down
-## Each slot's place on the paperdoll as [column, top, width, height]: the top in px, the rest in
-## units. Columns: 0 weapon and gloves, 1 a ring, 2 helmet / body / belt, 3 amulet and the other ring,
-## 4 off hand and boots.
+const GEAR_GRID_CELL := 46.0  # the 12 x 5 bag under the paperdoll on a 720p-tall screen
+const DOLL_U := 40.0  # the paperdoll's unit: each slot is a whole number of these
+const DOLL_GAP := Vector2(58, 6)  # between slots across (so the doll is as wide as the bag) and down
+## Each slot's place on the paperdoll as [column, top, width, height]: the top is so many units plus
+## so many gaps down ([units, gaps]), the size in units. Columns: 0 weapon and gloves, 1 a ring,
+## 2 helmet / body / belt, 3 amulet and the other ring, 4 off hand and boots.
 const DOLL := {
-	"weapon": [0, 0.0, 2, 4],
-	"gloves": [0, 156.0, 2, 2],
-	"ring": [1, 114.0, 1, 1],
-	"helmet": [2, 0.0, 2, 2],
-	"chest": [2, 78.0, 2, 3],
-	"belt": [2, 192.0, 2, 1],
-	"amulet": [3, 36.0, 1, 1],
-	"ring2": [3, 114.0, 1, 1],
-	"offhand": [4, 0.0, 2, 4],
-	"boots": [4, 156.0, 2, 2],
+	"weapon": [0, [0, 0], 2, 4],
+	"gloves": [0, [4, 2], 2, 2],  # level with the bottom of the belt
+	"ring": [1, [3, 1], 1, 1],  # beside the middle of the body armour
+	"helmet": [2, [0, 0], 2, 2],
+	"chest": [2, [2, 1], 2, 3],
+	"belt": [2, [5, 2], 2, 1],
+	"amulet": [3, [1, 0], 1, 1],  # beside the bottom of the helmet
+	"ring2": [3, [3, 1], 1, 1],
+	"offhand": [4, [0, 0], 2, 4],
+	"boots": [4, [4, 2], 2, 2],
 }
 const DOLL_COL_UNITS := [2, 1, 2, 1, 2]
-const FLASK_TOP := 234.0  # the flask row, under the belt
+const FLASK_TOP := [6, 3]  # the flask row, under the belt ([units, gaps])
 
 var menu: GameMenu
 var player: Player
@@ -89,9 +88,6 @@ func _ready() -> void:
 	_doll.custom_minimum_size = doll_size()
 	_doll.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	v.add_child(_doll)
-	var under := Control.new()
-	under.custom_minimum_size = Vector2(0, 6)
-	v.add_child(under)
 	_bag_view = ItemGridView.new(player.bag, GEAR_GRID_CELL, "bag")
 	_bag_view.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	_bag_view.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
@@ -100,27 +96,13 @@ func _ready() -> void:
 	_bag_view.item_clicked.connect(func(it: ItemInstance): menu.select(it))
 	v.add_child(_bag_view)
 
-	# The drop box, pinned to the panel's bottom-right corner over the scrolling content (a layer
-	# that lets every other touch through to what is under it)
-	var overlay := Control.new()
-	overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(overlay)
-	var box := _drop_box()
-	overlay.add_child(box)
-	box.anchor_left = 1.0
-	box.anchor_top = 1.0
-	box.anchor_right = 1.0
-	box.anchor_bottom = 1.0
-	box.offset_left = -DROP_BOX_SIZE.x
-	box.offset_top = -DROP_BOX_SIZE.y
-	box.offset_right = 0.0
-	box.offset_bottom = 0.0
 
-
-## At the bottom right of the panel: drag gear here (from the bag, the paperdoll or a flask slot)
-## to drop it on the ground. Replaces the Drop button the item panel used to have.
+## On the paperdoll under the boots, beside the flasks: drag gear here (from the bag, the paperdoll or
+## a flask slot) to drop it on the ground. Replaces the Drop button the item panel used to have.
 func _drop_box() -> DragSlot:
-	var box := DragSlot.new(DROP_BOX_SIZE)
+	var r := drop_box_rect()
+	var box := DragSlot.new(r.size)
+	box.position = r.position
 	box.setup(null, Color(0.55, 0.22, 0.20), Color(0.13, 0.06, 0.06), 0, "", "Drag an item here to drop it on the ground")
 	var lbl := UIKit.label("🗑\nDROP", 14, Color(0.85, 0.45, 0.40))
 	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -156,6 +138,7 @@ func refresh() -> void:
 		var cell := _flask_cell(i)
 		cell.position = flask_rect(i).position
 		_doll.add_child(cell)
+	_doll.add_child(_drop_box())
 
 	_bag_view.selected = menu.selected
 	_bag_view.refresh()
@@ -167,18 +150,33 @@ static func doll_size() -> Vector2:
 	var units := 0
 	for u in DOLL_COL_UNITS:
 		units += u
-	return Vector2(units * DOLL_U + DOLL_GAP.x * (DOLL_COL_UNITS.size() - 1), FLASK_TOP + DOLL_U * 2.0)
+	return Vector2(units * DOLL_U + DOLL_GAP.x * (DOLL_COL_UNITS.size() - 1), _down(FLASK_TOP) + DOLL_U * 2.0)
+
+
+## A [units, gaps] distance down the paperdoll, in px.
+static func _down(d: Array) -> float:
+	return int(d[0]) * DOLL_U + int(d[1]) * DOLL_GAP.y
+
+
+## The x of paperdoll column c.
+static func _col_x(c: int) -> float:
+	var x := 0.0
+	for i in c:
+		x += DOLL_COL_UNITS[i] * DOLL_U + DOLL_GAP.x
+	return x
+
+
+## The drop box: under the boots, level with the flasks.
+static func drop_box_rect() -> Rect2:
+	return Rect2(_col_x(4), _down(FLASK_TOP), DOLL_U * 2.0, DOLL_U * 2.0)
 
 
 ## Where equipment slot `slot` sits on the paperdoll.
 static func doll_rect(slot: String) -> Rect2:
 	var d: Array = DOLL[slot]
-	var x := 0.0
-	for c in int(d[0]):
-		x += DOLL_COL_UNITS[c] * DOLL_U + DOLL_GAP.x
-	# a one-unit-wide slot sits in its own column; a slot narrower than its column is centred in it
-	x += (DOLL_COL_UNITS[int(d[0])] - int(d[2])) * DOLL_U * 0.5
-	return Rect2(x, float(d[1]), int(d[2]) * DOLL_U, int(d[3]) * DOLL_U)
+	# a slot narrower than its column is centred in it
+	var x: float = _col_x(int(d[0])) + (int(DOLL_COL_UNITS[int(d[0])]) - int(d[2])) * DOLL_U * 0.5
+	return Rect2(x, _down(d[1]), int(d[2]) * DOLL_U, int(d[3]) * DOLL_U)
 
 
 ## Flask slot i: the five in a row under the belt, centred on it.
@@ -186,7 +184,7 @@ static func flask_rect(i: int) -> Rect2:
 	var belt := doll_rect("belt")
 	var row_w := Player.FLASK_SLOTS * DOLL_U + (Player.FLASK_SLOTS - 1) * DOLL_GAP.y
 	var x0 := belt.get_center().x - row_w * 0.5
-	return Rect2(x0 + i * (DOLL_U + DOLL_GAP.y), FLASK_TOP, DOLL_U, DOLL_U * 2.0)
+	return Rect2(x0 + i * (DOLL_U + DOLL_GAP.y), _down(FLASK_TOP), DOLL_U, DOLL_U * 2.0)
 
 
 func _gear_cell(slot: String, cell_size: Vector2) -> DragSlot:

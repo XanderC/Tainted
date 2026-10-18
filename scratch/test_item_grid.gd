@@ -49,11 +49,12 @@ func _ready() -> void:
 	check(item("wooden_shield").grid_size() == Vector2i(2, 2), "wooden shield 2x2")
 	check(item("tower_shield").grid_size() == Vector2i(2, 3), "tower shield 2x3")
 
-	# --- filling: 10x6 holds five 2x4 greatswords side by side, then nothing that tall ---
-	for i in 5:
+	# --- filling: 12x5 holds six 2x4 greatswords side by side, then nothing that tall ---
+	var fit := (Player.BAG_COLS / 2) * (Player.BAG_ROWS / 4)
+	for i in fit:
 		check(p.add_to_bag(item("greatsword")), "greatsword %d fits" % i)
-	check(not p.add_to_bag(item("greatsword")), "sixth greatsword refused")
-	check(p.bag_cells_used() == 40, "five greatswords use 40 cells (got %d)" % p.bag_cells_used())
+	check(not p.add_to_bag(item("greatsword")), "one greatsword too many refused")
+	check(p.bag_cells_used() == fit * 8, "%d greatswords use %d cells (got %d)" % [fit, fit * 8, p.bag_cells_used()])
 	check(p.add_to_bag(item("bone_ring")), "a ring fits in the row left")
 	check(not p.can_fit(item("chain_mail")), "a 2x3 chest no longer fits")
 	p.bag.clear()
@@ -73,9 +74,9 @@ func _ready() -> void:
 		"swapped: sword 3,0 ring 6,2 (got %s %s)" % [p.bag.position_of(sword), p.bag.position_of(ring)])
 	# A 2x2 shield covering both the sword and the amulet is refused
 	var shield := item("wooden_shield")
-	check(p.bag.place(shield, Vector2i(8, 4)), "place shield")
+	check(p.bag.place(shield, Vector2i(8, 3)), "place shield")
 	check(not p.move_in_bag(shield, Vector2i(3, 0)), "landing on two items is refused")
-	check(not p.move_in_bag(shield, Vector2i(9, 0)), "off the grid is refused")
+	check(not p.move_in_bag(shield, Vector2i(Player.BAG_COLS - 1, 0)), "off the grid is refused")
 	p.bag.clear()
 
 	# --- unequipping onto the grid ---
@@ -85,7 +86,7 @@ func _ready() -> void:
 	var mail := item("chain_mail")
 	check(p.equip_to(mail, "chest", true), "wear chain mail")
 	check(p.can_unequip_to("chest", Vector2i(0, 0)), "chest can come off into an empty corner")
-	check(not p.can_unequip_to("chest", Vector2i(9, 4)), "a 2x3 chest can't hang off the edge")
+	check(not p.can_unequip_to("chest", Vector2i(Player.BAG_COLS - 1, 0)), "a 2x3 chest can't hang off the edge")
 	var vest := item("padded_vest")
 	check(p.bag.place(vest, Vector2i(4, 1)), "place a vest in the bag")
 	check(p.unequip_to("chest", Vector2i(4, 1)), "dropping worn mail onto the vest swaps them")
@@ -109,19 +110,21 @@ func _ready() -> void:
 	var a := item("greatsword")
 	var b2 := item("bone_ring")
 	p.bag.place(a, Vector2i(2, 1))
-	p.bag.place(b2, Vector2i(9, 5))
+	var last := Vector2i(Player.BAG_COLS - 1, Player.BAG_ROWS - 1)  # the bottom-right cell
+	p.bag.place(b2, last)
 	var saved := p.bag.to_array()
 	var g := ItemGrid.new(Player.BAG_COLS, Player.BAG_ROWS)
 	check(g.load_array(saved).is_empty(), "everything reloads")
 	var names := g.items().map(func(x): return [x.base.id, g.position_of(x)])
-	check(names.has(["greatsword", Vector2i(2, 1)]) and names.has(["bone_ring", Vector2i(9, 5)]),
+	check(names.has(["greatsword", Vector2i(2, 1)]) and names.has(["bone_ring", last]),
 		"positions survive a save (got %s)" % [names])
 	# Old format: a list of item dicts with nulls; too much to fit comes back to the caller
 	var old: Array = []
 	for i in 24:
 		old.append(item("greatsword").to_dict() if i % 2 == 0 else null)
 	var homeless := g.load_array(old)
-	check(g.count() == 5 and homeless.size() == 7, "old save: 5 of 12 greatswords fit, 7 returned (got %d, %d)" % [g.count(), homeless.size()])
+	check(g.count() == fit and homeless.size() == 12 - fit,
+		"old save: %d of 12 greatswords fit, the rest returned (got %d, %d)" % [fit, g.count(), homeless.size()])
 
 	# --- bag <-> stash ---
 	p.bag.clear()

@@ -2,7 +2,7 @@ class_name DetailsPanel
 extends MenuPanel
 ## Default inventory panel: the selected item's card side by side with what is worn in that
 ## slot (green/red arrows per stat), the stat changes, and Unequip for worn gear (equipping and
-## dropping are drag and drop: onto a slot, or the drop box at the bottom right). Selling and
+## dropping are drag and drop: onto a slot, or the drop box under the boots). Selling and
 ## currency happen in town: the Merchant and the stash.
 
 
@@ -80,13 +80,13 @@ func refresh() -> void:
 			add_child(UIKit.label("⚠ Bag full! Free a slot to unequip.", 14, Color(0.95, 0.40, 0.40)))
 	else:
 		# Equipping and dropping are drag and drop: onto an equipment (or flask) slot, or onto the
-		# drop box at the bottom right of the inventory (CharacterPanel)
+		# drop box under the boots on the paperdoll (CharacterPanel)
 		var reason := player.equip_block_reason(it)
 		if reason != "":
 			add_child(UIKit.label("⛔ " + reason, 15, Color(0.95, 0.40, 0.40)))
 		elif it.base.two_handed and player.equipment.has("offhand"):
 			add_child(UIKit.label("Two-handed: your off-hand item goes back to the bag.", 13, UIKit.TEXT_DIM, true))
-		add_child(UIKit.label("Drag it onto %s to equip it, or onto 🗑 Drop at the bottom right to drop it." % (
+		add_child(UIKit.label("Drag it onto %s to equip it, or onto 🗑 Drop (under the boots) to drop it." % (
 			"a flask slot" if it.is_flask() else "its equipment slot"), 13, UIKit.TEXT_DIM, true))
 
 	# Currency is used at the stash (Scrolls of Identify anywhere), selling at the Merchant
