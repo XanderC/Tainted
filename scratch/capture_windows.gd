@@ -87,8 +87,19 @@ func _ready() -> void:
 		await get_tree().process_frame
 		var cl := CanvasLayer.new()  # a Control under a Node2D gets no screen rect to fill
 		add_child(cl)
-		cl.add_child(load("res://scenes/character_select.tscn").instantiate())
+		var cs = load("res://scenes/character_select.tscn").instantiate()
+		cl.add_child(cs)
 		await _shot("charselect")
+		cs._creating = true
+		cs._refresh()
+		await _shot("create")
+		var rng := RandomNumberGenerator.new()
+		rng.seed = 3
+		cs._look = Appearance.random_look(rng)
+		cs._look["gender"] = "male"
+		cs._look["beard"] = "viking"
+		cs._look_changed()
+		await _shot("create_male")
 	get_tree().quit(0)
 
 

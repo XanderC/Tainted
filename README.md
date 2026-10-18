@@ -18,6 +18,15 @@ Top-down mobile ARPG prototype (Godot 4.3+, GDScript, GL Compatibility renderer)
 | `scripts/skill_button.gd` | Right-thumb skill buttons with cooldown sweep |
 | `scripts/inventory_ui.gd` | Inventory screen: equipment, 24-slot bag, item compare, equip / unequip / drop |
 
+### Character creation
+Create New Character lets you pick a class, then how the character looks, shown live on the figure:
+gender, face, hairstyle (or bald) and hair colour, facial hair and its colour (men), skin tone and a
+starter outfit, or 🎲 Random. Any hairstyle and beard go with any colour, and the eyebrows follow the
+hair colour. The looks are saved with the character and shown on the select screen.
+The art (`assets/appearance`) is cut from the CraftPix chibi packs by `tools/build_appearance.py`:
+the packs draw hair and beards into each head, so the tool separates them from a bald base head and
+turns them grey for tinting. Rerun it with the folder of zips to add styles (the tables at its top).
+
 ### Inventory
 Tap **Bag** (top right) or press **I**. The game pauses while it's open.
 - Laid out like Path of Exile's: the equipment paperdoll on top, each slot shaped like what it holds

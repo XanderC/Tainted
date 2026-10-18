@@ -10,6 +10,9 @@ const TOWN_SCENE := "res://scenes/town.tscn"
 var _selected := ""      # character id shown on the right
 var _creating := false
 var _new_class := "warrior"
+var _look := Appearance.default_look()  # the new character's looks, picked on the creation form
+var _new_name := ""  # kept while the form is rebuilt
+var _look_box: GridContainer  # the looks options, rebuilt when one changes
 
 var _list: VBoxContainer
 var _right: VBoxContainer
@@ -125,9 +128,8 @@ func _refresh() -> void:
 
 
 func _dress(gear: Dictionary) -> void:
+	Appearance.apply(_rig, _look if _creating else GameState.character_info(_selected).get("appearance", {}))
 	Player.dress_rig(_rig, gear)
-	var cls := ClassLibrary.get_class_def(_new_class if _creating else String(GameState.character_info(_selected).get("class", "warrior")))
-	_rig.modulate = Color.WHITE.lerp(cls.color, 0.15)
 
 
 # ---------- left: the list ----------
@@ -229,39 +231,68 @@ static func _first_scene() -> String:
 
 func _build_create() -> void:
 	UIKit.clear(_right)
-	_right.add_child(UIKit.label("CREATE A CHARACTER", 26, Color(1.0, 0.90, 0.60)))
-	_right.add_child(UIKit.label("CLASS", 14, UIKit.TEXT_DIM))
-	var classes := HBoxContainer.new()
-	classes.add_theme_constant_override("separation", 10)
-	_right.add_child(classes)
+	_right.add_theme_constant_override("separation", 8)
+	var top := HBoxContainer.new()
+	top.add_theme_constant_override("separation", 10)
+	_right.add_child(top)
+	var title := UIKit.label("CREATE A CHARACTER", 24, Color(1.0, 0.90, 0.60))
+	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	top.add_child(title)
 	for id in ClassLibrary.CLASS_IDS:
 		var cls := ClassLibrary.get_class_def(id)
 		var on: bool = id == _new_class
 		var b := UIKit.button(cls.display_name, Color(0.24, 0.16, 0.09) if on else Color(0.11, 0.10, 0.13),
-			Color(0.95, 0.80, 0.40) if on else Color(0.32, 0.26, 0.20), Vector2(150, 56), 18)
+			Color(0.95, 0.80, 0.40) if on else Color(0.32, 0.26, 0.20), Vector2(130, 44), 17)
+		b.tooltip_text = cls.description
 		b.pressed.connect(func():
 			_new_class = id
 			_refresh()
 		)
-		classes.add_child(b)
+		top.add_child(b)
 	var cls := ClassLibrary.get_class_def(_new_class)
-	_right.add_child(UIKit.label(cls.description, 15, UIKit.TEXT_DIM, true))
+	_right.add_child(UIKit.label(cls.description, 14, UIKit.TEXT_DIM, true))
 
-	_right.add_child(UIKit.label("NAME", 14, UIKit.TEXT_DIM))
+	# Looks: gender, face, hair and its colour, facial hair and its colour, skin, outfit
+	# Two columns on a wide screen; on a narrower one a single column that scrolls
+	var wide := get_viewport_rect().size.x >= 1500.0
+	var looks := PanelContainer.new()
+	looks.add_theme_stylebox_override("panel", UIKit.inset_box(12))
+	if wide:
+		_right.add_child(looks)
+	else:
+		var sc := ScrollContainer.new()
+		sc.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+		sc.size_flags_vertical = Control.SIZE_EXPAND_FILL
+		sc.size_flags_stretch_ratio = 4.0
+		_right.add_child(sc)
+		looks.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		sc.add_child(looks)
+	_look_box = GridContainer.new()
+	_look_box.columns = 2 if wide else 1
+	_look_box.add_theme_constant_override("h_separation", 24)
+	_look_box.add_theme_constant_override("v_separation", 8)
+	looks.add_child(_look_box)
+	_build_look_options()
+
 	_name_edit = LineEdit.new()
 	_name_edit.max_length = GameState.NAME_MAX_LEN
 	_name_edit.placeholder_text = "Enter a name"
-	_name_edit.custom_minimum_size = Vector2(0, 56)
+	_name_edit.custom_minimum_size = Vector2(0, 50)
+	_name_edit.text = _new_name
 	_name_edit.add_theme_font_size_override("font_size", 22)
 	for st in [["normal", Color(0.55, 0.45, 0.30)], ["focus", Color(0.95, 0.80, 0.40)]]:
 		var sb := UIKit.inset_box(14, Color.WHITE if st[0] == "normal" else Color(1.0, 0.85, 0.55))
 		_name_edit.add_theme_stylebox_override(st[0], sb)
 	_name_edit.text_submitted.connect(func(_t): _create())
-	_name_edit.text_changed.connect(func(_t): _name_error.text = "")
+	_name_edit.text_changed.connect(func(t):
+		_new_name = t
+		_name_error.text = ""
+	)
 	_right.add_child(_name_edit)
 	_name_error = UIKit.label("", 14, Color(1.0, 0.45, 0.45))
 	_right.add_child(_name_error)
-	_right.add_child(_spacer())
+	if wide:
+		_right.add_child(_spacer())  # (narrow: the scrolling options take the spare height)
 
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 10)
@@ -285,8 +316,107 @@ func _create() -> void:
 		_name_error.text = why
 		return
 	DisplayServer.virtual_keyboard_hide()
-	if GameState.create_character(_name_edit.text, _new_class) != "":
+	if GameState.create_character(_name_edit.text, _new_class, _look) != "":
 		get_tree().change_scene_to_file(_first_scene())
+
+
+## The looks options on the creation form, in two columns. Changing one redresses the character.
+func _build_look_options() -> void:
+	UIKit.clear(_look_box)
+	var g: String = _look["gender"]
+	_look_row("Gender", _choice(["male", "female"], g, func(v):
+		var old: Dictionary = _look.duplicate()
+		_look = Appearance.default_look(v)
+		for k in ["hair_color", "skin", "beard_color"]:
+			_look[k] = old[k]
+		_look_changed()
+	, ["Male", "Female"]))
+	_look_row("Face", _stepper("faces", "face", Appearance.options("faces", g)))
+	_look_row("Hair", _stepper("hair", "hair", Appearance.options("hair")))
+	_look_row("Hair colour", _swatches(Appearance.HAIR_COLORS, "hair_color"))
+	if g == "male":
+		_look_row("Facial hair", _stepper("beards", "beard", Appearance.options("beards")))
+		_look_row("Beard colour", _swatches(Appearance.HAIR_COLORS, "beard_color"))
+	_look_row("Skin", _swatches(Appearance.SKIN_TONES, "skin"))
+	_look_row("Outfit", _stepper("outfits", "outfit", Appearance.options("outfits")))
+	var rnd := UIKit.button("🎲  Random", Color(0.15, 0.12, 0.10), Color(0.75, 0.58, 0.30), Vector2(0, 40), 16)
+	rnd.pressed.connect(func():
+		_look = Appearance.random_look()
+		_look_changed()
+	)
+	_look_box.add_child(rnd)
+
+
+func _look_changed() -> void:
+	_build_look_options()
+	_dress({})
+
+
+func _look_row(title: String, control: Control) -> void:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 8)
+	row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var l := UIKit.label(title, 15, UIKit.TEXT_DIM)
+	l.custom_minimum_size = Vector2(108, 0)
+	row.add_child(l)
+	row.add_child(control)
+	_look_box.add_child(row)
+
+
+## ◀ name ▶ through the options of one look key.
+func _stepper(kind: String, key: String, opts: Array) -> HBoxContainer:
+	var box := HBoxContainer.new()
+	box.add_theme_constant_override("separation", 4)
+	var i := maxi(opts.find(_look[key]), 0)
+	for step in [-1, 1]:
+		var b := UIKit.button("◀" if step < 0 else "▶", Color(0.12, 0.10, 0.12), Color(0.55, 0.45, 0.30), Vector2(40, 38), 15)
+		b.pressed.connect(func():
+			_look[key] = opts[posmod(i + step, opts.size())]
+			_look_changed()
+		)
+		box.add_child(b)
+		if step < 0:
+			var name_lbl := UIKit.label(Appearance.label(kind, String(_look[key])), 16, Color(0.95, 0.90, 0.78))
+			name_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+			name_lbl.custom_minimum_size = Vector2(110, 0)
+			box.add_child(name_lbl)
+	return box
+
+
+## Buttons for a few fixed choices (gender).
+func _choice(values: Array, current: String, on_pick: Callable, labels: Array) -> HBoxContainer:
+	var box := HBoxContainer.new()
+	box.add_theme_constant_override("separation", 6)
+	for k in values.size():
+		var on: bool = values[k] == current
+		var b := UIKit.button(labels[k], Color(0.24, 0.16, 0.09) if on else Color(0.11, 0.10, 0.13),
+			Color(0.95, 0.80, 0.40) if on else Color(0.32, 0.26, 0.20), Vector2(96, 38), 16)
+		var v: String = values[k]
+		b.pressed.connect(func(): on_pick.call(v))
+		box.add_child(b)
+	return box
+
+
+## A row of colour swatches for one look key; the picked one has a gold rim.
+func _swatches(palette: Dictionary, key: String) -> HBoxContainer:
+	var box := HBoxContainer.new()
+	box.add_theme_constant_override("separation", 3)
+	for id in palette:
+		var on: bool = _look[key] == id
+		var b := Button.new()
+		b.custom_minimum_size = Vector2(26, 30)
+		b.tooltip_text = String(id).capitalize()
+		var sb := UIKit.box(palette[id], Color(1.0, 0.85, 0.40) if on else Color(0.08, 0.06, 0.06), 3 if on else 2, 5)
+		for st in ["normal", "hover", "pressed"]:
+			b.add_theme_stylebox_override(st, sb)
+		b.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+		var v: String = id
+		b.pressed.connect(func():
+			_look[key] = v
+			_look_changed()
+		)
+		box.add_child(b)
+	return box
 
 
 func _spacer() -> Control:

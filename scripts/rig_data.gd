@@ -12,6 +12,7 @@ var dir := ""
 var fps := 60.0
 var objects: Array[String] = []
 var textures: Array[Texture2D] = []
+var files: Array[String] = []  # each texture's part name ("Head", "Face 02"...), for swapping art
 ## animation name -> {"length": seconds, "frames": count, "data": PackedFloat32Array}
 var animations := {}
 
@@ -32,6 +33,7 @@ static func load_rig(dir_path: String) -> RigData:
 		rd.objects.append(String(o))
 	for f in d["files"]:
 		rd.textures.append(load("%s/parts/%s.png" % [dir_path, f["name"]]))
+		rd.files.append(String(f["name"]))
 	for anim_name in d["animations"]:
 		var a: Dictionary = d["animations"][anim_name]
 		var flat := PackedFloat32Array()

@@ -19,6 +19,7 @@ var last_character := ""    # id of the character played last (preselected on th
 var char_id := ""           # character being played; "" before one is picked
 var char_name := ""
 var char_class := "warrior"
+var appearance := {}  # how the character looks (Appearance); kept in the account's character list
 ## Tutorial progress of the character being played (TutorialMap.Stage); TUTORIAL_DONE once finished.
 const TUTORIAL_DONE := 99
 var tutorial_stage := TUTORIAL_DONE
@@ -1137,7 +1138,8 @@ func _load_account() -> void:
 	for c in acc.get("characters", []):
 		if FileAccess.file_exists(_char_path(String(c.get("id", "")))):
 			characters.append({"id": String(c.id), "name": String(c.get("name", "Hero")),
-				"class": String(c.get("class", "warrior")), "level": int(c.get("level", 1))})
+				"class": String(c.get("class", "warrior")), "level": int(c.get("level", 1)),
+				"appearance": Appearance.sanitize(c.get("appearance", {}))})
 	last_character = String(acc.get("last", ""))
 	_load_stash(acc.get("stash", []), acc.get("stash_overflow", []))
 	_load_shared(acc)
@@ -1265,7 +1267,7 @@ func name_block_reason(new_name: String) -> String:
 
 
 ## Make a fresh level 1 character and make it the one being played. Returns its id ("" if not allowed).
-func create_character(new_name: String, class_id: String) -> String:
+func create_character(new_name: String, class_id: String, look := {}) -> String:
 	if name_block_reason(new_name) != "":
 		return ""
 	_new_game()
@@ -1276,7 +1278,8 @@ func create_character(new_name: String, class_id: String) -> String:
 	char_id = _new_char_id()
 	char_name = new_name.strip_edges()
 	char_class = class_id
-	characters.append({"id": char_id, "name": char_name, "class": char_class, "level": 1})
+	appearance = Appearance.sanitize(look)
+	characters.append({"id": char_id, "name": char_name, "class": char_class, "level": 1, "appearance": appearance})
 	last_character = char_id
 	save()
 	return char_id
@@ -1293,6 +1296,7 @@ func select_character(id: String) -> bool:
 	char_id = id
 	char_name = String(info.name)
 	char_class = String(info.get("class", "warrior"))
+	appearance = Appearance.sanitize(info.get("appearance", {}))
 	last_character = id
 	_save_account()
 	return true

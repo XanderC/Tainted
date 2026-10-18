@@ -1,0 +1,143 @@
+{
+ "skin_ref": [
+  0.8588,
+  0.7216,
+  0.5922
+ ],
+ "hair": [
+  {
+   "id": "short",
+   "label": "Slicked"
+  },
+  {
+   "id": "bowl",
+   "label": "Bowl"
+  },
+  {
+   "id": "spiky",
+   "label": "Spiky"
+  },
+  {
+   "id": "messy",
+   "label": "Messy"
+  },
+  {
+   "id": "swept",
+   "label": "Swept"
+  },
+  {
+   "id": "long",
+   "label": "Long"
+  },
+  {
+   "id": "bob",
+   "label": "Bob"
+  },
+  {
+   "id": "fringe",
+   "label": "Fringe"
+  },
+  {
+   "id": "straight",
+   "label": "Straight"
+  },
+  {
+   "id": "flowing",
+   "label": "Flowing"
+  }
+ ],
+ "beards": [
+  {
+   "id": "full",
+   "label": "Full"
+  },
+  {
+   "id": "thick",
+   "label": "Thick"
+  },
+  {
+   "id": "viking",
+   "label": "Viking"
+  },
+  {
+   "id": "goatee",
+   "label": "Goatee"
+  },
+  {
+   "id": "grizzled",
+   "label": "Grizzled"
+  },
+  {
+   "id": "mercenary",
+   "label": "Mercenary"
+  }
+ ],
+ "faces": [
+  {
+   "id": "stern",
+   "label": "Stern",
+   "gender": "male"
+  },
+  {
+   "id": "calm",
+   "label": "Calm",
+   "gender": "male"
+  },
+  {
+   "id": "scarred",
+   "label": "Scarred",
+   "gender": "male"
+  },
+  {
+   "id": "fierce",
+   "label": "Fierce",
+   "gender": "male"
+  },
+  {
+   "id": "bright",
+   "label": "Bright",
+   "gender": "female"
+  },
+  {
+   "id": "keen",
+   "label": "Keen",
+   "gender": "female"
+  },
+  {
+   "id": "proud",
+   "label": "Proud",
+   "gender": "female"
+  },
+  {
+   "id": "bold",
+   "label": "Bold",
+   "gender": "female"
+  }
+ ],
+ "outfits": [
+  {
+   "id": "peasant",
+   "label": "Peasant"
+  },
+  {
+   "id": "townsfolk",
+   "label": "Townsfolk"
+  },
+  {
+   "id": "dress",
+   "label": "Dress"
+  },
+  {
+   "id": "tunic",
+   "label": "Tunic"
+  },
+  {
+   "id": "ranger",
+   "label": "Ranger"
+  },
+  {
+   "id": "mercenary",
+   "label": "Mercenary"
+  }
+ ]
+}

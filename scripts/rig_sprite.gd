@@ -57,6 +57,11 @@ var _off_shield := false
 var _off_tex: Texture2D = null  # off-hand art; null = the rig's own sword image
 var _lhand_i := -1
 var _rhand_i := -1
+## Character appearance (Appearance.apply): part art swapped by file name, tints per object, and
+## layers that follow an object (hair and beard on the Head, eyebrows on the Face)
+var _file_override := {}  # part file name -> Texture2D
+var _obj_tint := {}  # object index -> Color
+var _looks: Array = []  # {sprite, obj, z2, by_file: {file name -> Texture2D}, hair: bool}
 
 ## Shield size on the rig, in rig pixels (the body art is ~320 px).
 const SHIELD_HEIGHT := 200.0
@@ -202,6 +207,53 @@ func _process(delta: float) -> void:
 	_apply_frame()
 
 
+# ---------------------------------------------------------------- appearance
+
+## Swap the art of the rig's parts: part file name ("Head", "Face 01", "Body"...) -> texture.
+## Missing names keep the rig's own art.
+func set_part_overrides(overrides: Dictionary) -> void:
+	_file_override = overrides
+	for i in _n:
+		_tex_of[i] = null  # re-pick every texture on the next frame
+	if current_anim != "":
+		_apply_frame()
+
+
+## Tint rig objects (by object name): skin tone on the head and hands.
+func set_object_tints(tints: Dictionary) -> void:
+	_obj_tint.clear()
+	for obj_name in tints:
+		var i := rig.objects.find(obj_name)
+		if i >= 0:
+			_obj_tint[i] = tints[obj_name]
+	for i in _n:
+		_sprites[i].self_modulate = _obj_tint.get(i, Color.WHITE)
+
+
+## Layers that follow an object, drawn just above it: each {"obj": object name, "by_file": {part
+## file name -> texture} (the layer's art for each of the object's images), "tint": Color,
+## "order": small number among layers on one object, "hair": hidden under a helmet}.
+func set_look_layers(layers: Array) -> void:
+	for lk in _looks:
+		remove_child(lk["sprite"])
+		lk["sprite"].queue_free()
+	_looks.clear()
+	for l in layers:
+		var obj_i := rig.objects.find(String(l["obj"]))
+		if obj_i < 0:
+			continue
+		var s := Sprite2D.new()
+		s.centered = false
+		s.self_modulate = l.get("tint", Color.WHITE)
+		add_child(s)
+		# Above its object (and below the next one up): order 0..9 within that gap
+		_looks.append({"sprite": s, "obj": obj_i, "z2": _z[obj_i] * 2.0 + 0.1 + 0.05 * float(l.get("order", 0)),
+			"by_file": l["by_file"], "hair": bool(l.get("hair", false))})
+	_reorder()
+	if current_anim != "":
+		_apply_frame()
+
+
 # ---------------------------------------------------------------- gear
 
 ## slot: "weapon" | "helmet" | "chest". gear_id "" clears it. gear_id is the ItemBase id.
@@ -298,6 +350,8 @@ func _reorder() -> void:
 		entries.append([_z[i] * 2.0, _sprites[i]])
 	for ov in _overlays:
 		entries.append([ov["z2"], ov["sprite"]])
+	for lk in _looks:
+		entries.append([lk["z2"], lk["sprite"]])
 	if _second_sprite != null:
 		entries.append([_z[_rhand_i] * 2.0 - 1.0, _second_sprite])  # just behind the hand holding it
 	if _shield_sprite != null:
@@ -334,6 +388,8 @@ func _apply_frame() -> void:
 			continue
 		var alpha := data[o + 6]
 		var tex: Texture2D = rig.textures[fi]
+		if not _file_override.is_empty():
+			tex = _file_override.get(rig.files[fi], tex)
 		if i == _sword_i:
 			if _weapon_tex != null:
 				tex = _weapon_tex
@@ -361,6 +417,24 @@ func _apply_frame() -> void:
 		_place_second_weapon(data, base)
 	if _shield_sprite != null:
 		_place_shield(data, base)
+
+	var helmet_on: bool = _gear.get("helmet", "") != ""
+	for lk in _looks:
+		var o3: int = base + int(lk["obj"]) * STRIDE
+		var s3: Sprite2D = lk["sprite"]
+		var fi3 := int(data[o3])
+		var tex3: Texture2D = lk["by_file"].get(rig.files[fi3]) if fi3 >= 0 else null
+		if tex3 == null or data[o3 + 6] <= 0.001 or (lk["hair"] and helmet_on):
+			s3.visible = false  # hair is hidden under a helmet
+			continue
+		s3.visible = true
+		if s3.texture != tex3:
+			s3.texture = tex3
+		var sz3 := tex3.get_size()
+		s3.offset = Vector2(-sz3.x * data[o3 + 8], -sz3.y * (1.0 - data[o3 + 9]))
+		s3.position = Vector2(data[o3 + 1], data[o3 + 2])
+		s3.rotation = data[o3 + 3]
+		s3.scale = Vector2(data[o3 + 4], data[o3 + 5])
 
 	for ov in _overlays:
 		var o2: int = base + int(ov["obj"]) * STRIDE

@@ -110,6 +110,7 @@ func _ready() -> void:
 	rig.base_scale = 0.2
 	rig.weapon_from_gear = true  # weapon appears when equipped, not only during slashes
 	add_child(rig)
+	Appearance.apply(rig, GameState.appearance)
 	_sync_gear_visuals()
 	GameState.attach_player(self)  # restore saved gear, bag and skills
 
