@@ -90,8 +90,7 @@ func _build_ui() -> void:
 	var win := PanelContainer.new()
 	win.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT, Control.PRESET_MODE_MINSIZE, 8)
 	win.clip_contents = true
-	var win_sb := UIKit.window_box(10)
-	win_sb.set_content_margin_all(10)
+	var win_sb := UIKit.window_box(20, Color.WHITE, true)
 	win.add_theme_stylebox_override("panel", win_sb)
 	_root.add_child(win)
 	var outer := VBoxContainer.new()
@@ -109,7 +108,7 @@ func _build_ui() -> void:
 	_respec_btn = UIKit.button("", Color(0.12, 0.18, 0.30), Color(0.55, 0.75, 1.0), Vector2(170, 52), 18)
 	_respec_btn.pressed.connect(_on_respec)
 	header.add_child(_respec_btn)
-	var close_btn := UIKit.button("✕ Close", Color(0.22, 0.08, 0.08), Color(0.70, 0.25, 0.25), Vector2(120, 52), 20)
+	var close_btn := UIKit.close_button()
 	close_btn.pressed.connect(close)
 	header.add_child(close_btn)
 

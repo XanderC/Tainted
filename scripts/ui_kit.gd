@@ -122,13 +122,36 @@ static func stone_box(art: String, tint := Color.WHITE) -> StyleBoxTexture:
 
 
 ## The stone window frame, stretched with its border kept. `tint` recolours it (a rift's purple, say).
-static func window_box(content := 10.0, tint := Color.WHITE) -> StyleBoxTexture:
+## `header` gives it the pack's title band along the top, which a row of tabs or a title and close
+## button sit on (the content starts inside the band, so put that row first).
+static func window_box(content := 20.0, tint := Color.WHITE, header := false) -> StyleBoxTexture:
 	var s := StyleBoxTexture.new()
-	s.texture = HudArt.tex("window_frame")
-	s.set_texture_margin_all(24.0)
 	s.set_content_margin_all(content)
+	if header:
+		s.texture = HudArt.tex("window_header")
+		s.texture_margin_left = 24.0
+		s.texture_margin_right = 24.0
+		s.texture_margin_top = 80.0
+		s.texture_margin_bottom = 24.0
+		s.content_margin_top = 14.0
+	else:
+		s.texture = HudArt.tex("window_frame")
+		s.set_texture_margin_all(24.0)
 	s.modulate_color = tint
 	return s
+
+
+## The pack's stone close button, for a window's header.
+static func close_button(scale := 1.2) -> TextureButton:
+	var b := TextureButton.new()
+	b.texture_normal = HudArt.tex("close")
+	b.texture_hover = HudArt.tex("close_hover")
+	b.texture_pressed = HudArt.tex("close_pressed")
+	b.ignore_texture_size = true
+	b.stretch_mode = TextureButton.STRETCH_KEEP_ASPECT_CENTERED
+	b.custom_minimum_size = Vector2(47, 43) * scale
+	b.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	return b
 
 
 ## A recessed dark panel (the pack's inner container), for cards and sections inside a window.

@@ -221,7 +221,8 @@ func _build_tabs() -> void:
 		b.custom_minimum_size = Vector2(0, 42)
 		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		b.add_theme_font_size_override("font_size", 15)
-		var face := UIKit.stone_box("menu_btn", Color(1.0, 0.85, 0.5) if active else Color(0.55, 0.55, 0.62))
+		# Sunk into the title band; the open tab is the one lit up
+		var face := UIKit.stone_box("menu_btn", Color(1.0, 0.82, 0.45)) if active else UIKit.inset_box(6)
 		b.add_theme_stylebox_override("normal", face)
 		b.add_theme_stylebox_override("hover", face)
 		b.add_theme_stylebox_override("pressed", UIKit.stone_box("menu_btn_pressed"))
@@ -266,8 +267,7 @@ func _build() -> void:
 	_left_frame.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_left_frame.size_flags_stretch_ratio = 1.0
 	_left_frame.clip_contents = true
-	var lsb := UIKit.window_box(10)
-	lsb.set_content_margin_all(10)
+	var lsb := UIKit.window_box(20, Color.WHITE, true)
 	_left_frame.add_theme_stylebox_override("panel", lsb)
 	cols.add_child(_left_frame)
 

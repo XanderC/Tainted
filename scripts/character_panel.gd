@@ -33,8 +33,7 @@ var _bag_view: ItemGridView  # the bag, as a grid: all gear, flasks included
 
 func _ready() -> void:
 	clip_contents = true
-	var sb := UIKit.window_box(10)
-	sb.set_content_margin_all(10)
+	var sb := UIKit.window_box(20, Color.WHITE, true)
 	add_theme_stylebox_override("panel", sb)
 
 	var scroll := ScrollContainer.new()
@@ -63,7 +62,7 @@ func _ready() -> void:
 	var stats_btn := UIKit.button("📜 Stats", Color(0.16, 0.12, 0.10), Color(0.75, 0.58, 0.30), Vector2(110, 48), 17)
 	stats_btn.pressed.connect(func(): menu.toggle_stats())
 	header.add_child(stats_btn)
-	var close_btn := UIKit.button("✕ Close", Color(0.22, 0.10, 0.10), Color(0.75, 0.30, 0.30), Vector2(120, 48), 18)
+	var close_btn := UIKit.close_button()
 	close_btn.pressed.connect(func(): menu.close())
 	header.add_child(close_btn)
 
