@@ -89,12 +89,21 @@ func _draw() -> void:
 	if not player.can_afford(index):
 		col = col.darkened(0.6)  # not enough Adrenaline / Mana
 
-	# Filled inner circle with press pulse
-	var inner_col := Color(col.r, col.g, col.b, 0.85 if frac <= 0.0 else 0.3)
-	if _is_down:
-		inner_col = inner_col.lightened(0.2)
+	# The skill's painted icon filling the button (or a coloured disc without one), dimmed while it
+	# can't be used, with the cooldown sweeping over it
 	var inner_r := r - 3.0
-	draw_circle(c, inner_r, inner_col)
+	var tex := SkillIcons.texture(s.id)
+	var usable := frac <= 0.0 and player.can_afford(index)
+	if tex != null:
+		var shade := Color.WHITE if usable else Color(0.45, 0.45, 0.48)
+		if _is_down:
+			shade = Color(1.25, 1.25, 1.25)
+		SkillIcons.draw_round(self, tex, c, inner_r, shade)
+	else:
+		var inner_col := Color(col.r, col.g, col.b, 0.85 if frac <= 0.0 else 0.3)
+		if _is_down:
+			inner_col = inner_col.lightened(0.2)
+		draw_circle(c, inner_r, inner_col)
 	HudArt.sweep(self, c, inner_r, frac, Color(0, 0, 0, 0.70))
 
 	# Rim
@@ -105,26 +114,30 @@ func _draw() -> void:
 		HudArt.disc(self, "icon_ring", c, r * 2.0 + 8.0)
 		HudArt.disc(self, "ring_gray", c, r * 2.0 - 2.0, rim.lightened(0.15))
 
-	# Icon & Name
-	var rune_prefix := ""
+	# An elemental support linked to it: its icon as a small badge at the top right
 	for rn in s.get_runes():
 		if rn.category == RuneDef.Category.TRANSMUTATION:
-			rune_prefix = rn.icon + " "
+			var bt := rn.get_icon()
+			var bc := c + Vector2(r * 0.68, -r * 0.68)
+			var br := maxf(r * 0.28, 10.0)
+			draw_circle(bc, br + 2.0, Color(0, 0, 0, 0.8))
+			SkillIcons.draw_round(self, bt, bc, br)
 			break
 
-	var title := rune_prefix + s.display_name
-	var font_sz := 17 if index == 0 else 13
-	HudArt.label(self, Vector2(0, c.y + 6.0), title, font_sz, Color.WHITE, button_size)
+	# Without a painted icon the name says what it is
+	if tex == null:
+		HudArt.label(self, Vector2(0, c.y + 6.0), s.display_name, 17 if index == 0 else 13, Color.WHITE, button_size)
 
-	# Resource cost (or gain) under the name
+	# Resource cost (or gain) at the bottom
+	var cost_txt := ""
 	if s.resource_gain > 0.0:
-		HudArt.label(self, Vector2(0, c.y + 24.0), "+%d" % int(round(s.get_effective_gain())), 12,
-			player.class_def.power_color.lightened(0.3), button_size)
+		cost_txt = "+%d" % int(round(s.get_effective_gain()))
 	elif s.resource_cost > 0.0:
-		HudArt.label(self, Vector2(0, c.y + 24.0), "%d" % int(round(player.skill_cost(s))), 12,
-			player.class_def.power_color.lightened(0.3), button_size)
+		cost_txt = "%d" % int(round(player.skill_cost(s)))
+	if cost_txt != "":
+		var pc := player.class_def.power_color.lightened(0.3) if player.can_afford(index) else Color(1.0, 0.45, 0.4)
+		HudArt.label(self, Vector2(0, c.y + r * 0.82), cost_txt, 15 if index == 0 else 13, pc, button_size)
 
-	# Badge label at the top: "MAIN" or slot number
-	var tag := "MAIN" if index == 0 else str(index)
-	HudArt.label(self, Vector2(0, c.y - r * 0.5), tag, 13, Color(1, 0.9, 0.5, 0.9) if index == 0 else Color(1, 1, 1, 0.65),
-		button_size)
+	# The slot number (keys 1-5) at the top left; the main attack needs none
+	if index > 0:
+		HudArt.label(self, c + Vector2(-r * 0.95, -r * 0.5), str(index), 13, Color(1, 1, 1, 0.8), r * 0.6)

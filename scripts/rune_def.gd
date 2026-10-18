@@ -93,7 +93,7 @@ func stat_lines(lvl: int = 1) -> String:
 	return t
 
 
-## Unique placeholder picture for this rune (swap for real art later).
+## This support gem's picture: its painted icon, or a drawn placeholder.
 func get_icon() -> Texture2D:
 	return IconFactory.rune_icon(self)
 

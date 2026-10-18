@@ -84,7 +84,8 @@ func _skill_cell(skill_id: String, slot: int, sz: Vector2) -> DragSlot:
 			"%s (Lv %d)" % [sk.display_name, GameState.gem_level(skill_id)])
 		if not ok:
 			cell.modulate = Color(1, 1, 1, 0.45)
-		_overlay(cell, sk.icon, 22, Color.WHITE, VERTICAL_ALIGNMENT_CENTER, HORIZONTAL_ALIGNMENT_CENTER)
+		if SkillIcons.texture(skill_id) == null:  # the drawn gem carries the skill's symbol
+			_overlay(cell, sk.icon, 22, Color.WHITE, VERTICAL_ALIGNMENT_CENTER, HORIZONTAL_ALIGNMENT_CENTER)
 		_overlay(cell, "%d" % GameState.gem_level(skill_id), 11, Color(1.0, 0.9, 0.5), VERTICAL_ALIGNMENT_TOP, HORIZONTAL_ALIGNMENT_LEFT)
 		cell.payload = {"kind": "skillgem", "from": "pouch" if slot < 0 else "slot", "slot": slot, "skill": skill_id}
 		cell.clicked.connect(_select.bind({"type": "skill", "id": skill_id, "slot": slot}))

@@ -18,6 +18,9 @@ static func item_icon(id: String, slot: String, col: Color) -> Texture2D:
 
 
 static func rune_icon(r: RuneDef) -> Texture2D:
+	var painted := SkillIcons.texture(r.id)  # support gems with a painted icon
+	if painted != null:
+		return painted
 	var key := "rune:" + r.id
 	if not _cache.has(key):
 		var shape := "rune_form"
@@ -30,6 +33,10 @@ static func rune_icon(r: RuneDef) -> Texture2D:
 
 ## Gems grow larger with tier so Chipped vs Perfect is visible at a glance.
 static func gem_icon(id: String, col: Color, tier: int) -> Texture2D:
+	if id.begins_with("skill:"):  # a skill gem shows its skill's painted icon
+		var painted := SkillIcons.texture(id.trim_prefix("skill:"))
+		if painted != null:
+			return painted
 	var key := "gem:" + id
 	if not _cache.has(key):
 		_cache[key] = _render(id, "gem_t%d" % tier, col)
