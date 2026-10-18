@@ -94,19 +94,18 @@ func _ready() -> void:
 	_chars_btn.offset_top = 16.0
 	_chars_btn.offset_bottom = 72.0
 
-	_talk_btn = Button.new()
+	_talk_btn = UIKit.stone_button("", Vector2(0, 0), 22)
 	_talk_btn.visible = false
-	_talk_btn.add_theme_font_size_override("font_size", 26)
 	_talk_btn.pressed.connect(_interact)
 	layer.add_child(_talk_btn)
 	_talk_btn.anchor_left = 0.5
 	_talk_btn.anchor_right = 0.5
 	_talk_btn.anchor_top = 1.0
 	_talk_btn.anchor_bottom = 1.0
-	_talk_btn.offset_left = -190
-	_talk_btn.offset_right = 190
-	_talk_btn.offset_top = -150
-	_talk_btn.offset_bottom = -70
+	_talk_btn.offset_left = -170  # above the XP bar and flask row
+	_talk_btn.offset_right = 170
+	_talk_btn.offset_top = -216
+	_talk_btn.offset_bottom = -160
 
 	menu = GameMenu.new()
 	menu.player = player
@@ -135,14 +134,12 @@ func _show_hub_intro() -> void:
 	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	layer.add_child(center)
 	var panel := PanelContainer.new()
-	var sb := UIKit.window_box(18)
-	sb.set_content_margin_all(18)
-	panel.add_theme_stylebox_override("panel", sb)
+	panel.add_theme_stylebox_override("panel", UIKit.window_box(22, Color.WHITE, true))
 	center.add_child(panel)
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 10)
 	panel.add_child(v)
-	v.add_child(UIKit.label("WELCOME TO ASHFALL OUTPOST", 24, UIKit.GOLD))
+	UIKit.window_header(v, "WELCOME TO ASHFALL OUTPOST", UIKit.GOLD, layer.queue_free, 22)
 	var t := UIKit.rich(
 		"This is your home base. Walk up to someone and tap [b]Talk[/b]:\n" +
 		"  • [color=#ffd54a]Merchant[/color] - buy skill gems, flasks and orbs, and sell loot for orbs\n" +

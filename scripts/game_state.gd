@@ -79,6 +79,7 @@ var _save_queued := false
 
 
 func _ready() -> void:
+	get_tree().root.theme = UIKit.ui_theme()  # the pack's scrollbars everywhere
 	SkillTree.init_skills()
 	RuneDef.DB.init_catalog()
 	_new_game()  # defaults until a character is picked on the select screen

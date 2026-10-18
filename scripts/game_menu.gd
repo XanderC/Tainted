@@ -19,8 +19,8 @@ var _left_title: Label
 var _tabs_row: HBoxContainer
 var _panel_host: VBoxContainer
 var _feedback: Label
-var _stats_popup: PanelContainer
-var _stats_text: RichTextLabel
+var _stats_popup: VBoxContainer  # shown in the left window in place of its tabs and panel
+var _stats_rows: VBoxContainer
 var _char: CharacterPanel
 
 var _panels := {}  # name -> MenuPanel
@@ -58,7 +58,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			open()
 	elif event.keycode == KEY_ESCAPE and is_open():
 		if _stats_popup.visible:
-			_stats_popup.visible = false
+			_set_stats(false)
 		else:
 			close()
 
@@ -87,7 +87,7 @@ func _open_with(panel: String, vendor: String) -> void:
 	# Gems are socketed and swapped only at the stash or the Jeweler (the shared gems show there)
 	GameState.gem_station = vendor in ["stash", "jeweler"]
 	selected = null
-	_stats_popup.visible = false
+	_set_stats(false)
 	_feedback.visible = false
 	layer = 25
 	_root.visible = true
@@ -98,7 +98,7 @@ func _open_with(panel: String, vendor: String) -> void:
 func close() -> void:
 	GameState.gem_station = false
 	_root.visible = false
-	_stats_popup.visible = false
+	_set_stats(false)
 	layer = 10
 	get_tree().paused = false
 
@@ -166,8 +166,14 @@ func feedback(msg: String) -> void:
 
 
 func toggle_stats() -> void:
-	_stats_popup.visible = not _stats_popup.visible
-	if _stats_popup.visible:
+	_set_stats(not _stats_popup.visible)
+
+
+## Character stats take the left window's place (its tabs and panel) until closed.
+func _set_stats(on: bool) -> void:
+	_stats_popup.visible = on
+	_left_body.visible = not on
+	if on:
 		_refresh_stats()
 
 
@@ -296,29 +302,24 @@ func _build() -> void:
 	_panel_host.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scroll.add_child(_panel_host)
 
-	_stats_popup = PanelContainer.new()
+	_stats_popup = VBoxContainer.new()
 	_stats_popup.visible = false
-	var psb := UIKit.window_box(12)
-	psb.set_content_margin_all(12)
-	_stats_popup.add_theme_stylebox_override("panel", psb)
+	_stats_popup.add_theme_constant_override("separation", 8)
 	_left_frame.add_child(_stats_popup)
-	var pv := VBoxContainer.new()
-	pv.add_theme_constant_override("separation", 8)
-	_stats_popup.add_child(pv)
-	var ph := HBoxContainer.new()
-	pv.add_child(ph)
-	var pt := UIKit.label("CHARACTER STATS", 20, UIKit.GOLD)
-	pt.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	ph.add_child(pt)
-	var pclose := UIKit.button("✕ Close", Color(0.20, 0.10, 0.10), Color(0.70, 0.30, 0.30), Vector2(120, 48), 18)
-	pclose.pressed.connect(func(): _stats_popup.visible = false)
-	ph.add_child(pclose)
+	UIKit.window_header(_stats_popup, "📜 CHARACTER STATS", UIKit.GOLD, func(): _set_stats(false))
 	var pscroll := ScrollContainer.new()
 	pscroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	pv.add_child(pscroll)
-	_stats_text = UIKit.rich("", 17)
-	_stats_text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	pscroll.add_child(_stats_text)
+	pscroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	_stats_popup.add_child(pscroll)
+	var pad := MarginContainer.new()  # room between the values and the scrollbar
+	pad.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	pad.add_theme_constant_override("margin_right", 18)
+	pad.add_theme_constant_override("margin_left", 4)
+	pscroll.add_child(pad)
+	_stats_rows = VBoxContainer.new()
+	_stats_rows.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_stats_rows.add_theme_constant_override("separation", 6)
+	pad.add_child(_stats_rows)
 
 	# RIGHT: character, equipment and bag
 	_char = CharacterPanel.new()
@@ -353,11 +354,25 @@ func _refresh_stats() -> void:
 		["Unspent Passive Points", "%d" % GameState.skill_points],
 		["Support Links per Skill", "%d / %d" % [GameState.links_unlocked(), GameState.MAX_LINKS]],
 	]
-	var t := "[table=2]"
+	UIKit.clear(_stats_rows)
 	for r in rows:
 		if r[1] == "":
-			t += "[cell][color=#c9a55c][b]\n%s[/b][/color][/cell][cell] [/cell]" % r[0]
-		else:
-			t += "[cell][color=#bdb6aa]%s[/color]   [/cell][cell][right][color=#f3e6c4]%s[/color][/right][/cell]" % [r[0], r[1]]
-	t += "[/table]"
-	_stats_text.text = t
+			# A section heading and rule, with space above all but the first
+			if _stats_rows.get_child_count() > 0:
+				var gap := Control.new()
+				gap.custom_minimum_size = Vector2(0, 8)
+				_stats_rows.add_child(gap)
+			_stats_rows.add_child(UIKit.label(r[0], 17, Color(0.79, 0.65, 0.36)))
+			var rule := ColorRect.new()
+			rule.color = Color(0.45, 0.36, 0.24, 0.6)
+			rule.custom_minimum_size = Vector2(0, 1)
+			_stats_rows.add_child(rule)
+			continue
+		var line := HBoxContainer.new()
+		var name_lbl := UIKit.label(r[0], 16, Color(0.74, 0.71, 0.67))
+		name_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		line.add_child(name_lbl)
+		var val := UIKit.label(r[1], 16, Color(0.95, 0.90, 0.77))
+		val.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		line.add_child(val)
+		_stats_rows.add_child(line)

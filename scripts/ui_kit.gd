@@ -82,8 +82,10 @@ static func button(text: String, bg: Color, border: Color, min_size := Vector2(0
 	b.add_theme_stylebox_override("normal", stone_box("menu_btn", tint))
 	b.add_theme_stylebox_override("hover", stone_box("menu_btn", tint.lightened(0.1)))
 	b.add_theme_stylebox_override("pressed", stone_box("menu_btn_pressed", tint))
+	b.add_theme_stylebox_override("disabled", stone_box("menu_btn", tint.darkened(0.45)))
 	b.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 	b.add_theme_color_override("font_color", Color(0.95, 0.90, 0.78))
+	b.add_theme_color_override("font_disabled_color", Color(0.55, 0.50, 0.45))
 	b.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.8))
 	b.add_theme_constant_override("outline_size", 3)
 	return b
@@ -103,7 +105,9 @@ static func stone_button(text: String, min_size := Vector2(0, 46), font := 16) -
 	b.add_theme_stylebox_override("normal", normal)
 	b.add_theme_stylebox_override("hover", normal)
 	b.add_theme_stylebox_override("pressed", pressed)
+	b.add_theme_stylebox_override("disabled", stone_box("menu_btn", Color(0.55, 0.55, 0.55)))
 	b.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+	b.add_theme_color_override("font_disabled_color", Color(0.55, 0.50, 0.45))
 	return b
 
 
@@ -152,6 +156,50 @@ static func header_gap() -> Control:
 	c.custom_minimum_size = Vector2(0, HEADER_GAP)
 	c.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	return c
+
+
+## A window's header row, on its title band: the title, then a close button when `on_close` is
+## given, then the gap that clears the band. Returns the row, to add more to it.
+static func window_header(parent: Control, title: String, col := Color(0.95, 0.80, 0.40), on_close := Callable(),
+		font := 22) -> HBoxContainer:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 12)
+	row.custom_minimum_size = Vector2(0, HEADER_ROW_H)
+	parent.add_child(row)
+	var l := label(title, font, col)
+	l.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.add_child(l)
+	if on_close.is_valid():
+		var c := close_button(1.0)
+		c.pressed.connect(on_close)
+		row.add_child(c)
+	parent.add_child(header_gap())
+	return row
+
+
+## Scrollbars in the pack's style; set on the root window (GameState does) so every
+## ScrollContainer uses them.
+static func ui_theme() -> Theme:
+	var t := Theme.new()
+	var track := StyleBoxTexture.new()
+	track.texture = HudArt.tex("scroll_bar")
+	track.texture_margin_top = 12.0
+	track.texture_margin_bottom = 12.0
+	track.content_margin_left = 6.0
+	track.content_margin_right = 6.0
+	var grab := StyleBoxTexture.new()
+	grab.texture = HudArt.tex("scroll_handle")
+	grab.texture_margin_top = 10.0
+	grab.texture_margin_bottom = 10.0
+	var grab_lit := grab.duplicate() as StyleBoxTexture
+	grab_lit.modulate_color = Color(1.25, 1.15, 1.0)
+	for k in ["scroll", "scroll_focus"]:
+		t.set_stylebox(k, "VScrollBar", track)
+	t.set_stylebox("grabber", "VScrollBar", grab)
+	t.set_stylebox("grabber_highlight", "VScrollBar", grab_lit)
+	t.set_stylebox("grabber_pressed", "VScrollBar", grab_lit)
+	return t
 
 
 ## The pack's stone close button, for a window's header.

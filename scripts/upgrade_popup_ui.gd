@@ -20,7 +20,7 @@ var _replaces_lbl: Label
 var _timer_bar: ProgressBar
 
 var _hint_lbl: Label
-var _btn_dismiss: Button
+var _btn_dismiss: BaseButton
 
 var _current_item: ItemInstance = null
 var _current_pickup: LootPickup = null
@@ -109,8 +109,7 @@ func _build_ui() -> void:
 	_window.offset_top = 82
 	_window.offset_bottom = 228
 
-	var win_sb := _make_stylebox(Color(0.07, 0.06, 0.09, 0.94), Color(0.28, 0.85, 0.42), 2, 8)
-	win_sb.set_content_margin_all(10)
+	var win_sb := UIKit.window_box(14, Color(0.75, 1.0, 0.8))
 	_window.add_theme_stylebox_override("panel", win_sb)
 
 	var outer := VBoxContainer.new()
@@ -131,12 +130,8 @@ func _build_ui() -> void:
 	_title_lbl.add_theme_font_size_override("bold_font_size", 14)
 	header.add_child(_title_lbl)
 
-	_btn_dismiss = Button.new()
-	_btn_dismiss.text = "✕"
-	_btn_dismiss.custom_minimum_size = Vector2(26, 26)
-	_btn_dismiss.add_theme_font_size_override("font_size", 13)
-	var dis_sb := _make_stylebox(Color(0.18, 0.12, 0.12, 0.8), Color(0.55, 0.25, 0.25), 1, 4)
-	_btn_dismiss.add_theme_stylebox_override("normal", dis_sb)
+	_btn_dismiss = UIKit.close_button(0.75)
+	_btn_dismiss.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 	_btn_dismiss.pressed.connect(close)
 	header.add_child(_btn_dismiss)
 

@@ -62,14 +62,12 @@ func _build() -> void:
 	# LEFT: the character list
 	var left := PanelContainer.new()
 	left.custom_minimum_size = Vector2(400, 0)
-	var lsb := UIKit.window_box(10)
-	lsb.set_content_margin_all(10)
-	left.add_theme_stylebox_override("panel", lsb)
+	left.add_theme_stylebox_override("panel", UIKit.window_box(20, Color.WHITE, true))
 	cols.add_child(left)
 	var lbox := VBoxContainer.new()
 	lbox.add_theme_constant_override("separation", 8)
 	left.add_child(lbox)
-	lbox.add_child(UIKit.label("CHARACTERS", 18, UIKit.TEXT_DIM))
+	UIKit.window_header(lbox, "CHARACTERS", UIKit.GOLD, Callable(), 20)
 	var scroll := ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
@@ -82,9 +80,7 @@ func _build() -> void:
 	# RIGHT: the stage (the character standing there) and its info / the creation form
 	var right := PanelContainer.new()
 	right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	var rsb := UIKit.window_box(10, Color(1.0, 0.8, 0.8))
-	rsb.set_content_margin_all(14)
-	right.add_theme_stylebox_override("panel", rsb)
+	right.add_theme_stylebox_override("panel", UIKit.window_box(28, Color(1.0, 0.8, 0.8)))
 	cols.add_child(right)
 	var rrow := HBoxContainer.new()
 	rrow.add_theme_constant_override("separation", 16)
@@ -142,11 +138,12 @@ func _build_list() -> void:
 		var on: bool = not _creating and c.id == _selected
 		var b := Button.new()
 		b.custom_minimum_size = Vector2(0, 78)
-		b.add_theme_stylebox_override("normal", UIKit.box(
-			Color(0.24, 0.16, 0.09) if on else Color(0.11, 0.10, 0.13),
-			Color(0.95, 0.80, 0.40) if on else Color(0.32, 0.26, 0.20), 2 if on else 1, 8))
-		b.add_theme_stylebox_override("hover", b.get_theme_stylebox("normal"))
-		b.add_theme_stylebox_override("pressed", b.get_theme_stylebox("normal"))
+		# The picked character is lit stone; the rest are sunk into the panel
+		var face := UIKit.stone_box("menu_btn", Color(1.0, 0.85, 0.5)) if on else UIKit.inset_box(8)
+		b.add_theme_stylebox_override("normal", face)
+		b.add_theme_stylebox_override("hover", face)
+		b.add_theme_stylebox_override("pressed", face)
+		b.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 		var id: String = c.id
 		b.pressed.connect(func():
 			_selected = id
@@ -257,9 +254,7 @@ func _build_create() -> void:
 	_name_edit.custom_minimum_size = Vector2(0, 56)
 	_name_edit.add_theme_font_size_override("font_size", 22)
 	for st in [["normal", Color(0.55, 0.45, 0.30)], ["focus", Color(0.95, 0.80, 0.40)]]:
-		var sb := UIKit.box(Color(0.05, 0.04, 0.06), st[1], 2, 6)
-		sb.content_margin_left = 14
-		sb.content_margin_right = 14
+		var sb := UIKit.inset_box(14, Color.WHITE if st[0] == "normal" else Color(1.0, 0.85, 0.55))
 		_name_edit.add_theme_stylebox_override(st[0], sb)
 	_name_edit.text_submitted.connect(func(_t): _create())
 	_name_edit.text_changed.connect(func(_t): _name_error.text = "")

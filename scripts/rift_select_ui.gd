@@ -55,17 +55,14 @@ func _build() -> void:
 	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	var panel := PanelContainer.new()
 	panel.custom_minimum_size = Vector2(560, 0)
-	var sb := UIKit.window_box(18, Color(0.85, 0.65, 1.0))
-	sb.set_content_margin_all(18)
+	var sb := UIKit.window_box(22, Color(0.85, 0.65, 1.0), true)
 	panel.add_theme_stylebox_override("panel", sb)
 	center.add_child(panel)
 
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 12)
 	panel.add_child(v)
-	var title := UIKit.label("🌀 RIFT GATE", 26, Color(0.85, 0.6, 1.0))
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	v.add_child(title)
+	UIKit.window_header(v, "🌀 RIFT GATE", Color(0.88, 0.68, 1.0), close, 24)
 
 	var picker := HBoxContainer.new()
 	picker.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -88,15 +85,15 @@ func _build() -> void:
 	)
 	picker.add_child(_next)
 
+	var info_box := PanelContainer.new()
+	info_box.add_theme_stylebox_override("panel", UIKit.inset_box(14))
+	v.add_child(info_box)
 	_info = UIKit.rich("", 17)
-	v.add_child(_info)
+	info_box.add_child(_info)
 
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 10)
 	v.add_child(row)
-	var cancel := UIKit.button("Close", Color(0.18, 0.12, 0.14), Color(0.60, 0.30, 0.30), Vector2(140, 56), 19)
-	cancel.pressed.connect(close)
-	row.add_child(cancel)
 	var enter := UIKit.button("🌀 Enter Rift", Color(0.20, 0.10, 0.30), Color(0.85, 0.55, 1.0), Vector2(0, 56), 21)
 	enter.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	enter.pressed.connect(func():
