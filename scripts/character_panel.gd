@@ -1,7 +1,8 @@
 class_name CharacterPanel
 extends PanelContainer
-## Right half of the GameMenu: character header, equipment paperdoll, summary stats, the bag grid
-## and currencies. Everything is drag and drop:
+## Right half of the GameMenu, laid out like Path of Exile's inventory: the header, the equipment
+## paperdoll (each slot shaped like what it holds, the flasks in a row under the belt) and the bag
+## grid under it. Everything is drag and drop:
 ##   bag <-> bag (rearrange/swap), bag -> equipment slot (equip), equipment -> bag (unequip),
 ##   stash -> bag (take), anything -> the drop box at the bottom right (drop on the ground), and
 ##   anything the current left panel accepts (e.g. buying a ware).
@@ -10,24 +11,33 @@ extends PanelContainer
 ## shared stash (StashPanel), whose Currency tab is where orbs are used.
 
 ## One cell of the bag grid (Player.BAG_COLS x BAG_ROWS, gear spanning several).
-const GEAR_GRID_CELL := 46.0  # 10 x 6 cells fill the space under the paperdoll on a 720p-tall screen
-const GEAR_CELL := Vector2(50, 50)  # every equipment and flask slot: five flasks fit down the bag's side
-const FLASK_CELL := GEAR_CELL  # flask slots are the same size as every equipment slot
+const GEAR_GRID_CELL := 42.0  # 10 x 6 cells fit under the paperdoll on a 720p-tall screen
 const DROP_BOX_SIZE := Vector2(76, 76)  # the drop box, at the bottom right of the panel
-const LEFT_SLOTS := ["helmet", "chest", "gloves", "boots"]
-const RIGHT_SLOTS := ["amulet", "ring", "weapon", "offhand"]
+const DOLL_U := 36.0  # the paperdoll's unit: each slot is a whole number of these
+const DOLL_GAP := Vector2(32, 6)  # between slots across (so the doll is as wide as the bag) and down
+## Each slot's place on the paperdoll as [column, top, width, height]: the top in px, the rest in
+## units. Columns: 0 weapon and gloves, 1 ring, 2 helmet / body / belt, 3 amulet, 4 off hand and boots.
+const DOLL := {
+	"weapon": [0, 0.0, 2, 4],
+	"gloves": [0, 156.0, 2, 2],
+	"ring": [1, 114.0, 1, 1],
+	"helmet": [2, 0.0, 2, 2],
+	"chest": [2, 78.0, 2, 3],
+	"belt": [2, 192.0, 2, 1],
+	"amulet": [3, 36.0, 1, 1],
+	"offhand": [4, 0.0, 2, 4],
+	"boots": [4, 156.0, 2, 2],
+}
+const DOLL_COL_UNITS := [2, 1, 2, 1, 2]
+const FLASK_TOP := 234.0  # the flask row, under the belt
 
 var menu: GameMenu
 var player: Player
 
 var _level_lbl: Label
 var _class_lbl: Label
-var _left_col: VBoxContainer
-var _right_col: VBoxContainer
-var _summary: RichTextLabel
-var _flask_col: VBoxContainer  # the flask slots, down the left of the bag, under the armour slots
-var _portrait: SubViewportContainer
-var _rig: RigSprite
+var _doll: Control  # the equipment and flask slots, each placed at its spot (DOLL)
+var _set_row: HBoxContainer  # the weapon set switch, in the header
 var _bag_view: ItemGridView  # the bag, as a grid: all gear, flasks included
 
 
@@ -61,6 +71,9 @@ func _ready() -> void:
 	_class_lbl = UIKit.label("", 20, UIKit.GOLD)
 	_class_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	header.add_child(_class_lbl)
+	_set_row = HBoxContainer.new()
+	_set_row.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	header.add_child(_set_row)
 	var stats_btn := UIKit.button("📜 Stats", Color(0.16, 0.12, 0.10), Color(0.75, 0.58, 0.30), Vector2(100, 43), 16)
 	stats_btn.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	stats_btn.pressed.connect(func(): menu.toggle_stats())
@@ -69,64 +82,21 @@ func _ready() -> void:
 	close_btn.pressed.connect(func(): menu.close())
 	header.add_child(close_btn)
 
-	# Paperdoll: armour on the left, jewellery & weapon on the right, summary stats in the middle
-	var doll := HBoxContainer.new()
-	doll.add_theme_constant_override("separation", 10)
-	v.add_child(doll)
-	_left_col = VBoxContainer.new()
-	_left_col.add_theme_constant_override("separation", 6)
-	doll.add_child(_left_col)
-	var mid := PanelContainer.new()
-	mid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	var msb := UIKit.inset_box(10)
-	msb.set_content_margin_all(10)
-	mid.add_theme_stylebox_override("panel", msb)
-	doll.add_child(mid)
-	var mid_v := VBoxContainer.new()
-	mid_v.add_theme_constant_override("separation", 4)
-	mid.add_child(mid_v)
-
-	# Character figure wearing the current gear (an idle rig rendered in its own viewport)
-	_portrait = SubViewportContainer.new()
-	_portrait.stretch = true
-	_portrait.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	_portrait.custom_minimum_size = Vector2(160, 200)
-	_portrait.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	mid_v.add_child(_portrait)
-	var vp := SubViewport.new()
-	vp.transparent_bg = true
-	vp.disable_3d = true
-	_portrait.add_child(vp)
-	_rig = RigSprite.new()
-	_rig.base_scale = 0.42
-	_rig.weapon_from_gear = true
-	vp.add_child(_rig)
-	_rig.play_loop("Idle")
-	_portrait.resized.connect(func(): _rig.position = Vector2(_portrait.size.x * 0.5, _portrait.size.y * 0.97))
-
-	_summary = UIKit.rich("", 15)
-	_summary.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	mid_v.add_child(_summary)
-	_right_col = VBoxContainer.new()
-	_right_col.add_theme_constant_override("separation", 6)
-	doll.add_child(_right_col)
-
-	# The bag, with the flask slots down its left: under the left equipment column and the same
-	# size as every equipment slot
-	var bag_row := HBoxContainer.new()
-	bag_row.add_theme_constant_override("separation", 10)
-	v.add_child(bag_row)
-	_flask_col = VBoxContainer.new()
-	_flask_col.add_theme_constant_override("separation", 6)
-	_flask_col.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
-	bag_row.add_child(_flask_col)
+	# The paperdoll, centred, then the bag under it
+	_doll = Control.new()
+	_doll.custom_minimum_size = doll_size()
+	_doll.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	v.add_child(_doll)
+	var under := Control.new()
+	under.custom_minimum_size = Vector2(0, 6)
+	v.add_child(under)
 	_bag_view = ItemGridView.new(player.bag, GEAR_GRID_CELL, "bag")
-	_bag_view.size_flags_horizontal = Control.SIZE_EXPAND | Control.SIZE_SHRINK_CENTER  # centred in the rest
+	_bag_view.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	_bag_view.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 	_bag_view.can_accept_at = _bag_accepts
 	_bag_view.on_drop_at = _bag_dropped
 	_bag_view.item_clicked.connect(func(it: ItemInstance): menu.select(it))
-	bag_row.add_child(_bag_view)
+	v.add_child(_bag_view)
 
 	# The drop box, pinned to the panel's bottom-right corner over the scrolling content (a layer
 	# that lets every other touch through to what is under it)
@@ -172,38 +142,58 @@ func refresh() -> void:
 	_level_lbl.text = str(GameState.level)
 	_class_lbl.text = "%s   •   Level %d" % [player.class_def.display_name, GameState.level]
 
-	var s := player.stats
-	_summary.text = ("[center][color=#bdb6aa]Damage[/color] [color=#f3e6c4][b]%.0f[/b][/color]     " +
-		"[color=#bdb6aa]Armor[/color] [color=#f3e6c4][b]%d[/b][/color]     " +
-		"[color=#bdb6aa]Life[/color] [color=#f3e6c4][b]%d[/b][/color][/center]") % [
-		s.get_stat("damage"), int(s.get_stat("armor")), int(s.get_stat("max_life"))]
-	Player.dress_rig(_rig, player.equipment)
-
-	UIKit.clear(_left_col)
-	UIKit.clear(_right_col)
-	for slot in LEFT_SLOTS:
-		_left_col.add_child(_gear_cell(slot))
-	for slot in RIGHT_SLOTS:
-		if slot == "weapon":
-			_right_col.add_child(_set_toggle())
-		_right_col.add_child(_gear_cell(slot))
-	_left_col.add_child(_gear_cell("belt"))
-	UIKit.clear(_flask_col)
+	UIKit.clear(_set_row)
+	_set_row.add_child(_set_toggle())
+	UIKit.clear(_doll)
+	for slot in DOLL:
+		var r := doll_rect(slot)
+		var cell := _gear_cell(slot, r.size)
+		cell.position = r.position
+		_doll.add_child(cell)
 	for i in Player.FLASK_SLOTS:
-		_flask_col.add_child(_flask_cell(i))
+		var cell := _flask_cell(i)
+		cell.position = flask_rect(i).position
+		_doll.add_child(cell)
 
 	_bag_view.selected = menu.selected
 	_bag_view.refresh()
 
 
 
-func _gear_cell(slot: String) -> DragSlot:
+## The paperdoll's size: its five columns across, and down to the bottom of the flask row.
+static func doll_size() -> Vector2:
+	var units := 0
+	for u in DOLL_COL_UNITS:
+		units += u
+	return Vector2(units * DOLL_U + DOLL_GAP.x * (DOLL_COL_UNITS.size() - 1), FLASK_TOP + DOLL_U * 2.0)
+
+
+## Where equipment slot `slot` sits on the paperdoll.
+static func doll_rect(slot: String) -> Rect2:
+	var d: Array = DOLL[slot]
+	var x := 0.0
+	for c in int(d[0]):
+		x += DOLL_COL_UNITS[c] * DOLL_U + DOLL_GAP.x
+	# a one-unit-wide slot sits in its own column; a slot narrower than its column is centred in it
+	x += (DOLL_COL_UNITS[int(d[0])] - int(d[2])) * DOLL_U * 0.5
+	return Rect2(x, float(d[1]), int(d[2]) * DOLL_U, int(d[3]) * DOLL_U)
+
+
+## Flask slot i: the five in a row under the belt, centred on it.
+static func flask_rect(i: int) -> Rect2:
+	var belt := doll_rect("belt")
+	var row_w := Player.FLASK_SLOTS * DOLL_U + (Player.FLASK_SLOTS - 1) * DOLL_GAP.y
+	var x0 := belt.get_center().x - row_w * 0.5
+	return Rect2(x0 + i * (DOLL_U + DOLL_GAP.y), FLASK_TOP, DOLL_U, DOLL_U * 2.0)
+
+
+func _gear_cell(slot: String, cell_size: Vector2) -> DragSlot:
 	var it: ItemInstance = player.equipment.get(slot)
-	var cell := UIKit.item_cell(it, it != null and it == menu.selected, GEAR_CELL)
-	cell.size_flags_horizontal = Control.SIZE_SHRINK_CENTER  # never stretched by the column's width
+	var cell := UIKit.item_cell(it, it != null and it == menu.selected, cell_size)
 	if it == null:
-		cell.setup(null, Color(0.28, 0.24, 0.30), Color(0.09, 0.08, 0.11), 0,
-			UIKit.SLOT_NAMES.get(slot, slot), UIKit.SLOT_NAMES.get(slot, slot))  # name only: two lines at most, so it fits the slot
+		# A one-unit slot shows its icon; a bigger one its name
+		var cap: String = UIKit.SLOT_NAMES.get(slot, slot) if cell_size.x > DOLL_U else UIKit.SLOT_ICONS.get(slot, "")
+		cell.setup(null, Color(0.28, 0.24, 0.30), Color(0.09, 0.08, 0.11), 0, cap, UIKit.SLOT_NAMES.get(slot, slot))
 	else:
 		cell.payload = {"kind": "item", "from": "gear", "slot": slot, "item": it}
 		cell.clicked.connect(menu.select.bind(it))
@@ -261,8 +251,7 @@ func _flask_cell(i: int) -> DragSlot:
 	var it: ItemInstance = player.flasks[i]
 	var open := i < player.flask_slot_count()
 	var key: String = FlaskBar.KEYS[i]
-	var cell := UIKit.item_cell(it, it != null and it == menu.selected, FLASK_CELL)
-	cell.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	var cell := UIKit.item_cell(it, it != null and it == menu.selected, flask_rect(i).size)
 	if it == null:
 		cell.setup(null, Color(0.28, 0.24, 0.30), Color(0.09, 0.08, 0.11), 0,
 			("🧪\n%s" % key) if open else "🔒",
@@ -288,17 +277,15 @@ func _flask_cell(i: int) -> DragSlot:
 	return cell
 
 
-## "1 | 2" switch above the hand slots: shows which weapon set is active and swaps sets.
-## The hand slots always show (and equip into) the active set. Exactly as wide as a slot, so it
-## doesn't widen the column.
+## "I | II" switch in the header: shows which weapon set is active and swaps sets.
+## The hand slots always show (and equip into) the active set.
 func _set_toggle() -> HBoxContainer:
 	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 2)
-	row.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	row.add_theme_constant_override("separation", 3)
 	for i in 2:
 		var active := player.active_set == i
-		var b := UIKit.button(str(i + 1), Color(0.24, 0.18, 0.10) if active else Color(0.11, 0.10, 0.13),
-			Color(0.95, 0.82, 0.40) if active else Color(0.35, 0.28, 0.20), Vector2((GEAR_CELL.x - 2) / 2, 26), 14)
+		var b := UIKit.button(["I", "II"][i], Color(0.24, 0.18, 0.10) if active else Color(0.11, 0.10, 0.13),
+			Color(0.95, 0.82, 0.40) if active else Color(0.35, 0.28, 0.20), Vector2(40, 40), 16)
 		var alt_names := []
 		for s in player.alt_set:
 			alt_names.append(player.alt_set[s].display_name)
