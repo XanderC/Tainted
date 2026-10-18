@@ -114,11 +114,10 @@ func _notification(what: int) -> void:
 
 
 func _draw() -> void:
-	draw_rect(Rect2(Vector2.ZERO, custom_minimum_size), BOARD)
-	for x in grid.cols + 1:
-		draw_line(Vector2(x * cell, 0), Vector2(x * cell, grid.rows * cell), LINE, 1.0)
-	for y in grid.rows + 1:
-		draw_line(Vector2(0, y * cell), Vector2(grid.cols * cell, y * cell), LINE, 1.0)
+	var slot := HudArt.tex("slot_bg")
+	for y in grid.rows:
+		for x in grid.cols:
+			draw_texture_rect(slot, Rect2(x * cell, y * cell, cell, cell), false)
 
 
 func _draw_hover() -> void:

@@ -295,7 +295,7 @@ func _build() -> void:
 
 	_stats_popup = PanelContainer.new()
 	_stats_popup.visible = false
-	var psb := UIKit.box(Color(0.06, 0.05, 0.08, 0.99), Color(0.55, 0.42, 0.25), 2, 8)
+	var psb := UIKit.window_box(12)
 	psb.set_content_margin_all(12)
 	_stats_popup.add_theme_stylebox_override("panel", psb)
 	_left_frame.add_child(_stats_popup)

@@ -131,14 +131,23 @@ static func window_box(content := 10.0, tint := Color.WHITE) -> StyleBoxTexture:
 	return s
 
 
+## A recessed dark panel (the pack's inner container), for cards and sections inside a window.
+static func inset_box(content := 10.0, tint := Color.WHITE) -> StyleBoxTexture:
+	var s := StyleBoxTexture.new()
+	s.texture = HudArt.tex("panel_inset")
+	s.set_texture_margin_all(8.0)  # small, so a one-line banner keeps its corners
+	s.set_content_margin_all(content)
+	s.modulate_color = tint
+	return s
+
+
 ## A bordered section with a title; returns the inner VBox to fill.
 static func section(parent: Control, title: String, expand := false) -> VBoxContainer:
 	var p := PanelContainer.new()
 	p.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	if expand:
 		p.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	var sb := box(Color(0.06, 0.05, 0.08, 0.95), Color(0.32, 0.26, 0.18), 1, 8)
-	sb.set_content_margin_all(10)
+	var sb := inset_box(10)
 	p.add_theme_stylebox_override("panel", sb)
 	parent.add_child(p)
 	var v := VBoxContainer.new()
@@ -209,8 +218,7 @@ static func stat_arrow(stat: String, deltas: Dictionary) -> String:
 static func item_card(parent: Node, item: ItemInstance, compact := false, deltas := {}) -> void:
 	var rar_col: Color = ItemInstance.RARITY_COLORS[item.rarity]
 	var hdr := PanelContainer.new()
-	var hdr_sb := box(rar_col.darkened(0.75), rar_col, 1, 6)
-	hdr_sb.set_content_margin_all(8)
+	var hdr_sb := inset_box(8, Color(1, 1, 1).lerp(rar_col, 0.55))
 	hdr.add_theme_stylebox_override("panel", hdr_sb)
 	parent.add_child(hdr)
 	var hv := VBoxContainer.new()

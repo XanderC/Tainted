@@ -26,15 +26,18 @@ var _count: Label
 var _caption: Label
 var _bg := Color(0.09, 0.08, 0.12)
 var _border := Color(0.22, 0.20, 0.27)
-var _style: StyleBoxFlat
+var _style: StyleBoxTexture
+var _rim_style: StyleBoxFlat
+var _rim: Panel  # the coloured outline over the icon: rarity, selection, drop feedback
 var _icon_tex: Texture2D = null
 
 
 func _init(slot_size := Vector2(60, 60)) -> void:
 	custom_minimum_size = slot_size
 	mouse_filter = Control.MOUSE_FILTER_STOP
-	_style = StyleBoxFlat.new()
-	_style.set_corner_radius_all(6)
+	_style = StyleBoxTexture.new()
+	_style.texture = HudArt.tex("slot_bg")
+	_style.set_texture_margin_all(8.0)
 	_style.set_content_margin_all(3)
 	add_theme_stylebox_override("panel", _style)
 
@@ -63,6 +66,14 @@ func _init(slot_size := Vector2(60, 60)) -> void:
 	_count.visible = false
 	add_child(_count)
 
+	_rim_style = StyleBoxFlat.new()
+	_rim_style.draw_center = false
+	_rim_style.set_corner_radius_all(3)
+	_rim = Panel.new()
+	_rim.add_theme_stylebox_override("panel", _rim_style)
+	_rim.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_rim)
+
 	_apply_style(_border)
 
 
@@ -84,9 +95,10 @@ func setup(icon: Texture2D, border: Color, bg: Color = Color(0.09, 0.08, 0.12),
 
 
 func _apply_style(border: Color) -> void:
-	_style.bg_color = _bg
-	_style.border_color = border
-	_style.set_border_width_all(2 if _icon_tex != null else 1)
+	# The slot art, warmed a little towards the item's colour; the outline shows for an item or for feedback
+	_style.modulate_color = Color.WHITE.lerp(_bg.lightened(0.6), 0.3) if _icon_tex != null else Color.WHITE
+	_rim_style.border_color = border
+	_rim_style.set_border_width_all(2 if _icon_tex != null or border != _border else 1)
 
 
 # ---------- drag and drop ----------

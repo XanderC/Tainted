@@ -37,8 +37,7 @@ func refresh() -> void:
 	if not worn_now and not it.is_flask() and it.identified:
 		if player.is_better_in_slot(it):
 			var up := PanelContainer.new()
-			var usb := UIKit.box(Color(0.10, 0.22, 0.14, 0.95), Color(0.35, 1.0, 0.50), 1, 6)
-			usb.set_content_margin_all(8)
+			var usb := UIKit.inset_box(8, Color(0.6, 1.0, 0.7))
 			up.add_theme_stylebox_override("panel", usb)
 			var ul := UIKit.label("🔺 BETTER IN SLOT UPGRADE!", 14, Color(0.40, 1.0, 0.60))
 			ul.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER

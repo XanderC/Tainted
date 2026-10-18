@@ -76,7 +76,7 @@ func _ready() -> void:
 	doll.add_child(_left_col)
 	var mid := PanelContainer.new()
 	mid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	var msb := UIKit.box(Color(0.10, 0.07, 0.08, 0.9), Color(0.30, 0.22, 0.16), 1, 8)
+	var msb := UIKit.inset_box(10)
 	msb.set_content_margin_all(10)
 	mid.add_theme_stylebox_override("panel", msb)
 	doll.add_child(mid)

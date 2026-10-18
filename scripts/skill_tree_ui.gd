@@ -121,7 +121,7 @@ func _build_ui() -> void:
 	var tree_panel := PanelContainer.new()
 	tree_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	tree_panel.size_flags_stretch_ratio = 1.4
-	var tp_sb := UIKit.box(Color(0.08, 0.05, 0.07, 0.95), Color(0.35, 0.28, 0.22), 2, 8)
+	var tp_sb := UIKit.inset_box(8)
 	tp_sb.set_content_margin_all(8)
 	tree_panel.add_theme_stylebox_override("panel", tp_sb)
 	workspace.add_child(tree_panel)
@@ -151,7 +151,7 @@ func _build_ui() -> void:
 
 	var detail := PanelContainer.new()
 	detail.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	var dt_sb := UIKit.box(Color(0.09, 0.08, 0.11, 0.98), Color(0.55, 0.25, 0.20), 2, 8)
+	var dt_sb := UIKit.inset_box(12, Color(1.0, 0.85, 0.85))
 	dt_sb.set_content_margin_all(12)
 	detail.add_theme_stylebox_override("panel", dt_sb)
 	workspace.add_child(detail)

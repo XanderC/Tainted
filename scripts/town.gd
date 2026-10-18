@@ -135,7 +135,7 @@ func _show_hub_intro() -> void:
 	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	layer.add_child(center)
 	var panel := PanelContainer.new()
-	var sb := UIKit.box(Color(0.06, 0.05, 0.08, 0.96), Color(0.95, 0.80, 0.40), 2, 12)
+	var sb := UIKit.window_box(18)
 	sb.set_content_margin_all(18)
 	panel.add_theme_stylebox_override("panel", sb)
 	center.add_child(panel)
