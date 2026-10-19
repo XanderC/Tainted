@@ -59,6 +59,13 @@ have a clear line through the maze; their arrows stop at walls. They are drawn o
 which any skin with a bow uses automatically; it shoots where the sword rig slashes, so archer
 classes can reuse the same animation calls later.
 
+### Weapons
+51 weapon and shield bases in tiers (`LootGenerator.WEAPON_BASES`): one- and two-handed swords and
+sabres, axes and maces, spears (two-handed, usable by the Warrior), daggers, staves and shields, each
+with a drop level so better bases appear in deeper rifts and later zones. Their art, in the hand and
+in the bag, comes from the CraftPix weapon packs via `tools/import_weapons.py` (base id -> pack
+design and grade).
+
 ### Inventory
 Tap **Bag** (top right) or press **I**. The game pauses while it's open.
 - Laid out like Path of Exile's: the equipment paperdoll on top, each slot shaped like what it holds

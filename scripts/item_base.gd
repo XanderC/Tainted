@@ -5,7 +5,7 @@ extends Resource
 @export var id: String = ""
 @export var display_name: String = ""
 @export_enum("weapon", "offhand", "helmet", "chest", "gloves", "boots", "ring", "amulet", "belt", "flask") var slot: String = "weapon"
-## Weapons and shields: "sword", "axe", "mace", "dagger", "staff", "bow", "shield". "" for armour.
+## Weapons and shields: "sword", "axe", "mace", "spear", "dagger", "staff", "bow", "shield". "" for armour.
 ## Each class lists the types it may use (ClassDef.weapon_types).
 @export var weapon_type: String = ""
 @export var two_handed: bool = false
@@ -18,8 +18,10 @@ extends Resource
 ## Cells it takes in the bag and stash (columns x rows). Zero means the usual size for its kind,
 ## from bag_size().
 @export var grid_size := Vector2i.ZERO
-## How often it drops, against other bases (100 = usual).
+## How often it drops, against other bases (100 = usual; 0 = never).
 @export var weight := 100
+## The lowest item level it drops at (a little grace below it); 1 = from the start.
+@export var drop_level := 1
 ## Belts: how many flask slots wearing it opens (Player.FLASK_SLOTS at most).
 @export var flask_slots := 0
 ## Flasks: what drinking it does. Keys:
@@ -35,7 +37,7 @@ extends Resource
 
 const TYPE_NAMES := {
 	"sword": "Sword", "axe": "Axe", "mace": "Mace", "dagger": "Dagger",
-	"staff": "Staff", "bow": "Bow", "shield": "Shield",
+	"staff": "Staff", "bow": "Bow", "shield": "Shield", "spear": "Spear",
 }
 
 
@@ -44,7 +46,7 @@ const TYPE_NAMES := {
 const WEAPON_SIZES := {
 	"dagger": Vector2i(1, 2),
 	"sword": Vector2i(1, 3), "axe": Vector2i(1, 3), "mace": Vector2i(1, 3),
-	"staff": Vector2i(1, 4), "bow": Vector2i(2, 3),
+	"staff": Vector2i(1, 4), "bow": Vector2i(2, 3), "spear": Vector2i(1, 4),
 	"shield": Vector2i(2, 2),
 }
 const TWO_HANDED_SIZES := {

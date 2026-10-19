@@ -64,22 +64,93 @@ func _affix(id: String, text: String, stat: String, type: int, lo: float, hi: fl
 	affixes.append(a)
 
 
+## [id, name, weapon type, two-handed, drop level, implicit (damage, or armour for shields), colour]
+const WEAPON_BASES := [
+	# One-handed swords and sabres
+	["rusty_sword", "Rusty Sword", "sword", false, 1, 5, Color(0.7, 0.7, 0.75)],
+	["copper_sword", "Copper Sword", "sword", false, 5, 8, Color(0.8, 0.55, 0.35)],
+	["sabre", "Sabre", "sword", false, 9, 11, Color(0.8, 0.8, 0.85)],
+	["broad_sword", "Broad Sword", "sword", false, 14, 14, Color(0.75, 0.75, 0.8)],
+	["cutlass", "Cutlass", "sword", false, 19, 17, Color(0.7, 0.72, 0.8)],
+	["war_sword", "War Sword", "sword", false, 25, 21, Color(0.78, 0.78, 0.85)],
+	["corsair_sabre", "Corsair Sabre", "sword", false, 32, 25, Color(0.75, 0.7, 0.9)],
+	["eternal_sword", "Eternal Sword", "sword", false, 40, 30, Color(0.8, 0.75, 0.95)],
+	# Two-handed swords
+	["greatsword", "Greatsword", "sword", true, 3, 13, Color(0.78, 0.78, 0.85)],
+	["bastard_sword", "Bastard Sword", "sword", true, 12, 22, Color(0.75, 0.8, 0.85)],
+	["executioner_blade", "Executioner Blade", "sword", true, 24, 34, Color(0.8, 0.8, 0.85)],
+	["reaver_blade", "Reaver Blade", "sword", true, 38, 48, Color(0.7, 0.85, 0.85)],
+	# One-handed axes
+	["hand_axe", "Hand Axe", "axe", false, 1, 6, Color(0.62, 0.55, 0.48)],
+	["tomahawk", "Tomahawk", "axe", false, 7, 10, Color(0.65, 0.6, 0.55)],
+	["boarding_axe", "Boarding Axe", "axe", false, 15, 15, Color(0.6, 0.58, 0.55)],
+	["jade_hatchet", "Jade Hatchet", "axe", false, 26, 22, Color(0.55, 0.75, 0.6)],
+	["runic_hatchet", "Runic Hatchet", "axe", false, 38, 30, Color(0.7, 0.6, 0.85)],
+	# Two-handed axes
+	["battle_axe", "Battle Axe", "axe", true, 3, 14, Color(0.6, 0.55, 0.5)],
+	["double_axe", "Double Axe", "axe", true, 12, 24, Color(0.65, 0.62, 0.6)],
+	["poleaxe", "Poleaxe", "axe", true, 22, 34, Color(0.6, 0.7, 0.75)],
+	["labrys", "Labrys", "axe", true, 34, 46, Color(0.7, 0.62, 0.85)],
+	["despot_axe", "Despot Axe", "axe", true, 46, 58, Color(0.65, 0.6, 0.9)],
+	# One-handed maces
+	["iron_mace", "Iron Mace", "mace", false, 1, 6, Color(0.55, 0.55, 0.6)],
+	["spiked_club", "Spiked Club", "mace", false, 7, 10, Color(0.6, 0.5, 0.4)],
+	["flanged_mace", "Flanged Mace", "mace", false, 15, 15, Color(0.6, 0.6, 0.65)],
+	["morning_star", "Morning Star", "mace", false, 26, 22, Color(0.6, 0.6, 0.7)],
+	["dragon_mace", "Dragon Mace", "mace", false, 38, 30, Color(0.75, 0.55, 0.6)],
+	# Two-handed maces
+	["war_maul", "War Maul", "mace", true, 3, 15, Color(0.5, 0.48, 0.5)],
+	["great_club", "Great Club", "mace", true, 12, 25, Color(0.55, 0.45, 0.4)],
+	["spiked_maul", "Spiked Maul", "mace", true, 24, 36, Color(0.6, 0.6, 0.62)],
+	["colossus_mallet", "Colossus Mallet", "mace", true, 38, 50, Color(0.75, 0.65, 0.7)],
+	# Spears (two-handed)
+	["wooden_spear", "Wooden Spear", "spear", true, 2, 12, Color(0.6, 0.45, 0.3)],
+	["hunting_spear", "Hunting Spear", "spear", true, 10, 20, Color(0.65, 0.6, 0.55)],
+	["harpoon", "Harpoon", "spear", true, 18, 28, Color(0.65, 0.65, 0.7)],
+	["war_spear", "War Spear", "spear", true, 28, 38, Color(0.7, 0.68, 0.75)],
+	["dragon_spear", "Dragon Spear", "spear", true, 40, 50, Color(0.75, 0.62, 0.85)],
+	# Daggers
+	["dagger", "Dagger", "dagger", false, 1, 4, Color(0.75, 0.75, 0.8)],
+	["kris", "Kris", "dagger", false, 10, 9, Color(0.75, 0.7, 0.65)],
+	["stiletto", "Stiletto", "dagger", false, 20, 14, Color(0.8, 0.8, 0.85)],
+	["skean", "Skean", "dagger", false, 32, 20, Color(0.75, 0.65, 0.9)],
+	# Staves (two-handed)
+	["oak_staff", "Oak Staff", "staff", true, 1, 10, Color(0.55, 0.40, 0.25)],
+	["quarterstaff", "Quarterstaff", "staff", true, 10, 18, Color(0.6, 0.45, 0.3)],
+	["serpent_staff", "Serpent Staff", "staff", true, 20, 27, Color(0.5, 0.65, 0.45)],
+	["crystal_staff", "Crystal Staff", "staff", true, 32, 38, Color(0.55, 0.8, 0.9)],
+	["void_staff", "Void Staff", "staff", true, 44, 50, Color(0.6, 0.5, 0.85)],
+	# Bows (no art or class yet)
+	["hunting_bow", "Hunting Bow", "bow", true, 1, 9, Color(0.60, 0.45, 0.30)],
+	# Shields
+	["wooden_shield", "Wooden Shield", "shield", false, 1, 12, Color(0.55, 0.40, 0.25)],
+	["buckler", "Buckler", "shield", false, 6, 16, Color(0.6, 0.5, 0.4)],
+	["kite_shield", "Kite Shield", "shield", false, 12, 22, Color(0.65, 0.6, 0.6)],
+	["tower_shield", "Tower Shield", "shield", false, 16, 26, Color(0.60, 0.62, 0.68)],
+	["heater_shield", "Heater Shield", "shield", false, 22, 34, Color(0.65, 0.6, 0.55)],
+	["spiked_shield", "Spiked Round Shield", "shield", false, 30, 42, Color(0.6, 0.62, 0.7)],
+	["gilded_aegis", "Gilded Aegis", "shield", false, 40, 52, Color(0.85, 0.75, 0.4)],
+]
+
+
+func _base_index(id: String) -> int:
+	for i in bases.size():
+		if bases[i].id == id:
+			return i
+	return -1
+
+
 func _build_bases() -> void:
-	# One-handed weapons (main hand, or off hand for classes that dual wield)
-	_base("rusty_sword", "Rusty Sword", "weapon", Color(0.7, 0.7, 0.75), "damage", 5, "sword")
-	_base("hand_axe", "Hand Axe", "weapon", Color(0.62, 0.55, 0.48), "damage", 6, "axe")
-	_base("iron_mace", "Iron Mace", "weapon", Color(0.55, 0.55, 0.6), "damage", 6, "mace")
-	_base("dagger", "Dagger", "weapon", Color(0.75, 0.75, 0.8), "damage", 4, "dagger")
-	# Two-handed weapons: stronger than one one-hander, close to two of them
-	_base("battle_axe", "Battle Axe", "weapon", Color(0.6, 0.55, 0.5), "damage", 14, "axe", true)
-	_base("greatsword", "Greatsword", "weapon", Color(0.78, 0.78, 0.85), "damage", 13, "sword", true)
-	_base("war_maul", "War Maul", "weapon", Color(0.5, 0.48, 0.5), "damage", 15, "mace", true)
-	_base("oak_staff", "Oak Staff", "weapon", Color(0.55, 0.40, 0.25), "damage", 10, "staff", true)
-	_base("hunting_bow", "Hunting Bow", "weapon", Color(0.60, 0.45, 0.30), "damage", 9, "bow", true)
-	# Shields (off hand)
-	_base("wooden_shield", "Wooden Shield", "offhand", Color(0.55, 0.40, 0.25), "armor", 12, "shield")
-	_base("tower_shield", "Tower Shield", "offhand", Color(0.60, 0.62, 0.68), "armor", 22, "shield")
-	bases[-1].grid_size = Vector2i(2, 3)  # a tall shield takes a tall space
+	# Weapons and shields: tiers of each type, Path of Exile style. A base starts dropping at its
+	# drop level (and a little before), so deeper rifts and later zones bring better ones. Art (in
+	# hand and in the bag) comes from the CraftPix weapon packs via tools/import_weapons.py.
+	for w in WEAPON_BASES:
+		var two: bool = w[3]
+		_base(w[0], w[1], "offhand" if w[2] == "shield" else "weapon", w[6], "armor" if w[2] == "shield" else "damage",
+			w[5], w[2], two)
+		bases[-1].drop_level = w[4]
+	bases[_base_index("hunting_bow")].weight = 0  # no bow art or bow class yet
+	bases[_base_index("tower_shield")].grid_size = Vector2i(2, 3)  # a tall shield takes a tall space
 	_base("leather_cap", "Leather Cap", "helmet", Color(0.55, 0.4, 0.25), "armor", 5)
 	_base("iron_helm", "Iron Helm", "helmet", Color(0.6, 0.6, 0.65), "armor", 10)
 	_base("padded_vest", "Padded Vest", "chest", Color(0.5, 0.4, 0.3), "armor", 10)
@@ -188,7 +259,10 @@ func roll_item(ilvl: int = 1, forced_rarity: int = -1, slot: String = "") -> Ite
 			if u != null:
 				return u
 	var item := ItemInstance.new()
-	var pool := bases.filter(func(b): return slot == "" or b.slot == slot)
+	# Bases not yet reachable at this item level (a few levels' grace), and bases switched off, don't drop
+	var pool := bases.filter(func(b): return (slot == "" or b.slot == slot) and b.weight > 0 and b.drop_level <= ilvl + 2)
+	if pool.is_empty():
+		pool = bases.filter(func(b): return slot == "" or b.slot == slot)
 	if smart_class != null and randf() < SMART_LOOT_CHANCE:
 		var usable := pool.filter(func(b): return b.weapon_type == "" or smart_class.weapon_types.has(b.weapon_type))
 		if not usable.is_empty():

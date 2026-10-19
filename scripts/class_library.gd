@@ -45,7 +45,7 @@ static func warrior() -> ClassDef:
 		"life_regen": 1.5,
 	}
 	# Swords, axes and maces: one-handed + shield, two one-handers, or one two-hander
-	c.weapon_types = ["sword", "axe", "mace", "shield"]
+	c.weapon_types = ["sword", "axe", "mace", "spear", "shield"]
 	c.dual_wield = true
 	# Adrenaline: starts empty, built by generator attacks, slowly drains away
 	c.power_name = "Adrenaline"
