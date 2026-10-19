@@ -57,7 +57,9 @@ static func icon(id: String) -> Texture2D:
 	var g := info(id)
 	if g.is_empty():
 		return null
-	return IconFactory.gem_icon(id, g.color, g.tier)
+	# Its painted gem (assets/icons/gems/<type>_<tier>.png, tools/import_gems_runes.py), or a drawn one
+	var path := "res://assets/icons/gems/%s.png" % id
+	return load(path) if ResourceLoader.exists(path) else IconFactory.gem_icon(id, g.color, g.tier)
 
 
 ## Every gem id, ordered by type then tier, then the runes in ladder order (used for pouch ordering).

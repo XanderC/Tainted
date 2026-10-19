@@ -151,9 +151,13 @@ static func info(id: String, slot: String = "") -> Dictionary:
 	}
 
 
+## Its painted stone (assets/icons/runes/<rank>.png, tools/import_gems_runes.py), or a drawn one.
 static func icon(id: String) -> Texture2D:
 	var rank := rank_of(id)
-	return IconFactory.socket_rune_icon(id, color_of(rank)) if rank > 0 else null
+	if rank <= 0:
+		return null
+	var path := "res://assets/icons/runes/%d.png" % rank
+	return load(path) if ResourceLoader.exists(path) else IconFactory.socket_rune_icon(id, color_of(rank))
 
 
 # ---------- combining (Jeweler) ----------
