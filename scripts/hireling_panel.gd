@@ -47,36 +47,36 @@ func refresh() -> void:
 		_add_pool(row)
 
 
-## The one row over the page: back to where you were, and the swap between its gear and its stats.
+## The one row over the page: the swap between its gear and its stats, centred (the window's own
+## close button closes both halves). Space below it keeps the page clear of the title band.
 func _add_bar() -> void:
 	var bar := HBoxContainer.new()
-	bar.add_theme_constant_override("separation", 8)
+	bar.alignment = BoxContainer.ALIGNMENT_CENTER
+	bar.add_theme_constant_override("separation", 12)
+	bar.custom_minimum_size = Vector2(0, 44)
 	add_child(bar)
-	var back := UIKit.button("⬅ Back", Color(0.14, 0.11, 0.10), Color(0.70, 0.55, 0.35), Vector2(100, 40), 15)
-	back.pressed.connect(func(): menu.back())
-	bar.add_child(back)
-	var who := UIKit.label("", 15, UIKit.GOLD)
-	who.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	who.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	who.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	if Hirelings.has() and not Hirelings.alive():
-		who.text = "☠ %s has fallen: revive at Captain Rourke" % String(GameState.hireling.get("name", ""))
-		who.add_theme_color_override("font_color", Color(0.95, 0.45, 0.40))
-	bar.add_child(who)
-	if not Hirelings.has():
-		return
-	var pts := Hirelings.attr_points()
-	var label := "🛡 Gear" if _stats_mode else ("📜 Stats +%d" % pts if pts > 0 else "📜 Stats")
-	var swap := UIKit.button(label, Color(0.16, 0.12, 0.10), Color(0.75, 0.58, 0.30), Vector2(130, 40), 15)
-	if pts > 0 and not _stats_mode:
-		swap.add_theme_color_override("font_color", Color(1.0, 0.85, 0.35))
-	swap.tooltip_text = "Its gear and skills" if _stats_mode else "Its level, stats and attributes"
-	swap.pressed.connect(func():
-		_stats_mode = not _stats_mode
-		if _item_tip != null and is_instance_valid(_item_tip):
-			_item_tip.close()
-		refresh())
-	bar.add_child(swap)
+		var who := UIKit.label("☠ %s has fallen: revive at Captain Rourke" % String(GameState.hireling.get("name", "")),
+			15, Color(0.95, 0.45, 0.40))
+		who.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		bar.add_child(who)
+	if Hirelings.has():
+		var pts := Hirelings.attr_points()
+		var label := "🛡 Gear" if _stats_mode else ("📜 Stats +%d" % pts if pts > 0 else "📜 Stats")
+		var swap := UIKit.button(label, Color(0.16, 0.12, 0.10), Color(0.75, 0.58, 0.30), Vector2(150, 40), 15)
+		if pts > 0 and not _stats_mode:
+			swap.add_theme_color_override("font_color", Color(1.0, 0.85, 0.35))
+		swap.tooltip_text = "Its gear and skills" if _stats_mode else "Its level, stats and attributes"
+		swap.pressed.connect(func():
+			_stats_mode = not _stats_mode
+			if _item_tip != null and is_instance_valid(_item_tip):
+				_item_tip.close()
+			refresh())
+		bar.add_child(swap)
+	var gap := Control.new()
+	gap.custom_minimum_size = Vector2(0, 14)
+	gap.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(gap)
 
 
 ## Its stats page: who it is, its level and experience, its combat stats, and its attributes with a
