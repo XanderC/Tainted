@@ -133,10 +133,52 @@ func _ready() -> void:
 	check(e.hp < hp0, "it attacked the enemy (%.0f -> %.0f)" % [hp0, e.hp])
 	check(e._foe == h, "the enemy went for the nearer hireling")
 	h.global_position = p.global_position + Vector2(700, 0)  # well behind you
-	e._foe_t = 0.0
-	await get_tree().physics_frame
-	check(e._foe == p, "and for you when you are nearer")
+	check(e._pick_foe() == p, "and for you when you are nearer")
 	e.queue_free()
+
+	# Its own flasks: it drinks them itself
+	h = Hirelings.node
+	var power := item("small_power_flask")
+	var life_f := item("small_life_flask")
+	var granite := item("granite_flask")
+	for it in [power, life_f, granite]:
+		p.bag.add(it)
+	check(Hirelings.flask_block_reason(power) != "", "no power flasks: it has no Adrenaline")
+	check(not Hirelings.equip_flask_from_bag(p, power, 0), "so one won't go in its slot")
+	check(Hirelings.equip_flask_from_bag(p, life_f, 0), "a life flask goes in its first slot")
+	check(Hirelings.equip_flask_from_bag(p, granite, 1), "a Granite Flask in its second")
+	check(not p.bag.has(life_f) and not p.bag.has(granite), "both left your bag")
+	var max_life := h.stats.get_stat("max_life")
+	h.hp = max_life * 0.8
+	await get_tree().physics_frame
+	check(h.flask_cooldown_fraction(0) == 0.0, "it doesn't drink while above half life")
+	h.hp = max_life * 0.3
+	await get_tree().physics_frame
+	check(h.flask_cooldown_fraction(0) > 0.0, "below half it drinks its life flask")
+	for i in 120:
+		await get_tree().physics_frame
+	check(h.hp > max_life * 0.4, "and heals (%.0f of %.0f)" % [h.hp, max_life])
+	var e2 := Enemy.new()
+	e2.target = p
+	e2.max_hp = 30000.0
+	e2.touch_damage = 0.0
+	e2.position = h.global_position + Vector2(120, 0)
+	p.global_position = e2.position + Vector2(200, 0)
+	town.add_child(e2)
+	var armor_before := h.stats.get_stat("armor")
+	for i in 5:
+		await get_tree().physics_frame
+	check(h.flask_cooldown_fraction(1) > 0.0, "fighting, it drinks its utility flask")
+	check(h.stats.get_stat("armor") > armor_before, "and gets its armour (%.0f -> %.0f)" % [armor_before, h.stats.get_stat("armor")])
+	e2.queue_free()
+	# Your own flasks are yours alone
+	p.flasks[0] = item("small_life_flask")
+	h.hp = max_life * 0.2
+	var hp_before := h.hp
+	p.use_flask(0)
+	check(absf(h.hp - hp_before) < max_life * 0.05, "your life flask doesn't heal it")
+	var saved_f := GameState._hireling_save()
+	check((saved_f.flasks as Array)[0] != null and (saved_f.flasks as Array)[1] != null, "its flasks are saved")
 
 	# Falling, then revived
 	h = Hirelings.node
@@ -157,10 +199,13 @@ func _ready() -> void:
 	# A new hire: the old one's gear and supports come back
 	Hirelings.socket_support(1, 0, "rune_vampiric")
 	var shield_now: ItemInstance = GameState.hireling_gear.get("offhand")
+	life_f = Hirelings.flask(0)  # loading made new items of them
 	var other: Dictionary = Hirelings.candidates("scout")[0]
 	check(Hirelings.hire(p, other), "hire a Scout instead")
 	check(Hirelings.type_id() == "scout", "only one hireling: now the Scout")
 	check(p.bag.has(shield_now) or GameState.stash.has(shield_now), "the Sellsword's shield came back")
+	check(p.bag.has(life_f) or GameState.stash.has(life_f), "and its flasks")
+	check(Hirelings.flask(0) == null and Hirelings.flask(1) == null, "the new one starts without flasks")
 	check(GameState.rune_count("rune_vampiric") == 1, "and its support went back to the pool")
 
 	print("test_hirelings: %d checks, %d failed" % [_checks, _fails])

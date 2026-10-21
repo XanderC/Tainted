@@ -4,7 +4,10 @@ extends CharacterBody2D
 ## goes after enemies near you, and fights with its skill gems and their linked supports: melee
 ## types swing, strike and shout, archers keep their distance and shoot. Enemies attack it as well
 ## as you (Enemy picks the nearer). Its stats are its type's at its level plus the gear it wears.
-## When it falls it stays down: the Captain in Ashfall revives it.
+## It drinks from its own two flasks (Hirelings.flask): a life flask when below half life, a
+## utility flask as soon as it is fighting. When it falls it stays down: the Captain revives it.
+
+const FLASK_LIFE_BELOW := 0.5  ## drinks a life flask below this share of its life
 
 const FOLLOW_DIST := 110.0
 const LEASH := 520.0       ## goes after enemies this close to you
@@ -35,6 +38,10 @@ var _swing := {}           # {dir, radius, arc, color} for the drawn arc
 var _ring_t := 0.0
 var _ring := {}            # {radius, color}
 var _warped := false
+var _flask_cd: Array[float] = [0.0, 0.0]
+var _flask_cd_max: Array[float] = [1.0, 1.0]
+## Flasks in effect: {slot, t, life_rate, source, mods: [[stat, mod, value]]}
+var _flask_fx: Array[Dictionary] = []
 
 
 func _ready() -> void:
@@ -68,6 +75,9 @@ func refresh() -> void:
 	stats = Hirelings.build_stats()
 	for src in _buffs:
 		_apply_buff(String(src))
+	for fx in _flask_fx:
+		for m in fx.mods:
+			stats.add_mod(String(m[0]), int(m[1]), float(m[2]), fx.source)
 	hp = clampf(stats.get_stat("max_life") * frac, 1.0, stats.get_stat("max_life"))
 	_ranged = bool(Hirelings.type_def().get("ranged", false))
 	skills.clear()
@@ -115,7 +125,7 @@ func thorns() -> float:
 	return 0.0
 
 
-## A share of its life back (your life flasks reach it too).
+## A share of its life back.
 func heal_fraction(f: float) -> void:
 	if not dead:
 		hp = minf(hp + stats.get_stat("max_life") * f, stats.get_stat("max_life"))
@@ -158,6 +168,7 @@ func _physics_process(delta: float) -> void:
 	var foe: Enemy = null
 	if owner_player.can_fight and not owner_player.dead:
 		foe = _pick_target()
+	_tick_flasks(delta, foe != null)
 	if _whirl_t > 0.0:
 		_whirl(delta, foe)
 		return
@@ -306,6 +317,60 @@ func _try_skill(i: int, foe: Enemy, dist: float) -> bool:
 			return false
 	_cd[i] = cd
 	return true
+
+
+# ---------- its flasks ----------
+
+## 1 just after drinking from flask slot i, down to 0 when it can drink again.
+func flask_cooldown_fraction(i: int) -> float:
+	return clampf(_flask_cd[i] / _flask_cd_max[i], 0.0, 1.0) if i >= 0 and i < _flask_cd.size() else 0.0
+
+
+func _tick_flasks(delta: float, fighting: bool) -> void:
+	for i in _flask_cd.size():
+		_flask_cd[i] = maxf(_flask_cd[i] - delta, 0.0)
+	var max_life := stats.get_stat("max_life")
+	for fx in _flask_fx.duplicate():
+		var step := minf(delta, float(fx.t))
+		hp = minf(hp + float(fx.life_rate) * step, max_life)
+		fx.t = float(fx.t) - delta
+		if float(fx.t) <= 0.0:
+			stats.remove_source(fx.source)
+			_flask_fx.erase(fx)
+	for i in Hirelings.FLASK_SLOTS:
+		var it := Hirelings.flask(i)
+		if it == null or _flask_cd[i] > 0.0 or _flask_fx.any(func(f): return int(f.slot) == i):
+			continue
+		var e := it.flask_effect()
+		match String(e.kind):
+			"life":
+				var healing := _flask_fx.any(func(f): return float(f.life_rate) > 0.0)
+				if hp < max_life * FLASK_LIFE_BELOW and not healing:
+					_drink(i, e)
+			"utility":
+				if fighting:
+					_drink(i, e)
+
+
+func _drink(i: int, e: Dictionary) -> void:
+	_flask_cd[i] = float(e.cooldown)
+	_flask_cd_max[i] = maxf(float(e.cooldown), 0.01)
+	var fx := {"slot": i, "t": float(e.duration), "life_rate": 0.0, "source": RefCounted.new(), "mods": []}
+	if String(e.kind) == "life":
+		var total: float = stats.get_stat("max_life") * float(e.amount)
+		if e.instant:
+			hp = minf(hp + total, stats.get_stat("max_life"))
+		else:
+			fx.life_rate = total / maxf(float(e.duration), 0.1)
+	elif String(e.kind) == "utility":
+		var b: Dictionary = e.buff
+		fx.mods.append([String(b.stat), int(b.mod), float(b.value)])
+	for d in e.during:
+		fx.mods.append([String(d.stat), int(d.mod), float(d.value)])
+	for m in fx.mods:
+		stats.add_mod(String(m[0]), int(m[1]), float(m[2]), fx.source)
+	_flask_fx.append(fx)
+	rig.pulse(0.10, 0.3)
 
 
 # ---------- doing ----------

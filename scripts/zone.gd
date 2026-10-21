@@ -440,6 +440,9 @@ func _build_hud() -> void:
 	info.position = Vector2(16, 12)
 	info.add_theme_constant_override("separation", 6)
 	layer.add_child(info)
+	var portrait := HirelingPortrait.new()  # your hireling, top left: tap for its equipment
+	portrait.on_open = func(): menu.open("hireling")
+	info.add_child(portrait)
 	var title := UIKit.label("%s   •   Area level %d" % [ActDB.zone_name(zone_id), area_level], 19, Color(1.0, 0.9, 0.6))
 	title.add_theme_color_override("font_outline_color", Color.BLACK)
 	title.add_theme_constant_override("outline_size", 6)

@@ -67,6 +67,43 @@ func _add_gear() -> void:
 	sec.add_child(row)
 	for slot in Hirelings.type_def().slots:
 		row.add_child(_gear_cell(String(slot)))
+	# Its own flasks, beside its gear: it drinks them itself, so yours are left for you
+	var sep := VSeparator.new()
+	row.add_child(sep)
+	for i in Hirelings.FLASK_SLOTS:
+		row.add_child(_flask_cell(i))
+	sec.add_child(UIKit.label("Flasks: it drinks a life flask when below half its life, and a utility flask (Granite, Quicksilver, Silver, Sulphur) as soon as it is fighting.",
+		12, UIKit.TEXT_DIM, true))
+
+
+func _flask_cell(i: int) -> Control:
+	var col := VBoxContainer.new()
+	col.add_theme_constant_override("separation", 2)
+	var it := Hirelings.flask(i)
+	var cell := UIKit.item_cell(it, false, Vector2(SLOT_CELL * 0.6, SLOT_CELL * 1.2))
+	if it == null:
+		cell.setup(null, Color(0.28, 0.24, 0.30), Color(0.09, 0.08, 0.11), 0, "🧪", "Flask %d: drag a life or utility flask here from your bag" % (i + 1))
+	else:
+		cell.payload = {"kind": "item", "from": "hireling_flask", "idx": i, "item": it}
+		cell.tooltip_text = "%s\n%s" % [it.display_name, it.flask_text()]
+	cell.can_accept = func(d: Dictionary) -> bool:
+		var di: ItemInstance = d.get("item")
+		return d.get("kind", "") == "item" and d.get("from", "") == "bag" and di != null and di.is_flask()
+	cell.on_drop = func(d: Dictionary) -> void:
+		var di: ItemInstance = d.get("item")
+		var why := Hirelings.flask_block_reason(di)
+		if why != "":
+			menu.feedback(why)
+		elif not Hirelings.equip_flask_from_bag(player, di, i):
+			menu.feedback("Not enough bag space for the flask it has there.")
+		elif menu.selected == di:
+			menu.selected = null
+		menu.refresh()
+	col.add_child(cell)
+	var cap := UIKit.label("Flask %d" % (i + 1), 11, UIKit.TEXT_DIM)
+	cap.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	col.add_child(cap)
+	return col
 
 
 func _gear_cell(slot: String) -> Control:

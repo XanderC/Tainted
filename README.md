@@ -81,7 +81,8 @@ red, and gives nothing until it does again. Older characters get all their point
 
 ### Hirelings
 Diablo II's mercenaries (`scripts/hirelings.gd` the rules, `hireling_db.gd` the types,
-`hireling.gd` the fighter, `hire_ui.gd` the Captain's window, `hireling_panel.gd` its inventory tab).
+`hireling.gd` the fighter, `hire_ui.gd` the Captain's window, `hireling_panel.gd` its inventory tab,
+`hireling_portrait.gd` its HUD portrait).
 **Captain Rourke** in Ashfall (east, by the Rift Gate) has fighters for hire, a few of each type,
 near your level: you can have one at a time. It follows you, goes after enemies near you, and
 enemies go for whichever of you is nearer. It levels with the experience you earn, never past your
@@ -95,10 +96,14 @@ level, and grows stronger: life, damage, armour and its own attributes (for its 
   itself) and War Cry.
 Its skill gems are picked at random when it is offered and level with it; you can't change them,
 but you link your own support gems to them (at the stash, like yours; links open with its level).
-Its Battle Cry and War Cry reach you too, and your life flasks heal it. Give it gear in the
-inventory's **Hireling** tab: drag from your bag onto its slots and back. If it falls it stays down
-(the HUD says so, left of your life orb) until the Captain revives it for a few orbs, or you hire
-someone else: the old one's gear comes back to your bag and its supports to the stash. More types
+Its Battle Cry and War Cry reach you too. It has two flask slots of its own and drinks them itself,
+so yours are left for you: a life flask when below half its life, a utility flask (Granite,
+Quicksilver, Silver, Sulphur) as soon as it is fighting (power flasks don't go in: it has no
+Adrenaline). Its portrait sits at the top left of the HUD with its life and flasks; tap it to open
+its equipment, the inventory's **Hireling** tab, where you drag gear and flasks from your bag onto
+its slots and back. If it falls it stays down (its portrait goes grey) until the Captain revives it
+for a few orbs, or you hire someone else: the old one's gear and flasks come back to your bag and its
+supports to the stash. More types
 open as the story goes on (add one to `HirelingDB.TYPES` with its `unlock` quest).
 - Tests: `godot --headless --path . res://scratch/test_attributes.tscn` and `test_hirelings.tscn`;
   `res://scratch/capture_hirelings.tscn` for screenshots (needs a window).

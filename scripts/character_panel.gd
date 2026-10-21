@@ -237,6 +237,7 @@ func _bag_accepts(d: Dictionary, at: Vector2i) -> bool:
 			"flask": return player.can_unequip_flask_to(int(d.get("idx", -1)), at)
 			"stash": return GameState.can_stash_to_bag(it, at)
 			"hireling": return Hirelings.can_unequip_to(player, String(d.get("slot", "")), at)
+			"hireling_flask": return Hirelings.can_unequip_flask_to(player, int(d.get("idx", -1)), at)
 		return false
 	var p := menu.current_panel()
 	return p != null and p.accepts_bag_drop(d)
@@ -253,6 +254,7 @@ func _bag_dropped(d: Dictionary, at: Vector2i) -> void:
 		"flask": player.unequip_flask_to(int(d.get("idx", -1)), at)
 		"stash": GameState.stash_to_bag(it, at)
 		"hireling": Hirelings.unequip_to(player, String(d.get("slot", "")), at)
+		"hireling_flask": Hirelings.unequip_flask_to(player, int(d.get("idx", -1)), at)
 	menu.refresh()
 
 

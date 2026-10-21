@@ -99,6 +99,9 @@ func _ready() -> void:
 	info.position = Vector2(16, 12)
 	info.add_theme_constant_override("separation", 6)
 	layer.add_child(info)
+	var portrait := HirelingPortrait.new()  # your hireling, top left: tap for its equipment
+	portrait.on_open = func(): menu.open("hireling")
+	info.add_child(portrait)
 	_hud = Label.new()
 	_hud.add_theme_font_size_override("font_size", 20)
 	_hud.add_theme_color_override("font_outline_color", Color.BLACK)

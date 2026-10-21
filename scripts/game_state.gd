@@ -68,6 +68,7 @@ var attr_points := 0
 ## Your hireling (Hirelings): its state, {} for none, and its gear (slot -> ItemInstance).
 var hireling := {}
 var hireling_gear := {}
+var hireling_flasks: Array = [null, null]  ## its two flasks (Hirelings.FLASK_SLOTS), ItemInstance or null
 var passive_nodes := {}    # class_id -> Array of allocated PassiveTree node ids (start not included)
 var skill_gems := {}       # skill_id -> count of loose skill gems in the gem pouch
 var gem_levels := {}       # skill_id -> gem level (1..SkillTree.GEM_MAX_LEVEL)
@@ -132,6 +133,7 @@ func _new_game() -> void:
 	attr_points = 0
 	hireling = {}
 	hireling_gear = {}
+	hireling_flasks = [null, null]
 	Hirelings.reset_offers()
 	passive_nodes = {}
 	gem_levels = {}
@@ -1491,12 +1493,14 @@ func _hireling_save() -> Dictionary:
 	for slot in hireling_gear:
 		gear[slot] = hireling_gear[slot].to_dict()
 	d["gear"] = gear
+	d["flasks"] = hireling_flasks.map(func(f): return f.to_dict() if f != null else null)
 	return d
 
 
 func _load_hireling(d) -> void:
 	hireling = {}
 	hireling_gear = {}
+	hireling_flasks = [null, null]
 	if typeof(d) != TYPE_DICTIONARY or d.is_empty() or HirelingDB.type_def(String(d.get("type", ""))).is_empty():
 		return
 	var gear: Dictionary = d.get("gear", {})
@@ -1504,8 +1508,15 @@ func _load_hireling(d) -> void:
 		var it := ItemInstance.from_dict(gear[slot])
 		if it != null:
 			hireling_gear[String(slot)] = it
+	var fl: Array = d.get("flasks", [])
+	for i in mini(fl.size(), Hirelings.FLASK_SLOTS):
+		if fl[i] is Dictionary:
+			var f := ItemInstance.from_dict(fl[i])
+			if f != null and f.is_flask():
+				hireling_flasks[i] = f
 	hireling = d.duplicate(true)
 	hireling.erase("gear")
+	hireling.erase("flasks")
 	hireling["level"] = clampi(int(hireling.get("level", 1)), 1, MAX_LEVEL)
 	hireling["xp"] = float(hireling.get("xp", 0.0))
 	hireling["dead"] = bool(hireling.get("dead", false))

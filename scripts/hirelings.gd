@@ -9,7 +9,10 @@ extends RefCounted
 ## Its state is GameState.hireling (saved with the character):
 ##   {type, name, level, xp, skills: [skill ids, main attack first], supports: [[rune ids] per skill],
 ##    look (Appearance) or skin, dead}
-## and its gear GameState.hireling_gear: slot -> ItemInstance.
+## its gear GameState.hireling_gear: slot -> ItemInstance, and its two flasks
+## GameState.hireling_flasks (ItemInstance or null each), which it drinks itself (Hireling).
+
+const FLASK_SLOTS := 2
 
 static var node: Hireling = null  ## the hireling in the current scene, if any
 static var _candidates := {}  ## type id -> [candidate dicts] on offer (rolled again as you level)
@@ -178,6 +181,67 @@ static func unequip(player: Player, slot: String) -> bool:
 	return at != ItemGrid.NONE and unequip_to(player, slot, at)
 
 
+# ---------- its flasks (it drinks them itself: life when hurt, utility when fighting) ----------
+
+## "" if `item` can go in one of its flask slots, otherwise why not.
+static func flask_block_reason(item: ItemInstance) -> String:
+	if item == null or not item.is_flask():
+		return "Only flasks go there"
+	if String(item.flask_effect().kind) == "power":
+		return "Hirelings have no Adrenaline to restore"
+	return ""
+
+
+static func flask(i: int) -> ItemInstance:
+	return GameState.hireling_flasks[i] if i >= 0 and i < GameState.hireling_flasks.size() else null
+
+
+## Put a flask from your bag in its flask slot i; one already there goes back to your bag.
+static func equip_flask_from_bag(player: Player, item: ItemInstance, i: int) -> bool:
+	if not has() or i < 0 or i >= FLASK_SLOTS or not player.bag.has(item) or flask_block_reason(item) != "":
+		return false
+	var old := flask(i)
+	var at := player.bag.position_of(item)
+	if old != null:
+		var trial := player.bag.duplicate_grid()
+		trial.remove(item)
+		var spot := at if trial.fits(old, at) else trial.find_free(old)
+		if spot == ItemGrid.NONE:
+			return false
+		player.bag.remove(item)
+		player.bag.place(old, spot)
+	else:
+		player.bag.remove(item)
+	GameState.hireling_flasks[i] = item
+	_gear_changed(player)
+	return true
+
+
+## Whether its flask i could be dropped at `at` in your bag (into space, or swapping with a flask it can use).
+static func can_unequip_flask_to(player: Player, i: int, at: Vector2i) -> bool:
+	var it := flask(i)
+	if it == null:
+		return false
+	var plan := player.bag.plan_drop(it, at, null)
+	if plan.is_empty():
+		return false
+	var b: ItemInstance = plan.get("swap")
+	return b == null or flask_block_reason(b) == ""
+
+
+static func unequip_flask_to(player: Player, i: int, at: Vector2i) -> bool:
+	if not can_unequip_flask_to(player, i, at):
+		return false
+	var it := flask(i)
+	var b: ItemInstance = player.bag.plan_drop(it, at, null).get("swap")
+	if b != null:
+		player.bag.remove(b)
+	GameState.hireling_flasks[i] = b
+	player.bag.place(it, at)
+	_gear_changed(player)
+	return true
+
+
 static func _gear_changed(player: Player) -> void:
 	if is_instance_valid(node):
 		node.refresh()
@@ -329,6 +393,7 @@ static func hire(player: Player, c: Dictionary) -> bool:
 	h["xp"] = 0.0
 	GameState.hireling = h
 	GameState.hireling_gear = {}
+	GameState.hireling_flasks = [null, null]
 	var list: Array = _candidates.get(String(c.type), [])
 	list.erase(c)
 	GameState.save_soon()
@@ -343,7 +408,11 @@ static func dismiss(player: Player) -> void:
 	var items: Array[ItemInstance] = []
 	for slot in GameState.hireling_gear:
 		items.append(GameState.hireling_gear[slot])
+	for f in GameState.hireling_flasks:
+		if f != null:
+			items.append(f)
 	GameState.hireling_gear = {}
+	GameState.hireling_flasks = [null, null]
 	var homeless: Array[ItemInstance] = []
 	for it in items:
 		if player == null or not player.bag.add(it):

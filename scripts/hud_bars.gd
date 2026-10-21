@@ -59,30 +59,6 @@ func _draw() -> void:
 	HudArt.bar(self, "xp_fill", inner, 20.0, clampf(GameState.xp / need, 0.0, 1.0))
 	HudArt.label(self, Vector2(xr.position.x, xr.position.y - 3.0), "Lv %d   XP %d / %d" % [GameState.level, int(GameState.xp), int(need)],
 		13, Color(0.88, 0.80, 1.0), xr.size.x)
-	_hireling_plate()
-
-
-## Your hireling, left of the life orb: name, level and life, or that it has fallen.
-func _hireling_plate() -> void:
-	if not Hirelings.has():
-		return
-	var c := orb_centre(size, false)
-	var r := Rect2(c.x - 300.0, size.y - 104.0, 170.0, 16.0)
-	var h := GameState.hireling
-	var nm := "%s  Lv %d" % [String(h.get("name", "")), Hirelings.level()]
-	if not Hirelings.alive():
-		HudArt.label(self, Vector2(r.position.x, r.position.y - 4.0), "☠ " + nm, 14, Color(0.95, 0.45, 0.40), r.size.x)
-		HudArt.label(self, Vector2(r.position.x, r.position.y + 14.0), "Revive at Captain Rourke", 12, Color(0.80, 0.70, 0.60), r.size.x)
-		return
-	HudArt.label(self, Vector2(r.position.x, r.position.y - 4.0), nm, 14, Color(0.65, 0.95, 0.70), r.size.x)
-	var node := Hirelings.node
-	var frac := 1.0
-	if is_instance_valid(node):
-		frac = node.hp / maxf(node.stats.get_stat("max_life"), 1.0)
-	var bar := Rect2(r.position + Vector2(0, 4), Vector2(r.size.x, 10))
-	draw_rect(bar.grow(2.0), Color(0.05, 0.04, 0.05, 0.85))
-	draw_rect(Rect2(bar.position, Vector2(bar.size.x * clampf(frac, 0.0, 1.0), bar.size.y)), Color(0.30, 0.80, 0.35))
-	draw_rect(bar.grow(2.0), Color(0.55, 0.45, 0.30, 0.9), false, 1.5)
 
 
 ## One orb: its frame, the fill rising to `frac` in `col`, then the rim and glass over it.

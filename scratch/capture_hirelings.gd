@@ -31,7 +31,7 @@ func _ready() -> void:
 	menu = town.menu
 	var p: Player = town.player
 	p.bag.clear()
-	for id in ["broad_sword", "kite_shield", "chain_mail", "iron_helm", "long_bow", "leather_gloves"]:
+	for id in ["broad_sword", "kite_shield", "chain_mail", "iron_helm", "long_bow", "leather_gloves", "medium_life_flask", "granite_flask"]:
 		p.bag.add(item(id))
 	p.inventory_changed.emit()
 
@@ -52,6 +52,9 @@ func _ready() -> void:
 			if it.base.slot == slot and Hirelings.slot_block_reason(it, slot) == "":
 				Hirelings.equip_from_bag(p, it, slot)
 				break
+	for it in p.inventory.duplicate():
+		if it.is_flask():
+			Hirelings.equip_flask_from_bag(p, it, 0 if Hirelings.flask(0) == null else 1)
 	Hirelings.socket_support(0, 0, "rune_fire")
 	Hirelings.socket_support(1, 0, "rune_vampiric")
 
@@ -63,6 +66,15 @@ func _ready() -> void:
 	menu.open("details")
 	menu.toggle_stats()
 	await _shot("stats")
+	menu.close()
+
+	# The portrait at the top left, and tapping it
+	await _shot("portrait")
+	for c2 in town.get_children():
+		if c2 is CanvasLayer:
+			for n in c2.find_children("*", "HirelingPortrait", true, false):
+				n.on_open.call()
+	await _shot("portrait_tap")
 	menu.close()
 
 	# Fighting beside you

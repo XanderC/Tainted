@@ -434,9 +434,6 @@ func use_flask(i: int) -> bool:
 				hp = minf(hp + total, stats.get_stat("max_life"))
 			else:
 				fx.life_rate = total / maxf(float(e.duration), 0.1)
-			# Your hireling drinks with you (Diablo II let you hand it potions)
-			if is_instance_valid(Hirelings.node):
-				Hirelings.node.heal_fraction(float(e.amount))
 		"power":
 			if e.instant:
 				gain_resource(float(e.amount))

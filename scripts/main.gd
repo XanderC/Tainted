@@ -68,6 +68,11 @@ func _ready() -> void:
 	bars.player = player
 	layer.add_child(bars)
 
+	var portrait := HirelingPortrait.new()  # your hireling, top left: tap for its equipment
+	portrait.position = Vector2(16, 10)
+	portrait.on_open = func(): menu.open("hireling")
+	layer.add_child(portrait)
+
 	hud = Label.new()
 	hud.position = Vector2(16, 80)
 	layer.add_child(hud)
