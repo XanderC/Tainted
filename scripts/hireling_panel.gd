@@ -1,11 +1,10 @@
 class_name HirelingPanel
 extends MenuPanel
-## The inventory's Hireling tab: your hireling's level, stats and attributes, its gear (drag gear
-## from your bag onto its slots, and back), and its skill gems with the support gems you link to
-## them. Its skill gems came with it and can't be changed; supports can, at the stash (like your
+## The inventory's Hireling tab, laid out like your equipment screen: its level and stats, its
+## paperdoll (drag gear and flasks from your bag onto its slots, and back) and, where your bag is,
+## its skill gems with the support gems you link to them. Its skill gems came with it and can't be changed; supports can, at the stash (like your
 ## own), where the shared support gems show below its skills.
 
-const SLOT_CELL := 74.0
 const GEM_CELL := Vector2(52, 52)
 const POOL_COLS := 8
 
@@ -23,66 +22,104 @@ func refresh() -> void:
 		return
 	_add_header()
 	_add_gear()
-	_add_inspect()
-	_add_skills()
+	_add_skills()  # where your bag is on your own screen
 	if GameState.gem_station:
 		_add_pool()
+	_add_inspect()
 
 
 func _add_header() -> void:
-	var t := Hirelings.type_def()
 	var lvl := Hirelings.level()
-	var sec := UIKit.section(self, "")
-	var top := HBoxContainer.new()
-	sec.add_child(top)
-	var name_l := UIKit.label("%s  •  Level %d" % [Hirelings.title(), lvl], 19, UIKit.GOLD)
+	# Like your equipment screen's: level badge, then who it is
+	var header := HBoxContainer.new()
+	header.add_theme_constant_override("separation", 10)
+	header.custom_minimum_size = Vector2(0, UIKit.HEADER_ROW_H)
+	add_child(header)
+	var lvl_l := UIKit.label(str(lvl), 20, Color(1.0, 0.92, 0.6))
+	lvl_l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	lvl_l.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	lvl_l.custom_minimum_size = Vector2(44, 44)
+	var lvl_box := PanelContainer.new()
+	lvl_box.add_theme_stylebox_override("panel", UIKit.box(Color(0.10, 0.08, 0.12), Color(0.95, 0.80, 0.40), 2, 23))
+	lvl_box.add_child(lvl_l)
+	lvl_box.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	header.add_child(lvl_box)
+	var name_l := UIKit.label("%s   •   Level %d" % [Hirelings.title(), lvl], 20, UIKit.GOLD)
 	name_l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	top.add_child(name_l)
+	name_l.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	header.add_child(name_l)
 	if not Hirelings.alive():
-		top.add_child(UIKit.label("☠ Fallen: revive at Captain Rourke", 15, Color(0.95, 0.45, 0.40)))
+		var dead := UIKit.label("☠ Fallen: revive at Captain Rourke", 15, Color(0.95, 0.45, 0.40))
+		dead.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		header.add_child(dead)
+
 	var need := GameState.xp_to_next(lvl)
 	var xp_txt := "XP %d / %d" % [int(GameState.hireling.get("xp", 0.0)), int(need)]
 	if lvl >= GameState.level:
 		xp_txt += "  (at your level: it levels when you do)"
-	sec.add_child(UIKit.label(xp_txt, 13, Color(0.38, 0.65, 0.98)))
 	var st: StatBlock = Hirelings.node.stats if is_instance_valid(Hirelings.node) else Hirelings.build_stats()
 	var hp := (Hirelings.node.hp if is_instance_valid(Hirelings.node) else st.get_stat("max_life")) if Hirelings.alive() else 0.0
-	sec.add_child(UIKit.rich(("[color=#bdb6aa]Life[/color] [b]%d / %d[/b]   [color=#bdb6aa]Damage[/color] [b]%.0f[/b]   " +
-		"[color=#bdb6aa]Attack Speed[/color] [b]%.2f[/b]   [color=#bdb6aa]Armour[/color] [b]%d[/b]   [color=#bdb6aa]Crit[/color] [b]%.0f%%[/b]") % [
-		int(hp), int(st.get_stat("max_life")), st.get_stat("damage"), st.get_stat("attack_speed"),
-		int(st.get_stat("armor")), st.get_stat("crit_chance") * 100.0], 14))
 	var a := Hirelings.attributes()
 	var parts: Array[String] = []
 	for k in Attributes.KEYS:
 		parts.append("[color=#%s]%s %d[/color]" % [Color(Attributes.COLORS[k]).to_html(false), Attributes.SHORT[k], int(a[k])])
-	sec.add_child(UIKit.rich("   ".join(PackedStringArray(parts)) + "   [color=#8a7f6e](grow as it levels; its gear needs them)[/color]", 13))
-	sec.add_child(UIKit.label(String(t.desc), 13, UIKit.TEXT_DIM, true))
+	var info := UIKit.rich(("[center][color=#bdb6aa]Life[/color] [b]%d / %d[/b]   [color=#bdb6aa]Damage[/color] [b]%.0f[/b]   " +
+		"[color=#bdb6aa]Attack Speed[/color] [b]%.2f[/b]   [color=#bdb6aa]Armour[/color] [b]%d[/b]   [color=#bdb6aa]Crit[/color] [b]%.0f%%[/b]\n" +
+		"%s   [color=#6aa0f0]%s[/color][/center]") % [
+		int(hp), int(st.get_stat("max_life")), st.get_stat("damage"), st.get_stat("attack_speed"),
+		int(st.get_stat("armor")), st.get_stat("crit_chance") * 100.0, "   ".join(PackedStringArray(parts)), xp_txt], 14)
+	info.tooltip_text = "%s\nIts attributes grow as it levels; its gear needs them." % String(Hirelings.type_def().desc)
+	add_child(info)
 
 
-## Its gear slots in a row: drop gear from your bag on them; drag theirs back to your bag.
+## Its paperdoll, laid out like yours (CharacterPanel): the slots its kind has take gear from your
+## bag (drag it back to take it off); the ones it hasn't are locked. Its two flasks sit under the belt.
 func _add_gear() -> void:
-	var sec := UIKit.section(self, "GEAR  —  drag from your bag onto a slot, and back")
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 8)
-	sec.add_child(row)
-	for slot in Hirelings.type_def().slots:
-		row.add_child(_gear_cell(String(slot)))
-	# Its own flasks, beside its gear: it drinks them itself, so yours are left for you
-	var sep := VSeparator.new()
-	row.add_child(sep)
+	var doll := Control.new()
+	doll.custom_minimum_size = CharacterPanel.doll_size()
+	doll.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	add_child(doll)
+	var own: Array = Hirelings.type_def().slots
+	for slot in CharacterPanel.DOLL:
+		var r := CharacterPanel.doll_rect(slot)
+		var cell := _gear_cell(slot, r.size) if slot in own else _locked_cell(slot, r.size)
+		cell.position = r.position
+		doll.add_child(cell)
 	for i in Hirelings.FLASK_SLOTS:
-		row.add_child(_flask_cell(i))
-	sec.add_child(UIKit.label("Flasks: it drinks a life flask when below half its life, and a utility flask (Granite, Quicksilver, Silver, Sulphur) as soon as it is fighting.",
-		12, UIKit.TEXT_DIM, true))
+		var cell := _flask_cell(i)
+		cell.position = _flask_rect(i).position
+		doll.add_child(cell)
+	var hint := UIKit.label("Drag gear and flasks from your bag onto its slots, and back. It drinks a life flask below half its life, and a utility flask as soon as it is fighting.",
+		12, UIKit.TEXT_DIM, true)
+	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	add_child(hint)
 
 
-func _flask_cell(i: int) -> Control:
-	var col := VBoxContainer.new()
-	col.add_theme_constant_override("separation", 2)
+## Its flask slot i: two in the flask row, centred under the belt.
+func _flask_rect(i: int) -> Rect2:
+	var u := CharacterPanel.DOLL_U
+	var gap := CharacterPanel.DOLL_GAP.y
+	var belt := CharacterPanel.doll_rect("belt")
+	var row_w := Hirelings.FLASK_SLOTS * u + (Hirelings.FLASK_SLOTS - 1) * gap
+	var top := CharacterPanel.flask_rect(0).position.y
+	return Rect2(belt.get_center().x - row_w * 0.5 + i * (u + gap), top, u, u * 2.0)
+
+
+## A slot its kind doesn't have (a Sellsword wears no rings): shown, but locked.
+func _locked_cell(slot: String, cell_size: Vector2) -> DragSlot:
+	var cell := DragSlot.new(cell_size)
+	var tname := String(Hirelings.type_def().name)
+	cell.setup(null, Color(0.16, 0.14, 0.17), Color(0.05, 0.05, 0.06), 0, "🔒",
+		"A %s has no %s slot" % [tname, String(UIKit.SLOT_NAMES.get(slot, slot)).to_lower()])
+	cell.modulate = Color(1, 1, 1, 0.5)
+	return cell
+
+
+func _flask_cell(i: int) -> DragSlot:
 	var it := Hirelings.flask(i)
-	var cell := UIKit.item_cell(it, false, Vector2(SLOT_CELL * 0.6, SLOT_CELL * 1.2))
+	var cell := UIKit.item_cell(it, false, _flask_rect(i).size)
 	if it == null:
-		cell.setup(null, Color(0.28, 0.24, 0.30), Color(0.09, 0.08, 0.11), 0, "🧪", "Flask %d: drag a life or utility flask here from your bag" % (i + 1))
+		cell.setup(null, Color(0.28, 0.24, 0.30), Color(0.09, 0.08, 0.11), 0, "🧪", "Its flask %d: drag a life or utility flask here from your bag" % (i + 1))
 	else:
 		cell.payload = {"kind": "item", "from": "hireling_flask", "idx": i, "item": it}
 		cell.tooltip_text = "%s\n%s" % [it.display_name, it.flask_text()]
@@ -99,21 +136,16 @@ func _flask_cell(i: int) -> Control:
 		elif menu.selected == di:
 			menu.selected = null
 		menu.refresh()
-	col.add_child(cell)
-	var cap := UIKit.label("Flask %d" % (i + 1), 11, UIKit.TEXT_DIM)
-	cap.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	col.add_child(cap)
-	return col
+	return cell
 
 
-func _gear_cell(slot: String) -> Control:
-	var col := VBoxContainer.new()
-	col.add_theme_constant_override("separation", 2)
-	var tall := slot in ["weapon", "offhand", "chest"]
+func _gear_cell(slot: String, cell_size: Vector2) -> DragSlot:
 	var it: ItemInstance = GameState.hireling_gear.get(slot)
-	var cell := UIKit.item_cell(it, it != null and _sel_slot == slot, Vector2(SLOT_CELL, SLOT_CELL * (1.5 if tall else 1.0)))
+	var cell := UIKit.item_cell(it, it != null and _sel_slot == slot, cell_size)
 	if it == null:
-		cell.setup(null, Color(0.28, 0.24, 0.30), Color(0.09, 0.08, 0.11), 0, UIKit.SLOT_ICONS.get(slot, ""),
+		# A one-unit slot shows its icon; a bigger one its name (as on your paperdoll)
+		var cap: String = UIKit.SLOT_NAMES.get(slot, slot) if cell_size.x > CharacterPanel.DOLL_U else UIKit.SLOT_ICONS.get(slot, "")
+		cell.setup(null, Color(0.28, 0.24, 0.30), Color(0.09, 0.08, 0.11), 0, cap,
 			"%s: drag gear here from your bag" % UIKit.SLOT_NAMES.get(slot, slot))
 	else:
 		cell.payload = {"kind": "item", "from": "hireling", "slot": slot, "item": it}
@@ -139,11 +171,7 @@ func _gear_cell(slot: String) -> Control:
 			if menu.selected == di:
 				menu.selected = null
 		menu.refresh()
-	col.add_child(cell)
-	var cap := UIKit.label(String(UIKit.SLOT_NAMES.get(slot, slot)), 11, UIKit.TEXT_DIM)
-	cap.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	col.add_child(cap)
-	return col
+	return cell
 
 
 ## Its tapped gear's card, or the bag item you have selected judged for it.
