@@ -26,6 +26,9 @@ var _char: CharacterPanel
 var _panels := {}  # name -> MenuPanel
 var _current := "details"
 var _vendor := ""  # vendor panel opened by an NPC; "" when opened as the inventory
+var _tabs_gap: Control
+## Where the hireling's page goes back to (it has no tab row of its own: back() returns here)
+var _back_panel := "details"
 
 
 func _ready() -> void:
@@ -92,6 +95,8 @@ func _open_with(panel: String, vendor: String) -> void:
 	layer = 25
 	_root.visible = true
 	get_tree().paused = true
+	_back_panel = vendor if vendor != "" else "details"
+	_current = _back_panel
 	show_panel(panel)
 
 
@@ -104,6 +109,11 @@ func close() -> void:
 
 
 func show_panel(panel_name: String) -> void:
+	if panel_name == "hireling" and _current != "hireling":
+		_back_panel = _current
+	# The hireling's page fills the left side: no tab row (it has a Back button instead)
+	_tabs_row.visible = panel_name != "hireling"
+	_tabs_gap.visible = _tabs_row.visible
 	_current = panel_name
 	var p := _get_panel(panel_name)
 	for n in _panels:
@@ -111,6 +121,11 @@ func show_panel(panel_name: String) -> void:
 	_left_title.text = p.panel_title()
 	_build_tabs()
 	refresh()
+
+
+## Back from the hireling's page to the panel it was opened from.
+func back() -> void:
+	show_panel(_back_panel if _back_panel != "" and _back_panel != "hireling" else "details")
 
 
 func current_panel() -> MenuPanel:
@@ -137,6 +152,9 @@ func select(item: ItemInstance) -> void:
 		show_panel("details")
 	else:
 		refresh()
+	var p := current_panel()
+	if p != null and item != null:
+		p.on_item_tapped(item)
 
 
 func refresh() -> void:
@@ -289,7 +307,8 @@ func _build() -> void:
 	_tabs_row.add_theme_constant_override("separation", 6)
 	_tabs_row.custom_minimum_size = Vector2(0, UIKit.HEADER_ROW_H)
 	_left_body.add_child(_tabs_row)
-	_left_body.add_child(UIKit.header_gap())
+	_tabs_gap = UIKit.header_gap()
+	_left_body.add_child(_tabs_gap)
 	_feedback = UIKit.label("", 15, Color(1.0, 0.85, 0.40), true)
 	_feedback.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_feedback.visible = false

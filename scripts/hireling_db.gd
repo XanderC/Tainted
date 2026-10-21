@@ -12,11 +12,13 @@ extends RefCounted
 ##   slots       - the equipment slots it has
 ##   one_handed  - true: no two-handed weapons (it fights with a shield)
 ##   base, grow  - StatBlock base stats at level 1, and what each level adds
-##   attr, attr_grow - Attributes at level 1 and per level: what its gear requirements are judged by
+##   attr        - its Attributes at level 1; each level brings Attributes.POINTS_PER_LEVEL for you to add
+##                 (ATTR_KEYS only: it has no Adrenaline for Energy to raise)
 ##   attacks     - its main attack is one of these (skill ids, see SkillTree)
 ##   skills      - its other skill gems are SKILL_COUNT of these, picked at random
 
 const SKILL_COUNT := 2  ## skill gems besides the main attack
+const ATTR_KEYS := ["str", "dex", "vit"]  ## the attributes you add points to
 const CANDIDATES := 3   ## hirelings on offer of each type
 const NAMES := ["Aldric", "Bryn", "Cassia", "Doran", "Edda", "Falk", "Greta", "Hollis", "Ines", "Joren",
 	"Kael", "Lysa", "Marek", "Nessa", "Orrin", "Petra", "Quill", "Rhosyn", "Sorrel", "Tamsin",
@@ -32,7 +34,7 @@ const TYPES := {
 		"base": {"max_life": 110.0, "damage": 8.0, "attack_speed": 1.0, "move_speed": 235.0, "armor": 18.0,
 			"crit_chance": 0.05, "life_regen": 1.5},
 		"grow": {"max_life": 13.0, "damage": 1.5, "armor": 2.5, "life_regen": 0.15},
-		"attr": {"str": 25, "dex": 18, "vit": 20, "ene": 10}, "attr_grow": {"str": 3.0, "dex": 1.0, "vit": 2.0},
+		"attr": {"str": 25, "dex": 18, "vit": 20, "ene": 10},
 		"attacks": ["cleave", "frenzy", "sundering_strike"],
 		"skills": ["shield_slam", "ground_stomp", "battle_cry", "war_cry", "iron_skin"],
 	},
@@ -47,7 +49,7 @@ const TYPES := {
 		"base": {"max_life": 85.0, "damage": 9.0, "attack_speed": 1.05, "move_speed": 240.0, "armor": 8.0,
 			"crit_chance": 0.07, "life_regen": 1.2},
 		"grow": {"max_life": 10.0, "damage": 1.6, "armor": 1.5, "life_regen": 0.12},
-		"attr": {"str": 15, "dex": 28, "vit": 15, "ene": 12}, "attr_grow": {"str": 1.0, "dex": 3.0, "vit": 1.5},
+		"attr": {"str": 15, "dex": 28, "vit": 15, "ene": 12},
 		"attacks": ["hl_shot"],
 		"skills": ["hl_power_shot", "hl_multishot", "hl_rain"],
 	},
@@ -60,7 +62,7 @@ const TYPES := {
 		"base": {"max_life": 125.0, "damage": 11.0, "attack_speed": 0.95, "move_speed": 230.0, "armor": 14.0,
 			"crit_chance": 0.05, "life_regen": 1.6},
 		"grow": {"max_life": 14.0, "damage": 1.9, "armor": 2.0, "life_regen": 0.16},
-		"attr": {"str": 30, "dex": 12, "vit": 22, "ene": 8}, "attr_grow": {"str": 3.5, "dex": 0.5, "vit": 2.0},
+		"attr": {"str": 30, "dex": 12, "vit": 22, "ene": 8},
 		"attacks": ["cleave", "sundering_strike", "double_swing"],
 		"skills": ["whirlwind", "leap_slam", "earthquake", "taunt", "war_cry"],
 	},
@@ -90,14 +92,12 @@ static func stats_at(id: String, lvl: int) -> Dictionary:
 	return out
 
 
-## Its attributes at a level: what gear requirements are judged by.
-static func attributes_at(id: String, lvl: int) -> Dictionary:
-	var t := type_def(id)
+## Its starting attributes (before the points you add): what gear requirements start from.
+static func base_attributes(id: String) -> Dictionary:
+	var base: Dictionary = type_def(id).get("attr", {})
 	var out := {}
-	var base: Dictionary = t.get("attr", {})
-	var grow: Dictionary = t.get("attr_grow", {})
 	for k in Attributes.KEYS:
-		out[k] = int(base.get(k, 0)) + int(floor(float(grow.get(k, 0.0)) * (lvl - 1)))
+		out[k] = int(base.get(k, 0))
 	return out
 
 

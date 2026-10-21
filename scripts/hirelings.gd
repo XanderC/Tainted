@@ -44,8 +44,63 @@ static func title(h: Dictionary = GameState.hireling) -> String:
 	return "%s, %s" % [String(h.get("name", "?")), String(HirelingDB.type_def(String(h.get("type", ""))).get("name", ""))]
 
 
+## Its attributes: its type's start plus the points you added (gear requirements are judged by these).
 static func attributes() -> Dictionary:
-	return HirelingDB.attributes_at(type_id(), level())
+	var out := HirelingDB.base_attributes(type_id())
+	var added: Dictionary = GameState.hireling.get("attributes", {})
+	for k in added:
+		out[k] = int(out.get(k, 0)) + int(added[k])
+	return out
+
+
+## Points it has to add (Attributes.POINTS_PER_LEVEL a level), and adding them.
+static func attr_points() -> int:
+	return int(GameState.hireling.get("attr_points", 0))
+
+
+static func add_attribute(key: String, n := 1) -> bool:
+	if not has() or not key in HirelingDB.ATTR_KEYS or n <= 0 or attr_points() < n:
+		return false
+	var added: Dictionary = GameState.hireling.get("attributes", {})
+	added[key] = int(added.get(key, 0)) + n
+	GameState.hireling["attributes"] = added
+	GameState.hireling["attr_points"] = attr_points() - n
+	_skills_changed()
+	return true
+
+
+## Take all its added points back (free, in town).
+static func reset_attributes() -> void:
+	if not has():
+		return
+	GameState.hireling["attributes"] = {}
+	fix_attribute_points()
+	_skills_changed()
+
+
+static func attribute_points_spent() -> int:
+	var n := 0
+	var added: Dictionary = GameState.hireling.get("attributes", {})
+	for k in added:
+		n += int(added[k])
+	return n
+
+
+## Exactly Attributes.POINTS_PER_LEVEL per level gained: one saved before points (or holding more
+## than its level allows) gets them all back to add.
+static func fix_attribute_points() -> void:
+	if not has():
+		return
+	var budget := Attributes.POINTS_PER_LEVEL * (level() - 1)
+	var clean := {}
+	var added: Dictionary = GameState.hireling.get("attributes", {})
+	for k in HirelingDB.ATTR_KEYS:
+		if int(added.get(k, 0)) > 0:
+			clean[k] = int(added[k])
+	GameState.hireling["attributes"] = clean
+	if attribute_points_spent() > budget:
+		GameState.hireling["attributes"] = {}
+	GameState.hireling["attr_points"] = budget - attribute_points_spent()
 
 
 static func links() -> int:
@@ -95,6 +150,7 @@ static func build_stats() -> StatBlock:
 	var base := HirelingDB.stats_at(type_id(), level())
 	for k in base:
 		st.set_base(String(k), float(base[k]))
+	Attributes.apply(st, GameState.hireling.get("attributes", {}), "attributes")
 	for slot in GameState.hireling_gear:
 		var it: ItemInstance = GameState.hireling_gear[slot]
 		if gear_active(it):
@@ -391,9 +447,11 @@ static func hire(player: Player, c: Dictionary) -> bool:
 	var h := c.duplicate(true)
 	h["dead"] = false
 	h["xp"] = 0.0
+	h["attributes"] = {}
 	GameState.hireling = h
 	GameState.hireling_gear = {}
 	GameState.hireling_flasks = [null, null]
+	fix_attribute_points()  # every point its level brought, to add
 	var list: Array = _candidates.get(String(c.type), [])
 	list.erase(c)
 	GameState.save_soon()
@@ -466,6 +524,7 @@ static func add_xp(amount: float) -> void:
 		up = true
 	# At your level it keeps what it earns, and levels as soon as you do
 	h["xp"] = minf(x, GameState.xp_to_next(lvl))
+	h["attr_points"] = int(h.get("attr_points", 0)) + Attributes.POINTS_PER_LEVEL * (lvl - int(h.get("level", 1)))
 	h["level"] = lvl
 	if up:
 		fix_supports()

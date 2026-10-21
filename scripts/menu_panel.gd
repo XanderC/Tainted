@@ -23,6 +23,11 @@ func refresh() -> void:
 	pass
 
 
+## An item in your bag or on you was tapped while this panel is shown (after the menu refreshed).
+func on_item_tapped(_item: ItemInstance) -> void:
+	pass
+
+
 ## Lets the panel take drops onto the character's bag (e.g. buying a merchant ware).
 func accepts_bag_drop(_d: Dictionary) -> bool:
 	return false

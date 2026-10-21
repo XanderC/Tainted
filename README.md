@@ -86,7 +86,8 @@ Diablo II's mercenaries (`scripts/hirelings.gd` the rules, `hireling_db.gd` the 
 **Captain Rourke** in Ashfall (east, by the Rift Gate) has fighters for hire, a few of each type,
 near your level: you can have one at a time. It follows you, goes after enemies near you, and
 enemies go for whichever of you is nearer. It levels with the experience you earn, never past your
-level, and grows stronger: life, damage, armour and its own attributes (for its gear's requirements).
+level, and grows stronger: life and damage with each level, and 5 attribute points a level that
+you add yourself (Strength, Dexterity, Vitality; its gear's requirements are judged by them).
 - **Sellsword** (from the start): sword or axe or mace and a shield; Cleave, Frenzy or Sundering
   Strike, plus two of Shield Slam, Ground Stomp, Battle Cry, War Cry and Iron Skin.
 - **Desert Scout** (after *Into the Wastes*): an archer who keeps her distance; Shot, plus two of
@@ -100,8 +101,10 @@ Its Battle Cry and War Cry reach you too. It has two flask slots of its own and 
 so yours are left for you: a life flask when below half its life, a utility flask (Granite,
 Quicksilver, Silver, Sulphur) as soon as it is fighting (power flasks don't go in: it has no
 Adrenaline). Its portrait sits at the top left of the HUD with its life and flasks; tap it to open
-its equipment, the inventory's **Hireling** tab, where you drag gear and flasks from your bag onto
-its slots and back. If it falls it stays down (its portrait goes grey) until the Captain revives it
+its page (also the inventory's **Hireling** tab): its paperdoll laid out like yours, with its skills
+where your bag is, fitting one screen. Drag gear and flasks from your bag onto its slots and back;
+tap an item for its card, a tooltip that stays until you tap elsewhere. **📜 Stats** swaps to its
+level, stats and attributes, where you add its points (taken back free in town). If it falls it stays down (its portrait goes grey) until the Captain revives it
 for a few orbs, or you hire someone else: the old one's gear and flasks come back to your bag and its
 supports to the stash. More types
 open as the story goes on (add one to `HirelingDB.TYPES` with its `unlock` quest).

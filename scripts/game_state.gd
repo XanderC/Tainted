@@ -1531,7 +1531,10 @@ func _load_hireling(d) -> void:
 	for list in hireling.get("supports", []):
 		sup.append((list as Array).map(func(x): return String(x)))
 	hireling["supports"] = sup
+	var added = hireling.get("attributes", {})
+	hireling["attributes"] = _ints(added) if typeof(added) == TYPE_DICTIONARY else {}
 	Hirelings.fix_supports()
+	Hirelings.fix_attribute_points()
 
 
 ## Passive points are exactly one per level gained. Older saves also got points from rifts and a

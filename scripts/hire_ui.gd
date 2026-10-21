@@ -180,8 +180,10 @@ func _card(c: Dictionary) -> Control:
 	var st := HirelingDB.stats_at(String(c.type), lvl)
 	v.add_child(UIKit.rich("[color=#bdb6aa]Life[/color] [b]%d[/b]   [color=#bdb6aa]Damage[/color] [b]%d[/b]   [color=#bdb6aa]Armour[/color] [b]%d[/b]" % [
 		int(st.max_life), int(st.damage), int(st.armor)], 14))
-	var attrs := HirelingDB.attributes_at(String(c.type), lvl)
-	v.add_child(UIKit.label("Str %d   Dex %d   Vit %d" % [int(attrs.str), int(attrs.dex), int(attrs.vit)], 13, UIKit.TEXT_DIM))
+	var attrs := HirelingDB.base_attributes(String(c.type))
+	var pts := Attributes.POINTS_PER_LEVEL * (lvl - 1)
+	v.add_child(UIKit.label("Str %d   Dex %d   Vit %d   (+%d points for you to add)" % [int(attrs.str), int(attrs.dex), int(attrs.vit), pts],
+		13, UIKit.TEXT_DIM))
 	var skills: Array = c.skills
 	for i in skills.size():
 		var sk := SkillTree.get_skill(String(skills[i]))

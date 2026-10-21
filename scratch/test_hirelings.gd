@@ -90,7 +90,9 @@ func _ready() -> void:
 	check(Hirelings.slot_block_reason(helm, "chest") != "", "a helmet doesn't go on its chest")
 	var armor0 := h.stats.get_stat("armor")
 	check(Hirelings.equip_from_bag(p, shield, "offhand"), "give it a shield")
-	check(Hirelings.equip_from_bag(p, mail, "chest"), "and chain mail")
+	check(Hirelings.slot_block_reason(mail, "chest").begins_with("Requires 26 Strength"), "chain mail needs a point more Strength than it starts with")
+	check(Hirelings.add_attribute("str", 1), "add it a point")
+	check(Hirelings.equip_from_bag(p, mail, "chest"), "and now it wears chain mail")
 	check(not p.bag.has(shield) and GameState.hireling_gear.get("offhand") == shield, "the shield left your bag for its hand")
 	check(h.stats.get_stat("armor") > armor0, "its armour went up (%.0f -> %.0f)" % [armor0, h.stats.get_stat("armor")])
 	var strong := item("gilded_aegis")  # needs far more Strength than a level ~10 Sellsword has
@@ -99,6 +101,20 @@ func _ready() -> void:
 	var at := p.bag.find_free(mail)
 	check(Hirelings.unequip_to(p, "chest", at), "take the chain mail back")
 	check(p.bag.has(mail) and not GameState.hireling_gear.has("chest"), "it is in your bag again")
+
+	# Its attribute points: the ones its level brought, for you to add
+	Hirelings.reset_attributes()
+	var lv := Hirelings.level()
+	check(Hirelings.attr_points() == Attributes.POINTS_PER_LEVEL * (lv - 1), "hired at level %d with %d points to add (%d)" % [lv, Attributes.POINTS_PER_LEVEL * (lv - 1), Hirelings.attr_points()])
+	check(Hirelings.attributes().str == int(HirelingDB.TYPES.sellsword.attr.str), "its Strength starts at its type's")
+	var dmg0 := Hirelings.build_stats().get_stat("damage")
+	check(Hirelings.add_attribute("str", 10), "add 10 Strength")
+	check(Hirelings.attributes().str == int(HirelingDB.TYPES.sellsword.attr.str) + 10, "its Strength went up")
+	check(absf(Hirelings.build_stats().get_stat("damage") - dmg0 * 1.10) < 0.05, "and so did its damage (+10%%)")
+	check(not Hirelings.add_attribute("ene"), "no Energy for a hireling")
+	check(not Hirelings.add_attribute("vit", 9999), "no more points than it has")
+	Hirelings.reset_attributes()
+	check(Hirelings.attribute_points_spent() == 0 and Hirelings.attr_points() == Attributes.POINTS_PER_LEVEL * (lv - 1), "reset gives them all back")
 
 	# Supports: from the shared pool, only as many as its links
 	check(Hirelings.links() == HirelingDB.links_at(Hirelings.level()), "its links follow its level")
@@ -112,8 +128,10 @@ func _ready() -> void:
 	# Experience: shared, never past your level
 	GameState.hireling["level"] = 9
 	GameState.hireling["xp"] = 0.0
+	Hirelings.fix_attribute_points()
 	Hirelings.add_xp(GameState.xp_to_next(9) * 5.0)
 	check(Hirelings.level() == GameState.level, "it levels up to your level (%d)" % Hirelings.level())
+	check(Hirelings.attr_points() == Attributes.POINTS_PER_LEVEL * (Hirelings.level() - 1), "each level brought %d points (%d)" % [Attributes.POINTS_PER_LEVEL, Hirelings.attr_points()])
 	Hirelings.add_xp(GameState.xp_to_next(10) * 5.0)
 	check(Hirelings.level() == GameState.level, "but not past it (%d)" % Hirelings.level())
 

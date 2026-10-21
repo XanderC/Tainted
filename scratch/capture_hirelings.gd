@@ -75,6 +75,28 @@ func _ready() -> void:
 			for n in c2.find_children("*", "HirelingPortrait", true, false):
 				n.on_open.call()
 	await _shot("portrait_tap")
+	var hp_panel := menu.current_panel() as HirelingPanel
+	Input.warp_mouse(Vector2(1150, 520))  # where a finger would tap in the bag
+	for it in p.inventory:
+		if it.base.weapon_type == "bow":
+			menu.select(it)
+			break
+	await _shot("tip_bag")
+	Input.warp_mouse(Vector2(200, 300))
+	hp_panel._show_gear_tip("weapon")
+	await _shot("tip_gear")
+	hp_panel._item_tip.close()
+	hp_panel._stats_mode = true
+	Hirelings.add_attribute("str", 6)
+	hp_panel.refresh()
+	await _shot("hl_stats")
+	hp_panel._stats_mode = false
+	menu.close()
+	menu.open_vendor("stash")
+	menu.show_panel("hireling")
+	await _shot("panel_stash")
+	menu.back()
+	await _shot("back_to_stash")
 	menu.close()
 
 	# Fighting beside you
