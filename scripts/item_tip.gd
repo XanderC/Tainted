@@ -67,6 +67,24 @@ func show_card(it: ItemInstance, at: Vector2, have := {}, extra := Callable(), a
 		l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		_cmp_body.add_child(l)
 		UIKit.item_card(_cmp_body, against, true, deltas, have)
+	_present(at, mine)
+
+
+## Shows a card of anything else (a skill gem, say) at `at`: `build` fills it,
+## Callable(parent: VBoxContainer).
+func show_content(at: Vector2, build: Callable) -> void:
+	item = null
+	compare = null
+	_shown += 1
+	var mine := _shown
+	UIKit.clear(_body)
+	build.call(_body)
+	UIKit.clear(_cmp_body)
+	_cmp.visible = false
+	_present(at, mine)
+
+
+func _present(at: Vector2, mine: int) -> void:
 	# Laid out off screen first: its height is only known once its text has been measured
 	modulate.a = 0.0
 	visible = true

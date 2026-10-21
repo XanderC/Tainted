@@ -310,8 +310,13 @@ func _skill_row(i: int, links: int) -> HBoxContainer:
 	var sk := Hirelings.skill_def(i)
 	var cell := DragSlot.new(SKILL_CELL)
 	if sk != null:
-		cell.setup(IconFactory.gem_icon("skill:" + sk.id, sk.color, 3), sk.color, Color(sk.color).darkened(0.85), 0, "",
-			"%s (Lv %d)\n%s" % [sk.get_effective_name(), Hirelings.skill_rank(), sk.description])
+		cell.setup(IconFactory.gem_icon("skill:" + sk.id, sk.color, 3), sk.color, Color(sk.color).darkened(0.85))
+		cell.clicked.connect(func():
+			_tip().show_content(_tap_point(), func(d: VBoxContainer):
+				d.add_child(UIKit.label("%s %s" % [sk.icon, sk.get_effective_name()], 18, sk.get_effective_color().lightened(0.2)))
+				d.add_child(UIKit.label("Its skill gem  •  Level %d" % Hirelings.skill_rank(), 13, Color(0.38, 0.65, 0.98)))
+				d.add_child(UIKit.rich(sk.get_rank_description(Hirelings.skill_rank()), 14))
+				d.add_child(UIKit.label("It came with it and levels as it does.", 12, UIKit.TEXT_DIM, true))))
 	row.add_child(cell)
 	var name_l := UIKit.label(("⚔ " if i == 0 else "") + (sk.get_effective_name() if sk != null else "?"), 14,
 		sk.get_effective_color().lightened(0.2) if sk != null else Color.WHITE)
@@ -338,8 +343,14 @@ func _support_cell(rune_id: String, i: int, idx: int) -> DragSlot:
 			"Empty link: drop a support gem here" if i >= 0 else "")
 	else:
 		var border := r.rarity_color() if r.rarity > 0 else r.color
-		cell.setup(r.get_icon(), border, r.color.darkened(0.8), GameState.rune_count(rune_id) if i < 0 else 0, "",
-			"%s (Lv %d)\n%s" % [r.display_name, GameState.support_level(rune_id), r.description])
+		cell.setup(r.get_icon(), border, r.color.darkened(0.8), GameState.rune_count(rune_id) if i < 0 else 0)
+		cell.clicked.connect(func():
+			_tip().show_content(_tap_point(), func(d: VBoxContainer):
+				var lvl := GameState.support_level(rune_id)
+				d.add_child(UIKit.label("%s  %s" % [r.icon, r.display_name], 18, border))
+				d.add_child(UIKit.label("Support Gem  •  Level %d" % lvl, 13, Color(0.38, 0.65, 0.98)))
+				d.add_child(UIKit.label(r.description, 14, Color(0.9, 0.9, 0.95), true))
+				d.add_child(UIKit.rich(r.stat_lines(lvl), 14))))
 		if GameState.gem_station:
 			cell.payload = {"kind": "rune", "from": "pool" if i < 0 else "hl_link", "slot": i, "idx": idx, "rune_id": rune_id}
 	if not GameState.gem_station:

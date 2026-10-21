@@ -8,7 +8,8 @@ extends MenuPanel
 ##   shared gems -> slot (socket it; a gem already there goes back to the shared gems)
 ##   slot -> slot (swap the two slots), slot / link -> the shared gems (take it out)
 ##   shared supports -> link (link it; replaces what is there), link -> link (move / swap)
-## Skill and support gems level up while socketed. Tap any gem to see its details beside the slots.
+## Skill and support gems level up while socketed. Tap any gem and its card pops up where you tapped
+## (the menu's ItemTip): what it does, its level, and Gemcutter's Prism.
 
 const CELL := Vector2(56, 56)
 const SLOT_CELL := Vector2(60, 60)
@@ -29,19 +30,14 @@ func refresh() -> void:
 	var title := "SKILL SLOTS  —  %d support link%s" % [links, "" if links == 1 else "s"]
 	if nxt > 0:
 		title += "  (next at level %d)" % nxt
-	# slots on the left, the tapped gem's details beside them
-	var top := HBoxContainer.new()
-	top.add_theme_constant_override("separation", 8)
-	add_child(top)
-	var sec := UIKit.section(top, title)
-	sec.get_parent().size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	var sec := UIKit.section(self, title)
 	for i in GameState.SKILL_SLOTS:
 		sec.add_child(_slot_row(i, links))
 	if GameState.gem_station:
 		sec.add_child(UIKit.label("Drag gems between your slots and the shared gems below.", 12, UIKit.TEXT_DIM, true))
 	else:
 		sec.add_child(UIKit.label("🔒 Change skill and support gems at the stash in town.", 13, UIKit.TEXT_DIM, true))
-	_add_details(top)
+	sec.add_child(UIKit.label("Tap a gem to see what it does.", 12, UIKit.TEXT_DIM, true))
 	if GameState.gem_station:
 		_add_pools()
 
@@ -80,8 +76,7 @@ func _skill_cell(skill_id: String, slot: int, sz: Vector2) -> DragSlot:
 		var sel: bool = _sel.get("type", "") == "skill" and _sel.get("id", "") == skill_id
 		var ok := GameState.skill_gem_block_reason(skill_id) == ""
 		cell.setup(IconFactory.gem_icon("skill:" + skill_id, sk.color, 3), Color.WHITE if sel else sk.color,
-			Color(sk.color).darkened(0.85), GameState.skill_gem_count(skill_id) if slot < 0 else 0, "",
-			"%s (Lv %d)" % [sk.display_name, GameState.gem_level(skill_id)])
+			Color(sk.color).darkened(0.85), GameState.skill_gem_count(skill_id) if slot < 0 else 0)  # tap: its card
 		if not ok:
 			cell.modulate = Color(1, 1, 1, 0.45)
 		if SkillIcons.texture(skill_id) == null:  # the drawn gem carries the skill's symbol
@@ -117,8 +112,7 @@ func _support_cell(rune_id: String, slot: int, idx: int, sz: Vector2) -> DragSlo
 		var sel: bool = _sel.get("type", "") == "support" and _sel.get("id", "") == rune_id
 		var border := r.rarity_color() if r.rarity > 0 else r.color
 		cell.setup(r.get_icon(), Color.WHITE if sel else border, r.color.darkened(0.8),
-			GameState.rune_count(rune_id) if slot < 0 else 0, "",
-			"%s (Lv %d)\n%s" % [r.display_name, GameState.support_level(rune_id), r.description])
+			GameState.rune_count(rune_id) if slot < 0 else 0)  # tap: its card
 		_overlay(cell, "%d" % GameState.support_level(rune_id), 11, Color(1.0, 0.9, 0.5), VERTICAL_ALIGNMENT_TOP, HORIZONTAL_ALIGNMENT_LEFT)
 		cell.payload = {"kind": "rune", "from": "pouch" if slot < 0 else "link", "slot": slot, "idx": idx, "rune_id": rune_id}
 		cell.clicked.connect(_select.bind({"type": "support", "id": rune_id, "slot": slot}))
@@ -141,13 +135,23 @@ func _support_cell(rune_id: String, slot: int, idx: int, sz: Vector2) -> DragSlo
 	return cell
 
 
-## Shows a gem's details here, switching the menu's left side to this panel if needed.
+## Picks a gem and shows its card where it was tapped (switching the menu's left side to this
+## panel first if needed).
 func _select(sel: Dictionary) -> void:
 	_sel = sel
+	var at := get_viewport().get_mouse_position()
 	if not embedded and menu.current_panel() != self:
 		menu.show_panel("skills")
 	else:
 		menu.refresh()
+	_show_tip(at)
+
+
+func _show_tip(at: Vector2) -> void:
+	if _sel.is_empty():
+		return
+	menu.item_tip().show_content(at, func(d: VBoxContainer):
+		_add_details(d, at))
 
 
 ## The shared skill and support gems, below the slots while at the stash. Dropping a slotted gem
@@ -232,12 +236,8 @@ func _overlay(cell: Control, text: String, size: int, col: Color, v: int, h: int
 
 # ---------- details ----------
 
-func _add_details(parent: Control) -> void:
-	var d := UIKit.section(parent, "", true)
-	d.get_parent().custom_minimum_size = Vector2(220, 0)
-	if _sel.is_empty():
-		d.add_child(UIKit.label("Tap a gem to see what it does.", 13, UIKit.TEXT_DIM, true))
-		return
+## The picked gem's card (in the tooltip at `at`).
+func _add_details(d: VBoxContainer, at: Vector2) -> void:
 	if _sel.type == "skill":
 		var id: String = _sel.id
 		var slot := GameState.slot_of(id)
@@ -258,7 +258,7 @@ func _add_details(parent: Control) -> void:
 			d.add_child(UIKit.rich("[color=#fb923c]With its supports this costs %d %s (base %d).[/color]" % [
 				int(round(player.skill_cost(sk))), player.class_def.power_name, int(sk.resource_cost)], 13))
 		d.add_child(UIKit.label("Socketed skill gems level up from the experience you earn.", 12, UIKit.TEXT_DIM, true))
-		_add_gemcutter(d, id, false, lvl)
+		_add_gemcutter(d, id, false, lvl, at)
 	else:
 		var r := RuneDef.DB.get_rune(_sel.id)
 		if r == null:
@@ -272,11 +272,11 @@ func _add_details(parent: Control) -> void:
 		d.add_child(UIKit.label(r.description, 14, Color(0.9, 0.9, 0.95), true))
 		d.add_child(UIKit.rich(r.stat_lines(slvl), 14))
 		d.add_child(UIKit.label("Supports linked to a socketed skill level up from the experience you earn: +3% effects and +1% skill damage per level.", 12, UIKit.TEXT_DIM, true))
-		_add_gemcutter(d, r.id, true, slvl)
+		_add_gemcutter(d, r.id, true, slvl, at)
 
 
-## "Use Gemcutter's Prism" button: a level's worth of experience for this gem.
-func _add_gemcutter(parent: Control, id: String, support: bool, lvl: int) -> void:
+## "Use Gemcutter's Prism" button: a level's worth of experience for this gem (its card shows again).
+func _add_gemcutter(parent: Control, id: String, support: bool, lvl: int, at: Vector2) -> void:
 	var n := GameState.orb_count("gemcutter")
 	if lvl >= SkillTree.GEM_MAX_LEVEL:
 		return
@@ -286,5 +286,6 @@ func _add_gemcutter(parent: Control, id: String, support: bool, lvl: int) -> voi
 		if GameState.use_gemcutter(id, support):
 			menu.feedback("Gem levelled up!")
 		menu.refresh()
+		_show_tip(at)
 	)
 	parent.add_child(b)
