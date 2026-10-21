@@ -112,7 +112,8 @@ open as the story goes on (add one to `HirelingDB.TYPES` with its `unlock` quest
 Tap **Bag** (top right) or press **I**. The game pauses while it's open.
 - Laid out like Path of Exile's: the equipment paperdoll on top, each slot shaped like what it holds
   (weapon and off hand 2x4, body 2x3, helmet, gloves and boots 2x2, belt 2x1, two rings and an
-  amulet 1x1; a ring fits either ring slot),
+  amulet 1x1; a ring fits either ring slot; each Legendary or Set item can be worn only once, so
+  two of the same unique ring, or the same unique one-hander in both hands, won't go on),
   the five flask slots in a row under the belt, and the 12 x 5 bag grid under that. The weapon-set switch
   (I / II) is in the header.
 - Tap a bag item to inspect it. You get its stats, a green/red list of what changes if you equip it, and the item you're currently wearing in that slot.

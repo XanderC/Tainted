@@ -969,7 +969,7 @@ func can_unequip_to(slot: String, at: Vector2i) -> bool:
 	if plan.is_empty():
 		return false
 	var b: ItemInstance = plan.get("swap")
-	return b == null or valid_slots(b).has(slot)
+	return b == null or (valid_slots(b).has(slot) and unique_conflict(b, slot) == null)
 
 
 ## Take worn gear off into the bag at `at`, or swap it with the bag item there (see can_unequip_to).
@@ -1085,12 +1085,42 @@ func valid_slots(item: ItemInstance) -> Array[String]:
 	return out
 
 
+## Legendary and Set items are one of a kind on you: a second copy of one you are already wearing
+## can't go in another slot (two of the same unique ring, or the same unique one-hander in both
+## hands). Two different ones are fine. Returns the copy that is in the way, or null.
+func unique_conflict(item: ItemInstance, slot: String) -> ItemInstance:
+	if item == null or not item.is_unique():
+		return null
+	for s in equipment:
+		var worn: ItemInstance = equipment[s]
+		if worn != item and s != slot and worn.unique_id == item.unique_id:
+			return worn
+	return null
+
+
+## "" if `item` may go in `slot` now, otherwise why not (class, requirements, or a unique you
+## already wear).
+func slot_block_reason(item: ItemInstance, slot: String) -> String:
+	var why := equip_block_reason(item)
+	if why != "":
+		return why
+	var dup := unique_conflict(item, slot)
+	if dup != null:
+		return "You are already wearing %s: each %s item can only be worn once" % [dup.display_name,
+			"Set" if item.rarity == ItemInstance.Rarity.SET else "Legendary"]
+	return ""
+
+
 ## Slot used when equipping without choosing one (Equip button, auto-equip on pickup):
-## the first free valid slot, otherwise the main one.
+## the first free valid slot, otherwise the main one. A unique you already wear replaces its copy.
 func equip_slot_for(item: ItemInstance) -> String:
 	var slots := valid_slots(item)
 	if slots.is_empty():
 		return item.base.slot
+	for s in slots:
+		var worn: ItemInstance = equipment.get(s)
+		if worn != null and worn != item and item.is_unique() and worn.unique_id == item.unique_id:
+			return s
 	for s in slots:
 		if not equipment.has(s) and not (s == "offhand" and _main_is_two_handed()):
 			return s
@@ -1121,6 +1151,8 @@ func displaced_by(item: ItemInstance, slot: String) -> Array[ItemInstance]:
 ## Also moves a worn one-hander between main and off hand. Returns false if not allowed.
 func equip_to(item: ItemInstance, slot: String, allow_drop := false, prefer_at := ItemGrid.NONE) -> bool:
 	if item == null or not valid_slots(item).has(slot):
+		return false
+	if unique_conflict(item, slot) != null and not GameState.is_restoring():
 		return false
 	if equipment.get(slot) == item:
 		return true

@@ -86,6 +86,13 @@ func refresh() -> void:
 			add_child(UIKit.label("⛔ " + reason, 15, Color(0.95, 0.40, 0.40)))
 		elif it.base.two_handed and player.equipment.has("offhand"):
 			add_child(UIKit.label("Two-handed: your off-hand item goes back to the bag.", 13, UIKit.TEXT_DIM, true))
+		if reason == "" and it.is_unique():
+			for s in player.equipment:
+				if player.equipment[s].unique_id == it.unique_id:
+					add_child(UIKit.label("You are already wearing one: each %s item can only be worn once, so this can only replace it (%s)." % [
+						"Set" if it.rarity == ItemInstance.Rarity.SET else "Legendary", String(UIKit.SLOT_NAMES.get(s, s))],
+						14, Color(1.0, 0.70, 0.35), true))
+					break
 		if Hirelings.has() and not it.is_flask() and Hirelings.slot_block_reason(it, it.base.slot) == "":
 			add_child(UIKit.label("🛡 %s can wear this: drag it onto their slot in the Hireling tab." % String(GameState.hireling.get("name", "Your hireling")),
 				14, Color(0.55, 0.90, 0.60), true))

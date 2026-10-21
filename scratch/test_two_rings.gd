@@ -70,5 +70,49 @@ func _ready() -> void:
 	var back := ItemInstance.from_dict(saved["ring2"])
 	check(p.valid_slots(back).has("ring2"), "a loaded ring can go back in the second slot")
 
+	# Legendary and Set items are one of a kind on you
+	for s in p.equipment.keys():
+		p.equipment[s].remove_from(p.stats)
+	p.equipment.clear()
+	p.bag.clear()
+	p._sync_gear_visuals()
+	var echo_a := UniqueItems.make("band_of_echoes", 20)
+	var echo_b := UniqueItems.make("band_of_echoes", 20)
+	var signet := UniqueItems.make("frugal_signet", 20)
+	for it in [echo_a, echo_b, signet]:
+		p.bag.add(it)
+	check(p.equip_to(echo_a, "ring"), "wear a Band of Echoes")
+	check(p.unique_conflict(echo_b, "ring2") == echo_a, "a second Band of Echoes clashes with the first")
+	check(not p.equip_to(echo_b, "ring2"), "so it can't go in the other ring slot")
+	check(p.slot_block_reason(echo_b, "ring2").contains("only be worn once"), "and says why (%s)" % p.slot_block_reason(echo_b, "ring2"))
+	check(p.equip_slot_for(echo_b) == "ring", "equipping it without a slot replaces the copy")
+	check(p.equip_to(echo_b, "ring") and p.equipment.get("ring") == echo_b and p.bag.has(echo_a), "and swapping one copy for the other works")
+	check(p.equip_to(signet, "ring2"), "a different Legendary ring goes beside it")
+	var at := p.bag.position_of(echo_a)
+	check(not p.can_unequip_to("ring2", at), "dragging the other ring onto the copy in the bag won't swap it in")
+
+	var set_a := UniqueItems.make("bloodsworn_band", 20)
+	var set_b := UniqueItems.make("bloodsworn_band", 20)
+	p.unequip("ring")
+	p.unequip("ring2")
+	p.bag.add(set_a)
+	p.bag.add(set_b)
+	check(p.equip_to(set_a, "ring") and not p.equip_to(set_b, "ring2"), "two of the same Set ring can't both be worn")
+
+	# One-handed weapons in both hands
+	GameState.attributes = {"str": 100, "dex": 100}
+	p.refresh_attributes()
+	var fury_a := UniqueItems.make("fury_of_the_ancients", 20)
+	var fury_b := UniqueItems.make("fury_of_the_ancients", 20)
+	var cleaver := UniqueItems.make("bloodthirst_cleaver", 20)
+	p.bag.clear()
+	for it in [fury_a, fury_b, cleaver]:
+		p.bag.add(it)
+	check(p.equip_to(fury_a, "weapon"), "wield Fury of the Ancients")
+	check(not p.equip_to(fury_b, "offhand"), "not a second one in the off hand")
+	check(p.equip_to(cleaver, "offhand"), "a different Legendary one-hander is fine")
+	check(p.equip_to(fury_a, "offhand") and p.equipment.get("weapon") == cleaver, "moving it between hands still works")
+	GameState.attributes = {}
+
 	print("two rings: %d checks, %d failed" % [_checks, _fails])
 	get_tree().quit(1 if _fails > 0 else 0)

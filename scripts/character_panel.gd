@@ -215,10 +215,11 @@ func _gear_cell(slot: String, cell_size: Vector2) -> DragSlot:
 			and player.valid_slots(di).has(slot)
 	cell.on_drop = func(d: Dictionary) -> void:
 		var di: ItemInstance = d.get("item")
-		if player.equip_to(di, slot):
+		var why := player.slot_block_reason(di, slot)
+		if why == "" and player.equip_to(di, slot):
 			menu.select(di)
 		else:
-			menu.feedback(player.equip_block_reason(di) if not player.can_equip(di) else "Not enough bag space to swap.")
+			menu.feedback(why if why != "" else "Not enough bag space to swap.")
 			menu.refresh()
 	return cell
 
