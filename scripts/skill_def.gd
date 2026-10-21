@@ -18,7 +18,12 @@ enum Kind {
 	SUNDERING_STRIKE,
 	BLADE_VORTEX,
 	BATTLE_STANDARD,
-	CALL_ANCIENTS
+	CALL_ANCIENTS,
+	# Hireling archers (HirelingDB): arrows rather than swings
+	SHOT,
+	POWER_SHOT,
+	MULTISHOT,
+	ARROW_RAIN,
 }
 
 @export var id: String = ""
@@ -45,6 +50,10 @@ enum Kind {
 
 @export var max_rank: int = 15
 @export var is_passive: bool = false
+## Only hirelings use it (an archer's Shot): never a gem you can find, buy or socket.
+@export var hireling_only: bool = false
+## This copy is a hireling's: the player's Legendary skill powers don't apply to it.
+var for_hireling := false
 @export var custom_stats_text: String = ""
 
 
@@ -186,7 +195,8 @@ func get_effective_damage_mult(skill_rank: int = 1) -> float:
 	var mult := damage_mult * (1.0 + 0.10 * (skill_rank - 1))  # +10% per rank
 	for r in get_runes():
 		mult += r.damage_mult_bonus * _lv(r) + GameState.support_damage_bonus(r.id)
-	mult *= 1.0 + GameState.passive_value("skill_dmg:" + id)  # Legendary / Set powers for this skill
+	if not for_hireling:
+		mult *= 1.0 + GameState.passive_value("skill_dmg:" + id)  # Legendary / Set powers for this skill
 	return maxf(mult, 0.1)
 
 
@@ -197,7 +207,8 @@ func get_effective_cooldown(skill_rank: int = 1) -> float:
 	var cd := cooldown * (1.0 - rank_cd_reduction)
 	for r in get_runes():
 		cd *= maxf(1.0 - (1.0 - r.cooldown_mult) * _lv(r), 0.3) if r.cooldown_mult < 1.0 else r.cooldown_mult
-	cd *= maxf(1.0 - GameState.passive_value("skill_cdr:" + id), 0.3)  # Legendary / Set powers
+	if not for_hireling:
+		cd *= maxf(1.0 - GameState.passive_value("skill_cdr:" + id), 0.3)  # Legendary / Set powers
 	return maxf(cd, 0.4)
 
 

@@ -301,7 +301,8 @@ static func stat_arrow(stat: String, deltas: Dictionary) -> String:
 	return ""
 
 
-static func item_card(parent: Node, item: ItemInstance, compact := false, deltas := {}) -> void:
+## `have`: the attributes to judge its requirements by (red where short); empty means the player's.
+static func item_card(parent: Node, item: ItemInstance, compact := false, deltas := {}, have := {}) -> void:
 	var rar_col: Color = ItemInstance.RARITY_COLORS[item.rarity]
 	var hdr := PanelContainer.new()
 	var hdr_sb := inset_box(8, Color(1, 1, 1).lerp(rar_col, 0.55))
@@ -326,6 +327,11 @@ static func item_card(parent: Node, item: ItemInstance, compact := false, deltas
 	hv.add_child(base_lbl)
 
 	var txt := ""
+	if have.is_empty() and is_instance_valid(GameState.player):
+		have = GameState.attribute_totals()
+	var req := Attributes.requirement_bbcode(item.base, have)
+	if req != "":
+		txt += req + "\n"
 	if item.is_flask():
 		# What drinking it does, modifiers included, then the modifiers themselves below
 		var e := item.flask_effect()

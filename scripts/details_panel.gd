@@ -86,6 +86,9 @@ func refresh() -> void:
 			add_child(UIKit.label("⛔ " + reason, 15, Color(0.95, 0.40, 0.40)))
 		elif it.base.two_handed and player.equipment.has("offhand"):
 			add_child(UIKit.label("Two-handed: your off-hand item goes back to the bag.", 13, UIKit.TEXT_DIM, true))
+		if Hirelings.has() and not it.is_flask() and Hirelings.slot_block_reason(it, it.base.slot) == "":
+			add_child(UIKit.label("🛡 %s can wear this: drag it onto their slot in the Hireling tab." % String(GameState.hireling.get("name", "Your hireling")),
+				14, Color(0.55, 0.90, 0.60), true))
 		add_child(UIKit.label("Drag it onto %s to equip it, or onto 🗑 Drop (under the boots) to drop it." % (
 			"a flask slot" if it.is_flask() else "its equipment slot"), 13, UIKit.TEXT_DIM, true))
 

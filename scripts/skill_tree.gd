@@ -129,6 +129,20 @@ static func init_skills() -> void:
 		"Summon three barbarian spirits to fight beside you: Talic whirls through enemies, Korlic leaps in and frenzies, Madawc splits the ground and stuns.",
 		false, {"duration": 15.0, "sockets": 3, "cost": 50.0})
 
+	# ---------------- HIRELING ARCHERS (HirelingDB: never player gems) ----------------
+	for s in [
+		_make("hl_shot", "Shot", "basic", "🏹", SkillDef.Kind.SHOT, 0.0, 1.0, 0.0, 0.0, Color(0.85, 0.75, 0.55),
+			"Loose an arrow at the nearest enemy.", false, {"max_range": 430.0, "gain": 1.0}),
+		_make("hl_power_shot", "Power Shot", "core", "➶", SkillDef.Kind.POWER_SHOT, 4.0, 2.6, 0.0, 0.0, Color(1.0, 0.7, 0.3),
+			"A heavy arrow that pierces every enemy in its line.", false, {"max_range": 520.0}),
+		_make("hl_multishot", "Multishot", "core", "⇶", SkillDef.Kind.MULTISHOT, 5.0, 0.9, 0.0, 40.0, Color(0.75, 0.9, 0.6),
+			"Five arrows in a fan.", false, {"max_range": 430.0}),
+		_make("hl_rain", "Arrow Rain", "core", "☔", SkillDef.Kind.ARROW_RAIN, 7.0, 0.65, 120.0, 360.0, Color(0.7, 0.8, 1.0),
+			"Three volleys rain down where enemies stand, hitting all in the area.", false, {"max_range": 450.0}),
+	]:
+		s.hireling_only = true
+		s.resource_cost = 0.0
+
 
 # ---------------- lookups ----------------
 
@@ -163,11 +177,11 @@ static func gem_price(skill_id: String) -> Dictionary:
 	return GEM_PRICE.get(s.cluster, {"alteration": 2}) if s != null else {"alteration": 2}
 
 
-## Every active skill (each one is a skill gem), in catalogue order.
+## Every active skill (each one is a skill gem), in catalogue order. Hirelings' own skills aren't gems.
 static func active_skills() -> Array[SkillDef]:
 	init_skills()
 	var list: Array[SkillDef] = []
 	for id in _skills:
-		if not _skills[id].is_passive:
+		if not _skills[id].is_passive and not _skills[id].hireling_only:
 			list.append(_skills[id])
 	return list

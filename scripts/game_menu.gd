@@ -6,7 +6,7 @@ extends CanvasLayer
 ## The skill tree is separate and full screen (SkillTreeUI).
 
 ## Panels the player can always switch to from the inventory.
-const PLAYER_PANELS := ["details", "skills", "gems"]
+const PLAYER_PANELS := ["details", "skills", "gems", "hireling"]
 
 var player: Player
 var selected: ItemInstance = null  ## item picked in the character panel (bag or worn)
@@ -190,6 +190,7 @@ func _get_panel(panel_name: String) -> MenuPanel:
 			var gp := GemsPanel.new()
 			gp.jeweler = true
 			p = gp
+		"hireling": p = HirelingPanel.new()
 		"stash": p = StashPanel.new()
 		"shop": p = ShopPanel.new()
 		"smith": p = SmithPanel.new()
@@ -207,7 +208,7 @@ func _build_tabs() -> void:
 	UIKit.clear(_tabs_row)
 	var tabs: Array = []  # [panel name, stash tab or ""]
 	if _vendor == "stash":
-		tabs = [["stash", "items"], ["skills", ""], ["stash", "currency"], ["gems", ""]]
+		tabs = [["stash", "items"], ["skills", ""], ["stash", "currency"], ["gems", ""], ["hireling", ""]]
 	else:
 		if _vendor != "":
 			tabs.append([_vendor, ""])
@@ -329,6 +330,62 @@ func _build() -> void:
 	cols.add_child(_char)
 
 
+## Strength, Dexterity, Vitality and Energy at the top of the stats, Diablo II style: each with a
+## + to add one of the points every level brings, and what a point of it does.
+func _add_attributes() -> void:
+	var pts := GameState.attr_points
+	var head := HBoxContainer.new()
+	_stats_rows.add_child(head)
+	var title := UIKit.label("ATTRIBUTES", 17, Color(0.79, 0.65, 0.36))
+	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	head.add_child(title)
+	var left := UIKit.label("%d point%s to add" % [pts, "" if pts == 1 else "s"], 15,
+		Color(1.0, 0.85, 0.35) if pts > 0 else UIKit.TEXT_DIM)
+	head.add_child(left)
+	var rule := ColorRect.new()
+	rule.color = Color(0.45, 0.36, 0.24, 0.6)
+	rule.custom_minimum_size = Vector2(0, 1)
+	_stats_rows.add_child(rule)
+	var base := Attributes.base_for(player.class_def.id)
+	for k in Attributes.KEYS:
+		var line := HBoxContainer.new()
+		line.add_theme_constant_override("separation", 8)
+		_stats_rows.add_child(line)
+		var col := VBoxContainer.new()
+		col.add_theme_constant_override("separation", 0)
+		col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		line.add_child(col)
+		col.add_child(UIKit.label(Attributes.NAMES[k], 16, Attributes.COLORS[k]))
+		col.add_child(UIKit.label(Attributes.bonus_text(k, player.class_def.power_name), 12, UIKit.TEXT_DIM, true))
+		var total := GameState.attribute_total(k)
+		var added := int(GameState.attributes.get(k, 0))
+		var val := UIKit.label("%d" % total, 18, Color(0.95, 0.90, 0.77))
+		val.tooltip_text = "%d base + %d added" % [int(base.get(k, 0)), added]
+		val.custom_minimum_size = Vector2(44, 0)
+		val.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		line.add_child(val)
+		var plus := UIKit.button("+", Color(0.18, 0.14, 0.08), Color(0.95, 0.80, 0.40), Vector2(40, 40), 20)
+		plus.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		plus.disabled = pts <= 0
+		plus.tooltip_text = "Add a point to %s" % Attributes.NAMES[k]
+		plus.pressed.connect(func():
+			GameState.add_attribute(k)
+			refresh()
+		)
+		line.add_child(plus)
+	if GameState.attribute_points_spent() > 0:
+		if not player.can_fight:  # in town
+			var reset := UIKit.button("↺ Take back all attribute points (free in town)", Color(0.14, 0.11, 0.10),
+				Color(0.70, 0.55, 0.35), Vector2(0, 40), 14)
+			reset.pressed.connect(func():
+				GameState.reset_attributes()
+				refresh()
+			)
+			_stats_rows.add_child(reset)
+		else:
+			_stats_rows.add_child(UIKit.label("Attribute points can be taken back for free in town.", 12, UIKit.TEXT_DIM, true))
+
+
 func _refresh_stats() -> void:
 	var s := player.stats
 	var cd := player.class_def
@@ -355,6 +412,7 @@ func _refresh_stats() -> void:
 		["Support Links per Skill", "%d / %d" % [GameState.links_unlocked(), GameState.MAX_LINKS]],
 	]
 	UIKit.clear(_stats_rows)
+	_add_attributes()
 	for r in rows:
 		if r[1] == "":
 			# A section heading and rule, with space above all but the first

@@ -60,11 +60,48 @@ which any skin with a bow uses automatically; it shoots where the sword rig slas
 classes can reuse the same animation calls later.
 
 ### Weapons
-51 weapon and shield bases in tiers (`LootGenerator.WEAPON_BASES`): one- and two-handed swords and
-sabres, axes and maces, spears (two-handed, usable by the Warrior), daggers, staves and shields, each
-with a drop level so better bases appear in deeper rifts and later zones. Their art, in the hand and
-in the bag, comes from the CraftPix weapon packs via `tools/import_weapons.py` (base id -> pack
-design and grade).
+59 weapon and shield bases in tiers (`LootGenerator.WEAPON_BASES`): one- and two-handed swords and
+sabres, axes and maces, spears (two-handed, usable by the Warrior), daggers, staves, shields and
+bows (for Desert Scout hirelings), each with a drop level so better bases appear in deeper rifts and
+later zones. Their art, in the hand and in the bag, comes from the CraftPix weapon packs via
+`tools/import_weapons.py` (base id -> pack design and grade); the packs have no bows, so the bows
+are the archer skins' own (`tools/import_bows.py`).
+
+### Attributes and gear requirements
+Diablo II style (`scripts/attributes.gd`): **Strength**, **Dexterity**, **Vitality** and **Energy**.
+Your class gives a base in each (Warrior 25 / 15 / 20 / 10) and every level brings 5 points to add,
+on the stats screen (📜 Stats in the inventory says how many are waiting). A point of Strength gives
++1% damage, Dexterity +0.5% attack speed and +0.1% critical chance, Vitality +4 life, Energy +1
+maximum Adrenaline. Points can be taken back for free in town.
+Gear needs enough of them, from its kind and drop level (`Attributes.requirements`): heavy weapons
+and armour Strength, daggers and bows Dexterity, staves Energy; rings, amulets, belts, flasks and
+light armour nothing. The item card lists the requirements, red where you fall short, and you can't
+put it on until you have them. Gear that stops meeting them (points taken back) stays on, tinted
+red, and gives nothing until it does again. Older characters get all their points to add.
+
+### Hirelings
+Diablo II's mercenaries (`scripts/hirelings.gd` the rules, `hireling_db.gd` the types,
+`hireling.gd` the fighter, `hire_ui.gd` the Captain's window, `hireling_panel.gd` its inventory tab).
+**Captain Rourke** in Ashfall (east, by the Rift Gate) has fighters for hire, a few of each type,
+near your level: you can have one at a time. It follows you, goes after enemies near you, and
+enemies go for whichever of you is nearer. It levels with the experience you earn, never past your
+level, and grows stronger: life, damage, armour and its own attributes (for its gear's requirements).
+- **Sellsword** (from the start): sword or axe or mace and a shield; Cleave, Frenzy or Sundering
+  Strike, plus two of Shield Slam, Ground Stomp, Battle Cry, War Cry and Iron Skin.
+- **Desert Scout** (after *Into the Wastes*): an archer who keeps her distance; Shot, plus two of
+  Power Shot (pierces), Multishot and Arrow Rain. Holds the bow you give her.
+- **Iron Warden** (after *The Lost Caravan*): two-handed weapons; Cleave, Sundering Strike or Double
+  Swing, plus two of Whirlwind, Leap Slam, Earthquake, Demoralizing Taunt (pulls monsters onto
+  itself) and War Cry.
+Its skill gems are picked at random when it is offered and level with it; you can't change them,
+but you link your own support gems to them (at the stash, like yours; links open with its level).
+Its Battle Cry and War Cry reach you too, and your life flasks heal it. Give it gear in the
+inventory's **Hireling** tab: drag from your bag onto its slots and back. If it falls it stays down
+(the HUD says so, left of your life orb) until the Captain revives it for a few orbs, or you hire
+someone else: the old one's gear comes back to your bag and its supports to the stash. More types
+open as the story goes on (add one to `HirelingDB.TYPES` with its `unlock` quest).
+- Tests: `godot --headless --path . res://scratch/test_attributes.tscn` and `test_hirelings.tscn`;
+  `res://scratch/capture_hirelings.tscn` for screenshots (needs a window).
 
 ### Inventory
 Tap **Bag** (top right) or press **I**. The game pauses while it's open.

@@ -50,6 +50,9 @@ func _ready() -> void:
 	await get_tree().process_frame
 	await get_tree().process_frame
 	var p: Player = town.player
+	# Enough of every attribute that gear requirements (Attributes) don't get in the way here
+	GameState.attributes = {"str": 300, "dex": 300, "ene": 300}
+	p.refresh_attributes()
 	p.bag.clear()
 
 	# --- socket limits ---

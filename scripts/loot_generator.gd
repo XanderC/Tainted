@@ -120,8 +120,16 @@ const WEAPON_BASES := [
 	["serpent_staff", "Serpent Staff", "staff", true, 20, 27, Color(0.5, 0.65, 0.45)],
 	["crystal_staff", "Crystal Staff", "staff", true, 32, 38, Color(0.55, 0.8, 0.9)],
 	["void_staff", "Void Staff", "staff", true, 44, 50, Color(0.6, 0.5, 0.85)],
-	# Bows (no art or class yet)
+	# Bows (two-handed): Desert Scout hirelings use them (HirelingDB); the art is the archer skins' own
 	["hunting_bow", "Hunting Bow", "bow", true, 1, 9, Color(0.60, 0.45, 0.30)],
+	["short_bow", "Short Bow", "bow", true, 5, 12, Color(0.80, 0.55, 0.25)],
+	["recurve_bow", "Recurve Bow", "bow", true, 10, 16, Color(0.45, 0.40, 0.38)],
+	["composite_bow", "Composite Bow", "bow", true, 15, 20, Color(0.85, 0.60, 0.25)],
+	["long_bow", "Long Bow", "bow", true, 20, 25, Color(0.50, 0.65, 0.35)],
+	["war_bow", "War Bow", "bow", true, 27, 31, Color(0.55, 0.58, 0.65)],
+	["serpent_bow", "Serpent Bow", "bow", true, 34, 38, Color(0.65, 0.65, 0.35)],
+	["moonlit_bow", "Moonlit Bow", "bow", true, 40, 45, Color(0.65, 0.80, 0.85)],
+	["gilded_warbow", "Gilded Warbow", "bow", true, 46, 54, Color(0.95, 0.75, 0.25)],
 	# Shields
 	["wooden_shield", "Wooden Shield", "shield", false, 1, 12, Color(0.55, 0.40, 0.25)],
 	["buckler", "Buckler", "shield", false, 6, 16, Color(0.6, 0.5, 0.4)],
@@ -149,7 +157,9 @@ func _build_bases() -> void:
 		_base(w[0], w[1], "offhand" if w[2] == "shield" else "weapon", w[6], "armor" if w[2] == "shield" else "damage",
 			w[5], w[2], two)
 		bases[-1].drop_level = w[4]
-	bases[_base_index("hunting_bow")].weight = 0  # no bow art or bow class yet
+	for b in bases:
+		if b.weapon_type == "bow":
+			b.weight = 60  # rarer than gear you wear yourself: they are for your hireling
 	bases[_base_index("tower_shield")].grid_size = Vector2i(2, 3)  # a tall shield takes a tall space
 	_base("leather_cap", "Leather Cap", "helmet", Color(0.55, 0.4, 0.25), "armor", 5)
 	_base("iron_helm", "Iron Helm", "helmet", Color(0.6, 0.6, 0.65), "armor", 10)
@@ -264,7 +274,10 @@ func roll_item(ilvl: int = 1, forced_rarity: int = -1, slot: String = "") -> Ite
 	if pool.is_empty():
 		pool = bases.filter(func(b): return slot == "" or b.slot == slot)
 	if smart_class != null and randf() < SMART_LOOT_CHANCE:
-		var usable := pool.filter(func(b): return b.weapon_type == "" or smart_class.weapon_types.has(b.weapon_type))
+		# Things you or your hireling can use (a Desert Scout's bows)
+		var extra: Array = Hirelings.type_def().get("weapons", []) if Hirelings.has() else []
+		var usable := pool.filter(func(b): return b.weapon_type == "" or smart_class.weapon_types.has(b.weapon_type) \
+			or extra.has(b.weapon_type))
 		if not usable.is_empty():
 			pool = usable
 	item.base = _pick_base(pool)

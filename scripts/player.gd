@@ -49,6 +49,8 @@ var inventory: Array[ItemInstance]:
 	get:
 		return bag.items()
 var equipment := {}  # slot -> ItemInstance
+## Worn gear whose attribute requirements aren't met (Attributes): it stays on but gives nothing.
+var _inactive := {}  # ItemInstance -> true
 var item_powers := {}  # Legendary powers + set bonuses of the worn gear (UniqueItems.powers_of)
 var joystick: VirtualJoystick
 # walk_to(): walking on your own to a spot, e.g. an item whose label was tapped
@@ -77,6 +79,7 @@ var _iron_skin_t := 0.0
 var _frenzy_stacks := 0
 var _frenzy_t := 0.0
 var _shield_slam_buff_t := 0.0
+var _shared_buffs := {}  # your hireling's war cries on you: buff id -> seconds left
 
 # Drawing FX
 var _swing_t := 0.0
@@ -113,6 +116,7 @@ func _ready() -> void:
 	Appearance.apply(rig, GameState.appearance)
 	_sync_gear_visuals()
 	GameState.attach_player(self)  # restore saved gear, bag and skills
+	Hirelings.spawn(self)  # your hireling comes along, if you have one standing
 
 
 func sync_skills_from_state() -> void:
@@ -249,6 +253,28 @@ func _process_buffs(delta: float) -> void:
 		if _frenzy_t <= 0.0:
 			_frenzy_stacks = 0
 			stats.remove_source("frenzy")
+
+	for id in _shared_buffs.keys():
+		_shared_buffs[id] = float(_shared_buffs[id]) - delta
+		if float(_shared_buffs[id]) <= 0.0:
+			_shared_buffs.erase(id)
+			stats.remove_source("hireling_" + String(id))
+
+
+## Your hireling's war cry reaches you too (Diablo II's mercenary auras): Battle Cry's damage and
+## critical chance, or War Cry's armour, for `seconds`.
+func shout_buff(id: String, seconds: float) -> void:
+	var src := "hireling_" + id
+	stats.remove_source(src)
+	match id:
+		"battle_cry":
+			stats.add_mod("damage", StatBlock.ModType.MORE, 0.15, src)
+			stats.add_mod("crit_chance", StatBlock.ModType.FLAT, 0.05, src)
+		"war_cry":
+			stats.add_mod("armor", StatBlock.ModType.FLAT, 35.0, src)
+		_:
+			return
+	_shared_buffs[id] = seconds
 
 
 
@@ -408,6 +434,9 @@ func use_flask(i: int) -> bool:
 				hp = minf(hp + total, stats.get_stat("max_life"))
 			else:
 				fx.life_rate = total / maxf(float(e.duration), 0.1)
+			# Your hireling drinks with you (Diablo II let you hand it potions)
+			if is_instance_valid(Hirelings.node):
+				Hirelings.node.heal_fraction(float(e.amount))
 		"power":
 			if e.instant:
 				gain_resource(float(e.amount))
@@ -577,6 +606,7 @@ func _apply_passives() -> void:
 	for m in mods:
 		if m[2] != 0.0:
 			stats.add_mod(m[0], m[1], m[2], "passives")
+	Attributes.apply(stats, GameState.attributes, "attributes")
 	var new_max := stats.get_stat("max_life")
 	hp = clampf(hp + maxf(new_max - old_max, 0.0), 0.0, new_max)
 
@@ -603,9 +633,16 @@ func apply_slow(seconds: float) -> void:
 	_slow_t = maxf(_slow_t, seconds)
 
 
-## Maximum Adrenaline / Mana: the class's plus passives.
+## Maximum Adrenaline / Mana: the class's plus passives and Energy.
 func max_resource() -> float:
-	return class_def.power_max + passive("power_max")
+	return class_def.power_max + passive("power_max") \
+		+ Attributes.ENERGY_RESOURCE * float(GameState.attributes.get("ene", 0))
+
+
+## Attribute points were added or taken back: their bonuses, and which gear now meets its requirements.
+func refresh_attributes() -> void:
+	_sync_gear_visuals()
+	resource = minf(resource, max_resource())
 
 
 ## What a skill costs to use: base cost x linked supports' multipliers, less passive reductions.
@@ -1028,6 +1065,9 @@ func equip_block_reason(item: ItemInstance) -> String:
 	var wt := item.base.weapon_type
 	if wt != "" and not class_def.weapon_types.has(wt):
 		return "%ss cannot use %ss" % [class_def.display_name, ItemBase.TYPE_NAMES.get(wt, wt).to_lower()]
+	# A saved character's gear goes back on as it was; any that falls short just gives nothing
+	if not GameState.is_restoring():
+		return Attributes.block_reason(item.base, GameState.attribute_totals())
 	return ""
 
 
@@ -1362,12 +1402,36 @@ static func dress_rig(r: RigSprite, gear: Dictionary) -> void:
 ## Called whenever the worn gear changes: redress the rig and recount Legendary powers and
 ## set bonuses (item_powers, read through GameState.passive_value like passive tree stats).
 func _sync_gear_visuals() -> void:
-	item_powers = UniqueItems.powers_of(equipment.values())
+	_refresh_gear_requirements()
+	item_powers = UniqueItems.powers_of(equipment.values().filter(gear_active))
 	if stats != null:
 		_apply_passives()
 	if rig == null:
 		return
 	dress_rig(rig, equipment)
+
+
+## Whether worn (or wearable) gear meets its attribute requirements, so its stats count.
+func gear_active(item: ItemInstance) -> bool:
+	return item != null and Attributes.meets(item.base, GameState.attribute_totals())
+
+
+## Worn gear that falls short of its requirements gives nothing: its stats come off until it meets
+## them, and go back on when it does. Safe to call any time; runs after every gear change.
+func _refresh_gear_requirements() -> void:
+	if stats == null:
+		return
+	var worn := equipment.values()
+	for it in _inactive.keys():
+		if not worn.has(it):
+			_inactive.erase(it)
+	for it in worn:
+		if not gear_active(it):
+			it.remove_from(stats)  # also undoes anything that re-applied it meanwhile
+			_inactive[it] = true
+		elif _inactive.has(it):
+			it.apply_to(stats)
+			_inactive.erase(it)
 
 
 # ---------- Drawing (Ground effects; character itself is the rig) ----------

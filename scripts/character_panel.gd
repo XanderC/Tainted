@@ -40,6 +40,7 @@ var _class_lbl: Label
 var _doll: Control  # the equipment and flask slots, each placed at its spot (DOLL)
 var _set_row: HBoxContainer  # the weapon set switch, in the header
 var _bag_view: ItemGridView  # the bag, as a grid: all gear, flasks included
+var _stats_btn: Button  # says how many attribute points there are to add
 
 
 func _ready() -> void:
@@ -75,10 +76,10 @@ func _ready() -> void:
 	_set_row = HBoxContainer.new()
 	_set_row.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	header.add_child(_set_row)
-	var stats_btn := UIKit.button("📜 Stats", Color(0.16, 0.12, 0.10), Color(0.75, 0.58, 0.30), Vector2(100, 43), 16)
-	stats_btn.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	stats_btn.pressed.connect(func(): menu.toggle_stats())
-	header.add_child(stats_btn)
+	_stats_btn = UIKit.button("📜 Stats", Color(0.16, 0.12, 0.10), Color(0.75, 0.58, 0.30), Vector2(100, 43), 16)
+	_stats_btn.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	_stats_btn.pressed.connect(func(): menu.toggle_stats())
+	header.add_child(_stats_btn)
 	var close_btn := UIKit.close_button(1.0)
 	close_btn.pressed.connect(func(): menu.close())
 	header.add_child(close_btn)
@@ -125,6 +126,12 @@ func _drop_box() -> DragSlot:
 func refresh() -> void:
 	_level_lbl.text = str(GameState.level)
 	_class_lbl.text = "%s   •   Level %d" % [player.class_def.display_name, GameState.level]
+	# Unspent attribute points: the Stats button says so (they are added there)
+	var pts := GameState.attr_points
+	_stats_btn.text = "📜 Stats +%d" % pts if pts > 0 else "📜 Stats"
+	_stats_btn.custom_minimum_size.x = 132 if pts > 0 else 100
+	_stats_btn.add_theme_color_override("font_color", Color(1.0, 0.85, 0.35) if pts > 0 else Color(0.95, 0.90, 0.80))
+	_stats_btn.tooltip_text = ("%d attribute point%s to add" % [pts, "" if pts == 1 else "s"]) if pts > 0 else "Character stats"
 
 	UIKit.clear(_set_row)
 	_set_row.add_child(_set_toggle())
@@ -197,6 +204,11 @@ func _gear_cell(slot: String, cell_size: Vector2) -> DragSlot:
 	else:
 		cell.payload = {"kind": "item", "from": "gear", "slot": slot, "item": it}
 		cell.clicked.connect(menu.select.bind(it))
+		if not player.gear_active(it):
+			# Worn, but its requirements aren't met: it gives nothing until they are
+			cell.modulate = Color(1.0, 0.45, 0.45)
+			cell.tooltip_text = "%s\n%s: gives no stats until then" % [it.display_name,
+				Attributes.block_reason(it.base, GameState.attribute_totals())]
 	cell.can_accept = func(d: Dictionary) -> bool:
 		var di: ItemInstance = d.get("item")
 		return d.get("kind", "") == "item" and d.get("from", "") in ["bag", "gear"] and di != null \
@@ -224,6 +236,7 @@ func _bag_accepts(d: Dictionary, at: Vector2i) -> bool:
 			"gear": return player.can_unequip_to(String(d.get("slot", "")), at)
 			"flask": return player.can_unequip_flask_to(int(d.get("idx", -1)), at)
 			"stash": return GameState.can_stash_to_bag(it, at)
+			"hireling": return Hirelings.can_unequip_to(player, String(d.get("slot", "")), at)
 		return false
 	var p := menu.current_panel()
 	return p != null and p.accepts_bag_drop(d)
@@ -239,6 +252,7 @@ func _bag_dropped(d: Dictionary, at: Vector2i) -> void:
 		"gear": player.unequip_to(String(d.get("slot", "")), at)
 		"flask": player.unequip_flask_to(int(d.get("idx", -1)), at)
 		"stash": GameState.stash_to_bag(it, at)
+		"hireling": Hirelings.unequip_to(player, String(d.get("slot", "")), at)
 	menu.refresh()
 
 

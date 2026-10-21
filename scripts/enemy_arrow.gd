@@ -1,7 +1,7 @@
 class_name EnemyArrow
 extends Node2D
-## An arrow shot by an archer monster: flies straight, hurts the player it reaches, and stops at
-## a maze wall or after a while.
+## An arrow shot by an archer monster: flies straight, hurts who it was shot at (you or your
+## hireling) when it reaches them, and stops at a maze wall or after a while.
 
 const SPEED := 560.0
 const HIT_RADIUS := 26.0
@@ -10,7 +10,7 @@ const LIFE := 1.4
 var texture: Texture2D
 var dir := Vector2.RIGHT
 var damage := 8.0
-var target: Player
+var target: Node2D  ## a Player or a Hireling: anything with `dead` and take_damage()
 var maze: MazeMap = null
 
 var _t := 0.0

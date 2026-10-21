@@ -40,6 +40,13 @@ var _minions: Array = [] # Summoner
 
 signal minion_spawned(m: Enemy)
 
+## Who it is going for: you, or your hireling when that is nearer (or taunted it). `target` stays
+## you: it is who wakes it, gets the kill and is struck by its affixes.
+var _foe: Node2D = null
+var _foe_t := 0.0
+var _taunter: Node2D = null
+var _taunt_t := 0.0
+
 var _touch_cd := 0.0
 var _stun_t := 0.0
 var _dead := false
@@ -126,7 +133,12 @@ func _physics_process(delta: float) -> void:
 	if _chill_t > 0.0:
 		cur_speed *= 0.60
 
-	var to_player := target.global_position - global_position
+	_taunt_t = maxf(_taunt_t - delta, 0.0)
+	_foe_t -= delta
+	if _foe_t <= 0.0 or not _alive(_foe):
+		_foe_t = 0.4
+		_foe = _pick_foe()
+	var to_player := _foe.global_position - global_position
 	if not _aggro:
 		if aggro_range <= 0.0 or to_player.length() < aggro_range:
 			wake()
@@ -143,8 +155,8 @@ func _physics_process(delta: float) -> void:
 	if ranged and _ranged_step(delta, to_player, cur_speed):
 		return
 
-	# In a maze, follow the grid path around walls; otherwise walk straight at the player
-	var goal := target.global_position
+	# In a maze, follow the grid path around walls; otherwise walk straight at its foe
+	var goal := _foe.global_position
 	if maze != null:
 		_path_t -= delta
 		if _path_t <= 0.0:
@@ -168,11 +180,11 @@ func _physics_process(delta: float) -> void:
 			return
 
 	if to_player.length() < 46.0 * size_mult and _touch_cd <= 0.0:
-		target.take_damage(touch_damage)
+		_foe.take_damage(touch_damage)
 		if has_affix("vampiric"):
 			_heal(max_hp * 0.04)
-		if target.thorns() > 0.0:
-			take_damage(target.thorns())
+		if _foe.thorns() > 0.0:
+			take_damage(_foe.thorns())
 		_touch_cd = 1.0
 		rig.play_once("Slashing", 1.4)
 
@@ -182,7 +194,7 @@ func _physics_process(delta: float) -> void:
 func _ranged_step(delta: float, to_player: Vector2, cur_speed: float) -> bool:
 	_shot_cd -= delta
 	var d := to_player.length()
-	var clear := maze == null or maze.line_clear(global_position + Vector2(0, -20), target.global_position + Vector2(0, -20))
+	var clear := maze == null or maze.line_clear(global_position + Vector2(0, -20), _foe.global_position + Vector2(0, -20))
 	if d > SHOOT_RANGE or not clear:
 		return false
 	if d < KEEP_AWAY:
@@ -202,14 +214,14 @@ func _ranged_step(delta: float, to_player: Vector2, cur_speed: float) -> bool:
 
 
 func _loose_arrow() -> void:
-	if _dead or not is_instance_valid(target) or get_parent() == null:
+	if _dead or not _alive(_foe) or get_parent() == null:
 		return
 	var a := EnemyArrow.new()
 	a.texture = RigSprite.skin_parts(skin).get("Arrow")
 	a.global_position = global_position + Vector2(0, -26 * size_mult)
-	a.dir = (target.global_position + Vector2(0, -14) - a.global_position).normalized()
+	a.dir = (_foe.global_position + Vector2(0, -14) - a.global_position).normalized()
 	a.damage = touch_damage
-	a.target = target
+	a.target = _foe
 	a.maze = maze
 	get_parent().add_child(a)
 
@@ -284,6 +296,33 @@ func stun(seconds: float) -> void:
 
 func apply_sunder(seconds: float) -> void:
 	_sunder_t = maxf(_sunder_t, seconds)
+
+
+## Its foe: a hireling that taunted it, else whichever of you and your hireling is nearer (the
+## hireling only when clearly nearer, so it doesn't flip between you).
+func _pick_foe() -> Node2D:
+	if _taunt_t > 0.0 and _alive(_taunter):
+		return _taunter
+	var h: Hireling = Hirelings.node
+	if _alive(h) and h.is_inside_tree() and (not _alive(target)
+			or h.global_position.distance_to(global_position) < target.global_position.distance_to(global_position) * 0.85):
+		return h
+	return target
+
+
+## A foe that can still be fought.
+func _alive(n: Node2D) -> bool:
+	return is_instance_valid(n) and not n.dead
+
+
+## A hireling's taunt: it comes for the hireling for a while, whoever is nearer.
+func taunt(by: Node2D, seconds: float) -> void:
+	if _dead:
+		return
+	_taunter = by
+	_taunt_t = maxf(_taunt_t, seconds)
+	_foe = by
+	wake()
 
 
 ## Start hunting the player, and wake the rest of the pack.
@@ -373,9 +412,9 @@ func _die() -> void:
 
 func _do_slam() -> void:
 	queue_redraw()
-	if is_instance_valid(target) and not target.dead \
-			and target.global_position.distance_to(global_position) < SLAM_RADIUS:
-		target.take_damage(touch_damage * 2.0)
+	for who in [target, Hirelings.node]:  # the slam hits you and your hireling alike
+		if _alive(who) and who.global_position.distance_to(global_position) < SLAM_RADIUS:
+			who.take_damage(touch_damage * 2.0)
 	var ring := Node2D.new()
 	get_parent().add_child(ring)
 	ring.global_position = global_position

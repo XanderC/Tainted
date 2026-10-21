@@ -61,6 +61,13 @@ const MAX_LINKS := 5       # support links per slot, unlocked as you level (see 
 var skill_points := 3      # spent in the passive tree
 var level := 1
 var xp := 0.0
+## Attribute points added (Attributes.KEYS -> n) and those not yet added. Attributes.POINTS_PER_LEVEL
+## come with every level; the class's base comes on top (attribute_total).
+var attributes := {}
+var attr_points := 0
+## Your hireling (Hirelings): its state, {} for none, and its gear (slot -> ItemInstance).
+var hireling := {}
+var hireling_gear := {}
 var passive_nodes := {}    # class_id -> Array of allocated PassiveTree node ids (start not included)
 var skill_gems := {}       # skill_id -> count of loose skill gems in the gem pouch
 var gem_levels := {}       # skill_id -> gem level (1..SkillTree.GEM_MAX_LEVEL)
@@ -121,6 +128,11 @@ func _new_game() -> void:
 	skill_points = 0
 	level = 1
 	xp = 0.0
+	attributes = {}
+	attr_points = 0
+	hireling = {}
+	hireling_gear = {}
+	Hirelings.reset_offers()
 	passive_nodes = {}
 	gem_levels = {}
 	gem_xp = {}
@@ -496,15 +508,17 @@ static func xp_to_next(lvl: int) -> float:
 	return roundf(60.0 * pow(float(lvl), 1.5))
 
 
-## Each level gained grants one skill point.
+## Each level gained grants one passive point and Attributes.POINTS_PER_LEVEL attribute points.
 func add_xp(amount: float) -> void:
 	xp += amount
 	_grant_gem_xp(amount)
+	Hirelings.add_xp(amount)
 	var gained := false
 	while level < MAX_LEVEL and xp >= xp_to_next(level):
 		xp -= xp_to_next(level)
 		level += 1
 		skill_points += 1
+		attr_points += Attributes.POINTS_PER_LEVEL
 		gained = true
 		leveled_up.emit(level)
 	if level >= MAX_LEVEL:
@@ -516,7 +530,81 @@ func add_xp(amount: float) -> void:
 		_queue_save()  # no UI refresh needed for plain XP ticks
 
 
-# ---------- gems ----------
+# ---------- attributes (Attributes) ----------
+
+## The class's base in an attribute plus the points added to it.
+func attribute_total(key: String) -> int:
+	return int(Attributes.base_for(char_class).get(key, 0)) + int(attributes.get(key, 0))
+
+
+func attribute_totals() -> Dictionary:
+	var out := {}
+	for k in Attributes.KEYS:
+		out[k] = attribute_total(k)
+	return out
+
+
+## Add `n` unspent points to an attribute. False if there aren't that many.
+func add_attribute(key: String, n := 1) -> bool:
+	if not key in Attributes.KEYS or n <= 0 or attr_points < n:
+		return false
+	attributes[key] = int(attributes.get(key, 0)) + n
+	attr_points -= n
+	_on_attributes_modified()
+	return true
+
+
+func attribute_points_spent() -> int:
+	var n := 0
+	for k in attributes:
+		n += int(attributes[k])
+	return n
+
+
+## Take every added point back, free (in town).
+func reset_attributes() -> void:
+	attr_points += attribute_points_spent()
+	attributes = {}
+	_on_attributes_modified()
+
+
+func _on_attributes_modified() -> void:
+	if is_instance_valid(player):
+		player.refresh_attributes()
+	skills_changed.emit()
+	_changed()
+
+
+## Attribute points are exactly Attributes.POINTS_PER_LEVEL per level gained. A save from before
+## attributes gets all of them to add; one that holds more than its level allows is reset.
+func _fix_attribute_points() -> void:
+	var budget := Attributes.POINTS_PER_LEVEL * (level - 1)
+	var clean := {}
+	for k in Attributes.KEYS:
+		if int(attributes.get(k, 0)) > 0:
+			clean[k] = int(attributes[k])
+	attributes = clean
+	if attribute_points_spent() > budget:
+		attributes = {}
+	attr_points = budget - attribute_points_spent()
+
+
+## Put items that have nowhere else to go in the stash (or its overflow until there is room).
+func store_items(items: Array[ItemInstance]) -> void:
+	_keep(items)
+	_save_account()
+
+
+## Something changed that should be saved (and shown): saves at the end of the frame.
+func save_soon() -> void:
+	_changed()
+
+
+## True while a character's saved gear is being put on (requirements aren't checked then: gear
+## that no longer meets them stays worn, giving nothing until it does).
+func is_restoring() -> bool:
+	return _restoring
+
 
 # ---------- flasks ----------
 
@@ -1095,6 +1183,8 @@ func save() -> void:
 		"skill_points": skill_points,
 		"level": level,
 		"xp": xp,
+		"attributes": attributes,
+		"hireling": _hireling_save(),
 		"skill_tree_version": 2,
 		"passive_nodes": passive_nodes,
 		"gem_levels": gem_levels,
@@ -1382,12 +1472,55 @@ func _apply_save(data: Dictionary) -> void:
 		skill_slots = data.get("skill_slots", _empty_slots())
 	_fix_slots()
 	_fix_passive_points()
+	attributes = _ints(data.get("attributes", {}))
+	_fix_attribute_points()
+	_load_hireling(data.get("hireling", {}))
 	if data.has("flasks"):
 		_pending_flasks = data.flasks
 		_pending_loose_flasks.clear()
 	else:
 		_flasks_from_potions(data.get("potions", {"health_1": 3}), String(data.get("potion_slot", "health_1")))
 	tutorial_stage = int(data.get("tutorial_stage", TUTORIAL_DONE))  # older saves: already past it
+
+
+func _hireling_save() -> Dictionary:
+	if hireling.is_empty():
+		return {}
+	var d := hireling.duplicate(true)
+	var gear := {}
+	for slot in hireling_gear:
+		gear[slot] = hireling_gear[slot].to_dict()
+	d["gear"] = gear
+	return d
+
+
+func _load_hireling(d) -> void:
+	hireling = {}
+	hireling_gear = {}
+	if typeof(d) != TYPE_DICTIONARY or d.is_empty() or HirelingDB.type_def(String(d.get("type", ""))).is_empty():
+		return
+	var gear: Dictionary = d.get("gear", {})
+	for slot in gear:
+		var it := ItemInstance.from_dict(gear[slot])
+		if it != null:
+			hireling_gear[String(slot)] = it
+	hireling = d.duplicate(true)
+	hireling.erase("gear")
+	hireling["level"] = clampi(int(hireling.get("level", 1)), 1, MAX_LEVEL)
+	hireling["xp"] = float(hireling.get("xp", 0.0))
+	hireling["dead"] = bool(hireling.get("dead", false))
+	if hireling.has("look"):
+		hireling["look"] = Appearance.sanitize(hireling["look"])
+	var skills: Array = []
+	for id in hireling.get("skills", []):
+		if SkillTree.get_skill(String(id)) != null:
+			skills.append(String(id))
+	hireling["skills"] = skills
+	var sup: Array = []
+	for list in hireling.get("supports", []):
+		sup.append((list as Array).map(func(x): return String(x)))
+	hireling["supports"] = sup
+	Hirelings.fix_supports()
 
 
 ## Passive points are exactly one per level gained. Older saves also got points from rifts and a
