@@ -73,6 +73,10 @@ worn art and the bag icon are the same helmet, with the face opening cut out so 
 through (great helms such as the Frost Great Helm and Death Visage cover it). Better ones need more
 Strength.
 
+Flask icons are the CraftPix potion icons (`tools/import_potions.py`, pack folder on the NAS):
+red bottles for life, orange for power, small to large as they get grander, and a grey, blue,
+icy and yellow one for the Granite, Quicksilver, Silver and Sulphur flasks.
+
 ### Attributes and gear requirements
 Diablo II style (`scripts/attributes.gd`): **Strength**, **Dexterity**, **Vitality** and **Energy**.
 Your class gives a base in each (Warrior 25 / 15 / 20 / 10) and every level brings 5 points to add,

@@ -240,7 +240,9 @@ func _flask(id: String, name: String, col: Color, weight: int, def: Dictionary) 
 	var b := bases[-1]
 	b.flask = def
 	b.weight = weight
-	b.icon = IconFactory.potion_icon(id, col, int(def.get("tier", 1)))
+	# The CraftPix potion art (tools/import_potions.py), else a drawn bottle
+	var art := "res://assets/gear/flask/%s/icon.png" % id
+	b.icon = load(art) if ResourceLoader.exists(art) else IconFactory.potion_icon(id, col, int(def.get("tier", 1)))
 
 
 func _build_affixes() -> void:
