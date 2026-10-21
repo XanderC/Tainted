@@ -30,6 +30,8 @@ var _style: StyleBoxTexture
 var _rim_style: StyleBoxFlat
 var _rim: Panel  # the coloured outline over the icon: rarity, selection, drop feedback
 var _icon_tex: Texture2D = null
+var _dye := ""
+var _dye_tex: Texture2D = null
 
 
 func _init(slot_size := Vector2(60, 60)) -> void:
@@ -75,6 +77,13 @@ func _init(slot_size := Vector2(60, 60)) -> void:
 	add_child(_rim)
 
 	_apply_style(_border)
+
+
+## Draw the icon in a dye (DyeDB id): the item's art recoloured, as it looks worn.
+func set_dye(dye: String, tex: Texture2D) -> void:
+	_icon.material = DyeDB.material(dye, tex)
+	_dye = dye
+	_dye_tex = tex
 
 
 ## icon may be null (empty cell). count > 1 shows a stack number. caption is shown only when
@@ -124,6 +133,8 @@ func _get_drag_data(at_position: Vector2) -> Variant:
 		pic.size = Vector2(56, 56)
 		pic.position = Vector2(-28, -28)
 	pic.modulate = Color(1, 1, 1, 0.85)
+	if _dye != "":
+		pic.material = DyeDB.material(_dye, _dye_tex)
 	preview.add_child(pic)
 	set_drag_preview(preview)
 	modulate = Color(1, 1, 1, 0.45)

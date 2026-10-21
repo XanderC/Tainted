@@ -14,6 +14,7 @@ const WEST_EXIT := Vector2(-940, 620)  # the road out to the Dune Wastes
 const WEST_EXIT_ZONE := "dune_wastes"
 const WAYPOINT := Vector2(260, 300)
 const PORTAL := Vector2(-80, 470)  # where an open town portal stands
+const DYER := Vector2(-410, 40)  # the Dyer, between the Blacksmith's and the Sage's
 const CAPTAIN := Vector2(560, 120)  # the Mercenary Captain, by the road east to the Rift Gate
 const EXIT_REACH := 70.0
 
@@ -33,6 +34,7 @@ var dialogue: DialogueUI
 var quest_log: QuestLogUI
 var waypoint_ui: WaypointUI
 var hire_ui: HireUI
+var dye_ui: DyeUI
 var _exits: Array = []  # [{"node", "target", "entry"}]
 var _leaving := false
 
@@ -64,6 +66,10 @@ func _ready() -> void:
 		func(): dialogue.open("hesk"), "hesk")
 	_add_npc("Captain Rourke", "Hirelings", CAPTAIN, "", "Talk to the Captain", func(): hire_ui.open(), "captain",
 		{"weapon": "war_sword", "helmet": "iron_helm", "chest": "chain_mail", "offhand": "kite_shield"})
+	var dyer_look := Appearance.default_look("female")
+	dyer_look["hair_color"] = "ginger"
+	_add_npc("Dyer Calla", "Dye Armour", DYER, "", "Talk to the Dyer", func(): dye_ui.open(), "dyer",
+		{"helmet": ["leather_cap", "teal"], "chest": ["padded_vest", "rose"]}, dyer_look)
 	_add_gate(Vector2(820, 220))
 	_add_exit(WEST_EXIT, WEST_EXIT_ZONE, "town", "→ " + ActDB.zone_name(WEST_EXIT_ZONE))
 	if GameState.town_portal.get("zone", "") != "":
@@ -159,6 +165,9 @@ func _ready() -> void:
 	hire_ui = HireUI.new()
 	hire_ui.player = player
 	add_child(hire_ui)
+	dye_ui = DyeUI.new()
+	dye_ui.player = player
+	add_child(dye_ui)
 	if GameState.show_hub_intro:
 		GameState.show_hub_intro = false
 		_show_hub_intro()
@@ -187,6 +196,7 @@ func _show_hub_intro() -> void:
 		"  • [color=#ffd54a]Jeweler[/color] - combine and remove item gems\n" +
 		"  • [color=#ffd54a]Battlemaster Brom[/color] - your passive tree (you get a point every level)\n" +
 		"  • [color=#ffd54a]Captain Rourke[/color] - hire a fighter to follow you and fight at your side\n" +
+		"  • [color=#ffd54a]Dyer Calla[/color] - dye your helmet and armour any colour\n" +
 		"  • [color=#ffd54a]Mystic Seraphine[/color] - reset your passive points for free\n\n" +
 		"When you're ready, step into the [color=#c084fc]Rift Gate[/color] (east) to fight through rifts for loot.", 16)
 	t.custom_minimum_size = Vector2(700, 0)
@@ -233,7 +243,7 @@ func _process(delta: float) -> void:
 		(dialogue != null and dialogue.is_open()) or \
 		(quest_log != null and quest_log.is_open()) or \
 		(waypoint_ui != null and waypoint_ui.is_open()) or \
-		(hire_ui != null and hire_ui.is_open()) or \
+		(hire_ui != null and hire_ui.is_open()) or 		(dye_ui != null and dye_ui.is_open()) or \
 		(skill_tree_ui != null and skill_tree_ui.is_open())
 	_near = best
 	_talk_btn.visible = best != null and not any_open
@@ -273,11 +283,11 @@ func _identify_all() -> void:
 
 
 ## An NPC drawn as `skin`, a character from the packs (assets/skins), or with no skin a figure
-## wearing `gear` (slot -> base id). `npc_id` (QuestDB, default: the skin) is who they are in the
+## (with `look`, default a plain man) wearing `gear` (slot -> base id, or [base id, dye id]). `npc_id` (QuestDB, default: the skin) is who they are in the
 ## story: with quest business they talk first, their own action (the vendor, say) one of the
 ## choices; a gold ! or ? over their head says so.
 func _add_npc(title: String, subtitle: String, pos: Vector2, skin: String, prompt: String, action: Callable,
-		npc_id := "", gear := {}) -> void:
+		npc_id := "", gear := {}, look := {}) -> void:
 	if npc_id == "":
 		npc_id = skin
 	var npc := Interactable.new()
@@ -301,12 +311,15 @@ func _add_npc(title: String, subtitle: String, pos: Vector2, skin: String, promp
 		rig.weapon_from_gear = true
 	npc.add_child(rig)
 	if skin == "":
-		Appearance.apply(rig, Appearance.default_look())
+		Appearance.apply(rig, look if not look.is_empty() else Appearance.default_look())
 		for slot in gear:
+			# a base id, or [base id, dye id]
+			var g = gear[slot]
+			var gid := String(g[0]) if g is Array else String(g)
 			if slot == "offhand":
-				rig.set_offhand(String(gear[slot]), String(gear[slot]).ends_with("shield"))
+				rig.set_offhand(gid, gid.ends_with("shield"))
 			else:
-				rig.set_gear(slot, String(gear[slot]))
+				rig.set_gear(slot, gid, String(g[1]) if g is Array else "")
 	rig.play_loop("Idle")
 	rig.randomize_phase()
 	rig.set_facing(-1.0 if pos.x > 0 else 1.0)  # face the plaza

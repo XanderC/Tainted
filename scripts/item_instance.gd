@@ -46,6 +46,9 @@ const RARITY_COLORS := {
 ## town) reveals it. `hidden_name` holds its real name meanwhile.
 @export var identified: bool = true
 var hidden_name := ""
+## Dye (DyeDB id, "" for the item's own colours): helmets and armour can be dyed by the Dyer in town.
+## It is only how the item looks, and stays through crafting.
+@export var dye: String = ""
 
 const MAX_QUALITY := 20
 const IMPLICIT_ROLL := [0.9, 1.1]
@@ -67,6 +70,11 @@ func is_weapon() -> bool:
 
 func is_unique() -> bool:
 	return unique_id != ""
+
+
+## Helmets and body armour, the gear you can see worn, can be dyed.
+func can_dye() -> bool:
+	return base != null and base.slot in DyeDB.SLOTS
 
 
 func is_runeword() -> bool:
@@ -227,6 +235,8 @@ func get_tooltip() -> String:
 		lines.append("Set: " + String(UniqueItems.SETS[UniqueItems.set_of(unique_id)].name))
 	for i in sockets:
 		lines.append(("Socket: " + socket_info(gems[i]).get("text", "?")) if i < gems.size() else "Empty socket")
+	if dye != "":
+		lines.append("Dyed " + DyeDB.dye_name(dye))
 	if corrupted:
 		lines.append("Corrupted")
 	if mirrored:
@@ -260,6 +270,7 @@ func to_dict() -> Dictionary:
 		"mirrored": mirrored,
 		"identified": identified,
 		"hidden_name": hidden_name,
+		"dye": dye,
 	}
 
 
@@ -279,6 +290,8 @@ static func from_dict(d: Dictionary) -> ItemInstance:
 	it.mirrored = bool(d.get("mirrored", false))
 	it.identified = bool(d.get("identified", true))
 	it.hidden_name = String(d.get("hidden_name", ""))
+	var dyed := String(d.get("dye", ""))
+	it.dye = dyed if DyeDB.has(dyed) and it.can_dye() else ""
 	var pw: Dictionary = d.get("powers", {})
 	for k in pw:
 		it.powers[String(k)] = float(pw[k])

@@ -1423,7 +1423,7 @@ func equip_with_overflow(item: ItemInstance) -> ItemInstance:
 static func dress_rig(r: RigSprite, gear: Dictionary) -> void:
 	for slot in VISIBLE_SLOTS:
 		var it = gear.get(slot)
-		r.set_gear(slot, it.base.id if it != null else "")
+		r.set_gear(slot, it.base.id if it != null else "", it.dye if it != null and slot in DyeDB.SLOTS else "")
 	var off = gear.get("offhand")
 	r.set_offhand(off.base.id if off != null else "", off != null and off.base.weapon_type == "shield")
 

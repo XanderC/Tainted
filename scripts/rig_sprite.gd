@@ -62,6 +62,7 @@ var _slash_i := -1
 var _weapon_equipped := false
 var _weapon_tex: Texture2D = null
 var _gear := {}
+var _gear_dye := {}  # slot -> DyeDB id
 var _overlays: Array = []  # {sprite, obj, slot, z2}
 var _second_sprite: Sprite2D = null  # player rigs: off-hand weapon in the screen-left hand
 var _shield_sprite: Sprite2D = null
@@ -303,11 +304,13 @@ func set_look_layers(layers: Array) -> void:
 
 # ---------------------------------------------------------------- gear
 
-## slot: "weapon" | "helmet" | "chest". gear_id "" clears it. gear_id is the ItemBase id.
-func set_gear(slot: String, gear_id: String) -> void:
-	if rig == null or not GEAR_LAYERS.has(slot) or _gear.get(slot, "") == gear_id:
+## slot: "weapon" | "helmet" | "chest". gear_id "" clears it. gear_id is the ItemBase id. `dye` is a
+## DyeDB id that recolours the armour's art ("" for its own colours).
+func set_gear(slot: String, gear_id: String, dye := "") -> void:
+	if rig == null or not GEAR_LAYERS.has(slot) or (_gear.get(slot, "") == gear_id and _gear_dye.get(slot, "") == dye):
 		return
 	_gear[slot] = gear_id
+	_gear_dye[slot] = dye
 	var cfg: Dictionary = GEAR_LAYERS[slot]
 	if cfg["mode"] == "replace":
 		_weapon_equipped = gear_id != ""
@@ -328,6 +331,7 @@ func set_gear(slot: String, gear_id: String) -> void:
 				var s := Sprite2D.new()
 				s.centered = false
 				s.texture = tex
+				s.material = DyeDB.material(dye, tex)
 				add_child(s)
 				var top := _z[obj_i]
 				for above in cfg.get("above", []):
@@ -373,6 +377,11 @@ func set_offhand(gear_id_: String, is_shield: bool) -> void:
 
 func gear_id(slot: String) -> String:
 	return _gear.get(slot, "")
+
+
+## The dye on the gear in a slot ("" for none).
+func gear_dye(slot: String) -> String:
+	return _gear_dye.get(slot, "")
 
 
 ## Number of overlay sprites currently drawn for a slot (for tests / debugging).

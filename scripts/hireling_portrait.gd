@@ -51,7 +51,7 @@ func _update_face() -> void:
 	var h := GameState.hireling
 	var helm: ItemInstance = GameState.hireling_gear.get("helmet")
 	var key := "%s|%s|%s|%s" % [String(h.get("name", "")), String(h.get("skin", "")), str(h.get("look", {})),
-		helm.base.id if helm != null else ""]
+		(helm.base.id + helm.dye) if helm != null else ""]
 	if key == _look_key and _rig != null:
 		_rig.modulate = Color(0.45, 0.45, 0.45) if not Hirelings.alive() else Color.WHITE
 		return
@@ -67,7 +67,7 @@ func _update_face() -> void:
 	_face_box.add_child(_rig)
 	if skin == "":
 		Appearance.apply(_rig, h.get("look", Appearance.default_look()))
-		_rig.set_gear("helmet", helm.base.id if helm != null else "")
+		_rig.set_gear("helmet", helm.base.id if helm != null else "", helm.dye if helm != null else "")
 	_rig.position = Vector2(FACE * 0.5 - 2.0, FACE * 0.5 + 54.0)  # feet far below: the whole head sits in the frame
 	_rig.set_facing(1.0)
 	_rig.play_loop("Idle")

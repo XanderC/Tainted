@@ -77,6 +77,18 @@ Flask icons are the CraftPix potion icons (`tools/import_potions.py`, pack folde
 red bottles for life, orange for power, small to large as they get grander, and a grey, blue,
 icy and yellow one for the Granite, Quicksilver, Silver and Sulphur flasks.
 
+### Dyes
+**Dyer Calla** in Ashfall (west of the plaza, between the Blacksmith and the Sage) dyes helmets and
+body armour: 30 dyes (`scripts/dye_db.gd`; the CraftPix paint icons, `tools/import_paints.py`), ten
+colours in bright, deep and muted shades. Tap a piece of gear (worn, in your bag, or your hireling's),
+tap a paint, see the character wearing it in the preview, and pay an Orb of Transmutation. Taking a dye
+off is free. A dye recolours the art with a shader that keeps its shading and outlines (so chain mail
+still looks like chain mail, and dark dyes stay dark), both worn and in the bag, and stays with the
+item (`ItemInstance.dye`, saved) through crafting and trading to the stash. Only helmets and armour:
+the gear you can see.
+- Tests: `godot --headless --path . res://scratch/test_dye.tscn`; `res://scratch/capture_dye.tscn`
+  for screenshots (needs a window).
+
 ### Attributes and gear requirements
 Diablo II style (`scripts/attributes.gd`): **Strength**, **Dexterity**, **Vitality** and **Energy**.
 Your class gives a base in each (Warrior 25 / 15 / 20 / 10) and every level brings 5 points to add,

@@ -267,6 +267,8 @@ static func item_cell(item: ItemInstance, selected: bool, size := Vector2(60, 60
 	if item != null:
 		var col: Color = Color.WHITE if selected else ItemInstance.RARITY_COLORS[item.rarity]
 		cell.setup(item.base.icon, col, item.base.color.darkened(0.72), 0, item.display_name, item.display_name)
+		if item.dye != "":
+			cell.set_dye(item.dye, item.base.icon)
 	else:
 		cell.setup(null, EMPTY_BORDER)
 	return cell
@@ -363,6 +365,8 @@ static func item_card(parent: Node, item: ItemInstance, compact := false, deltas
 			txt += "[color=#666677]◇ Empty Socket[/color]\n"
 	if item.affixes.is_empty() and item.base.implicit_stat == "" and item.sockets == 0:
 		txt += "[color=#555555]No magical properties[/color]\n"
+	if DyeDB.dyed(item):
+		txt += "[color=#%s]🎨 Dyed %s[/color]\n" % [DyeDB.color(item.dye).lightened(0.25).to_html(false), DyeDB.dye_name(item.dye)]
 	if item.corrupted:
 		txt += "[color=#e04848][b]Corrupted[/b][/color]\n"
 	if item.mirrored:
