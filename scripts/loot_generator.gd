@@ -141,6 +141,25 @@ const WEAPON_BASES := [
 ]
 
 
+## [id, name, drop level, armour, colour]. Better ones need more Strength (Attributes).
+const HELMET_BASES := [
+	["linen_wrap", "Linen Wrap", 1, 3, Color(0.75, 0.55, 0.25)],
+	["leather_cap", "Leather Cap", 1, 5, Color(0.55, 0.4, 0.25)],
+	["iron_helm", "Iron Helm", 1, 10, Color(0.6, 0.6, 0.65)],
+	["gilded_turban", "Gilded Turban", 8, 8, Color(0.90, 0.75, 0.35)],
+	["horned_cap", "Horned Cap", 12, 14, Color(0.60, 0.40, 0.28)],
+	["knights_helm", "Knight's Helm", 17, 18, Color(0.62, 0.60, 0.55)],
+	["crusader_helm", "Crusader Helm", 22, 22, Color(0.45, 0.50, 0.30)],
+	["viking_helm", "Viking Helm", 27, 26, Color(0.50, 0.48, 0.45)],
+	["elven_helm", "Elven Helm", 32, 30, Color(0.65, 0.65, 0.75)],
+	["shadow_helm", "Shadow Helm", 36, 33, Color(0.50, 0.50, 0.52)],
+	["frost_greathelm", "Frost Great Helm", 40, 38, Color(0.55, 0.70, 0.85)],
+	["death_visage", "Death Visage", 44, 43, Color(0.60, 0.20, 0.25)],
+	["infernal_crown", "Infernal Crown", 48, 47, Color(0.90, 0.40, 0.35)],
+	["lich_crown", "Lich Crown", 52, 52, Color(0.55, 0.30, 0.55)],
+]
+
+
 func _base_index(id: String) -> int:
 	for i in bases.size():
 		if bases[i].id == id:
@@ -161,8 +180,11 @@ func _build_bases() -> void:
 		if b.weapon_type == "bow":
 			b.weight = 60  # rarer than gear you wear yourself: they are for your hireling
 	bases[_base_index("tower_shield")].grid_size = Vector2i(2, 3)  # a tall shield takes a tall space
-	_base("leather_cap", "Leather Cap", "helmet", Color(0.55, 0.4, 0.25), "armor", 5)
-	_base("iron_helm", "Iron Helm", "helmet", Color(0.6, 0.6, 0.65), "armor", 10)
+	# Helmets in tiers: the helmets the character packs draw on their heads, cut out by
+	# tools/import_helmets.py (worn art and bag icon)
+	for h in HELMET_BASES:
+		_base(h[0], h[1], "helmet", h[4], "armor", h[3])
+		bases[-1].drop_level = h[2]
 	_base("padded_vest", "Padded Vest", "chest", Color(0.5, 0.4, 0.3), "armor", 10)
 	_base("chain_mail", "Chain Mail", "chest", Color(0.65, 0.65, 0.7), "armor", 20)
 	_base("leather_gloves", "Leather Gloves", "gloves", Color(0.5, 0.35, 0.2), "armor", 3)

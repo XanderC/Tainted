@@ -67,6 +67,12 @@ later zones. Their art, in the hand and in the bag, comes from the CraftPix weap
 `tools/import_weapons.py` (base id -> pack design and grade); the packs have no bows, so the bows
 are the archer skins' own (`tools/import_bows.py`).
 
+Helmets come in 14 tiers, from a Linen Wrap to the Lich Crown (`LootGenerator.HELMET_BASES`), and
+are the helmets the character packs draw on their heads, cut out by `tools/import_helmets.py`: the
+worn art and the bag icon are the same helmet, with the face opening cut out so your own face shows
+through (great helms such as the Frost Great Helm and Death Visage cover it). Better ones need more
+Strength.
+
 ### Attributes and gear requirements
 Diablo II style (`scripts/attributes.gd`): **Strength**, **Dexterity**, **Vitality** and **Energy**.
 Your class gives a base in each (Warrior 25 / 15 / 20 / 10) and every level brings 5 points to add,
