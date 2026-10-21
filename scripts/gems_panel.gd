@@ -5,13 +5,14 @@ extends MenuPanel
 ## (GameState.gem_station), where the shared gems show below the sockets: drag them onto a socket,
 ## or a socketed gem back onto them. Elsewhere the sockets are view-only. At the Jeweler
 ## (`jeweler = true`) it also combines GemDef.COMBINE_COUNT gems into the next tier for orbs.
+## Tapping a gem (or rune) pops up its card where it was tapped (the menu's ItemTip).
 
 
 var jeweler := false
 ## Shown inside another panel (the stash's Gems tab): tapping a gem doesn't switch panels.
 var embedded := false
 var _combine_gem := ""
-var _sel_gem := ""  # gem tapped in the Gems tab or in a socket: its details card is shown
+var _sel_gem := ""  # gem tapped in the Gems tab or in a socket (outlined; its card pops up)
 
 
 func panel_title() -> String:
@@ -26,7 +27,6 @@ func panel_title() -> String:
 func refresh() -> void:
 	UIKit.clear(self)
 	_add_sockets()
-	_add_gem_details()
 	if GameState.gem_station:
 		add_child(UIKit.label("Drag gems from the shared gems below onto a socket (and back to take them out).", 13, UIKit.TEXT_DIM, true))
 		_add_pool()
@@ -84,12 +84,12 @@ func _socket_cell(it: ItemInstance, i: int) -> DragSlot:
 	if i < it.gems.size():
 		var gid: String = it.gems[i]
 		var g := GemDef.info(gid)
-		cell.setup(GemDef.icon(gid), Color.WHITE if gid == _sel_gem else g.color, Color(g.color).darkened(0.82), 0, "",
-			UIKit.gem_tip(gid) + ("\n(set in the runeword for good)" if it.is_runeword() else "\n(drag back to the pouch to remove)"))
+		cell.setup(GemDef.icon(gid), Color.WHITE if gid == _sel_gem else g.color, Color(g.color).darkened(0.82))
 		cell.payload = {"kind": "gem", "from": "socket", "idx": i, "item": it}
 		cell.clicked.connect(func():
 			_sel_gem = gid
 			menu.refresh()
+			show_gem_tip(gid, "Set in the runeword for good." if it.is_runeword() else "Drag it back onto the shared gems to take it out.")
 		)
 	else:
 		cell.setup(null, Color(0.45, 0.50, 0.70), Color(0.06, 0.06, 0.10), 0, "◇", "Empty socket - drop a gem here")
@@ -112,52 +112,44 @@ func _socket_cell(it: ItemInstance, i: int) -> DragSlot:
 	return cell
 
 
-# ---------- details of the tapped gem ----------
+# ---------- the tapped gem's card ----------
 
-## Card for the selected gem: its effect, tier, the next tier, how many you own, and what it would
-## add to the item whose sockets are open.
-func _add_gem_details() -> void:
-	var g := GemDef.info(_sel_gem)
-	if g.is_empty():
+## Pops up `gid`'s card where it was tapped; `note` (optional) is a line under it.
+func show_gem_tip(gid: String, note := "") -> void:
+	if GemDef.info(gid).is_empty():
 		return
-	var card := PanelContainer.new()
-	var sb := UIKit.box(Color(g.color).darkened(0.85), g.color, 2, 10)
-	sb.set_content_margin_all(12)
-	card.add_theme_stylebox_override("panel", sb)
-	add_child(card)
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 14)
-	card.add_child(row)
+	menu.item_tip().show_content(get_viewport().get_mouse_position(), func(d: VBoxContainer):
+		_gem_card(d, gid)
+		if note != "":
+			d.add_child(UIKit.label(note, 12, UIKit.TEXT_DIM, true)))
+
+
+## A gem's card: its effect, tier, the next tier, how many you own, what it would add to the item
+## whose sockets are open, and for a rune the runewords it is part of.
+func _gem_card(v: VBoxContainer, gid: String) -> void:
+	var g := GemDef.info(gid)
+	var head := HBoxContainer.new()
+	head.add_theme_constant_override("separation", 10)
+	v.add_child(head)
 	var icon := TextureRect.new()
-	icon.texture = GemDef.icon(_sel_gem)
-	icon.custom_minimum_size = Vector2(64, 64)
+	icon.texture = GemDef.icon(gid)
+	icon.custom_minimum_size = Vector2(48, 48)
 	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	row.add_child(icon)
-	var v := VBoxContainer.new()
-	v.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	v.add_theme_constant_override("separation", 4)
-	row.add_child(v)
-	var head := HBoxContainer.new()
-	v.add_child(head)
-	var title := UIKit.label(String(g.name).to_upper(), 18, Color(g.color).lightened(0.25))
+	head.add_child(icon)
+	var title := UIKit.label(String(g.name).to_upper(), 18, Color(g.color).lightened(0.25), true)
 	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	title.custom_minimum_size.x = 200  # clear of the close button
 	head.add_child(title)
-	var close := UIKit.button("✕", Color(0.12, 0.10, 0.14), Color(0.45, 0.40, 0.40), Vector2(40, 34), 15)
-	close.pressed.connect(func():
-		_sel_gem = ""
-		menu.refresh()
-	)
-	head.add_child(close)
 	var is_rune: bool = g.get("rune", false)
-	var t := "[color=#%s][b]%s[/b][/color]   [color=#888888]%s  •  You own %d[/color]\n" % [
+	var t := "[color=#%s][b]%s[/b][/color]\n[color=#888888]%s  •  You own %d[/color]\n" % [
 		Color(g.color).to_html(false), g.text,
 		"Rune %d / %d" % [int(g.tier), SocketRune.LADDER.size()] if is_rune else "Tier %d / %d" % [int(g.tier), GemDef.MAX_TIER],
-		GameState.gem_count(_sel_gem)]
+		GameState.gem_count(gid)]
 	var it := menu.selected
 	if it != null and it.sockets > 0:
 		var free: int = it.sockets - it.gems.size()
-		var adds: String = it.socket_info(_sel_gem).get("text", g.text)
+		var adds: String = it.socket_info(gid).get("text", g.text)
 		if free > 0:
 			t += "[color=#4ade80]Socketing it adds %s to %s[/color]%s\n" % [adds, it.display_name,
 				" (you're wearing it)" if player.equipment.values().has(it) else ""]
@@ -165,15 +157,15 @@ func _add_gem_details() -> void:
 			t += "[color=#f59e0b]%s has no free socket: drop it on a socket to swap gems.[/color]\n" % it.display_name
 	elif it == null:
 		t += "[color=#9ca3af]Tap an item to open its sockets, then drag this gem onto one.[/color]\n"
-	var nxt_id := GemDef.next_id(_sel_gem)
+	var nxt_id := GemDef.next_id(gid)
 	if nxt_id != "":
 		var nxt := GemDef.info(nxt_id)
-		t += "[color=#888888]Next: %s gives %s (combine %d at the Jeweler)[/color]" % [nxt.name, nxt.text, GemDef.combine_count_of(_sel_gem)]
+		t += "[color=#888888]Next: %s gives %s (combine %d at the Jeweler)[/color]" % [nxt.name, nxt.text, GemDef.combine_count_of(gid)]
 	else:
 		t += "[color=#888888]The highest %s.[/color]" % ("rune" if is_rune else "tier")
 	if is_rune:
 		# Runewords it is part of: fill a Normal item's sockets with exactly these runes, in order
-		var rws := Runewords.using_rune(_sel_gem)
+		var rws := Runewords.using_rune(gid)
 		if not rws.is_empty():
 			t += "\n[color=#c7b377]Runewords (Normal item, exactly that many sockets, runes in order):[/color]"
 			for rw in rws:
@@ -212,7 +204,7 @@ static func pouch_cell(m: GameMenu, gid: String, sz: Vector2, owner: GemsPanel =
 		var g := GemDef.info(gid)
 		var gp_now := owner if owner != null else m.current_panel() as GemsPanel
 		var sel := gp_now != null and gp_now._sel_gem == gid
-		cell.setup(GemDef.icon(gid), Color.WHITE if sel else g.color, Color(g.color).darkened(0.82), GameState.gem_count(gid), "", UIKit.gem_tip(gid))
+		cell.setup(GemDef.icon(gid), Color.WHITE if sel else g.color, Color(g.color).darkened(0.82), GameState.gem_count(gid))
 		cell.payload = {"kind": "gem", "from": "pouch", "gem_id": gid}
 		cell.clicked.connect(func():
 			var gp := owner if owner != null else m.current_panel() as GemsPanel
@@ -222,6 +214,7 @@ static func pouch_cell(m: GameMenu, gid: String, sz: Vector2, owner: GemsPanel =
 			gp._sel_gem = gid
 			gp._combine_gem = gid
 			m.refresh()
+			gp.show_gem_tip(gid)
 		)
 	else:
 		cell.setup(null, UIKit.EMPTY_BORDER)
@@ -251,7 +244,9 @@ func _add_combine() -> void:
 	if g.is_empty():
 		in_cell.setup(null, Color(0.45, 0.55, 0.85), Color(0.06, 0.06, 0.10), 0, "◇", "Drop or tap a gem")
 	else:
-		in_cell.setup(GemDef.icon(_combine_gem), g.color, Color(g.color).darkened(0.82), GameState.gem_count(_combine_gem), "", UIKit.gem_tip(_combine_gem))
+		in_cell.setup(GemDef.icon(_combine_gem), g.color, Color(g.color).darkened(0.82), GameState.gem_count(_combine_gem))
+		var cg := _combine_gem
+		in_cell.clicked.connect(func(): show_gem_tip(cg))
 	in_cell.can_accept = func(d: Dictionary) -> bool:
 		return d.get("kind", "") == "gem" and d.get("from", "") == "pouch"
 	in_cell.on_drop = func(d: Dictionary) -> void:
@@ -276,7 +271,8 @@ func _add_combine() -> void:
 		var cost := GemDef.combine_cost_of(_combine_gem)
 		var have := GameState.gem_count(_combine_gem)
 		can = have >= need and GameState.can_afford(cost)
-		out_cell.setup(GemDef.icon(up), ug.color, Color(ug.color).darkened(0.82), 0, "", UIKit.gem_tip(up))
+		out_cell.setup(GemDef.icon(up), ug.color, Color(ug.color).darkened(0.82))
+		out_cell.clicked.connect(func(): show_gem_tip(up))
 		var cost_txt := ", ".join(PackedStringArray(cost.keys().map(func(k): return "%d %s" % [int(cost[k]), Currency.orb_name(k)])))
 		info.text = "%d × %s ➜ 1 %s (%s)\nHave %d  •  %s each" % [need, g.name, ug.name, ug.text, have, cost_txt]
 		info.add_theme_color_override("font_color", Color(0.85, 0.90, 1.0) if can else Color(0.95, 0.55, 0.50))

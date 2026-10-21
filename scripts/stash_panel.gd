@@ -141,17 +141,13 @@ func _show_currency() -> void:
 	else:
 		UIKit.item_card(right, it, true)
 
-	sec.add_child(UIKit.label("Tap an orb to pick it. Dimmed orbs can't be used on this item.", 13, UIKit.TEXT_DIM, true))
+	sec.add_child(UIKit.label("Tap an orb to pick it and see what it does. Dimmed orbs can't be used on this item.", 13, UIKit.TEXT_DIM, true))
 	var flow := HFlowContainer.new()
 	flow.add_theme_constant_override("h_separation", 5)
 	flow.add_theme_constant_override("v_separation", 5)
 	sec.add_child(flow)
 	for id in CraftingDB.ORB_ORDER:
 		flow.add_child(_orb_cell(id, it))
-	if _orb != "":
-		var o: Dictionary = CraftingDB.ORBS[_orb]
-		sec.add_child(UIKit.rich("[color=#%s][b]%s[/b][/color]  [color=#bdb6aa]%s[/color]" % [
-			Color(o.color).to_html(false), o.name, o.desc], 14))
 
 
 ## The slot gear is dragged into. It holds a reference: the item stays where it is.
@@ -174,14 +170,9 @@ func _orb_cell(id: String, it: ItemInstance) -> DragSlot:
 	var n := GameState.orb_count(id)
 	var sh := GameState.shard_count(id)
 	var cell := DragSlot.new(ORB_CELL)
-	var tip := "%s\n%s" % [o.name, o.desc]
-	if sh > 0:
-		tip += "\nShards: %d / %d" % [sh, Currency.SHARDS_PER_ORB]
 	var why := Crafting.orb_block_reason(it, id) if it != null else ""
-	if why != "":
-		tip += "\n" + why
 	var border: Color = Color.WHITE if id == _orb else (Color(o.color) if n > 0 else UIKit.EMPTY_BORDER)
-	cell.setup(CraftingDB.orb_icon(id), border, Color(0.20, 0.18, 0.28) if id == _orb else Color(0.08, 0.07, 0.10), n, "", tip)
+	cell.setup(CraftingDB.orb_icon(id), border, Color(0.20, 0.18, 0.28) if id == _orb else Color(0.08, 0.07, 0.10), n)
 	if n <= 0 or why != "":
 		cell.modulate = Color(1, 1, 1, 0.4)
 	if sh > 0:
@@ -196,8 +187,38 @@ func _orb_cell(id: String, it: ItemInstance) -> DragSlot:
 	cell.clicked.connect(func():
 		_orb = id
 		menu.refresh()
+		show_orb_tip(id, it)
 	)
 	return cell
+
+
+## Pops up an orb's card where it was tapped: what it does, how many you have (and shards), and
+## why it can't be used on `it` (the item on the bench), if it can't.
+func show_orb_tip(id: String, it: ItemInstance = null) -> void:
+	var o: Dictionary = CraftingDB.ORBS[id]
+	menu.item_tip().show_content(get_viewport().get_mouse_position(), func(d: VBoxContainer):
+		var head := HBoxContainer.new()
+		head.add_theme_constant_override("separation", 10)
+		d.add_child(head)
+		var icon := TextureRect.new()
+		icon.texture = CraftingDB.orb_icon(id)
+		icon.custom_minimum_size = Vector2(48, 48)
+		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		head.add_child(icon)
+		var title := UIKit.label(String(o.name), 18, Color(o.color).lightened(0.2), true)
+		title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		title.custom_minimum_size.x = 200  # clear of the close button
+		head.add_child(title)
+		d.add_child(UIKit.label(String(o.desc), 14, Color(0.85, 0.82, 0.76), true))
+		var have := "You have %d" % GameState.orb_count(id)
+		var sh := GameState.shard_count(id)
+		if sh > 0:
+			have += "  •  Shards %d / %d" % [sh, Currency.SHARDS_PER_ORB]
+		d.add_child(UIKit.label(have, 13, Color(0.38, 0.65, 0.98)))
+		var why: String = Crafting.NOT_ITEM_ORBS.get(id, "") if Crafting.NOT_ITEM_ORBS.has(id) else (Crafting.orb_block_reason(it, id) if it != null else "")
+		if why != "":
+			d.add_child(UIKit.label("⛔ " + String(why), 13, Color(0.95, 0.45, 0.40), true)))
 
 
 ## "" when the picked orb can be used on the item now, otherwise what is missing.
