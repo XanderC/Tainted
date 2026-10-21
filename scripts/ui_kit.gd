@@ -266,7 +266,7 @@ static func item_cell(item: ItemInstance, selected: bool, size := Vector2(60, 60
 	var cell := DragSlot.new(size)
 	if item != null:
 		var col: Color = Color.WHITE if selected else ItemInstance.RARITY_COLORS[item.rarity]
-		cell.setup(item.base.icon, col, item.base.color.darkened(0.72), 0, item.display_name, item.display_name)
+		cell.setup(item.base.icon, col, item.base.color.darkened(0.72), 0, item.display_name)  # tapping shows its card (GameMenu.show_item_tip)
 		if item.dye != "":
 			cell.set_dye(item.dye, item.base.icon)
 	else:

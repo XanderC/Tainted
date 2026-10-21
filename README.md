@@ -147,6 +147,7 @@ Tap **Bag** (top right) or press **I**. The game pauses while it's open.
   the five flask slots in a row under the belt, and the 12 x 5 bag grid under that. The weapon-set switch
   (I / II) is in the header.
 - Tap a bag item to inspect it. You get its stats, a green/red list of what changes if you equip it, and the item you're currently wearing in that slot.
+- Tapping any item also pops up its card where you tapped: in the bag, worn, in the stash or on the hireling. The card is a tooltip made for touch. It stays until you tap elsewhere, and a tap that closes it still goes through. Cards for gear you could wear end with what changes "Instead of your ..."; for worn gear they say Worn, and for gear you can't use, why not.
 - **Equip** by dragging it onto its equipment slot (the old item takes its bag space). **Drop** by
   dragging it onto the 🗑 Drop box under the boots, beside the flasks (from the bag, the paperdoll
   or a flask slot); it

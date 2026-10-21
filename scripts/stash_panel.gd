@@ -61,6 +61,7 @@ func _show_items() -> void:
 	view.item_clicked.connect(func(it: ItemInstance):
 		menu.selected = it
 		menu.refresh()
+		menu.show_item_tip(it)
 	)
 	sec.add_child(view)
 	view.refresh()
@@ -75,6 +76,7 @@ func _show_items() -> void:
 			cell.clicked.connect(func():
 				menu.selected = it
 				menu.refresh()
+				menu.show_item_tip(it)
 			)
 			row.add_child(cell)
 
@@ -156,7 +158,7 @@ func _show_currency() -> void:
 func _bench_slot(it: ItemInstance) -> DragSlot:
 	var slot := DragSlot.new(BENCH_SLOT)
 	if it != null:
-		slot.setup(it.base.icon, ItemInstance.RARITY_COLORS[it.rarity], it.base.color.darkened(0.72), 0, it.display_name, it.display_name)
+		slot.setup(it.base.icon, ItemInstance.RARITY_COLORS[it.rarity], it.base.color.darkened(0.72), 0, it.display_name)
 	else:
 		slot.setup(null, Color(0.40, 0.34, 0.26), Color(0.08, 0.07, 0.10), 0, "Drag gear here", "Drag a piece of gear here")
 	slot.can_accept = func(d: Dictionary) -> bool:

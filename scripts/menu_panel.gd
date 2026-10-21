@@ -23,9 +23,10 @@ func refresh() -> void:
 	pass
 
 
-## An item in your bag or on you was tapped while this panel is shown (after the menu refreshed).
-func on_item_tapped(_item: ItemInstance) -> void:
-	pass
+## An item was tapped while this panel is shown (after the menu refreshed): by default its card
+## pops up where it was tapped (GameMenu.show_item_tip). A panel can show its own instead.
+func on_item_tapped(item: ItemInstance) -> void:
+	menu.show_item_tip(item)
 
 
 ## Lets the panel take drops onto the character's bag (e.g. buying a merchant ware).

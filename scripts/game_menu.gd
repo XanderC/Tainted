@@ -27,6 +27,7 @@ var _panels := {}  # name -> MenuPanel
 var _current := "details"
 var _vendor := ""  # vendor panel opened by an NPC; "" when opened as the inventory
 var _tabs_gap: Control
+var _tip: ItemTip  ## the item card shown where you tap an item (ItemTip, made for touch)
 ## Where the hireling's page goes back to (it has no tab row of its own: back() returns here)
 var _back_panel := "details"
 
@@ -109,6 +110,8 @@ func close() -> void:
 
 
 func show_panel(panel_name: String) -> void:
+	if _tip != null:
+		_tip.close()
 	if panel_name == "hireling" and _current != "hireling":
 		_back_panel = _current
 	# The hireling's page fills the left side: no tab row (it has a Back button instead)
@@ -121,6 +124,35 @@ func show_panel(panel_name: String) -> void:
 	_left_title.text = p.panel_title()
 	_build_tabs()
 	refresh()
+
+
+## The item card that pops up where an item was tapped, over both halves (hidden with the menu).
+func item_tip() -> ItemTip:
+	if _tip == null or not is_instance_valid(_tip):
+		_tip = ItemTip.new()
+		_root.add_child(_tip)
+	return _tip
+
+
+## Shows `item`'s card where it was tapped: its requirements judged by you, and if you could wear it
+## instead of what you have on, what that changes. `extra` adds lines under it (as ItemTip.show_card).
+func show_item_tip(item: ItemInstance, extra := Callable()) -> void:
+	if item == null:
+		return
+	var worn := player.is_worn(item)
+	item_tip().show_card(item, get_viewport().get_mouse_position(), {}, func(parent: VBoxContainer):
+		if worn:
+			parent.add_child(UIKit.label("Worn", 13, UIKit.GOLD))
+		elif item.identified and not item.is_flask() and player.can_equip(item):
+			var on: ItemInstance = player.equipment.get(player.equip_slot_for(item))
+			parent.add_child(UIKit.label(("Instead of your %s:" % on.display_name) if on != null else "If you wear it:", 13, UIKit.GOLD, true))
+			parent.add_child(UIKit.rich(UIKit.delta_bbcode(player, item), 13))
+		elif not item.is_flask():
+			var why := player.equip_block_reason(item)
+			if why != "":
+				parent.add_child(UIKit.label("⛔ " + why, 13, Color(0.95, 0.45, 0.40), true))
+		if extra.is_valid():
+			extra.call(parent))
 
 
 ## Back from the hireling's page to the panel it was opened from.
@@ -144,7 +176,8 @@ func skills_panel() -> SkillGemsPanel:
 	return p
 
 
-func select(item: ItemInstance) -> void:
+## `tip`: show its card where it was tapped (not after a drag, say).
+func select(item: ItemInstance, tip := true) -> void:
 	selected = item
 	# Picking an item from the inventory's other tabs jumps to its details, except where the
 	# current panel works on the selected item itself (gems, vendors).
@@ -153,8 +186,11 @@ func select(item: ItemInstance) -> void:
 	else:
 		refresh()
 	var p := current_panel()
-	if p != null and item != null:
-		p.on_item_tapped(item)
+	if item != null and tip:
+		if p != null:
+			p.on_item_tapped(item)
+		else:
+			show_item_tip(item)
 
 
 func refresh() -> void:

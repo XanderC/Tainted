@@ -217,7 +217,7 @@ func _gear_cell(slot: String, cell_size: Vector2) -> DragSlot:
 		var di: ItemInstance = d.get("item")
 		var why := player.slot_block_reason(di, slot)
 		if why == "" and player.equip_to(di, slot):
-			menu.select(di)
+			menu.select(di, false)
 		else:
 			menu.feedback(why if why != "" else "Not enough bag space to swap.")
 			menu.refresh()
@@ -287,7 +287,7 @@ func _flask_cell(i: int) -> DragSlot:
 	cell.on_drop = func(d: Dictionary) -> void:
 		var di: ItemInstance = d.get("item")
 		if player.equip_flask(di, i):
-			menu.select(di)
+			menu.select(di, false)
 		else:
 			menu.feedback("No room in the bag for the flask it replaces.")
 			menu.refresh()

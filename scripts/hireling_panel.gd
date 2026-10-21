@@ -246,9 +246,7 @@ func _gear_cell(slot: String, cell_size: Vector2) -> DragSlot:
 ## Item cards here are tooltips (ItemTip), made for touch: tap its gear, or an item in your bag,
 ## and the card pops up beside your finger until you tap elsewhere.
 func _tip() -> ItemTip:
-	if _item_tip == null or not is_instance_valid(_item_tip):
-		_item_tip = ItemTip.new()
-		menu._root.add_child(_item_tip)  # over both halves; hidden with the menu
+	_item_tip = menu.item_tip()  # the menu's one card, over both halves
 	return _item_tip
 
 
@@ -276,6 +274,7 @@ func _show_gear_tip(slot: String) -> void:
 ## An item in your bag tapped: its card, judged for your hireling (can it wear it, and where).
 func on_item_tapped(sel: ItemInstance) -> void:
 	if not Hirelings.has() or not player.bag.has(sel):
+		menu.show_item_tip(sel)  # yours: the usual card
 		return
 	_tip().show_card(sel, _tap_point(), Hirelings.attributes(), func(parent: VBoxContainer):
 		var slot := sel.base.slot
