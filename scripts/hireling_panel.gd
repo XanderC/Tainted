@@ -276,12 +276,14 @@ func on_item_tapped(sel: ItemInstance) -> void:
 	if not Hirelings.has() or not player.bag.has(sel):
 		menu.show_item_tip(sel)  # yours: the usual card
 		return
+	# Beside what it wears in that slot, to compare
+	var on: ItemInstance = null if sel.is_flask() else GameState.hireling_gear.get(sel.base.slot)
 	_tip().show_card(sel, _tap_point(), Hirelings.attributes(), func(parent: VBoxContainer):
 		var slot := sel.base.slot
 		var why := Hirelings.flask_block_reason(sel) if sel.is_flask() else Hirelings.slot_block_reason(sel, slot)
 		var where := "a flask slot" if sel.is_flask() else "its %s slot" % String(UIKit.SLOT_NAMES.get(slot, slot)).to_lower()
 		parent.add_child(UIKit.label(("✔ %s can use this: drag it onto %s." % [String(GameState.hireling.get("name", "")), where]) if why == ""
-			else "⛔ " + why, 13, Color(0.45, 0.95, 0.55) if why == "" else Color(0.95, 0.45, 0.40), true)))
+			else "⛔ " + why, 13, Color(0.45, 0.95, 0.55) if why == "" else Color(0.95, 0.45, 0.40), true)), on)
 
 
 ## Its skill gems (main attack first), each with its support links.

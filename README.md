@@ -16,7 +16,7 @@ Top-down mobile ARPG prototype (Godot 4.3+, GDScript, GL Compatibility renderer)
 | `scripts/class_library.gd`, `class_def.gd`, `skill_def.gd` | Class definitions. The Warrior lives in `ClassLibrary.warrior()`; add classes the same way |
 | `scripts/player.gd`, `enemy.gd` | Movement, skills, damage, armor, equip, stun |
 | `scripts/skill_button.gd` | Right-thumb skill buttons with cooldown sweep |
-| `scripts/inventory_ui.gd` | Inventory screen: equipment, 24-slot bag, item compare, equip / unequip / drop |
+| `scripts/item_tip.gd` | Item card tooltip for touch, with the worn item's card beside it to compare |
 
 ### Character creation
 Create New Character lets you pick a class, then how the character looks, shown live on the figure:
@@ -146,14 +146,14 @@ Tap **Bag** (top right) or press **I**. The game pauses while it's open.
   two of the same unique ring, or the same unique one-hander in both hands, won't go on),
   the five flask slots in a row under the belt, and the 12 x 5 bag grid under that. The weapon-set switch
   (I / II) is in the header.
-- Tap a bag item to inspect it. You get its stats, a green/red list of what changes if you equip it, and the item you're currently wearing in that slot.
-- Tapping any item also pops up its card where you tapped: in the bag, worn, in the stash or on the hireling. The card is a tooltip made for touch. It stays until you tap elsewhere, and a tap that closes it still goes through. Cards for gear you could wear end with what changes "Instead of your ..."; for worn gear they say Worn, and for gear you can't use, why not.
+- The left window has the Skills, Gems and Hireling tabs; there is no item tab. Tap any item (in the bag, worn, in the stash or on the hireling) and its card pops up where you tapped. The card is a tooltip made for touch: it stays until you tap elsewhere, and a tap that closes it still goes through.
+- Next to it is the card of what you wear in that slot (EQUIPPED; on the hireling's page, what it wears), with each stat marked green or red. Under the tapped card: 🔺 UPGRADE when it beats what you wear, and the list of what changes "Instead of your ...". Gear you can't use says why not. Unidentified items show the comparison without stat marks and have an **Identify** button (Scroll of Identify).
 - **Equip** by dragging it onto its equipment slot (the old item takes its bag space). **Drop** by
   dragging it onto the 🗑 Drop box under the boots, beside the flasks (from the bag, the paperdoll
   or a flask slot); it
-  lands on the ground and you can't re-pick it for 1.5s. The item panel has no Equip or Drop buttons.
-- Tap an equipped item to **Unequip** it (needs a space in the bag its shape fits), or drag it back
-  into the bag.
+  lands on the ground and you can't re-pick it for 1.5s. Item cards have no Equip or Drop buttons.
+- Tap an equipped item and press **Unequip** on its card (needs a space in the bag its shape fits),
+  or drag it back into the bag.
 - Equipping is only ever done by dragging: picked-up loot (flasks too) always goes into the bag,
   even when its slot is empty, and an upgrade shows a popup saying so. Loot with no space its
   shape fits stays on the ground.

@@ -1,12 +1,13 @@
 class_name GameMenu
 extends CanvasLayer
 ## Diablo IV style menu: the CharacterPanel (equipment + bag) sits on the right half and the left
-## half shows whatever was opened — item details, runes or gems from the inventory, or a vendor
-## (stash, merchant, blacksmith, jeweler) opened by an NPC. Items drag between both halves.
+## half shows whatever was opened — skills, gems or the hireling from the inventory, or a vendor
+## (stash, merchant, blacksmith, jeweler) opened by an NPC. Items drag between both halves; tapping
+## one shows its card where it was tapped, beside what you wear in its slot (show_item_tip).
 ## The skill tree is separate and full screen (SkillTreeUI).
 
 ## Panels the player can always switch to from the inventory.
-const PLAYER_PANELS := ["details", "skills", "gems", "hireling"]
+const PLAYER_PANELS := ["skills", "gems", "hireling"]
 
 var player: Player
 var selected: ItemInstance = null  ## item picked in the character panel (bag or worn)
@@ -24,12 +25,13 @@ var _stats_rows: VBoxContainer
 var _char: CharacterPanel
 
 var _panels := {}  # name -> MenuPanel
-var _current := "details"
+var _current := "skills"
 var _vendor := ""  # vendor panel opened by an NPC; "" when opened as the inventory
 var _tabs_gap: Control
 var _tip: ItemTip  ## the item card shown where you tap an item (ItemTip, made for touch)
+var _tip_at := Vector2.ZERO  # where it was tapped (shown again there after Identify)
 ## Where the hireling's page goes back to (it has no tab row of its own: back() returns here)
-var _back_panel := "details"
+var _back_panel := "skills"
 
 
 func _ready() -> void:
@@ -72,8 +74,8 @@ func is_open() -> bool:
 
 
 ## Open the inventory (available anywhere) with one of PLAYER_PANELS on the left.
-func open(panel: String = "details") -> void:
-	_open_with("details" if panel not in PLAYER_PANELS else panel, "")
+func open(panel: String = "skills") -> void:
+	_open_with("skills" if panel not in PLAYER_PANELS else panel, "")
 
 
 ## Open a vendor ("stash", "shop", "smith", "jeweler") on the left. Only call this from that
@@ -96,7 +98,7 @@ func _open_with(panel: String, vendor: String) -> void:
 	layer = 25
 	_root.visible = true
 	get_tree().paused = true
-	_back_panel = vendor if vendor != "" else "details"
+	_back_panel = vendor if vendor != "" else "skills"
 	_current = _back_panel
 	show_panel(panel)
 
@@ -134,30 +136,72 @@ func item_tip() -> ItemTip:
 	return _tip
 
 
-## Shows `item`'s card where it was tapped: its requirements judged by you, and if you could wear it
-## instead of what you have on, what that changes. `extra` adds lines under it (as ItemTip.show_card).
-func show_item_tip(item: ItemInstance, extra := Callable()) -> void:
+## Shows `item`'s card where it was tapped, its requirements judged by you, beside the card of
+## what you wear in its slot with each stat marked better or worse, and under it whether it is an
+## upgrade and what wearing it changes. Worn gear has Unequip, unidentified items Identify.
+## `extra` adds lines under it (as ItemTip.show_card). `at`: where (default: where it was tapped).
+func show_item_tip(item: ItemInstance, extra := Callable(), at = null) -> void:
 	if item == null:
 		return
-	var worn := player.is_worn(item)
-	item_tip().show_card(item, get_viewport().get_mouse_position(), {}, func(parent: VBoxContainer):
-		if worn:
+	_tip_at = at if at is Vector2 else get_viewport().get_mouse_position()
+	var worn_now := player.is_worn(item)
+	# Flasks give nothing while worn, so there is nothing to compare
+	var on: ItemInstance = null if worn_now or item.is_flask() else player.equipment.get(player.equip_slot_for(item))
+	# Unidentified: comparing stats would give its hidden modifiers away
+	var deltas := UIKit.equip_deltas(player, item) if on != null and item.identified else {}
+	item_tip().show_card(item, _tip_at, {}, func(parent: VBoxContainer):
+		if worn_now:
 			parent.add_child(UIKit.label("Worn", 13, UIKit.GOLD))
-		elif item.identified and not item.is_flask() and player.can_equip(item):
-			var on: ItemInstance = player.equipment.get(player.equip_slot_for(item))
-			parent.add_child(UIKit.label(("Instead of your %s:" % on.display_name) if on != null else "If you wear it:", 13, UIKit.GOLD, true))
-			parent.add_child(UIKit.rich(UIKit.delta_bbcode(player, item), 13))
+			parent.add_child(_unequip_button(item))
 		elif not item.is_flask():
 			var why := player.equip_block_reason(item)
 			if why != "":
 				parent.add_child(UIKit.label("⛔ " + why, 13, Color(0.95, 0.45, 0.40), true))
+			elif item.identified:
+				if player.is_better_in_slot(item):
+					parent.add_child(UIKit.label("🔺 UPGRADE", 15, Color(0.40, 1.0, 0.60)))
+				parent.add_child(UIKit.label(("Instead of your %s:" % on.display_name) if on != null else "If you wear it:", 13, UIKit.GOLD, true))
+				parent.add_child(UIKit.rich(UIKit.delta_bbcode(player, item), 13))
+				if item.base.two_handed and player.equipment.has("offhand"):
+					parent.add_child(UIKit.label("Two-handed: your off-hand item goes back to the bag.", 12, UIKit.TEXT_DIM, true))
+		if not item.identified:
+			parent.add_child(_identify_button(item))
 		if extra.is_valid():
-			extra.call(parent))
+			extra.call(parent), on, deltas)
+
+
+## Unequip, on a worn item's card: back into the bag (it needs a space its shape fits).
+func _unequip_button(item: ItemInstance) -> Control:
+	var b := UIKit.button("⬇ Unequip" if player.can_fit(item) else "⬇ Unequip (bag full)", Color(0.20, 0.16, 0.08), Color(0.85, 0.70, 0.30), Vector2(0, 44), 15)
+	b.disabled = not player.can_fit(item)
+	b.pressed.connect(func():
+		item_tip().close()
+		if player.flasks.has(item):
+			player.unequip_flask(player.flasks.find(item))
+		for s in player.equipment.keys():
+			if player.equipment[s] == item:
+				player.unequip(s)
+		refresh())
+	return b
+
+
+## Identify, on an unidentified item's card: a Scroll of Identify works anywhere (the Sage in town
+## does it for free). The card shows again, identified.
+func _identify_button(item: ItemInstance) -> Control:
+	var have := GameState.orb_count("identify")
+	var b := UIKit.button("📜 Identify  (%d scroll%s)" % [have, "" if have == 1 else "s"], Color(0.22, 0.19, 0.12), Color(0.93, 0.86, 0.66), Vector2(0, 44), 15)
+	b.disabled = have <= 0
+	b.tooltip_text = "" if have > 0 else "No Scrolls of Identify. Buy them from the Merchant, or the Sage in town identifies everything for free."
+	b.pressed.connect(func():
+		feedback(Crafting.apply_orb(player, item, "identify").msg)
+		refresh()
+		show_item_tip(item, Callable(), _tip_at))
+	return b
 
 
 ## Back from the hireling's page to the panel it was opened from.
 func back() -> void:
-	show_panel(_back_panel if _back_panel != "" and _back_panel != "hireling" else "details")
+	show_panel(_back_panel if _back_panel != "" and _back_panel != "hireling" else "skills")
 
 
 func current_panel() -> MenuPanel:
@@ -179,12 +223,7 @@ func skills_panel() -> SkillGemsPanel:
 ## `tip`: show its card where it was tapped (not after a drag, say).
 func select(item: ItemInstance, tip := true) -> void:
 	selected = item
-	# Picking an item from the inventory's other tabs jumps to its details, except where the
-	# current panel works on the selected item itself (gems, vendors).
-	if _vendor == "" and _current == "runes":
-		show_panel("details")
-	else:
-		refresh()
+	refresh()
 	var p := current_panel()
 	if item != null and tip:
 		if p != null:
@@ -248,7 +287,7 @@ func _get_panel(panel_name: String) -> MenuPanel:
 		"stash": p = StashPanel.new()
 		"shop": p = ShopPanel.new()
 		"smith": p = SmithPanel.new()
-		_: p = DetailsPanel.new()
+		_: p = SkillGemsPanel.new()
 	p.menu = self
 	p.player = player
 	_panels[panel_name] = p
