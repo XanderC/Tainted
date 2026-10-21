@@ -46,7 +46,7 @@ const RARITY_COLORS := {
 ## town) reveals it. `hidden_name` holds its real name meanwhile.
 @export var identified: bool = true
 var hidden_name := ""
-## Dye (DyeDB id, "" for the item's own colours): helmets and armour can be dyed by the Dyer in town.
+## Dye (DyeDB id, "" for the item's own colours): armour can be dyed by the Dyer in town.
 ## It is only how the item looks, and stays through crafting.
 @export var dye: String = ""
 
@@ -72,7 +72,7 @@ func is_unique() -> bool:
 	return unique_id != ""
 
 
-## Helmets and body armour, the gear you can see worn, can be dyed.
+## Helmets, body armour, gloves and boots, the gear you can see worn, can be dyed.
 func can_dye() -> bool:
 	return base != null and base.slot in DyeDB.SLOTS
 

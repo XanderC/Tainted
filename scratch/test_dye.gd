@@ -48,7 +48,8 @@ func _ready() -> void:
 	var ring := item("bone_ring")
 	var boots := item("worn_boots")
 	check(helm.can_dye() and mail.can_dye(), "helmets and body armour can be dyed")
-	check(not sword.can_dye() and not ring.can_dye() and not boots.can_dye(), "weapons, rings and boots can't (you can't see them)")
+	check(boots.can_dye() and item("leather_gloves").can_dye(), "and gloves and boots, which show worn too")
+	check(not sword.can_dye() and not ring.can_dye(), "weapons and rings can't")
 
 	# The Dyer's window lists them: worn, then the bag
 	p.bag.add(helm)

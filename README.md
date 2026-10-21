@@ -68,24 +68,29 @@ later zones. Their art, in the hand and in the bag, comes from the CraftPix weap
 are the archer skins' own (`tools/import_bows.py`).
 
 Helmets come in 14 tiers, from a Linen Wrap to the Lich Crown (`LootGenerator.HELMET_BASES`), and
-are the helmets the character packs draw on their heads, cut out by `tools/import_helmets.py`: the
-worn art and the bag icon are the same helmet, with the face opening cut out so your own face shows
-through (great helms such as the Frost Great Helm and Death Visage cover it). Better ones need more
-Strength.
+are the helmets the character packs draw on their heads, cut out by `tools/import_helmets.py` the way
+hair is (everything on the head that isn't skin or outline, with its own outline, small gaps filled):
+the worn art and the bag icon are the same helmet, and your own face shows under it (great helms
+such as the Frost Great Helm and Death Visage cover it). Better ones need more Strength.
+
+Body armour (13 tiers, Linen Robe to Death Knight Plate), gloves (6) and boots (7) are the character
+packs' own clothes: a character's body and arms, hands and legs (`tools/import_armour.py`). They are
+worn on your character exactly where its own parts are (gloves and boots show too), and the bag icon
+is the piece as it sits in the idle pose (`tools/rig_pose.py`).
 
 Flask icons are the CraftPix potion icons (`tools/import_potions.py`, pack folder on the NAS):
 red bottles for life, orange for power, small to large as they get grander, and a grey, blue,
 icy and yellow one for the Granite, Quicksilver, Silver and Sulphur flasks.
 
 ### Dyes
-**Dyer Calla** in Ashfall (west of the plaza, between the Blacksmith and the Sage) dyes helmets and
-body armour: 30 dyes (`scripts/dye_db.gd`; the CraftPix paint icons, `tools/import_paints.py`), ten
+**Dyer Calla** in Ashfall (west of the plaza, between the Blacksmith and the Sage) dyes helmets, body
+armour, gloves and boots: 30 dyes (`scripts/dye_db.gd`; the CraftPix paint icons, `tools/import_paints.py`), ten
 colours in bright, deep and muted shades. Tap a piece of gear (worn, in your bag, or your hireling's),
 tap a paint, see the character wearing it in the preview, and pay an Orb of Transmutation. Taking a dye
 off is free. A dye recolours the art with a shader that keeps its shading and outlines (so chain mail
 still looks like chain mail, and dark dyes stay dark), both worn and in the bag, and stays with the
-item (`ItemInstance.dye`, saved) through crafting and trading to the stash. Only helmets and armour:
-the gear you can see.
+item (`ItemInstance.dye`, saved) through crafting and trading to the stash. Only the gear you can see
+worn: not weapons or jewellery.
 - Tests: `godot --headless --path . res://scratch/test_dye.tscn`; `res://scratch/capture_dye.tscn`
   for screenshots (needs a window).
 

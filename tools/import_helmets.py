@@ -1,84 +1,131 @@
 """Makes helmet art from the helmets the character packs draw on their heads (assets/skins/<skin>/Head.png).
 
   assets/gear/helmet/<id>/Head.png  - worn: the helmet alone, on the Head part's 480 x 480 canvas, so
-                                      it sits on a character exactly as that skin's head does. The face
-                                      opening (the flat skin colour) is cut out, so the wearer's own face
-                                      shows through; great helms that cover the face are kept whole.
+                                      it sits on a character exactly as that skin's head does
   assets/gear/helmet/<id>/icon.png  - in the bag: the same helmet, fitted into its 2 x 2 cells
 
-ART maps a helmet base (LootGenerator._build_bases) to its skin and how to cut it:
-  "open"  - flood-fill the face colour out from a seed point (a fraction of the head's size), and
-            optionally cut off everything below a line (a third number, below the helmet's rim)
-  "crop"  - keep only the part above a line (a fraction of the head's height): beards and chins go
-  "whole" - keep it all (a full helm)
+A helmet is cut out the way tools/build_appearance.py cuts out hair: everything on the head that
+isn't skin (its colour sampled in the middle of the face) or outline, in big pieces, plus the outline
+that runs along those pieces. So the face, ears and chin go, the helmet keeps its own outline and no
+straight cuts or holes are left. A beard or chin strap below the eyes isn't helmet (below_eyes).
+Great helms that cover the face ("whole") are kept as they are.
+
+ART maps a helmet base (LootGenerator.HELMET_BASES) to the skin it comes from and how to cut it:
+  brim  - a cap or crown: nothing below this line (y), where the character's own hair and ears hang
+  erase - boxes (x0, y0, x1, y1) of the character's own to take away (an elf's pointed ear)
+  erase_colour - [(box, rgb)]: a colour of the character's own in a box (the crown wearer's ear)
+  fill  - every gap it closes in is its own (a light highlight the skin test took)
+  dark  - it is as dark as the outline (a black crown): its dark pixels are helmet too
+  whole - a great helm that covers the face: kept as it is
 The skins are all on the zombie rig's 480 px Head canvas (the archers' 600 px heads aren't used).
 
 Usage:  python tools/import_helmets.py
 """
 import os
+import sys
 
-import cv2
 import numpy as np
 from PIL import Image
+
+sys.path.insert(0, os.path.dirname(__file__))
+from build_appearance import EYE_Y, FACE_X, arr, grow, head_masks, img, keep_big  # noqa: E402
 
 HERE = os.path.dirname(__file__)
 SKINS = os.path.join(HERE, "..", "assets", "skins")
 ROOT = os.path.join(HERE, "..", "assets", "gear", "helmet")
 CELL = 96  # icon pixels per bag cell (as tools/import_weapons.py)
-TOLERANCE = 34  # how far (RGB) a pixel may be from the face colour and still be cut out
+MIN_PIECE = 600  # px: smaller bits of "not skin" are freckles, scars and texture, not helmet
 
-# id: (skin, treatment, seed (x, y) as fractions of the head's box, or the crop line)
 ART = {
-    "linen_wrap": ("merchant", "open", (0.5, 0.80, 0.64)),
-    "leather_cap": ("jeweler", "open", (0.5, 0.74, 0.64)),
-    "iron_helm": ("stash_keeper", "open", (0.5, 0.46, 0.53)),
-    "gilded_turban": ("sage", "open", (0.5, 0.80, 0.64)),
-    "horned_cap": ("skeleton_viking_2", "open", (0.5, 0.82, 0.64)),
-    "knights_helm": ("skeleton_warrior_2", "open", (0.5, 0.82, 0.66)),
-    "crusader_helm": ("skeleton_crusader_1", "open", (0.5, 0.82, 0.64)),
-    "viking_helm": ("skeleton_viking_1", "open", (0.5, 0.82, 0.64)),
-    "elven_helm": ("dark_elf_2", "open", (0.5, 0.80, 0.70)),
-    "shadow_helm": ("dark_elf_1", "open", (0.5, 0.80, 0.70)),
-    "frost_greathelm": ("ghost_knight", "whole", None),
-    "death_visage": ("death_knight", "whole", None),
-    "infernal_crown": ("hell_knight", "open", (0.5, 0.78, 0.64)),
-    "lich_crown": ("lich", "whole", None),
+    "linen_wrap": {"skin": "merchant"},
+    "leather_cap": {"skin": "jeweler", "brim": 238, "erase": [(436, 150, 480, 260)]},  # a strap end
+    "iron_helm": {"skin": "stash_keeper", "brim": 254},
+    "gilded_turban": {"skin": "sage", "fill": True},
+    "horned_cap": {"skin": "skeleton_viking_2"},
+    "knights_helm": {"skin": "skeleton_warrior_2"},
+    "crusader_helm": {"skin": "skeleton_crusader_1"},
+    "viking_helm": {"skin": "skeleton_viking_1"},
+    "elven_helm": {"skin": "dark_elf_2", "erase": [(0, 190, 82, 300)]},  # its own pointed ear
+    "shadow_helm": {"skin": "dark_elf_1", "erase": [(0, 190, 82, 300)]},
+    "frost_greathelm": {"skin": "ghost_knight", "whole": True},
+    "death_visage": {"skin": "death_knight", "whole": True},
+    "infernal_crown": {"skin": "hell_knight", "brim": 292,
+                       "erase_colour": [((318, 70, 405, 205), (0.95, 0.61, 0.51))]},  # its own ear
+    "lich_crown": {"skin": "lich", "whole": True},
 }
 
 
-def box_of(a):
-    ys, xs = np.nonzero(a > 8)
-    return xs.min(), ys.min(), xs.max(), ys.max()
+def below_eyes():
+    """The lower face, where a beard or chin would be: not helmet."""
+    yy, xx = np.mgrid[0:480, 0:480]
+    return (xx >= FACE_X[0] - 40) & (xx <= FACE_X[1] + 40) & (yy > EYE_Y + 30)
 
 
-def cut(im, how, arg):
-    """The helmet part of a head image, as RGBA."""
-    arr = np.array(im.convert("RGBA"))
-    x0, y0, x1, y1 = box_of(arr[:, :, 3])
-    w, h = x1 - x0, y1 - y0
-    if how == "crop":
-        arr[int(y0 + h * arg):, :, 3] = 0
-    elif how == "open":
-        crop_at = None
-        if len(arg) == 3:
-            arg, crop_at = arg[:2], arg[2]
-        sx, sy = int(x0 + w * arg[0]), int(y0 + h * arg[1])
-        rgb = arr[:, :, :3].copy()
-        seed = rgb[sy, sx].astype(np.int32)
-        near = (np.abs(rgb.astype(np.int32) - seed).sum(axis=2) <= TOLERANCE) & (arr[:, :, 3] > 200)
-        near = near.astype(np.uint8)
-        n, labels = cv2.connectedComponents(near, connectivity=4)
-        region = labels == labels[sy, sx]
-        if labels[sy, sx] == 0:
-            raise SystemExit("seed not on a flat colour")
-        # a clean edge: the cut-out is eased by a pixel so no skin-coloured fringe is left
-        region = cv2.dilate(region.astype(np.uint8), np.ones((3, 3), np.uint8))
-        # the skull's speckles and pits are darker dots inside the opening: close them with it
-        region = cv2.morphologyEx(region, cv2.MORPH_CLOSE, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (13, 13))).astype(bool)
-        arr[region, 3] = 0
-        if crop_at is not None:  # below the rim: the skull's jaw and teeth are no part of a helmet
-            arr[int(y0 + h * crop_at):, :, 3] = 0
-    return Image.fromarray(arr, "RGBA")
+_bald = None
+
+
+def bald_head():
+    """Where a bald head is (the appearance base head, same canvas): anything of a helmet beyond it
+    (horns, crown spikes, a plume) is helmet whatever its colour."""
+    global _bald
+    if _bald is None:
+        base = arr(Image.open(os.path.join(HERE, "..", "assets", "appearance", "base_male.png")).convert("RGBA"))
+        _bald = grow(base[:, :, 3] > 0.5, 3)
+    return _bald
+
+
+def fill_holes(mask):
+    """`mask` with every gap it closes in filled (a rivet's middle, a highlight the skin test took)."""
+    outside = np.zeros_like(mask)
+    H, W = mask.shape
+    stack = [(y, x) for y in (0, H - 1) for x in range(W)] + [(y, x) for x in (0, W - 1) for y in range(H)]
+    while stack:
+        y, x = stack.pop()
+        if outside[y, x] or mask[y, x]:
+            continue
+        outside[y, x] = True
+        if y > 0: stack.append((y - 1, x))
+        if y < H - 1: stack.append((y + 1, x))
+        if x > 0: stack.append((y, x - 1))
+        if x < W - 1: stack.append((y, x + 1))
+    return ~outside
+
+
+def cut(head, spec):
+    a = arr(head.convert("RGBA"))
+    skin, rest, outline = head_masks(a)
+    opaque = a[:, :, 3] > 0.5
+    helmet = keep_big(rest & ~below_eyes(), MIN_PIECE)
+    helmet |= opaque & ~skin & ~bald_head() & ~below_eyes()  # horns and spikes, dark or not (not ears)
+    brim = int(spec.get("brim", 0))
+    if spec.get("dark", False):
+        helmet |= outline & ~below_eyes()
+    if brim:
+        helmet[brim:, :] = False
+    # Its outline: the dark pixels along it
+    keep = helmet | (outline & grow(helmet, 7))
+    # Small holes it closes in are its own (a rivet's middle); big ones are skin showing through
+    holes = fill_holes(keep) & ~keep
+    if spec.get("fill", False):  # a light highlight the skin test took (the turban's folds)
+        keep |= holes
+    else:
+        keep |= holes & ~keep_big(holes, 1500) & ~keep_big(holes & skin, 900)
+    keep &= opaque
+    for x0, y0, x1, y1 in spec.get("erase", []):
+        keep[y0:y1, x0:x1] = False
+    # A colour of the character's own (an ear) in a box, leaving the rest of the box alone
+    for (x0, y0, x1, y1), rgb in spec.get("erase_colour", []):
+        near = np.abs(a[:, :, :3] - np.array(rgb)).sum(2) < 0.35
+        box = np.zeros_like(keep)
+        box[y0:y1, x0:x1] = True
+        keep &= ~(grow(near & box, 10) & box)
+    if brim:
+        keep[brim:, :] = False
+    # Scraps left over (a strap end, the rim of an ear) aren't helmet
+    keep = keep_big(keep, 2500)
+    out = a.copy()
+    out[~keep, 3] = 0
+    return img(out)
 
 
 def fit(im, w, h):
@@ -92,11 +139,11 @@ def fit(im, w, h):
 
 
 def main():
-    for hid, (skin, how, arg) in ART.items():
-        head = Image.open(os.path.join(SKINS, skin, "Head.png"))
+    for hid, spec in ART.items():
+        head = Image.open(os.path.join(SKINS, spec["skin"], "Head.png"))
         if head.size != (480, 480):
-            raise SystemExit("%s: head is %s, not 480 x 480" % (skin, head.size))
-        helmet = cut(head, how, arg)
+            raise SystemExit("%s: head is %s, not 480 x 480" % (spec["skin"], head.size))
+        helmet = head.convert("RGBA") if spec.get("whole", False) else cut(head, spec)
         d = os.path.join(ROOT, hid)
         os.makedirs(d, exist_ok=True)
         helmet.save(os.path.join(d, "Head.png"))

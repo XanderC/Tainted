@@ -26,6 +26,8 @@ const GEAR_LAYERS := {
 	"weapon": {"mode": "replace", "objects": ["Sword"]},
 	"helmet": {"mode": "overlay", "objects": ["Head"], "above": ["Head", "Face 01"]},
 	"chest": {"mode": "overlay", "objects": ["Body", "Right Arm", "Left Arm"]},
+	"gloves": {"mode": "overlay", "objects": ["Right Hand", "Left Hand"]},
+	"boots": {"mode": "overlay", "objects": ["Left Leg", "Right Leg"]},
 }
 
 @export var rig_dir := "res://assets/rigs/zombie"

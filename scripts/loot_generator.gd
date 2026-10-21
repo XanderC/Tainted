@@ -141,6 +141,39 @@ const WEAPON_BASES := [
 ]
 
 
+## [id, name, drop level, armour, colour] for body armour, gloves and boots, as for helmets.
+const CHEST_BASES := [
+	["linen_robe", "Linen Robe", 1, 6, Color(0.90, 0.75, 0.35)],
+	["padded_vest", "Padded Vest", 1, 10, Color(0.80, 0.50, 0.20)],
+	["leather_jerkin", "Leather Jerkin", 5, 15, Color(0.35, 0.50, 0.20)],
+	["chain_mail", "Chain Mail", 8, 20, Color(0.65, 0.65, 0.7)],
+	["studded_leather", "Studded Leather", 11, 25, Color(0.40, 0.32, 0.25)],
+	["brigandine", "Brigandine", 16, 31, Color(0.55, 0.30, 0.28)],
+	["crusader_hauberk", "Crusader Hauberk", 21, 37, Color(0.45, 0.50, 0.30)],
+	["scale_mail", "Scale Mail", 26, 43, Color(0.62, 0.60, 0.55)],
+	["battle_plate", "Battle Plate", 31, 50, Color(0.40, 0.35, 0.30)],
+	["shadow_mail", "Shadow Mail", 36, 57, Color(0.30, 0.32, 0.40)],
+	["frost_plate", "Frost Plate", 41, 64, Color(0.55, 0.70, 0.85)],
+	["demon_plate", "Demon Plate", 46, 72, Color(0.40, 0.30, 0.35)],
+	["death_plate", "Death Knight Plate", 52, 80, Color(0.60, 0.20, 0.25)],
+]
+const GLOVE_BASES := [
+	["linen_wraps", "Linen Wraps", 1, 2, Color(0.85, 0.85, 0.80)],
+	["leather_gloves", "Leather Gloves", 1, 3, Color(0.5, 0.35, 0.2)],
+	["heavy_gloves", "Heavy Gloves", 12, 7, Color(0.30, 0.25, 0.22)],
+	["iron_gauntlets", "Iron Gauntlets", 22, 11, Color(0.45, 0.45, 0.48)],
+	["frost_gauntlets", "Frost Gauntlets", 34, 15, Color(0.50, 0.62, 0.75)],
+	["death_gauntlets", "Death Gauntlets", 46, 20, Color(0.35, 0.33, 0.38)],
+]
+const BOOT_BASES := [
+	["worn_boots", "Worn Boots", 1, 3, Color(0.4, 0.3, 0.2)],
+	["leather_boots", "Leather Boots", 6, 5, Color(0.30, 0.40, 0.20)],
+	["riding_boots", "Riding Boots", 14, 8, Color(0.30, 0.25, 0.20)],
+	["chain_boots", "Chain Boots", 22, 11, Color(0.50, 0.52, 0.56)],
+	["plated_boots", "Plated Boots", 30, 14, Color(0.40, 0.40, 0.42)],
+	["frost_greaves", "Frost Greaves", 40, 17, Color(0.55, 0.70, 0.85)],
+	["death_greaves", "Death Greaves", 50, 21, Color(0.35, 0.20, 0.22)],
+]
 ## [id, name, drop level, armour, colour]. Better ones need more Strength (Attributes).
 const HELMET_BASES := [
 	["linen_wrap", "Linen Wrap", 1, 3, Color(0.75, 0.55, 0.25)],
@@ -185,10 +218,12 @@ func _build_bases() -> void:
 	for h in HELMET_BASES:
 		_base(h[0], h[1], "helmet", h[4], "armor", h[3])
 		bases[-1].drop_level = h[2]
-	_base("padded_vest", "Padded Vest", "chest", Color(0.5, 0.4, 0.3), "armor", 10)
-	_base("chain_mail", "Chain Mail", "chest", Color(0.65, 0.65, 0.7), "armor", 20)
-	_base("leather_gloves", "Leather Gloves", "gloves", Color(0.5, 0.35, 0.2), "armor", 3)
-	_base("worn_boots", "Worn Boots", "boots", Color(0.4, 0.3, 0.2), "armor", 3)
+	# Body armour, gloves and boots in tiers: the character packs' own clothes (tools/import_armour.py),
+	# worn on the character and as the bag icon
+	for table in [["chest", CHEST_BASES], ["gloves", GLOVE_BASES], ["boots", BOOT_BASES]]:
+		for a in table[1]:
+			_base(a[0], a[1], table[0], a[4], "armor", a[3])
+			bases[-1].drop_level = a[2]
 	_base("bone_ring", "Bone Ring", "ring", Color(0.9, 0.9, 0.8))
 	_base("old_amulet", "Old Amulet", "amulet", Color(0.8, 0.7, 0.3))
 

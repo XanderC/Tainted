@@ -1,6 +1,6 @@
 class_name DyeDB
 extends RefCounted
-## Dyes (paints) for armour and helmets, applied by the Dyer in Ashfall. A dye recolours a piece of
+## Dyes (paints) for helmets, body armour, gloves and boots, applied by the Dyer in Ashfall. A dye recolours a piece of
 ## gear's art, worn on a character and in the bag, keeping its shading and dark outlines (see
 ## SHADER). The icons are the CraftPix paint icons (tools/import_paints.py).
 ## An item remembers its dye (ItemInstance.dye, a DyeDB id); "" is its own colours.
@@ -27,7 +27,7 @@ const COLUMNS := 10  ## colours across (a row of PALETTE)
 ## What dyeing a piece costs, in orbs (taking a dye off is free).
 const PRICE := {"transmute": 1}
 ## Slots whose gear can be dyed: the armour you can see worn.
-const SLOTS := ["helmet", "chest"]
+const SLOTS := ["helmet", "chest", "gloves", "boots"]
 
 ## Recolours art: shading and outlines stay, the colour is the dye's. Dark stays dark, the item's
 ## average brightness becomes the dye itself, and highlights go to a lighter shade of it. `mean_lum` is the art's

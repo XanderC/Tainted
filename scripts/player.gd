@@ -18,7 +18,7 @@ const FLASK_SLOTS := 5
 const NO_BELT_FLASKS := 1
 const FLASK_KEYS := [KEY_Q, KEY_E, KEY_R, KEY_T, KEY_F]
 ## Slots that change how the character looks (see RigSprite.GEAR_LAYERS).
-const VISIBLE_SLOTS := ["weapon", "helmet", "chest"]
+const VISIBLE_SLOTS := ["weapon", "helmet", "chest", "gloves", "boots"]
 ## Slots that belong to a weapon set. Only the active set is in `equipment` (and gives stats);
 ## the other set waits in `alt_set` until swap_weapon_set().
 const SET_SLOTS := ["weapon", "offhand"]
