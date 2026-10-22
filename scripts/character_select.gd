@@ -4,7 +4,9 @@ extends Control
 ## with Play and Delete. "Create New Character" swaps the right side for the creation form
 ## (pick a class, enter a name). Each character has its own save; the stash is shared.
 ## "Play Online" swaps it for the online screen: games on your Wi-Fi (Net.scan), join by address,
-## or host one on this device. Coming back here takes you offline (you may pick another character).
+## or host one on this device. A server that keeps characters (the Tainted World, Net.accounts) lists
+## its own here instead, your online characters, until you go offline; coming back here from a game
+## on it keeps you online. From any other game, coming back here takes you offline.
 
 const SCENE := "res://scenes/character_select.tscn"
 const TOWN_SCENE := "res://scenes/town.tscn"
@@ -28,6 +30,7 @@ var _scan_t := 0.0
 var _net_status: Label
 var _server_box: VBoxContainer
 var _addr_edit: LineEdit
+var _list_title: Label
 
 
 func _ready() -> void:
@@ -40,9 +43,10 @@ func _ready() -> void:
 			GameState.give_starter_skills()
 			get_tree().change_scene_to_file.call_deferred("res://scenes/main.tscn")
 			return
-	if Net.online() or Net.mode == Net.Mode.CONNECTING:
-		Net.leave()  # back from a game: offline, free to pick any character
+	if (Net.online() and not Net.accounts) or Net.mode == Net.Mode.CONNECTING:
+		Net.leave()  # back from a hosted game: offline, free to pick any character
 	Net.status_changed.connect(_on_net_status)
+	Net.account_ready.connect(_on_account_ready)
 	Net.servers_found.connect(_on_servers_found)
 	_build()
 	_selected = GameState.last_character if not GameState.character_info(GameState.last_character).is_empty() else ""
@@ -83,7 +87,7 @@ func _build() -> void:
 	var lbox := VBoxContainer.new()
 	lbox.add_theme_constant_override("separation", 8)
 	left.add_child(lbox)
-	UIKit.window_header(lbox, "CHARACTERS", UIKit.GOLD, Callable(), 20)
+	_list_title = UIKit.window_header(lbox, "CHARACTERS", UIKit.GOLD, Callable(), 20).get_node("Title")
 	var scroll := ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
@@ -143,6 +147,9 @@ func _process(delta: float) -> void:
 
 func _refresh() -> void:
 	_delete_armed = false
+	var on_server := Net.online() and Net.accounts
+	_list_title.text = "ONLINE CHARACTERS" if on_server else "CHARACTERS"
+	_list_title.add_theme_color_override("font_color", Color(0.65, 0.85, 1.0) if on_server else UIKit.GOLD)
 	_build_list()
 	if _online and not _creating:
 		_build_online()
@@ -228,13 +235,19 @@ func _build_info() -> void:
 	var play := UIKit.button("▶  PLAY", Color(0.14, 0.38, 0.18), Color(0.40, 1.0, 0.55), Vector2(0, 72), 26)
 	play.pressed.connect(_play)
 	_right.add_child(play)
-	var online := UIKit.button("🌐  Play Online", Color(0.10, 0.20, 0.34), Color(0.45, 0.70, 1.0), Vector2(0, 56), 20)
-	online.pressed.connect(func():
-		_online = true
-		_scan_t = 0.0
-		_refresh()
-	)
-	_right.add_child(online)
+	if Net.online() and Net.accounts:
+		# Playing on a server that keeps characters: these are its, and you can go back to the device's
+		var off := UIKit.button("🌐  Go offline  (%s)" % Net.server_name, Color(0.10, 0.20, 0.34), Color(0.45, 0.70, 1.0), Vector2(0, 50), 17)
+		off.pressed.connect(_go_offline)
+		_right.add_child(off)
+	else:
+		var online := UIKit.button("🌐  Play Online", Color(0.10, 0.20, 0.34), Color(0.45, 0.70, 1.0), Vector2(0, 56), 20)
+		online.pressed.connect(func():
+			_online = true
+			_scan_t = 0.0
+			_refresh()
+		)
+		_right.add_child(online)
 	var del := UIKit.button("🗑  Delete Character", Color(0.20, 0.08, 0.08), Color(0.60, 0.25, 0.25), Vector2(0, 50), 16)
 	del.pressed.connect(func():
 		if not _delete_armed:
@@ -278,8 +291,9 @@ func _build_online() -> void:
 	wrow.add_child(wl)
 	var wb := UIKit.button("🌍  Join", Color(0.12, 0.26, 0.40), Color(0.50, 0.80, 1.0), Vector2(130, 46), 17)
 	wb.pressed.connect(func():
-		if GameState.select_character(_selected):
-			Net.join_world()
+		if not _selected.is_empty():
+			GameState.select_character(_selected)  # used if the server doesn't keep characters
+		Net.join_world()
 	)
 	wrow.add_child(wb)
 
@@ -347,17 +361,42 @@ func _fill_servers() -> void:
 		row.add_child(b)
 
 
-## Loads the character, then joins; Net.status_changed says how it went.
+## Loads the character (a server that keeps characters uses its own instead), then joins;
+## Net.status_changed says how it went.
 func _connect_to(address: String) -> void:
-	if GameState.select_character(_selected):
-		Net.join(address)
+	if not _selected.is_empty():
+		GameState.select_character(_selected)
+	Net.join(address)
 
 
 func _on_net_status() -> void:
 	if is_instance_valid(_net_status):
 		_net_status.text = Net.status
-	if _online and Net.mode == Net.Mode.CLIENT:
+	if _online and Net.mode == Net.Mode.CLIENT and not Net.accounts:
 		get_tree().change_scene_to_file(_first_scene())  # in: off to town
+	elif Net.mode == Net.Mode.OFFLINE and not _online:
+		_pick_default()  # the device's characters again
+		_refresh()
+
+
+## The server's characters for your account are here: show them (create one if there are none).
+func _on_account_ready() -> void:
+	_online = false
+	_pick_default()
+	_refresh()
+
+
+func _go_offline() -> void:
+	Net.leave()
+	_pick_default()
+	_refresh()
+
+
+func _pick_default() -> void:
+	_selected = GameState.last_character if not GameState.character_info(GameState.last_character).is_empty() else ""
+	if _selected == "" and not GameState.characters.is_empty():
+		_selected = GameState.characters[0].id
+	_creating = GameState.characters.is_empty()
 
 
 ## New characters (and ones who quit midway) go to the tutorial map first.

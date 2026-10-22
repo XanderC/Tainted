@@ -40,8 +40,15 @@ extends Node
 ## with the same token puts them back in it. A busy town is split into copies of TOWN_CAP players
 ## ("town", "town~2"...), party members kept together.
 ##
-## The server's records live in _peers (id -> {"info", "instance", "state", "party", "token"}),
-## _parties and _instances; the host is peer 1.
+## Online characters (stage 5): a dedicated server started with --data=<dir> keeps its players'
+## characters (AccountStore), and says so in its welcome (`accounts`). Its players' games then load
+## their account from the server (GameState.use_online_files) and save to it (save_file), instead of
+## the device; offline play and hosted games keep the device's characters. Who an account is comes
+## with the hello: for now a random key this device keeps (device_key), later an Autharr sign-in.
+## One game per account: a second one replaces the first.
+##
+## The server's records live in _peers (id -> {"info", "instance", "state", "party", "token",
+## "account"}), _parties and _instances; the host is peer 1.
 ## RPC entry points (_rpc_*) take the sender from the MultiplayerAPI and call the _on_* handlers,
 ## which the host also calls directly for its own player.
 
@@ -58,10 +65,11 @@ signal notice(text: String)  ## a line for the player: "Brom joined the party", 
 signal party_portal(portal: Dictionary)  ## a member opened a party instance: {"inst", "kind", "level", "by", "by_name"}
 signal role_changed(host_id: int)  ## who hosts your instance (runs its monsters) changed; you if == my_id()
 signal event(from_id: int, kind: String, data: Variant)  ## an instance event (send_event)
+signal account_ready  ## the server's characters for your account are loaded (GameState.use_online_files)
 
 const PORT := 24601
 const DISCOVERY_PORT := 24602
-const PROTOCOL := 4  ## games with a different protocol can't play together
+const PROTOCOL := 5  ## games with a different protocol can't play together
 const MAX_ONLINE := 32
 const PARTY_MAX := 4
 const SEND_HZ := 15.0
@@ -93,6 +101,8 @@ var party := {}
 ## The party instance this game is joining or in: {"inst", "kind", "level", "by", "by_name"}, else {}.
 ## Read by the scene it loads (a rift: Coop).
 var coop := {}
+## The server keeps your characters (its welcome said so): GameState saves to it (save_file).
+var accounts := false
 var instance_host := 0  ## who hosts your instance (role_changed)
 var party_ui: PartyUI  ## the party list, invites and player cards on screen (not on a dedicated server)
 ## What this game sends as its player's state; by default the local Player's (bots replace it).
@@ -126,6 +136,9 @@ var _reconnect_t := 0.0
 var _reconnect_tries := 0
 var _rejoin := ""  # the instance to go back into once reconnected
 var _rejoin_coop := {}
+var _store: AccountStore  # server only, with --data: the players' characters
+var _store_t := 0.0
+var _pending_saves := {}  # files to send once reconnected: vpath -> data (null: delete)
 
 
 func _ready() -> void:
@@ -145,6 +158,8 @@ func _ready() -> void:
 				_max_online = clampi(int(a.get_slice("=", 1)), 1, 1000)
 			elif a.begins_with("--town-cap="):
 				town_cap = clampi(int(a.get_slice("=", 1)), 1, 1000)
+			elif a.begins_with("--data="):
+				_store = AccountStore.new(a.get_slice("=", 1))
 		start_server(name_arg, true)
 		get_tree().change_scene_to_file.call_deferred("res://scenes/server.tscn")
 	else:
@@ -232,7 +247,8 @@ func start_server(name: String, dedicated := false) -> bool:
 		push_warning("Net: discovery port %d is busy; the server won't show up in the list" % DISCOVERY_PORT)
 		_disc_server = null
 	if dedicated:
-		_set_status(Mode.SERVER, "Server \"%s\" running on port %d (up to %d players)" % [name, PORT, _max_online])
+		_set_status(Mode.SERVER, "Server \"%s\" running on port %d (up to %d players)%s" % [name, PORT, _max_online,
+			", characters in %s" % _store.base_dir if _store != null else ""])
 		print(status)
 	else:
 		_peers[1] = {"info": my_info(), "instance": "", "state": {}, "party": 0}
@@ -297,12 +313,17 @@ func _ws_peer() -> WebSocketMultiplayerPeer:
 	return peer
 
 
-## Go offline (stop hosting, or leave the server). No reconnecting after this.
+## Go offline (stop hosting, or leave the server). No reconnecting after this; if the server kept
+## your characters, the device's are back.
 func leave() -> void:
 	_reconnect_url = ""
 	_rejoin = ""
 	_rejoin_coop = {}
+	_pending_saves.clear()
 	_drop()
+	if accounts:
+		accounts = false
+		GameState.use_local_files()
 
 
 ## Closes the connection and forgets the online world (leave() also stops any reconnecting).
@@ -420,7 +441,44 @@ func my_info() -> Dictionary:
 		if off != null:
 			gear["offhand"] = [off.base.id, off.base.weapon_type == "shield"]
 	return {"name": GameState.char_name, "class": GameState.char_class, "level": GameState.level,
-		"look": GameState.appearance, "gear": gear, "token": _token}
+		"look": GameState.appearance, "gear": gear, "token": _token,
+		"account": {"kind": "device", "key": device_key()}}
+
+
+## This device's account key (made once, kept in user://): who you are to a server that keeps
+## characters, until signing in replaces it.
+static var test_key := ""  ## tests' own account key, so they don't use (and fill) this device's account
+
+
+static func device_key() -> String:
+	if test_key != "":
+		return test_key
+	var path := "user://device_key.txt"
+	if FileAccess.file_exists(path):
+		var k := FileAccess.get_file_as_string(path).strip_edges()
+		if k.length() >= 32:
+			return k
+	var key := Crypto.new().generate_random_bytes(24).hex_encode()
+	var f := FileAccess.open(path, FileAccess.WRITE)
+	if f != null:
+		f.store_string(key)
+	return key
+
+
+## Stores one of GameState's save files on the server (only while it keeps your characters; while
+## reconnecting it waits and goes once back).
+func save_file(vpath: String, data: Dictionary) -> void:
+	if mode == Mode.CLIENT and accounts:
+		_rpc_save_file.rpc_id(1, vpath, data)
+	elif mode == Mode.RECONNECTING and accounts:
+		_pending_saves[vpath] = data
+
+
+func delete_file(vpath: String) -> void:
+	if mode == Mode.CLIENT and accounts:
+		_rpc_delete_file.rpc_id(1, vpath)
+	elif mode == Mode.RECONNECTING and accounts:
+		_pending_saves[vpath] = null
 
 
 ## The local player's state: position, facing, and the animation it is playing.
@@ -495,6 +553,11 @@ func _process(delta: float) -> void:
 			_rpc_ping.rpc_id(1)  # so a proxy never sees the connection idle
 	if is_server():
 		_drop_silent()
+		if _store != null:
+			_store_t -= delta
+			if _store_t <= 0.0:
+				_store_t = 1.0
+				_store.flush()
 	if online():  # outside an instance too: the party sees your life and whereabouts
 		_send_t -= delta
 		if _send_t <= 0.0:
@@ -552,6 +615,8 @@ func _on_peer_disconnected(id: int) -> void:
 	_pending.erase(id)
 	if not is_server() or not _peers.has(id):
 		return
+	if _store != null and String(_peers[id].get("account", "")) != "":
+		_store.flush_account(String(_peers[id].account))
 	var inst: String = _peers[id].instance
 	_peers[id].instance = ""
 	_instance_left(inst, id)
@@ -579,8 +644,18 @@ func _on_hello(id: int, protocol: int, info: Dictionary) -> void:
 		_send(id, "_rpc_refused", ["That server is full (%d players)." % _max_online])
 		return
 	var token := String(info.get("token", "")).left(64) if info.get("token") is String else ""
-	_peers[id] = {"info": _clean_info(info), "instance": "", "state": {}, "party": 0, "token": token}
-	_send(id, "_rpc_welcome", [server_name, _peers.size()])
+	var account := ""
+	if _store != null:
+		account = _account_of(info.get("account", {}))
+		if account == "":
+			_send(id, "_rpc_refused", ["That server needs you to sign in."])
+			return
+		for other in _peers.keys():  # one game per account: the newer one replaces the older
+			if _peers[other].get("account", "") == account:
+				_send(other, "_rpc_refused", ["You started playing this account somewhere else."])
+				_kick(other)
+	_peers[id] = {"info": _clean_info(info), "instance": "", "state": {}, "party": 0, "token": token, "account": account}
+	_send(id, "_rpc_welcome", [server_name, _peers.size(), _store != null])
 	_restore_away(id, token)
 	if mode == Mode.SERVER:
 		print("Net: %s joined (%d online)" % [_peers[id].info.name, _peers.size()])
@@ -617,6 +692,35 @@ func _on_enter(id: int, inst: String, state: Dictionary) -> void:
 		if other != id and _peers[other].instance == inst:
 			_send(id, "_rpc_present", [other, _peers[other].info, _peers[other].state])
 	_tell_instance(inst, id, "_rpc_present", [id, rec.info, state])
+
+
+## The account a hello's `account` field stands for ("" if none): a device key for now.
+static func _account_of(a) -> String:
+	if not a is Dictionary:
+		return ""
+	if String(a.get("kind", "")) == "device":
+		var key := String(a.get("key", ""))
+		if key.length() >= 32 and key.length() <= 128:
+			return "d" + key.sha256_text().left(40)
+	return ""
+
+
+func _on_account_files(id: int) -> void:
+	if _store != null and _peers.has(id) and String(_peers[id].get("account", "")) != "":
+		_send(id, "_rpc_account", [_store.files(String(_peers[id].account))])
+
+
+func _on_save_file(id: int, vpath: String, data: Variant) -> void:
+	if _store == null or not _peers.has(id) or String(_peers[id].get("account", "")) == "":
+		return
+	var why := _store.put(String(_peers[id].account), vpath, data)
+	if why != "":
+		push_warning("Net: refused %s's %s: %s" % [_peers[id].info.name, vpath, why])
+
+
+func _on_delete_file(id: int, vpath: String) -> void:
+	if _store != null and _peers.has(id) and String(_peers[id].get("account", "")) != "":
+		_store.remove(String(_peers[id].account), vpath)
 
 
 ## Which copy of the town `id` goes into: one a party member is in if it has room, else the first
@@ -1046,6 +1150,27 @@ func _relay_vitals() -> void:
 # ---------- RPCs: client -> server ----------
 
 @rpc("any_peer", "call_remote", "reliable")
+func _rpc_account_files() -> void:
+	var id := multiplayer.get_remote_sender_id()
+	if is_server() and _within_rate(id):
+		_on_account_files(id)
+
+
+@rpc("any_peer", "call_remote", "reliable")
+func _rpc_save_file(vpath: String, data: Variant) -> void:
+	var id := multiplayer.get_remote_sender_id()
+	if is_server() and _within_rate(id):
+		_on_save_file(id, vpath.left(64), data)
+
+
+@rpc("any_peer", "call_remote", "reliable")
+func _rpc_delete_file(vpath: String) -> void:
+	var id := multiplayer.get_remote_sender_id()
+	if is_server() and _within_rate(id):
+		_on_delete_file(id, vpath.left(64))
+
+
+@rpc("any_peer", "call_remote", "reliable")
 func _rpc_open_instance(kind: String, level: int) -> void:
 	var id := multiplayer.get_remote_sender_id()
 	if is_server() and _within_rate(id):
@@ -1129,8 +1254,18 @@ func _rpc_looks(info: Dictionary) -> void:
 # ---------- RPCs: server -> client ----------
 
 @rpc("authority", "call_remote", "reliable")
-func _rpc_welcome(name: String, _count: int) -> void:
+func _rpc_welcome(name: String, _count: int, keeps_characters: bool) -> void:
 	var back := mode == Mode.RECONNECTING
+	accounts = keeps_characters
+	if accounts and not back:
+		_rpc_account_files.rpc_id(1)  # your characters on this server (_rpc_account)
+	if back:
+		for vpath in _pending_saves:  # what was saved while the connection was down
+			if _pending_saves[vpath] == null:
+				_rpc_delete_file.rpc_id(1, vpath)
+			else:
+				_rpc_save_file.rpc_id(1, vpath, _pending_saves[vpath])
+		_pending_saves.clear()
 	server_name = name
 	_reconnect_url = _url
 	_reconnect_tries = 0
@@ -1144,6 +1279,13 @@ func _rpc_welcome(name: String, _count: int) -> void:
 			instance = ""
 			enter(i)  # back where you were
 		update_looks()
+
+
+## Your characters on this server: the game plays from them now.
+@rpc("authority", "call_remote", "reliable")
+func _rpc_account(files: Dictionary) -> void:
+	GameState.use_online_files(files)
+	account_ready.emit()
 
 
 @rpc("authority", "call_remote", "reliable")

@@ -66,6 +66,7 @@ if ($LASTEXITCODE -ne 0) { Write-Error "Copy failed" }
 Write-Host "Building and starting the container..." -ForegroundColor Cyan
 & ssh @ssh $HostName @"
 set -e
+mkdir -p /appdata/estate/tainted && chown 1000:1000 /appdata/estate/tainted  # the characters (uid of the container's user)
 cd $remote
 docker compose up -d --build 2>&1 | tail -3
 for i in `$(seq 1 30); do

@@ -194,6 +194,24 @@ name and level, walking where they walk. Going back to character select goes off
 - Not yet shared: players' skill effects (others see their animations), hirelings (each fights in its
   owner's game), and the elite affixes that hit only the host's player (molten ground, frost orbs).
 
+**Online characters** (`AccountStore`, `GameState.use_online_files`):
+- The Tainted World keeps its players' characters. Each account is one JSON file under
+  `/appdata/estate/tainted/accounts` on the host, written a moment after a change, with a copy of every
+  account each day in `backups/<date>` (the last 7 days). Started with `--data=<dir>`, a server keeps
+  characters; its welcome says so (`Net.accounts`).
+- On it, character select shows **Online characters** (create, play and delete them there) and a
+  **Go offline** button back to the device's own. The game saves its account and character "files" to
+  the server instead of the device (`GameState._write_json` by virtual path: `account`,
+  `characters/<id>`). Offline play and games hosted on a device keep the device's characters.
+- **The server checks every file** before storing it: only those two kinds of path, plain data under
+  512 KB, and a sane shape (character list, level 1-100, items). Saves made while reconnecting go once
+  the connection is back. One game per account: playing it elsewhere replaces the first.
+- **Who an account is:** for now a random key kept on the device (`user://device_key.txt`); Autharr
+  sign-in takes its place. Tests use their own key (`Net.test_key`).
+- **What it does and doesn't stop.** Players can't edit their characters, since the saves are the
+  server's, and trades will be done by the server. A modified game can still cheat, because each game
+  rolls its own loot (stopping that means running the game itself on the server).
+
 **Staying connected:**
 - A dropped connection reconnects by itself: a try every 4 s for about 40 s, and at once when the app
   comes back to the front on Android. You go back into the town, zone or rift you were in. The line at
@@ -235,7 +253,8 @@ un_server.ps1` or
 4. Before strangers play: sign-in through Autharr, so names are owned and a player can be banned.
    Today any name is accepted and characters come from the player's own save.
 
-**Stages:** 1. shared town (done, LAN). 2. parties (done). 3. party rifts and zones (done). 4. staying connected (done).
+**Stages:** 1. shared town (done, LAN). 2. parties (done). 3. party rifts and zones (done). 4. staying connected (done). 5. online characters (done); Autharr sign-in, chat, inspecting players,
+friends and trading next.
 3. zones and rifts together: the party leader's game runs the monsters and each player's loot is
 their own. 4. open to the world (above).
 
@@ -243,7 +262,8 @@ Test without a second device: `scratch/net_bot.tscn` (`-- --bot=walker`, `--bot=
 it sees, `--bot=scan`, `--bot=partier` checks parties, `--drop-at=8` and `--bot=keeper` check reconnecting,
 `--bot=counter` with a server's `--town-cap=2` checks town copies, `--accept` / `--invite`, `--addr=ws://...`) and `scratch/capture_net.tscn` (a screenshot of the town
 online; `--world`, `--host`, `--party` for an invite, the party list and a card), and
-`scratch/coop_bot.tscn` plays a whole party rift with two bots (`--role=leader|follower`; `--zone`
+`scratch/account_bot.tscn` checks online characters against a server with `--data`
+(`--phase=create`, restart it, `--phase=check`; `--addr=ws://...`), and `scratch/coop_bot.tscn` plays a whole party rift with two bots (`--role=leader|follower`; `--zone`
 for the Dune Wastes instead; `--shot`
 for a screenshot, `--leave-after=12` and `--takeover` to test a handover, `--drop-at=5` a reconnect
 mid-rift).

@@ -19,10 +19,13 @@ services:
       - TAINTED_MAX=${TAINTED_MAX:-32}
     ports:
       - "24601:24601"   # LAN only: not forwarded on the router
+    volumes:
+      # The players' characters, one JSON file per account, with 7 days of daily backups
+      # (data/backups). Beside the estate's other application data.
+      - ${TAINTED_DATA:-/appdata/estate/tainted}:/data
     networks:
       - arr
-    # It keeps nothing: characters are in each player's save. A ceiling, so a flood can't starve
-    # the estate's applications.
+    # A ceiling, so a flood can't starve the estate's applications.
     mem_limit: 512m
     cpus: 1.0
     logging:

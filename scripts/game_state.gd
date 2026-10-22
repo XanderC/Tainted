@@ -1212,17 +1212,81 @@ func _char_path(id: String) -> String:
 	return "%s/%s.json" % [CHAR_DIR, id]
 
 
+# ---------- where saves go: the device, or a server that keeps characters ----------
+## On a server that keeps characters (Net.accounts) the account and character "files" are the
+## server's: online_files holds them by virtual path ("account", "characters/<id>"), every write
+## goes to the server too (Net.save_file), and the device's own saves are left alone.
+var online_saves := false
+var online_files := {}
+
+
+## Play from the server's characters (`files`, by virtual path) instead of the device's.
+func use_online_files(files: Dictionary) -> void:
+	if char_id != "" and not online_saves:
+		save()  # the device's character, before it goes
+	online_saves = true
+	online_files = files.duplicate(true)
+	char_id = ""
+	player = null
+	_new_game()
+	_load_account()
+
+
+## Back to the device's characters (offline again).
+func use_local_files() -> void:
+	if not online_saves:
+		return
+	online_saves = false
+	online_files = {}
+	char_id = ""
+	player = null
+	_new_game()
+	_load_account()
+
+
+## A save file's virtual path on a server ("" for files that only exist on a device).
+static func _vpath(path: String) -> String:
+	if path == ACCOUNT_PATH:
+		return "account"
+	if path.begins_with(CHAR_DIR + "/") and path.ends_with(".json"):
+		return "characters/" + path.get_file().get_basename()
+	return ""
+
+
 func _write_json(path: String, data: Dictionary) -> void:
+	if online_saves:
+		var vp := _vpath(path)
+		if vp != "":
+			online_files[vp] = data.duplicate(true)
+			Net.save_file(vp, data)
+		return
 	var f := FileAccess.open(path, FileAccess.WRITE)
 	if f:
 		f.store_string(JSON.stringify(data))
 
 
 func _read_json(path: String) -> Dictionary:
+	if online_saves:
+		var d = online_files.get(_vpath(path), {})
+		return d.duplicate(true) if d is Dictionary else {}
 	if not FileAccess.file_exists(path):
 		return {}
 	var data = JSON.parse_string(FileAccess.get_file_as_string(path))
 	return data if typeof(data) == TYPE_DICTIONARY else {}
+
+
+func _file_exists(path: String) -> bool:
+	return online_files.has(_vpath(path)) if online_saves else FileAccess.file_exists(path)
+
+
+func _delete_file(path: String) -> void:
+	if online_saves:
+		var vp := _vpath(path)
+		if online_files.erase(vp):
+			Net.delete_file(vp)
+		return
+	if FileAccess.file_exists(path):
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
 
 
 func _save_account() -> void:
@@ -1236,16 +1300,22 @@ func _save_account() -> void:
 
 
 func _load_account() -> void:
-	DirAccess.make_dir_recursive_absolute(CHAR_DIR)
+	if not online_saves:
+		DirAccess.make_dir_recursive_absolute(CHAR_DIR)
 	var acc := _read_json(ACCOUNT_PATH)
 	if acc.is_empty():
-		_migrate_single_save()
+		characters.clear()
+		last_character = ""
+		stash.clear()
+		stash_overflow.clear()
+		if not online_saves:
+			_migrate_single_save()
 		_load_shared({})
 		_save_account()
 		return
 	characters.clear()
 	for c in acc.get("characters", []):
-		if FileAccess.file_exists(_char_path(String(c.get("id", "")))):
+		if _file_exists(_char_path(String(c.get("id", "")))):
 			characters.append({"id": String(c.id), "name": String(c.get("name", "Hero")),
 				"class": String(c.get("class", "warrior")), "level": int(c.get("level", 1)),
 				"appearance": Appearance.sanitize(c.get("appearance", {}))})
@@ -1412,9 +1482,7 @@ func select_character(id: String) -> bool:
 
 
 func delete_character(id: String) -> void:
-	var path := _char_path(id)
-	if FileAccess.file_exists(path):
-		DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
+	_delete_file(_char_path(id))
 	characters = characters.filter(func(c): return c.id != id)
 	if last_character == id:
 		last_character = ""

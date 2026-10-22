@@ -28,8 +28,10 @@ COPY tainted.pck /game/tainted.pck
 USER tainted
 WORKDIR /home/tainted
 ENV TAINTED_NAME="Tainted World" TAINTED_MAX=32
+# The players' characters (AccountStore), with its daily backups: a volume (docker-compose.yml)
+VOLUME /data
 EXPOSE 24601
 # Healthy while the server's WebSocket port takes connections.
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
   CMD bash -c '</dev/tcp/127.0.0.1/24601' || exit 1
-CMD ["sh", "-c", "exec godot --headless --main-pack /game/tainted.pck -- --server --name=\"$TAINTED_NAME\" --max=\"$TAINTED_MAX\""]
+CMD ["sh", "-c", "exec godot --headless --main-pack /game/tainted.pck -- --server --name=\"$TAINTED_NAME\" --max=\"$TAINTED_MAX\" --data=/data"]
