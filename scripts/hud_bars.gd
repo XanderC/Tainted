@@ -2,8 +2,8 @@ class_name HudBars
 extends Control
 ## The action bar at the bottom centre, laid out as the UI pack's: the life globe (left) and the
 ## Adrenaline/Mana globe (right) sitting on the bottom edge, the row of square flask slots between
-## them (drawn by FlaskBar), the experience line along the top of the row with a tag over its end,
-## and a curl at the foot of each globe.
+## them (drawn by FlaskBar, on the bar's plate: HudBars.draw_plate) that runs from globe to globe,
+## the experience line along the top of the row with a tag over its end, and a curl at the foot of each globe.
 ## Add to a CanvasLayer and set `player`; it fills the screen but ignores input.
 
 const FLASK_COUNT := 5  # the row always has room for every slot a belt can open
@@ -54,6 +54,19 @@ func _draw() -> void:
 		"%d" % int(player.resource))
 	_curls()
 	_xp()
+
+
+## The bar's backdrop behind the slots and the experience line, drawn on `ci` (FlaskBar draws it under
+## its slots; the globes, drawn after, cover its ends): the pack's window panel from one globe's
+## middle to the other's, its bottom edge below the screen.
+static func draw_plate(ci: CanvasItem, screen: Vector2) -> void:
+	var l := orb_centre(screen, false).x
+	var r := orb_centre(screen, true).x
+	var top := slot_rect(screen, 0).position.y - XP_H - 12.0
+	var sb := StyleBoxTexture.new()
+	sb.texture = UIKit.mmo("window")
+	sb.set_texture_margin_all(12.0)
+	ci.draw_style_box(sb, Rect2(l, top, r - l, screen.y + 14.0 - top))
 
 
 ## The curls at the foot of the globes, in the wedge between each globe and the row's end.

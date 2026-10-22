@@ -37,6 +37,7 @@ func _input(event: InputEvent) -> void:
 func _draw() -> void:
 	if player == null:
 		return
+	HudBars.draw_plate(self, size)  # the bar's backdrop, under the slots
 	var n := player.flask_slot_count()
 	var slot := HudArt.tex("bar_slot")
 	for i in HudBars.FLASK_COUNT:
