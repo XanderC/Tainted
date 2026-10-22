@@ -331,7 +331,9 @@ salvaging: orbs are the one currency, and recipes cost orbs.
 - **Recipes**: craft with orbs (Transmutation for the basic forges, up to Chaos for Tainted and
   Exalted crafts, Legendary and Set plans). Some are known from the start, some are found as recipe pages
   on monsters and bosses, some are bought from the Trader.
-- **Merchant**: Buy recipes and orbs, or Sell bag items for orbs.
+- **Merchant**: Buy recipes and orbs, or Sell bag items for orbs. Tap a ware for its card with its
+  price and **Buy** (the card stays open to buy another). Tap a bag item for its card with what it sells for
+  and **Sell**. Dragging works too: wares into the bag, bag items onto the merchant.
 
 Content is data: add orbs and recipes in `crafting_db.gd`; orb rules live in `crafting.gd`.
 
@@ -344,7 +346,7 @@ Content is data: add orbs and recipes in `crafting_db.gd`; orb rules live in `cr
 Magic, Rare, Legendary and Set gear from rift loot drops unidentified (`ItemInstance.identified`):
 it shows only its base name, its modifiers are hidden, and it can't be worn or crafted on.
 A **Scroll of Identify** (a currency in the stash, dropped by monsters and bosses, sold by the
-Merchant) identifies one item, anywhere, from the item's details. The **Sage** in town identifies
+Merchant) identifies one item, anywhere: tap the item and press Identify on its card. The **Sage** in town identifies
 everything in your bag and stash at once, free. Flasks and Normal items are always identified.
 
 ## Town: Ashfall Outpost (scenes/town.tscn, scripts/town.gd, town_map.gd)

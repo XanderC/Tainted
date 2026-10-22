@@ -3,17 +3,18 @@ extends MenuPanel
 ## Merchant: an icon grid of wares priced in orbs (there is no gold: orbs are the money, as in
 ## Path of Exile), including a currency exchange of cheaper orbs for better ones. Selling pays
 ## in orbs and shards (Currency.sell_value). Drag a ware onto your bag to buy it, drag a bag
-## item onto the merchant grid to sell it. Tap a ware or bag item for a Buy / Sell strip.
+## item onto the merchant grid to sell it. Tap a ware for its card with Buy, or a bag item for its
+## card with what it sells for and Sell (the menu's ItemTip, where it was tapped).
 
 const CELL := Vector2(54, 54)
 const SEP := 5
 ## As many columns as the panel is wide (at least this many), so the wares take few rows and the
-## Buy / Sell strip below them stays on screen without scrolling.
+## Sell All buttons below them stay on screen without scrolling.
 const MIN_COLS := 6
 
 var _cols := 0  # columns last laid out; a resize that changes it rebuilds the grid
 
-var _ware := {}  # selected ware
+var _ware := {}  # the ware last tapped (outlined)
 
 
 func panel_title() -> String:
@@ -103,7 +104,7 @@ func _ware_cell(w: Dictionary) -> DragSlot:
 	var afford := GameState.can_afford(w.price)
 	var sel: bool = _ware.get("id", "") == w.id
 	var border: Color = Color.WHITE if sel else (Color(w.color) if afford else Color(0.30, 0.28, 0.32))
-	cell.setup(w.icon, border, Color(0.11, 0.10, 0.14), 0, "", "%s\n%s\nCosts %s" % [w.name, w.desc, _plain_price(w.price)])
+	cell.setup(w.icon, border, Color(0.11, 0.10, 0.14))  # tap: its card
 	if not afford:
 		cell.modulate = Color(1, 1, 1, 0.5)
 	var tag := UIKit.label(Currency.price_tag(w.price), 10, Color(1.0, 0.88, 0.35) if afford else Color(0.9, 0.4, 0.4))
@@ -117,7 +118,9 @@ func _ware_cell(w: Dictionary) -> DragSlot:
 	cell.clicked.connect(func():
 		_ware = w
 		menu.selected = null
+		var at := get_viewport().get_mouse_position()
 		menu.refresh()
+		_show_ware_tip(w, at)
 	)
 	cell.can_accept = _accepts_sell
 	cell.on_drop = _sell_dropped
@@ -142,6 +145,55 @@ func _sell(it: ItemInstance) -> void:
 	menu.refresh()
 
 
+## A ware's card where it was tapped: what it is, what it costs, and Buy (the card stays, so you
+## can buy another).
+func _show_ware_tip(w: Dictionary, at: Vector2) -> void:
+	menu.item_tip().show_content(at, func(d: VBoxContainer):
+		var head := HBoxContainer.new()
+		head.add_theme_constant_override("separation", 10)
+		d.add_child(head)
+		var icon := TextureRect.new()
+		icon.texture = w.icon
+		icon.custom_minimum_size = Vector2(48, 48)
+		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		head.add_child(icon)
+		var title := UIKit.label(String(w.name), 18, Color(w.color).lightened(0.2), true)
+		title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		title.custom_minimum_size.x = 200  # clear of the close button
+		head.add_child(title)
+		d.add_child(UIKit.rich("[color=#d9d1c2]%s[/color]" % w.desc, 14))
+		if w.type == "orb":
+			d.add_child(UIKit.label("You have %d" % GameState.orb_count(w.id), 13, Color(0.38, 0.65, 0.98)))
+		var afford := GameState.can_afford(w.price)
+		d.add_child(UIKit.label("Costs " + _plain_price(w.price), 14, Color(1.0, 0.88, 0.35) if afford else Color(0.95, 0.45, 0.40), true))
+		var buy := UIKit.button("🛒 Buy" if afford else "🛒 Buy (not enough orbs)", Color(0.22, 0.16, 0.08), Color(0.95, 0.80, 0.30), Vector2(0, 48), 16)
+		buy.disabled = not afford
+		buy.pressed.connect(func():
+			_buy(w)
+			if _wares().any(func(x): return x.id == w.id):  # a learnt recipe leaves the wares
+				_show_ware_tip(w, at)
+			else:
+				menu.item_tip().close())
+		d.add_child(buy)
+		d.add_child(UIKit.label("Or drag it into your bag.", 12, UIKit.TEXT_DIM)))
+
+
+## A bag item tapped: its card (compared with what you wear), what it sells for, and Sell.
+func on_item_tapped(it: ItemInstance) -> void:
+	_ware = {}
+	if not player.inventory.has(it):
+		menu.show_item_tip(it)
+		return
+	menu.show_item_tip(it, func(d: VBoxContainer):
+		d.add_child(UIKit.label("Sells for " + Currency.reward_text(Currency.sell_value(it)), 14, Color(1.0, 0.88, 0.35), true))
+		var sell := UIKit.button("💰 Sell", Color(0.22, 0.16, 0.08), Color(0.95, 0.80, 0.30), Vector2(0, 48), 16)
+		sell.pressed.connect(func():
+			menu.item_tip().close()
+			_sell(it))
+		d.add_child(sell))
+
+
 func _buy(w: Dictionary) -> void:
 	if w.is_empty():
 		return
@@ -156,34 +208,10 @@ func _buy(w: Dictionary) -> void:
 	menu.refresh()
 
 
-## One line: what is selected, its price, and a Buy / Sell button.
+## A hint line, and Sell All buttons.
 func _add_trade_strip() -> void:
-	var strip := HBoxContainer.new()
-	strip.add_theme_constant_override("separation", 12)
-	add_child(strip)
-	var info := UIKit.label("", 15, Color.WHITE, true)
-	info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	strip.add_child(info)
-	var btn := UIKit.button("", Color(0.22, 0.16, 0.08), Color(0.95, 0.80, 0.30), Vector2(170, 52), 18)
-	strip.add_child(btn)
-	var it := menu.selected
-	if it != null and player.inventory.has(it):
-		_ware = {}
-		info.add_theme_color_override("font_color", ItemInstance.RARITY_COLORS[it.rarity])
-		btn.text = "💰 Sell"
-		info.text = "%s  ➜  %s" % [it.display_name, Currency.reward_text(Currency.sell_value(it))]
-		btn.pressed.connect(_sell.bind(it))
-	elif not _ware.is_empty():
-		info.text = "%s — %s" % [_ware.name, _ware.desc]
-		info.add_theme_color_override("font_color", _ware.color)
-		info.text += "\nCosts " + _plain_price(_ware.price)
-		btn.text = "🛒 Buy"
-		btn.disabled = not GameState.can_afford(_ware.price)
-		btn.pressed.connect(_buy.bind(_ware))
-	else:
-		info.text = "Drag wares into your bag to buy. Drag bag items onto the merchant to sell. Tap anything to inspect."
-		info.add_theme_color_override("font_color", UIKit.TEXT_DIM)
-		btn.visible = false
+	add_child(UIKit.label("Tap a ware to see it and buy it, or a bag item to sell it. Or drag wares into your bag to buy, and bag items onto the merchant to sell.",
+		13, UIKit.TEXT_DIM, true))
 
 	var bulk := HBoxContainer.new()
 	bulk.add_theme_constant_override("separation", 8)

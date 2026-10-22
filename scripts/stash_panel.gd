@@ -210,7 +210,7 @@ func show_orb_tip(id: String, it: ItemInstance = null) -> void:
 		title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		title.custom_minimum_size.x = 200  # clear of the close button
 		head.add_child(title)
-		d.add_child(UIKit.label(String(o.desc), 14, Color(0.85, 0.82, 0.76), true))
+		d.add_child(UIKit.rich("[color=#d9d1c2]%s[/color]" % o.desc, 14))
 		var have := "You have %d" % GameState.orb_count(id)
 		var sh := GameState.shard_count(id)
 		if sh > 0:
