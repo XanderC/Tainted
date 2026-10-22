@@ -7,6 +7,14 @@ Top-down mobile ARPG prototype (Godot 4.3+, GDScript, GL Compatibility renderer)
 2. Press F5. Move with the arrow keys or by click-dragging on the left side of the window.
    You auto-attack the nearest enemy. Kill things, pick up loot (walk over it), watch stats change.
 
+Or without the editor: `Godot_v4.4.1-stable_win64.exe --path <this folder>` (add `--resolution 1600x720`
+for the phone's shape).
+
+**Builds** (`export_presets.cfg` is not in git: it holds the Android signing setup):
+- Windows: `.\build_windows.ps1` makes `builds\windows\Tainted.exe`, one standalone file you can copy
+  anywhere and run (`-Run` starts it). Uses the "Windows Desktop" preset (x86_64, game packed in the exe).
+- Android: `.\deploy_android.ps1` builds the APK and installs it on the phone over wireless debugging.
+
 ## What's here
 | File | Purpose |
 |---|---|
