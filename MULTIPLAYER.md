@@ -32,8 +32,9 @@ commit). The README's Multiplayer section describes how what's done works.
 
 ## 2. Test with real devices
 
-- [ ] Phone and PC together on the Tainted World: sign in, town, party, rift, zone, chat, trade
-      (waiting for the phone to be reachable)
+- [ ] Phone and PC together on the Tainted World: sign in, town, party, rift, zone, chat, trade.
+      22 Oct 2026: the phone signs in, makes a character (kept by the server) and gets to town;
+      the rest with a PC (a second Autharr account) still to do
 - [x] Load test: 30 bots in town and a few party rifts on the host; server CPU, memory, bandwidth.
       22 Oct 2026, a throwaway server with the live one's limits (1 CPU, 512 MB): 35 online at the
       peak (town 20 + town~2 11 + 3 party rifts, every pair's checks passed). Server CPU 7-8.5% of its
