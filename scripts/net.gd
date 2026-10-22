@@ -96,7 +96,7 @@ signal signed_in_changed  ## signed in or out of Autharr (`signed_in_as`), or a 
 
 const PORT := 24601
 const DISCOVERY_PORT := 24602
-const PROTOCOL := 9  ## games with a different protocol can't play together
+const PROTOCOL := 10  ## games with a different protocol can't play together
 const MAX_ONLINE := 32
 const PARTY_MAX := 4
 const SEND_HZ := 15.0

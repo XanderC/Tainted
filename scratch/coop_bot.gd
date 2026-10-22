@@ -13,6 +13,9 @@ extends Node
 ## into the rift, pick up the host's monsters again and still finish it.
 ## Handover: --leave-after=12 makes the host quit 12 s into the rift; the guest with --takeover then
 ## checks it took over (hosts, its copies are real monsters, the run runs there).
+## Affixes: --affixes (both) has the host clear its monsters, step away and set a molten, frozen,
+## electrified legendary on the guest; the guest pokes it, then kills it, and checks what reached it:
+## frost orbs (seen and slowing it), sparks, burning ground and the death blast.
 
 var role := "leader"
 var bot_name := "Bot"
@@ -42,6 +45,17 @@ var _drop_done := false
 var _back_in := false
 var _drops_seen := 0
 var _shot_taken := false
+var _affixes := false
+var _elite: Enemy              # host: the legendary it set on the guest
+var _elite_copy: Enemy         # guest: its copy of it
+var _copy_at := -1.0
+var _killed_at := -1.0
+var _poke_t := 0.0
+var _fx_seen := {}             # guest: "frost_orb", "spark" -> count
+var _hurt_total := 0.0
+var _hurt_after_death := 0.0
+var _guest_seen := false
+var _elite_set := false
 
 
 var runner := false  # the copy that runs, at the root (the scene itself is replaced on travel)
@@ -61,6 +75,7 @@ func _ready() -> void:
 		elif a == "--takeover": _takeover = true
 		elif a == "--zone": _zone = true
 		elif a.begins_with("--drop-at="): _drop_at = float(a.get_slice("=", 1))
+		elif a == "--affixes": _affixes = true
 	GameState.char_name = bot_name
 	GameState.appearance = Appearance.random_look()
 	GameState.give_starter_skills()
@@ -82,6 +97,15 @@ func _ready() -> void:
 	get_tree().node_added.connect(_watch_leader_enemy)
 	Net.event.connect(func(_from, kind, data):
 		_events[kind] = int(_events.get(kind, 0)) + 1
+		if kind == "hurt":
+			_hurt_total += float(data)
+			if _killed_at >= 0.0:
+				_hurt_after_death += float(data)
+		elif kind == "fx" and data is Array and data.size() == 2:
+			var what := String(data[0])
+			if what == "ring" and is_equal_approx(float(data[1].get("r", 0.0)), 160.0):
+				what = "spark"
+			_fx_seen[what] = int(_fx_seen.get(what, 0)) + 1
 		if kind in ["spawn", "die"] and int(_events[kind]) <= 3:
 			print("%s: event %s %s" % [bot_name, kind, str(data).left(160)]))
 	await get_tree().create_timer(0.5).timeout
@@ -132,6 +156,9 @@ func _process(delta: float) -> void:
 			_was_guest = true
 		if _zone:
 			_zone_step(main, delta)
+			return
+		if _affixes:
+			_affix_step(main, delta)
 			return
 		if _takeover and _was_guest and Net.is_instance_host():
 			if _host_since < 0.0:
@@ -259,6 +286,74 @@ func _finish_takeover(main) -> void:
 	_check(not enemies.is_empty() and enemies.all(func(e): return not e.remote), "the copies are real monsters now (%d)" % enemies.size())
 	_check(not main.run.remote, "the run runs in its game now")
 	print("takeover: %d checks, %d failed" % [_checks, _failed])
+	Net.leave()
+	get_tree().quit(1 if _failed > 0 else 0)
+
+
+## Affixes: the host sets a legendary on the guest; the guest checks what of it reaches its game.
+func _affix_step(main, delta: float) -> void:
+	if is_instance_valid(main.player) and not main.player.dead:
+		main.player.hp = main.player.stats.get_stat("max_life")
+	var others := get_tree().get_nodes_in_group("remote_players")
+	if Net.is_instance_host():
+		if not _elite_set and others.size() == 1 and _rift_t > 4.0:
+			for e in get_tree().get_nodes_in_group("enemies"):
+				e.queue_free()  # only the legendary: whatever else reaches the guest is its
+			var guest: Node2D = others[0]
+			main.player.global_position = main.maze.random_floor_near(guest.global_position, 700.0, 900.0)
+			var e := Enemy.new()
+			e.position = guest.global_position + Vector2(40, 0)
+			e.target = main.player
+			e.maze = main.maze
+			e.max_hp = 5000.0
+			e.touch_damage = 4.0
+			e.set_kind("zombie")
+			var aff: Array[String] = ["molten", "frozen", "electrified"]
+			e.make_elite(MonsterAffix.Tier.LEGENDARY, aff)
+			main.add_child(e)
+			e.wake()
+			_elite = e
+			_elite_set = true
+			print("%s: set a legendary (%s) on the guest" % [bot_name, ", ".join(aff)])
+		if others.size() == 1:
+			_guest_seen = true
+		if (_guest_seen and others.is_empty()) or _t > secs:
+			set_process(false)
+			_check(_elite_set, "it set the legendary on the guest")
+			print("affixes host: %d checks, %d failed" % [_checks, _failed])
+			Net.leave()
+			get_tree().quit(1 if _failed > 0 else 0)
+		return
+	if _copy_at < 0.0:
+		for e in get_tree().get_nodes_in_group("enemies"):
+			if e.remote and e.has_affix("frozen"):
+				_elite_copy = e
+				_copy_at = _rift_t
+				_hurt_total = 0.0
+				print("%s: the legendary's copy is here" % bot_name)
+		return
+	if _killed_at < 0.0:
+		_poke_t -= delta
+		if _poke_t <= 0.0 and is_instance_valid(_elite_copy):
+			_poke_t = 0.3
+			_elite_copy.take_damage(1.0)  # its sparks jump at whoever is near when it's hit
+		if _rift_t - _copy_at > 16.0:
+			_elite_copy.take_damage(1.0e6)
+			_killed_at = _rift_t
+			_hurt_after_death = 0.0
+			print("%s: killed it" % bot_name)
+		return
+	if _rift_t - _killed_at < 3.5:
+		return
+	set_process(false)
+	_check(int(_fx_seen.get("frost_orb", 0)) > 0, "it sees the legendary's frost orbs (%d)" % int(_fx_seen.get("frost_orb", 0)))
+	_check(int(_events.get("slow", 0)) > 0, "frost orb bursts slow it (%d)" % int(_events.get("slow", 0)))
+	_check(int(_fx_seen.get("spark", 0)) > 0, "its sparks jump to it when hit (%d)" % int(_fx_seen.get("spark", 0)))
+	_check(_hurt_total > 0.0, "the legendary hurts it (%.0f)" % _hurt_total)
+	_check(_hurt_after_death > 0.0, "the molten death blast hurts it (%.0f)" % _hurt_after_death)
+	print("%s: events %s fx %s" % [bot_name, _events, _fx_seen])
+	print("affixes guest: %d checks, %d failed" % [_checks, _failed])
+	await get_tree().create_timer(1.0).timeout
 	Net.leave()
 	get_tree().quit(1 if _failed > 0 else 0)
 

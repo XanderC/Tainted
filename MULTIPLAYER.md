@@ -17,8 +17,8 @@ commit). The README's Multiplayer section describes how what's done works.
 
 ## 1. Co-op gameplay gaps
 
-- [ ] Elite affixes hit every player, not only the host's (molten ground and death blast, frost orbs,
-      teleporting next to its target, electrified sparks)
+- [x] Elite affixes hit every player, not only the host's (molten ground and death blast, frost orbs,
+      teleporting next to its target, electrified sparks); the party sees the orbs and flashes
 - [ ] Other players' skills visible: the swing arcs, whirlwind, leap slam and other effects their game
       draws, not only their animation
 - [ ] Hirelings visible to the party (and in town), fighting in each owner's game

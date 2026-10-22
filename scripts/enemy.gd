@@ -415,11 +415,12 @@ func take_damage(amount: float, crit: bool = false,
 	if dtype == RuneDef.DamageType.COLD and crit and not is_boss:
 		_freeze_t = 1.2
 
-	# Electrified: sparks jump to an attacker standing close
-	if has_affix("electrified") and randf() < 0.3 and is_instance_valid(target) \
-			and target.global_position.distance_to(global_position) < 160.0:
-		target.take_damage(touch_damage * 0.5)
-		_flash_ring(global_position, 160.0, Color(1.0, 0.95, 0.4))
+	# Electrified: sparks jump to a player standing close (any player, in a party)
+	if has_affix("electrified") and randf() < 0.3:
+		var near := _players_near(global_position, 160.0)
+		if not near.is_empty():
+			near.pick_random().take_damage(touch_damage * 0.5)
+			_flash_ring(global_position, 160.0, Color(1.0, 0.95, 0.4))
 
 	queue_redraw()
 	if hp <= 0.0:
@@ -673,35 +674,66 @@ func _ready_ability(id: String, every: float, delta: float) -> bool:
 	return false
 
 
+## Every player its effects can reach, still standing: you, and in a party rift or zone the others
+## (RemotePlayer: their game takes what hits them). The host's game is the one that hurts them.
+func _players() -> Array:
+	return Enemy.players_of(get_tree(), target)
+
+
+func _players_near(at: Vector2, radius: float) -> Array:
+	return Enemy.players_near(get_tree(), target, at, radius)
+
+
+## Static so a delayed blast can still find them after the monster that cast it is gone.
+static func players_of(tree: SceneTree, you) -> Array:
+	var out: Array = []
+	if is_instance_valid(you) and not you.dead:
+		out.append(you)
+	for rp in tree.get_nodes_in_group("remote_players"):
+		if is_instance_valid(rp) and not rp.dead:
+			out.append(rp)
+	return out
+
+
+static func players_near(tree: SceneTree, you, at: Vector2, radius: float) -> Array:
+	return players_of(tree, you).filter(func(p): return p.global_position.distance_to(at) < radius)
+
+
 func _tick_affixes(delta: float, dist: float) -> void:
 	_shield_t = maxf(_shield_t - delta, 0.0)
 	if has_affix("regenerating") and hp < max_hp:
 		hp = minf(hp + max_hp * 0.02 * delta, max_hp)
-	if has_affix("molten") and dist < MOLTEN_RADIUS:
-		target.take_damage(touch_damage * 0.6 * delta)
+	if has_affix("molten"):
+		for p in _players_near(global_position, MOLTEN_RADIUS):  # its burning ground, whoever stands in it
+			p.take_damage(touch_damage * 0.6 * delta)
 	if has_affix("shielding") and _ready_ability("shielding", 9.0, delta):
 		_shield_t = 2.5
-	if has_affix("teleporter") and dist > 220.0 and _ready_ability("teleporter", 5.0, delta):
-		var dest := target.global_position + Vector2.from_angle(randf() * TAU) * 110.0
+	var who: Node2D = _foe if _alive(_foe) else target  # who it's after: you, your hireling, another player
+	if has_affix("teleporter") and dist > 220.0 and _alive(who) and _ready_ability("teleporter", 5.0, delta):
+		var dest := who.global_position + Vector2.from_angle(randf() * TAU) * 110.0
 		if maze != null:
-			dest = maze.random_floor_near(target.global_position, 90.0, 160.0)
+			dest = maze.random_floor_near(who.global_position, 90.0, 160.0)
 		_flash_ring(global_position, 50.0, Color(0.8, 0.5, 1.0))
 		global_position = dest
 		_flash_ring(global_position, 50.0, Color(0.8, 0.5, 1.0))
-	if has_affix("frozen") and dist < 600.0 and _ready_ability("frozen", 6.0, delta):
-		_frost_orb(target.global_position)
+	if has_affix("frozen") and dist < 600.0 and _alive(who) and _ready_ability("frozen", 6.0, delta):
+		_frost_orb(who.global_position)
+		Coop.host_fx("frost_orb", {"id": net_id, "x": who.global_position.x, "y": who.global_position.y})
 	if has_affix("summoner") and _ready_ability("summoner", 10.0, delta):
 		_summon_minions()
 	queue_redraw()
 
 
-## Frozen: a frost orb lands under the player and bursts after a moment, hurting and slowing.
-func _frost_orb(at: Vector2) -> void:
+## Frozen: a frost orb lands under the player and bursts after a moment, hurting and slowing every
+## player in it. `hurt` false: only its look (a party member's copy of the host's).
+func _frost_orb(at: Vector2, hurt := true) -> void:
 	var orb := Node2D.new()
 	orb.z_index = -1
 	get_parent().add_child(orb)
 	orb.global_position = at
 	var dmg := touch_damage * 1.5
+	var tree := get_tree()
+	var you = target
 	orb.draw.connect(func():
 		orb.draw_circle(Vector2.ZERO, FROST_ORB_RADIUS, Color(0.5, 0.85, 1.0, 0.18))
 		orb.draw_arc(Vector2.ZERO, FROST_ORB_RADIUS, 0.0, TAU, 40, Color(0.6, 0.9, 1.0, 0.9), 3.0))
@@ -709,18 +741,20 @@ func _frost_orb(at: Vector2) -> void:
 	var t := orb.create_tween()
 	t.tween_interval(1.2)
 	t.tween_callback(func():
-		if is_instance_valid(target) and not target.dead \
-				and target.global_position.distance_to(orb.global_position) < FROST_ORB_RADIUS:
-			target.take_damage(dmg)
-			target.apply_slow(2.0)
+		if hurt:
+			for p in Enemy.players_near(tree, you, orb.global_position, FROST_ORB_RADIUS):
+				p.take_damage(dmg)
+				p.apply_slow(2.0)
 		orb.queue_free())
 
 
-## Molten: a delayed fiery blast where it died.
+## Molten: a delayed fiery blast where it died, hurting every player in it (the host's game does the
+## hurting; a party member's copy only shows it).
 func _molten_explosion() -> void:
 	var at := global_position
 	var dmg := touch_damage * 2.0
 	var host := get_parent()
+	var players: Array = [] if remote else _players()  # caught now: it's freed before the blast
 	var warn := Node2D.new()
 	warn.z_index = -1
 	host.add_child(warn)
@@ -732,9 +766,9 @@ func _molten_explosion() -> void:
 	var t := warn.create_tween()
 	t.tween_interval(1.4)
 	t.tween_callback(func():
-		var p: Player = target
-		if is_instance_valid(p) and not p.dead and p.global_position.distance_to(at) < 130.0:
-			p.take_damage(dmg)
+		for p in players:
+			if is_instance_valid(p) and not p.dead and p.global_position.distance_to(at) < 130.0:
+				p.take_damage(dmg)
 		warn.queue_free())
 
 
@@ -764,6 +798,7 @@ func _summon_minions() -> void:
 
 
 func _flash_ring(at: Vector2, radius: float, col: Color) -> void:
+	Coop.host_fx("ring", {"id": net_id, "x": at.x, "y": at.y, "r": radius, "c": col.to_html()})  # the party sees it too
 	var ring := Node2D.new()
 	get_parent().add_child(ring)
 	ring.global_position = at

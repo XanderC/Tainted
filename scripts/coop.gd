@@ -21,6 +21,7 @@ extends Node
 
 const SNAP_HZ := 12.0
 const RUN_HZ := 2.0
+const HURT_EVERY := 0.1  ## damage to other players goes this often (burning ground hurts every frame)
 const HP_PER_PLAYER := 0.6  ## monsters' life x (1 + this per extra player in the rift)
 
 static var current: Coop = null
@@ -34,6 +35,8 @@ var _spawns: Array = []
 var _deaths: Array = []
 var _gone: Array = []
 var _hits: Array = []
+var _hurt := {}  # host: damage to other players, gathered and sent every HURT_EVERY (peer -> amount)
+var _hurt_t := 0.0
 var _snap_t := 0.0
 var _run_t := 0.0
 var _resync := false  # the connection dropped: start again from the host's when back
@@ -78,10 +81,10 @@ static func forward_status(id: int, what: String, seconds: float) -> void:
 		Net.send_event(-1, "status", [id, what, seconds])
 
 
-## The host's monster hit another player: their game takes it.
+## The host's monster hit another player: their game takes it (gathered, sent every HURT_EVERY).
 static func hurt_player(peer: int, amount: float) -> void:
 	if active():
-		Net.send_event(peer, "hurt", amount)
+		current._hurt[peer] = float(current._hurt.get(peer, 0.0)) + amount
 
 
 static func slow_player(peer: int, seconds: float) -> void:
@@ -181,6 +184,12 @@ static func describe(e: Enemy) -> Dictionary:
 
 func _physics_process(delta: float) -> void:
 	if is_host:
+		_hurt_t -= delta
+		if _hurt_t <= 0.0 and not _hurt.is_empty():
+			_hurt_t = HURT_EVERY
+			for peer in _hurt:
+				Net.send_event(int(peer), "hurt", _hurt[peer])
+			_hurt.clear()
 		if not _spawns.is_empty():
 			var list: Array = _spawns.filter(func(e): return is_instance_valid(e)).map(describe)
 			_spawns.clear()
@@ -343,9 +352,27 @@ func _spawn_copy(d) -> void:
 		_run().boss_arrived(e)
 
 
-## Draws what the host's monsters did that isn't a monster: an archer's arrow (harmless here; the
-## host's arrow does the hurting).
+## Draws what the host's monsters did that isn't a monster: an archer's arrow, a frost orb, a flash
+## (harmless here: the host's game does the hurting).
 func _fx(kind: String, d) -> void:
+	if not d is Dictionary:
+		return
+	var who: Enemy = _enemies.get(int(d.get("id", 0)))
+	if kind == "frost_orb" and is_instance_valid(who):
+		who._frost_orb(Vector2(float(d.x), float(d.y)), false)
+		return
+	if kind == "ring":
+		var ring := Node2D.new()
+		main.add_child(ring)
+		ring.global_position = Vector2(float(d.x), float(d.y))
+		var r := clampf(float(d.get("r", 50.0)), 1.0, 600.0)
+		var col := Color.from_string(String(d.get("c", "ffffff")), Color.WHITE)
+		ring.draw.connect(func(): ring.draw_arc(Vector2.ZERO, r, 0.0, TAU, 40, col, 5.0))
+		ring.queue_redraw()
+		var tw := ring.create_tween()
+		tw.tween_property(ring, "modulate:a", 0.0, 0.35)
+		tw.tween_callback(ring.queue_free)
+		return
 	if kind == "arrow" and d is Dictionary:
 		var shooter: Enemy = _enemies.get(int(d.get("id", 0)))
 		var a := EnemyArrow.new()
