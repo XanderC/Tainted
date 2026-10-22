@@ -178,8 +178,8 @@ func _populate_ui(item: ItemInstance) -> void:
 	var rar_col: Color = ItemInstance.RARITY_COLORS[item.rarity]
 	var hex_col: String = rar_col.to_html(false)
 
-	_title_lbl.text = "[b][color=#35ff8c]▲ UPGRADE:[/color] [color=#%s]%s[/color] [color=#888888](%s)[/color][/b]" % [
-		hex_col, item.display_name, slot_name
+	_title_lbl.text = "[b][color=#35ff8c][font=%s]▲[/font] UPGRADE:[/color] [color=#%s]%s[/color] [color=#888888](%s)[/color][/b]" % [
+		UIKit.ARROW_FONT, hex_col, item.display_name, slot_name
 	]
 
 	_delta_lbl.text = player.get_compact_upgrade_summary(item)

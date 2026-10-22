@@ -51,7 +51,8 @@ func _build() -> void:
 	add_child(outer)
 	outer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT, Control.PRESET_MODE_MINSIZE, 16)
 
-	var title := UIKit.label("TAINTED", 40, UIKit.GOLD)
+	var title := UIKit.label("TAINTED", 44, UIKit.GOLD)
+	title.add_theme_font_override("font", UIKit.title_font())
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.add_theme_color_override("font_outline_color", Color(0.25, 0.05, 0.05))
 	title.add_theme_constant_override("outline_size", 8)
@@ -142,6 +143,7 @@ func _build_list() -> void:
 		b.custom_minimum_size = Vector2(0, 78)
 		# The picked character is lit stone; the rest are sunk into the panel
 		var face := UIKit.tab_box(on)
+		UIKit.tab_font(b)
 		b.add_theme_stylebox_override("normal", face)
 		b.add_theme_stylebox_override("hover", face)
 		b.add_theme_stylebox_override("pressed", face)

@@ -103,7 +103,14 @@ builds them:
   frame's opening is, since the HUD places frames by their opening.
 
 The scrollbars are still the old stone art: the pack has none. Its fonts (Constantia, Cambria, Palatino)
-are not used, because they are Microsoft's and can't be shipped in the game.
+are Microsoft's and can't be shipped in the game, so the game uses two free ones in the same spirit, from
+Google Fonts (SIL Open Font License, licences beside them in `assets/fonts`):
+- **Lora** for all text: the project font (`assets/fonts/body.tres`, Lora Medium, set as
+  `gui/theme/custom_font`), and `ThemeDB.fallback_font` for text the HUD and the world draw themselves.
+  Its digits are lining, so stats line up.
+- **Cinzel** (Roman capitals) for window titles, tabs and the game's title (`UIKit.title_font()`). Its "1"
+  looks like an "I", so it isn't used for text with numbers.
+Neither has the ▲ / ▼ stat arrows, so those come from the system font (`UIKit.ARROW_FONT`).
 
 ### Dyes
 **Dyer Calla** in Ashfall (west of the plaza, between the Blacksmith and the Sage) dyes helmets, body

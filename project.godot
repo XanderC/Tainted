@@ -20,6 +20,10 @@ window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
 window/handheld/orientation=0
 
+[gui]
+
+theme/custom_font="res://assets/fonts/body.tres"
+
 [importer_defaults]
 
 texture={

@@ -135,6 +135,7 @@ func _add_tabs() -> void:
 		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		b.add_theme_font_size_override("font_size", 16)
 		var face := UIKit.tab_box(active)
+		UIKit.tab_font(b)
 		b.add_theme_stylebox_override("normal", face)
 		b.add_theme_stylebox_override("hover", face)
 		b.add_theme_stylebox_override("pressed", UIKit.tab_box(true))

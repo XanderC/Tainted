@@ -52,6 +52,35 @@ static func slot_icon(slot: String) -> Texture2D:
 	return mmo("slot_icons/" + ("ring" if slot.begins_with("ring") else slot)) if ResourceLoader.exists(path) else null
 
 
+## Fonts (assets/fonts, SIL Open Font License): Lora, a serif made for reading on screens, for all text;
+## Cinzel, Roman capitals, for window titles and tabs.
+## A ▲ / ▼ in rich text goes through ARROW_FONT: Cinzel has none, so they always come from the system's
+## fallback font at a normal size (whatever the text's own font draws for them).
+const FONTS := "res://assets/fonts/"
+const ARROW_FONT := "res://assets/fonts/Cinzel.ttf"
+static var _fonts := {}
+
+
+## Lora at `weight` (400 regular, 500 medium, 600 semi-bold, 700 bold), upright or italic.
+static func body_font(weight := 500, italic := false) -> Font:
+	return _font("Lora-Italic" if italic else "Lora", weight)
+
+
+## Cinzel, bold: window titles and tabs (its "1" looks like an "I", so not for text with numbers).
+static func title_font() -> Font:
+	return _font("Cinzel", 700)
+
+
+static func _font(file: String, weight: int) -> Font:
+	var key := "%s@%d" % [file, weight]
+	if not _fonts.has(key):
+		var f := FontVariation.new()
+		f.base_font = load(FONTS + file + ".ttf")
+		f.variation_opentype = {TextServerManager.get_primary_interface().name_to_tag("wght"): weight}
+		_fonts[key] = f
+	return _fonts[key]
+
+
 ## A texture from assets/ui/mmo by name ("window", "slot", ...).
 static func mmo(name: String) -> Texture2D:
 	if not _mmo.has(name):
@@ -153,6 +182,11 @@ static func tab_box(active: bool) -> StyleBox:
 	return s
 
 
+## A tab button's label in the title font (with tab_box for its face).
+static func tab_font(b: Button) -> void:
+	b.add_theme_font_override("font", title_font())
+
+
 ## Text colour of a tab's label.
 static func tab_font_color(active: bool) -> Color:
 	return Color(0.96, 0.93, 0.85) if active else Color(0.62, 0.62, 0.64)
@@ -216,6 +250,7 @@ static func window_header(parent: Control, title: String, col := Color(0.95, 0.8
 	row.add_child(pad)
 	var l := label(title.to_upper(), font, col)
 	l.name = "Title"  # found by name: a spacer comes before it
+	l.add_theme_font_override("font", title_font())
 	l.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -228,10 +263,16 @@ static func window_header(parent: Control, title: String, col := Color(0.95, 0.8
 	return row
 
 
-## Scrollbars in the pack's style; set on the root window (GameState does) so every
-## ScrollContainer uses them.
+## The game's theme, set on the root window (GameState does): its fonts for all text (rich text gets
+## bold and italic Lora), and scrollbars in the pack's style for every ScrollContainer.
+## Text drawn by hand (the HUD, names over heads) uses ThemeDB.fallback_font, set to the same font.
 static func ui_theme() -> Theme:
 	var t := Theme.new()
+	t.default_font = body_font()  # the engine's own theme uses Lora too (project.godot gui/theme/custom_font)
+	t.set_font("bold_font", "RichTextLabel", body_font(700))
+	t.set_font("italics_font", "RichTextLabel", body_font(500, true))
+	t.set_font("bold_italics_font", "RichTextLabel", body_font(700, true))
+	ThemeDB.fallback_font = body_font()
 	var track := StyleBoxTexture.new()
 	track.texture = HudArt.tex("scroll_bar")
 	track.texture_margin_top = 12.0
@@ -288,7 +329,9 @@ static func section(parent: Control, title: String, expand := false) -> VBoxCont
 	v.add_theme_constant_override("separation", 8)
 	p.add_child(v)
 	if title != "":
-		v.add_child(label(title, 16, GOLD))
+		var h := label(title, 15, GOLD)
+		h.add_theme_font_override("font", body_font(700))
+		v.add_child(h)
 	return v
 
 
@@ -345,9 +388,9 @@ static func stat_arrow(stat: String, deltas: Dictionary) -> String:
 	var d: float = deltas[stat]
 	var eps := 0.005 if stat in ["crit_chance", "attack_speed"] else 0.5
 	if d > eps:
-		return " [color=#4ade80]▲[/color]"
+		return " [color=#4ade80][font=%s]▲[/font][/color]" % ARROW_FONT
 	if d < -eps:
-		return " [color=#f87171]▼[/color]"
+		return " [color=#f87171][font=%s]▼[/font][/color]" % ARROW_FONT
 	return ""
 
 
@@ -445,7 +488,7 @@ static func delta_bbcode(player: Player, item: ItemInstance) -> String:
 					continue
 				txt = "%+d" % whole
 		var col := "4ade80" if d > 0.0 else "f87171"
-		t += "[color=#%s]  %s %s %s[/color]\n" % [col, "▲" if d > 0.0 else "▼", txt, STAT_LABELS[k]]
+		t += "[color=#%s]  [font=%s]%s[/font] %s %s[/color]\n" % [col, ARROW_FONT, "▲" if d > 0.0 else "▼", txt, STAT_LABELS[k]]
 	if t == "":
 		t = "[color=#777777]  No changes to core combat stats[/color]\n"
 	return t

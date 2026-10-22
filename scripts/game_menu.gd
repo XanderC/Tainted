@@ -329,6 +329,7 @@ func _build_tabs() -> void:
 		b.add_theme_stylebox_override("pressed", UIKit.tab_box(true))
 		b.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 		b.add_theme_color_override("font_color", UIKit.tab_font_color(active))
+		UIKit.tab_font(b)
 		b.pressed.connect(func():
 			if stash_tab != "":
 				(_get_panel("stash") as StashPanel).tab = stash_tab
