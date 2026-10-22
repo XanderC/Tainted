@@ -4,8 +4,9 @@ Top-down mobile ARPG prototype (Godot 4.3+, GDScript, GL Compatibility renderer)
 
 ## Run it
 1. Open Godot 4.3 or newer, click Import, pick `project.godot`.
-2. Press F5. Move with the arrow keys or by click-dragging on the left side of the window.
-   You auto-attack the nearest enemy. Kill things, pick up loot (walk over it), watch stats change.
+2. Press F5. The game is **online only**: sign in with your Xandflix account (Autharr) and it joins
+   the Tainted World (on the home network for now; see Multiplayer), which keeps your characters.
+   Move with the arrow keys or by click-dragging on the left side of the window.
 
 Or without the editor: `Godot_v4.4.1-stable_win64.exe --path <this folder>` (add `--resolution 1600x720`
 for the phone's shape).
@@ -14,6 +15,8 @@ for the phone's shape).
 - Windows: `.\build_windows.ps1` makes `builds\windows\Tainted.exe`, one standalone file you can copy
   anywhere and run (`-Run` starts it). Uses the "Windows Desktop" preset (x86_64, game packed in the exe).
 - Android: `.\deploy_android.ps1` builds the APK and installs it on the phone over wireless debugging.
+- For players: `.\publish_builds.ps1` builds both and puts them on the NAS (Tainted > builds), where
+  the server's "update your game" message sends them.
 
 ## What's here
 | File | Purpose |
@@ -139,27 +142,32 @@ put it on until you have them. Gear that stops meeting them (points taken back) 
 red, and gives nothing until it does again. Older characters get all their points to add.
 
 ### Multiplayer
-Everyone online meets in Ashfall Outpost; parties of up to 4 will play zones and rifts together, each
-with their own loot. The **Tainted World** is the shared server, on the main host (192.168.86.18) in
-Docker beside the estate. It's LAN-only for now, and set up so it can be opened to the internet later.
+The game is **online only**: there is no single player and no hosting your own game. Everyone online
+meets in Ashfall Outpost; parties of up to 4 play zones and rifts together, each with their own loot.
+The **Tainted World** is the server, on the main host (192.168.86.18) in Docker beside the estate. It's
+on the home network only for now, and set up so it can be opened to the internet later. What's done
+and what's left: MULTIPLAYER.md.
 
-**How it fits together.** `Net` (autoload, `scripts/net.gd`) is a server, a host or a client. They talk
+**How it fits together.** `Net` (autoload, `scripts/net.gd`) is the server or a client. They talk
 over WebSockets on port 24601: `ws://` on the LAN, and `wss://` through a TLS proxy for the public
 (Traefik behind the Cloudflare Tunnel, which carries WebSockets, so no port is forwarded). Each game
-runs its own town; the server only passes on who is where (`Net.enter(instance)`, states about 15 times
-a second) and keeps nothing: characters stay in each player's save. It takes nothing on trust: a
+runs its own town; the server passes on who is where (`Net.enter(instance)`, states about 15 times
+a second) and keeps everyone's characters (Online characters, below). It takes nothing on trust: a
 connection must say hello within 10 s, messages are rate-limited, states and looks are cleaned of
 anything unexpected, and only plain values are decoded.
 
-**Playing.** On character select, **🌐 Play Online** offers:
-- **Tainted World**, which tries the addresses in the project setting `tainted/net/world_addresses` in order
-  (now `ws://192.168.86.18:24601`)
-- games hosted on your Wi-Fi (they answer a broadcast on port 24602)
-- joining by address (an IP, or a `ws://` / `wss://` URL)
-- hosting a game on this device.
+**Playing.** The start screen (`CharacterSelect`) signs in (a kept sign-in does it by itself; else email
+and password) and joins the Tainted World, trying the addresses in the project setting
+`tainted/net/world_addresses` in order (now `ws://192.168.86.18:24601`). Then it shows your online
+characters: create, play and delete them there, and Sign out for another account.
+- If it can't reach the server, or the server refuses (an old game, banned...), it says so: **Try again**.
+- A game that loses the server tries to reconnect for about a minute and a half (a server restart comes
+  back by itself), then goes back to the start screen, which says why (`Net._back_to_start`).
+- Characters a device saved before the game went online only are left on the device, unused
+  (`GameState.forget_account`: the game never plays from the device's saves).
 
 In town (`NetPresence`) everyone else there is a `RemotePlayer`, shown with their looks, gear, dyes,
-name and level, walking where they walk. Going back to character select goes offline.
+name and level, walking where they walk. Going back to character select keeps you online.
 
 **Parties** (up to 4; `Net` keeps them on the server, `PartyUI` shows them):
 - Walk up to another player in town and tap the Talk button (it shows their name) for their card,
@@ -191,8 +199,12 @@ name and level, walking where they walk. Going back to character select goes off
   death does in each game: XP, quest kill credit and a quest boss's kill, and **loot rolled in that
   game**, so each player gets their own drops. Exits, waypoints and town portals take each player on
   their own; dying sends you back into the party's zone.
-- Not yet shared: players' skill effects (others see their animations), hirelings (each fights in its
-  owner's game), and the elite affixes that hit only the host's player (molten ground, frost orbs).
+- Shared too: players' skill effects (swings, rings, whirlwind, earthquake ground, standards), hirelings
+  and summoned Ancients (each fights in its owner's game), and elite affixes hit every player in reach.
+- Falling in a party's rift or zone: you stay down, and a member standing beside you for 3 s revives you
+  at half life; after 20 s you may get up at the start (`PartyDeath`). A party rift fails only when
+  everyone is down. A party rift is the opener's level at most; a clear in time unlocks each member's
+  next. Off-screen members get an arrow at the edge, and a member's card has **Go to them**.
 
 **Chat** (`ChatUI`, `Net.say`):
 - The 💬 button at the bottom left (or Enter) opens a box; **Local** reaches everyone where you are (your
@@ -224,10 +236,9 @@ to party and Remove. Friends can inspect each other from anywhere.
   `/appdata/estate/tainted/accounts` on the host, written a moment after a change, with a copy of every
   account each day in `backups/<date>` (the last 7 days). Started with `--data=<dir>`, a server keeps
   characters; its welcome says so (`Net.accounts`).
-- On it, character select shows **Online characters** (create, play and delete them there) and a
-  **Go offline** button back to the device's own. The game saves its account and character "files" to
-  the server instead of the device (`GameState._write_json` by virtual path: `account`,
-  `characters/<id>`). Offline play and games hosted on a device keep the device's characters.
+- The game saves its account and character "files" to the server, never the device
+  (`GameState._write_json` by virtual path: `account`, `characters/<id>`). Only tests and the map
+  editor's test runs, which never sign in, use the device's files.
 - **The server checks every file** before storing it: only those two kinds of path, plain data under
   512 KB, and a sane shape (character list, level 1-100, items). Saves made while reconnecting go once
   the connection is back. One game per account: playing it elsewhere replaces the first.
@@ -306,7 +317,7 @@ with `Tainted.exe`, `Tainted.apk` and `version.txt`). A local server instead: `.
 What's done and what's left: MULTIPLAYER.md.
 
 Test without a second device: `scratch/net_bot.tscn` (`-- --bot=walker`, `--bot=watcher` checks what
-it sees, `--bot=scan`, `--bot=partier` checks parties, `--drop-at=8` and `--bot=keeper` check reconnecting,
+it sees, `--bot=partier` checks parties, `--drop-at=8` and `--bot=keeper` check reconnecting,
 `--bot=counter` with a server's `--town-cap=2` checks town copies, `--say=` / `--party-say=` with
 `--expect-chat=` / `--no-chat=` check chat, `--bot=inspector` checks inspecting, `--key=` with `--befriend` / `--accept-friend` /
 `--expect-friend=` check friends, `--accept` / `--invite`, `--addr=ws://...`) and `scratch/capture_net.tscn` (a screenshot of the town
@@ -315,7 +326,8 @@ online; `--world`, `--host`, `--party` for an invite, the party list and a card,
 (`--phase=create`, restart it, `--phase=check`; `--addr=ws://...`), `scratch/signin_bot.tscn` checks signing in
 against an Autharr (`--auth= --email= --password=`, `--phase=first` then `--phase=again`), `scratch/trade_bot.tscn`
 checks a trade and the anti-duplication (`--role=a` and `--role=b`, `--shot`), `scratch/admin_bot.tscn` checks the
-admin commands against a server with `--data= --admin=`, and `scratch/coop_bot.tscn` plays a whole party rift with
+admin commands against a server with `--data= --admin=`, `scratch/lost_bot.tscn` checks a game that loses
+the server goes back to the start screen (kill the server once it's in town), and `scratch/coop_bot.tscn` plays a whole party rift with
 two bots (`--role=leader|follower`; `--zone` for the Dune Wastes instead; `--shot` for a screenshot,
 `--leave-after=6 --takeover` a handover, `--drop-at=6` a reconnect mid-rift, `--affixes` elite affixes on the
 guest, `--allies` hirelings and Ancients, `--revive` falling and reviving, `--levels` party rift levels,

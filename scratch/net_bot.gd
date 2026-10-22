@@ -3,7 +3,6 @@ extends Node
 ##   godot --headless --path . res://scratch/net_bot.tscn -- --bot=walker --name=Brom [--addr=127.0.0.1] [--secs=20]
 ## walker:  joins, enters town and walks in a circle by the spawn, in some gear, then leaves.
 ## watcher: joins, enters town, and checks what it sees (prints "watcher: N checks, M failed").
-## scan:    looks for servers on the Wi-Fi and prints them.
 ## partier: joins, invites everyone it sees, and checks the party forms, members' life arrives, a
 ##          member can be made leader, and leaving works (prints "partier: N checks, M failed").
 ## --accept: a walker or watcher that joins any party it is invited to.
@@ -71,12 +70,6 @@ func _ready() -> void:
 	GameState.char_name = bot_name
 	GameState.level = 7
 	GameState.appearance = Appearance.random_look()
-	if mode == "scan":
-		Net.servers_found.connect(func(list): print("scan: ", list))
-		Net.scan()
-		await get_tree().create_timer(2.0).timeout
-		get_tree().quit()
-		return
 	Net.state_source = _state
 	Net.status_changed.connect(func(): print("%s: %s" % [bot_name, Net.status]))
 	Net.peer_joined.connect(func(id, info, state):

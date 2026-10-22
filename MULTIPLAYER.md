@@ -14,6 +14,8 @@ commit). The README's Multiplayer section describes how what's done works.
 - [x] Chat (local and party, word filter), inspect, friends, trading (no duplicating)
 - [x] Autharr sign-in, required on the Tainted World
 - [x] The Tainted World in Docker on the main host, LAN only
+- [x] Online only (22 Oct 2026): no single player, no hosting on the Wi-Fi; the start screen signs in
+      and joins, a game that loses the server goes back to it; device characters left unused
 
 ## 1. Co-op gameplay gaps
 
@@ -67,4 +69,3 @@ commit). The README's Multiplayer section describes how what's done works.
 - [ ] Currency (orbs) in trades
 - [ ] Whispers to friends, chat history you can scroll, muting a player
 - [ ] Join a friend where they are (their copy of the town)
-- [ ] Bring a device character online once (a copy, checked by the server)

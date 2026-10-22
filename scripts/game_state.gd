@@ -1233,11 +1233,11 @@ func use_online_files(files: Dictionary) -> void:
 	_load_account()
 
 
-## Back to the device's characters (offline again).
-func use_local_files() -> void:
-	if not online_saves:
-		return
-	online_saves = false
+## No account (the game is online only): signed out, or the server has gone. No characters until
+## the server sends the next account's (use_online_files); the device's own saves are never played
+## from. (Tests and the map editor's test runs, which never sign in, still use the device's files.)
+func forget_account() -> void:
+	online_saves = true
 	online_files = {}
 	char_id = ""
 	player = null

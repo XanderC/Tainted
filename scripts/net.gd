@@ -3,19 +3,19 @@ extends Node
 ## instance at a time ("town" is shared by everyone online), and sees the others in the same
 ## instance: who they are, how they look, where they stand and what they are doing.
 ##
-## Three ways to run it:
+## The game is online only: it plays on the Tainted World, which keeps everyone's characters.
 ##   dedicated server  godot --headless --path . -- --server [--name=Home] [--max=32]  (scenes/server.tscn;
 ##                     the Tainted World runs one in Docker, see server/)
-##   host              "Host a game" on the online screen: this game is the server and plays too
-##   client            "Play Online": join the Tainted World, a game found on your Wi-Fi, or an address
+##   client            every game: the start screen signs in and joins the Tainted World (join_world);
+##                     tests join a local server by address (join)
 ##
 ## It talks over WebSockets (ws:// on the LAN, wss:// through a TLS proxy such as Traefik behind a
 ## Cloudflare Tunnel), so a public server needs no forwarded port. The Tainted World's addresses are
 ## project settings (tainted/net/world_addresses), tried in order: the home network's first.
 ##
 ## Each game runs its own copy of the scene (town NPCs, vendors and your character are local); the
-## server only passes on who is where. Characters stay in each player's own save. Games hosted on the
-## Wi-Fi answer a broadcast on DISCOVERY_PORT, so the online screen lists them by themselves.
+## server passes on who is where, and keeps the characters (AccountStore). A game that loses the server
+## for good goes back to the start screen (_back_to_start): there is no playing offline.
 ##
 ## The server takes nothing on trust: a client must say hello within HELLO_TIMEOUT, its states are
 ## rate-limited and cleaned (_clean_state), its looks cleaned (_clean_info), and only plain values
@@ -76,7 +76,6 @@ signal peer_joined(id: int, info: Dictionary, state: Dictionary)  ## someone is 
 signal peer_left(id: int)  ## ...or isn't any more
 signal peer_state(id: int, state: Dictionary)  ## where they are now (about SEND_HZ times a second)
 signal peer_looks(id: int, info: Dictionary)  ## their gear, level or name changed
-signal servers_found(list: Array)  ## servers answering on the Wi-Fi: [{"name", "address", "players", "max"}]
 signal party_changed  ## you joined, left or were removed, or the party's members or leader changed (`party`)
 signal invited(from_id: int, from_name: String)  ## someone invites you to their party (answer_invite)
 signal party_vitals(batch: Dictionary)  ## members' life and whereabouts: id -> {"h": 0-1, "w": place}
@@ -95,12 +94,10 @@ signal trade_finished(received: Array)  ## the trade went through: what you got 
 signal signed_in_changed  ## signed in or out of Autharr (`signed_in_as`), or a sign-in failed (`sign_in_error`)
 
 const PORT := 24601
-const DISCOVERY_PORT := 24602
 const PROTOCOL := 10  ## games with a different protocol can't play together
 const MAX_ONLINE := 32
 const PARTY_MAX := 4
 const SEND_HZ := 15.0
-const DISCOVER_MSG := "TAINTED_DISCOVER"
 const TOWN := "town"
 const MAX_EVENTS_PER_SEC := 240  ## instance events per client (monster updates, hits...)
 const AWAY_GRACE := 60.0  ## seconds a dropped party member's place is kept
@@ -128,7 +125,7 @@ const AUTH_URL_DEFAULT := "http://192.168.86.18:5180"  ## Autharr, for the sign-
 const AUTH_CLIENT := "tainted-game"
 const AUTH_FILE := "user://autharr.dat"
 
-enum Mode { OFFLINE, CONNECTING, CLIENT, HOST, SERVER, RECONNECTING }
+enum Mode { OFFLINE, CONNECTING, CLIENT, SERVER, RECONNECTING }
 
 var mode := Mode.OFFLINE
 var status := ""  ## a line for the player: "Connected to Home", "Connection failed"...
@@ -170,9 +167,6 @@ var _send_t := 0.0
 var _relay_t := 0.0
 var _dirty := {}  # server only: ids whose state changed since the last relay
 var _looks_queued := false
-var _disc_server: PacketPeerUDP  # server: answers discovery broadcasts
-var _disc_client: PacketPeerUDP  # client: scanning for servers
-var _found := {}  # address -> server info, while scanning
 var _max_online := MAX_ONLINE
 var town_cap := TOWN_CAP  ## players in one copy of the town (a dedicated server's --town-cap)
 var _world_queue: Array = []  # Tainted World addresses still to try
@@ -241,7 +235,7 @@ func _ready() -> void:
 				admin_dir = a.trim_prefix("--admin=")
 			elif a.begins_with("--update="):
 				update_where = a.trim_prefix("--update=")
-		start_server(name_arg, true)
+		start_server(name_arg)
 		get_tree().change_scene_to_file.call_deferred("res://scenes/server.tscn")
 	else:
 		_http = HTTPRequest.new()
@@ -330,11 +324,11 @@ static func party_of_instance(inst: String) -> int:
 
 
 func online() -> bool:
-	return mode in [Mode.CLIENT, Mode.HOST]
+	return mode == Mode.CLIENT
 
 
 func is_server() -> bool:
-	return mode in [Mode.HOST, Mode.SERVER]
+	return mode == Mode.SERVER
 
 
 ## The Tainted World's name and addresses (project settings tainted/net/world_*), tried in order.
@@ -359,8 +353,8 @@ func player_count() -> int:
 
 # ---------- starting and stopping ----------
 
-## Be the server. `dedicated`: nobody plays on this game (a headless server).
-func start_server(name: String, dedicated := false) -> bool:
+## Be the (dedicated, headless) server.
+func start_server(name: String) -> bool:
 	leave()
 	var peer := _ws_peer()
 	var err := peer.create_server(PORT)
@@ -369,28 +363,15 @@ func start_server(name: String, dedicated := false) -> bool:
 		return false
 	multiplayer.multiplayer_peer = peer
 	server_name = name
-	_disc_server = PacketPeerUDP.new()
-	if _disc_server.bind(DISCOVERY_PORT) != OK:
-		push_warning("Net: discovery port %d is busy; the server won't show up in the list" % DISCOVERY_PORT)
-		_disc_server = null
-	if dedicated:
-		_set_status(Mode.SERVER, "Server \"%s\" running on port %d (up to %d players)%s%s" % [name, PORT, _max_online,
-			", characters in %s" % _store.base_dir if _store != null else "",
-			", sign-in checked with %s" % _auth_check if _auth_check != "" else ""])
-		print(status)
-	else:
-		_peers[1] = {"info": my_info(), "instance": "", "state": {}, "party": 0}
-		_set_status(Mode.HOST, "Hosting \"%s\"" % name)
+	_set_status(Mode.SERVER, "Server \"%s\" running on port %d (up to %d players)%s%s" % [name, PORT, _max_online,
+		", characters in %s" % _store.base_dir if _store != null else "",
+		", sign-in checked with %s" % _auth_check if _auth_check != "" else ""])
+	print(status)
 	return true
 
 
-## Host a game: this game is the server, and its player plays in it.
-func host() -> bool:
-	return start_server("%s's game" % (GameState.char_name if GameState.char_name != "" else "Someone"))
-
-
-## Join the server at `address`: an IP on your Wi-Fi, or a ws:// / wss:// URL. status_changed tells
-## how it went.
+## Join the server at `address` (an IP, or a ws:// / wss:// URL): tests, with a local server. The
+## game itself joins the Tainted World (join_world). status_changed tells how it went.
 func join(address: String) -> void:
 	_world_queue.clear()
 	_connect(address)
@@ -443,8 +424,8 @@ func _ws_peer() -> WebSocketMultiplayerPeer:
 	return peer
 
 
-## Go offline (stop hosting, or leave the server). No reconnecting after this; if the server kept
-## your characters, the device's are back.
+## Leave the server. No reconnecting after this, and no characters until the next account comes
+## (GameState.forget_account: the device's own saves are never played from).
 func leave() -> void:
 	_reconnect_url = ""
 	_rejoin = ""
@@ -453,7 +434,19 @@ func leave() -> void:
 	_drop()
 	if accounts:
 		accounts = false
-		GameState.use_local_files()
+		GameState.forget_account.call_deferred()  # after the scene in play has gone (_back_to_start)
+
+
+## Online only: without the server there's no game. From a game scene, back to the start screen,
+## which says why (status) and offers to try again.
+func _back_to_start() -> void:
+	if dedicated_requested():
+		return
+	var scene := get_tree().current_scene
+	var path := scene.scene_file_path if scene != null else ""
+	if path.get_file() in ["town.tscn", "main.tscn", "zone.tscn", "tutorial.tscn"]:
+		get_tree().paused = false
+		get_tree().change_scene_to_file.call_deferred(CharacterSelect.SCENE)
 
 
 ## Closes the connection and forgets the online world (leave() also stops any reconnecting).
@@ -461,9 +454,6 @@ func _drop() -> void:
 	if multiplayer.multiplayer_peer != null and not multiplayer.multiplayer_peer is OfflineMultiplayerPeer:
 		multiplayer.multiplayer_peer.close()
 	multiplayer.multiplayer_peer = OfflineMultiplayerPeer.new()
-	if _disc_server != null:
-		_disc_server.close()
-		_disc_server = null
 	for id in others.keys():
 		peer_left.emit(id)
 	others.clear()
@@ -510,8 +500,10 @@ func _on_connection_failed() -> void:
 		_wait_to_reconnect()
 		return
 	if _reconnect_url != "":
+		var what := server_name
 		leave()
-		_set_status(Mode.OFFLINE, "Couldn't reconnect to %s" % server_name)
+		_set_status(Mode.OFFLINE, "Lost the connection to the %s and couldn't get it back." % what)
+		_back_to_start()
 		return
 	if not _world_queue.is_empty():
 		_try_next_world()  # the next of the Tainted World's addresses
@@ -526,6 +518,7 @@ func _on_server_lost() -> void:
 	if mode != Mode.CLIENT or _reconnect_url == "":
 		leave()
 		_set_status(Mode.OFFLINE, "Lost the connection to the server")
+		_back_to_start()
 		return
 	_rejoin = instance
 	_rejoin_coop = coop.duplicate()
@@ -841,10 +834,7 @@ func enter(inst: String) -> void:
 	if coop.get("inst", "") != inst:
 		coop = {}  # left the party instance
 	var s: Dictionary = state_source.call() if state_source.is_valid() else {}
-	if mode == Mode.HOST:
-		_on_enter(1, inst, s)
-	else:
-		_rpc_enter.rpc_id(1, inst, s)
+	_rpc_enter.rpc_id(1, inst, s)
 
 
 ## Your gear, level or name changed: others see it (sent once at the end of the frame).
@@ -854,17 +844,12 @@ func update_looks() -> void:
 	_looks_queued = true
 	(func():
 		_looks_queued = false
-		if not online():
-			return
-		if mode == Mode.HOST:
-			_on_looks(1, my_info())
-		else:
+		if online():
 			_rpc_looks.rpc_id(1, my_info())
 	).call_deferred()
 
 
 func _process(delta: float) -> void:
-	_poll_discovery()
 	if mode == Mode.RECONNECTING:
 		_reconnect_t -= delta
 		if _reconnect_t <= 0.0 and multiplayer.multiplayer_peer is OfflineMultiplayerPeer:
@@ -887,10 +872,7 @@ func _process(delta: float) -> void:
 			_send_t = 1.0 / SEND_HZ
 			var s: Dictionary = state_source.call() if state_source.is_valid() else {}
 			if not s.is_empty():
-				if mode == Mode.HOST:
-					_on_state(1, s)
-				else:
-					_rpc_state.rpc_id(1, s)
+				_rpc_state.rpc_id(1, s)
 	if is_server():
 		_relay_t -= delta
 		if _relay_t <= 0.0:
@@ -1392,10 +1374,7 @@ func _on_inspect(who: int, id: int) -> void:
 	if not _can_see(who, id):
 		_send(who, "_rpc_notice", ["You can't see them from here."])
 		return
-	if id == 1 and mode == Mode.HOST:
-		_send(who, "_rpc_inspect_of", [1, _inspect_data()])
-	else:
-		_send(id, "_rpc_inspect_ask", [who])
+	_send(id, "_rpc_inspect_ask", [who])
 
 
 func _on_inspect_reply(id: int, who: int, data: Dictionary) -> void:
@@ -1484,10 +1463,7 @@ func _relay_states() -> void:
 			continue
 		var mine := batch.duplicate()
 		mine.erase(id)
-		if id == 1:
-			_rpc_states(mine)
-		else:
-			_rpc_states.rpc_id(id, mine)
+		_rpc_states.rpc_id(id, mine)
 
 
 # ---------- server: running it (ServerAdmin) ----------
@@ -1561,11 +1537,9 @@ func _tell_instance(inst: String, except: int, method: String, args: Array) -> v
 			_send(id, method, args)
 
 
-## Calls `method` on peer `id`: by RPC, or straight away for the host's own player.
+## Calls `method` on player `id` by RPC (the server's side).
 func _send(id: int, method: String, args: Array) -> void:
-	if id == 1 and mode == Mode.HOST:
-		callv(method, args)
-	elif id != 1 and multiplayer.get_peers().has(id):  # not one whose leaving isn't handled yet
+	if id != 1 and multiplayer.get_peers().has(id):  # not one whose leaving isn't handled yet
 		callv("rpc_id", [id, method] + args)
 
 
@@ -1697,11 +1671,9 @@ func send_event(to: int, kind: String, data: Variant) -> void:
 	_to_server("_on_event", "_rpc_event", [to, kind, data])
 
 
-## Runs `on_method(my id, args...)` on the server: here when hosting, else by RPC `rpc_method`.
-func _to_server(on_method: String, rpc_method: String, args: Array) -> void:
-	if mode == Mode.HOST:
-		callv(on_method, [1] + args)
-	elif mode == Mode.CLIENT:
+## Asks the server for something: RPC `rpc_method`, which runs `on_method(your id, args...)` there.
+func _to_server(_on_method: String, rpc_method: String, args: Array) -> void:
+	if mode == Mode.CLIENT:
 		callv("rpc_id", [1, rpc_method] + args)
 
 
@@ -2231,6 +2203,7 @@ func _rpc_account(files: Dictionary) -> void:
 func _rpc_refused(reason: String) -> void:
 	leave()
 	_set_status(Mode.OFFLINE, reason)
+	_back_to_start()  # kicked or banned mid-game: the start screen says so
 
 
 @rpc("authority", "call_remote", "reliable")
@@ -2300,48 +2273,3 @@ func _rpc_vitals(batch: Dictionary) -> void:
 			member_where[int(id)] = String(batch[id].get("i", ""))
 	party_vitals.emit(batch)
 
-
-# ---------- finding servers on the Wi-Fi ----------
-
-## Ask the Wi-Fi which servers are there; servers_found lists them as they answer (call again to refresh).
-func scan() -> void:
-	if _disc_client == null:
-		_disc_client = PacketPeerUDP.new()
-		_disc_client.set_broadcast_enabled(true)
-		_disc_client.bind(0)
-	_found.clear()
-	var msg := DISCOVER_MSG.to_utf8_buffer()
-	for addr in ["255.255.255.255", "127.0.0.1"]:  # the second finds a server on this same device
-		_disc_client.set_dest_address(addr, DISCOVERY_PORT)
-		_disc_client.put_packet(msg)
-	servers_found.emit([])
-
-
-func stop_scan() -> void:
-	if _disc_client != null:
-		_disc_client.close()
-		_disc_client = null
-
-
-func _poll_discovery() -> void:
-	if _disc_server != null:
-		while _disc_server.get_available_packet_count() > 0:
-			var pkt := _disc_server.get_packet().get_string_from_utf8()
-			if pkt == DISCOVER_MSG:
-				_disc_server.set_dest_address(_disc_server.get_packet_ip(), _disc_server.get_packet_port())
-				_disc_server.put_packet(JSON.stringify({"name": server_name, "players": _peers.size(),
-					"max": MAX_ONLINE, "protocol": PROTOCOL}).to_utf8_buffer())
-	if _disc_client != null:
-		var changed := false
-		while _disc_client.get_available_packet_count() > 0:
-			var raw := _disc_client.get_packet().get_string_from_utf8()
-			var ip := _disc_client.get_packet_ip()
-			var d = JSON.parse_string(raw)
-			if d is Dictionary and int(d.get("protocol", 0)) == PROTOCOL:
-				# The same server answers on loopback and the Wi-Fi: keep one, by name
-				var key := String(d.get("name", ip))
-				if not _found.has(key) or ip != "127.0.0.1":
-					_found[key] = {"name": key, "address": ip, "players": int(d.get("players", 0)), "max": int(d.get("max", 0))}
-					changed = true
-		if changed:
-			servers_found.emit(_found.values())

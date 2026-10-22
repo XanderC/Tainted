@@ -1,12 +1,11 @@
 class_name CharacterSelect
 extends Control
-## The game's start screen: your characters on the left, the picked one standing on the right
-## with Play and Delete. "Create New Character" swaps the right side for the creation form
-## (pick a class, enter a name). Each character has its own save; the stash is shared.
-## "Play Online" swaps it for the online screen: games on your Wi-Fi (Net.scan), join by address,
-## or host one on this device. A server that keeps characters (the Tainted World, Net.accounts) lists
-## its own here instead, your online characters, until you go offline; coming back here from a game
-## on it keeps you online. From any other game, coming back here takes you offline.
+## The game's start screen. The game is online only: first it signs in (a kept Autharr sign-in
+## does it by itself; else email and password) and joins the Tainted World, which sends this
+## account's characters (Net.account_ready). Then: your characters on the left, the picked one
+## standing on the right with Play and Delete; "Create New Character" swaps the right side for the
+## creation form (pick a class and looks, enter a name). Each character has its own save; the stash
+## is shared. If the server can't be reached, or a game lost it for good, it says so: Try again.
 
 const SCENE := "res://scenes/character_select.tscn"
 const TOWN_SCENE := "res://scenes/town.tscn"
@@ -24,18 +23,16 @@ var _rig: RigSprite
 var _name_edit: LineEdit
 var _name_error: Label
 var _delete_armed := false
-var _online := false  # the online screen is shown on the right
-var _servers: Array = []  # games found on the Wi-Fi (Net.servers_found)
-var _scan_t := 0.0
 var _net_status: Label
-var _server_box: VBoxContainer
-var _addr_edit: LineEdit
 var _list_title: Label
+var _stage: Control
 
 
 func _ready() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	get_tree().paused = false
+	if Net.dedicated_requested():
+		return  # a dedicated server passes through this scene on its way to its own (server.tscn)
 	# Launched by the map editor's "Test in Game": play that map straight away (nothing is saved)
 	for arg in OS.get_cmdline_user_args():
 		if arg.begins_with("--test-map="):
@@ -43,17 +40,36 @@ func _ready() -> void:
 			GameState.give_starter_skills()
 			get_tree().change_scene_to_file.call_deferred("res://scenes/main.tscn")
 			return
-	if (Net.online() and not Net.accounts) or Net.mode == Net.Mode.CONNECTING:
-		Net.leave()  # back from a hosted game: offline, free to pick any character
 	Net.status_changed.connect(_on_net_status)
 	Net.account_ready.connect(_on_account_ready)
-	Net.resume_sign_in()  # a kept sign-in: signed in already when you get to the online screen
-	Net.servers_found.connect(_on_servers_found)
 	_build()
-	_selected = GameState.last_character if not GameState.character_info(GameState.last_character).is_empty() else ""
-	if _selected == "" and not GameState.characters.is_empty():
-		_selected = GameState.characters[0].id
-	_creating = GameState.characters.is_empty()
+	if _ready_to_play():
+		_pick_default()  # back from a game: still online, the account's characters
+		_refresh()
+		return
+	if Net.mode != Net.Mode.RECONNECTING and Net.mode != Net.Mode.CONNECTING:
+		var failed := Net.status != "" and Net.status != "Offline"  # a game lost the server, or it refused us
+		Net.leave()
+		GameState.forget_account()
+		if failed:
+			_refresh()  # says why: Try again
+			return
+	_refresh()
+	_connect_world()
+
+
+## Signed in, on the Tainted World, with this account's characters.
+func _ready_to_play() -> bool:
+	return Net.online() and Net.accounts and GameState.online_saves
+
+
+## Signs in by itself if a sign-in is kept, then joins the Tainted World; else asks to sign in.
+func _connect_world() -> void:
+	await Net.resume_sign_in()
+	if Net.signed_in_as == "":
+		_refresh()  # the sign-in form
+		return
+	Net.join_world()
 	_refresh()
 
 
@@ -108,6 +124,7 @@ func _build() -> void:
 	right.add_child(rrow)
 
 	var stage := Control.new()
+	_stage = stage
 	stage.custom_minimum_size = Vector2(300, 0)
 	stage.clip_contents = true
 	rrow.add_child(stage)
@@ -134,28 +151,16 @@ func _build() -> void:
 	rrow.add_child(_right)
 
 
-func _exit_tree() -> void:
-	Net.stop_scan()
-
-
-func _process(delta: float) -> void:
-	if _online:
-		_scan_t -= delta
-		if _scan_t <= 0.0:
-			_scan_t = 3.0  # ask again now and then: servers come and go
-			Net.scan()
-
-
 func _refresh() -> void:
 	_delete_armed = false
-	var on_server := Net.online() and Net.accounts
-	_list_title.text = "ONLINE CHARACTERS" if on_server else "CHARACTERS"
-	_list_title.add_theme_color_override("font_color", Color(0.65, 0.85, 1.0) if on_server else UIKit.GOLD)
+	var ready := _ready_to_play()
+	_list_title.get_parent().get_parent().get_parent().visible = ready  # the character list, once there are characters
+	_stage.visible = ready
+	if not ready:
+		_build_connect()
+		return
 	_build_list()
-	if _online and not _creating:
-		_build_online()
-		_dress(GameState.peek_equipment(_selected))
-	elif _creating:
+	if _creating:
 		_build_create()
 		_dress({})
 	else:
@@ -187,7 +192,6 @@ func _build_list() -> void:
 		b.pressed.connect(func():
 			_selected = id
 			_creating = false
-			_online = false
 			_refresh()
 		)
 		_list.add_child(b)
@@ -236,19 +240,6 @@ func _build_info() -> void:
 	var play := UIKit.button("▶  PLAY", Color(0.14, 0.38, 0.18), Color(0.40, 1.0, 0.55), Vector2(0, 72), 26)
 	play.pressed.connect(_play)
 	_right.add_child(play)
-	if Net.online() and Net.accounts:
-		# Playing on a server that keeps characters: these are its, and you can go back to the device's
-		var off := UIKit.button("🌐  Go offline  (%s)" % Net.server_name, Color(0.10, 0.20, 0.34), Color(0.45, 0.70, 1.0), Vector2(0, 50), 17)
-		off.pressed.connect(_go_offline)
-		_right.add_child(off)
-	else:
-		var online := UIKit.button("🌐  Play Online", Color(0.10, 0.20, 0.34), Color(0.45, 0.70, 1.0), Vector2(0, 56), 20)
-		online.pressed.connect(func():
-			_online = true
-			_scan_t = 0.0
-			_refresh()
-		)
-		_right.add_child(online)
 	var del := UIKit.button("🗑  Delete Character", Color(0.20, 0.08, 0.08), Color(0.60, 0.25, 0.25), Vector2(0, 50), 16)
 	del.pressed.connect(func():
 		if not _delete_armed:
@@ -266,6 +257,7 @@ func _build_info() -> void:
 		_refresh()
 	)
 	_right.add_child(del)
+	_right.add_child(_signed_in_row())
 
 
 func _play() -> void:
@@ -273,167 +265,91 @@ func _play() -> void:
 		get_tree().change_scene_to_file(_first_scene())
 
 
-# ---------- right: playing online ----------
+# ---------- right: signing in and joining ----------
 
-func _build_online() -> void:
+## Before there are characters: signing in, connecting, or why it couldn't (with Try again).
+func _build_connect() -> void:
 	UIKit.clear(_right)
-	var c := GameState.character_info(_selected)
-	_right.add_child(UIKit.label("PLAY ONLINE", 30, Color(0.70, 0.85, 1.0)))
-	_right.add_child(UIKit.label("as %s. Everyone online meets in Ashfall Outpost." % String(c.get("name", "")), 15, UIKit.TEXT_DIM, true))
-	_net_status = UIKit.label(Net.status if Net.mode != Net.Mode.OFFLINE or Net.status != "Offline" else "", 15, Color(1.0, 0.75, 0.45), true)
-	_right.add_child(_net_status)
+	var center := CenterContainer.new()  # a column in the middle of the screen
+	center.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_right.add_child(center)
+	var box := VBoxContainer.new()
+	box.custom_minimum_size = Vector2(minf(620.0, get_viewport_rect().size.x - 120.0), 0)
+	box.add_theme_constant_override("separation", 12)
+	center.add_child(box)
+	var head := UIKit.label(Net.world_name().to_upper(), 30, Color(0.70, 0.85, 1.0))
+	head.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	box.add_child(head)
+	var about := UIKit.label("Tainted is played online: everyone meets in Ashfall Outpost, and your characters are kept on the server.", 15, UIKit.TEXT_DIM, true)
+	about.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	box.add_child(about)
+	var busy := Net.mode in [Net.Mode.CONNECTING, Net.Mode.RECONNECTING] or (Net.online() and not GameState.online_saves)
+	_net_status = UIKit.label("Getting your characters..." if Net.online() else (Net.status if Net.status != "Offline" else ""),
+		16, Color(1.0, 0.75, 0.45), true)
+	_net_status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	box.add_child(_net_status)
+	if Net.signed_in_as == "":
+		_build_sign_in(box)
+	elif not busy:
+		var again := UIKit.button("⟳  Try again", Color(0.12, 0.26, 0.40), Color(0.50, 0.80, 1.0), Vector2(0, 60), 21)
+		again.pressed.connect(_connect_world)
+		box.add_child(again)
+		box.add_child(_signed_in_row())
 
-	var world := UIKit.section(_right, Net.world_name().to_upper())
-	_build_sign_in(world)
-	var wrow := HBoxContainer.new()
-	wrow.add_theme_constant_override("separation", 10)
-	world.add_child(wrow)
-	var wl := UIKit.label("The shared world: everyone online, whatever their Wi-Fi.", 15, Color(0.85, 0.88, 0.95), true)
-	wl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	wrow.add_child(wl)
-	var wb := UIKit.button("🌍  Join", Color(0.12, 0.26, 0.40), Color(0.50, 0.80, 1.0), Vector2(130, 46), 17)
-	wb.pressed.connect(func():
-		if not _selected.is_empty():
-			GameState.select_character(_selected)  # used if the server doesn't keep characters
-		Net.join_world()
-	)
-	wrow.add_child(wb)
 
-	var sec := UIKit.section(_right, "GAMES ON YOUR WI-FI")
-	_server_box = VBoxContainer.new()
-	_server_box.add_theme_constant_override("separation", 6)
-	sec.add_child(_server_box)
-	_fill_servers()
-
-	var addr_sec := UIKit.section(_right, "JOIN BY ADDRESS")
+## Who you're signed in as, with Sign out (another account).
+func _signed_in_row() -> Control:
 	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 8)
-	addr_sec.add_child(row)
-	_addr_edit = LineEdit.new()
-	_addr_edit.placeholder_text = "e.g. 192.168.86.20 or wss://..."
-	_addr_edit.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_addr_edit.custom_minimum_size = Vector2(0, 46)
-	_addr_edit.add_theme_font_size_override("font_size", 18)
-	row.add_child(_addr_edit)
-	var join := UIKit.button("Join", Color(0.10, 0.20, 0.34), Color(0.45, 0.70, 1.0), Vector2(120, 46), 17)
-	join.pressed.connect(func():
-		if _addr_edit.text.strip_edges() != "":
-			_connect_to(_addr_edit.text)
-	)
-	row.add_child(join)
-
-	var host := UIKit.button("🏠  Host a game on this device", Color(0.14, 0.30, 0.18), Color(0.40, 0.95, 0.55), Vector2(0, 52), 18)
-	host.pressed.connect(func():
-		if GameState.select_character(_selected) and Net.host():
-			get_tree().change_scene_to_file(_first_scene())
-	)
-	_right.add_child(host)
-	var back := UIKit.button("←  Back", Color(0.16, 0.14, 0.18), Color(0.50, 0.45, 0.50), Vector2(0, 44), 15)
-	back.pressed.connect(func():
+	row.add_theme_constant_override("separation", 10)
+	var l := UIKit.label("Signed in as %s" % Net.signed_in_as, 14, Color(0.55, 1.0, 0.6))
+	l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.add_child(l)
+	var out := UIKit.button("Sign out", Color(0.16, 0.14, 0.18), Color(0.50, 0.45, 0.50), Vector2(110, 38), 14)
+	out.pressed.connect(func():
 		Net.leave()
-		_online = false
-		_refresh()
-	)
-	_right.add_child(back)
+		Net.sign_out()
+		GameState.forget_account()
+		_refresh())
+	row.add_child(out)
+	return row
 
 
-func _on_servers_found(list: Array) -> void:
-	_servers = list
-	if _online:
-		_fill_servers()
-
-
-## Who you're signed in as (with Sign out), or email and password fields to sign in (Autharr).
+## Email and password (Autharr); signing in joins the Tainted World.
 func _build_sign_in(parent: Control) -> void:
-	if Net.signed_in_as != "":
-		var row := HBoxContainer.new()
-		row.add_theme_constant_override("separation", 10)
-		parent.add_child(row)
-		var l := UIKit.label("Signed in as %s" % Net.signed_in_as, 15, Color(0.55, 1.0, 0.6))
-		l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		row.add_child(l)
-		var out := UIKit.button("Sign out", Color(0.16, 0.14, 0.18), Color(0.50, 0.45, 0.50), Vector2(110, 38), 14)
-		out.pressed.connect(func():
-			Net.sign_out()
-			_refresh())
-		row.add_child(out)
-		return
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 6)
-	parent.add_child(row)
 	var email := LineEdit.new()
 	email.placeholder_text = "Email"
-	email.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	email.custom_minimum_size = Vector2(0, 42)
-	row.add_child(email)
+	email.custom_minimum_size = Vector2(0, 50)
+	email.add_theme_font_size_override("font_size", 18)
+	parent.add_child(email)
 	var pw := LineEdit.new()
 	pw.placeholder_text = "Password"
 	pw.secret = true
-	pw.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	pw.custom_minimum_size = Vector2(0, 42)
-	row.add_child(pw)
-	var go := UIKit.button("Sign in", Color(0.12, 0.26, 0.40), Color(0.50, 0.80, 1.0), Vector2(110, 42), 15)
-	var err := UIKit.label(Net.sign_in_error, 13, Color(1.0, 0.6, 0.5), true)
+	pw.custom_minimum_size = Vector2(0, 50)
+	pw.add_theme_font_size_override("font_size", 18)
+	parent.add_child(pw)
+	var err := UIKit.label(Net.sign_in_error, 14, Color(1.0, 0.6, 0.5), true)
+	var go := UIKit.button("Sign in", Color(0.12, 0.26, 0.40), Color(0.50, 0.80, 1.0), Vector2(0, 58), 20)
 	go.pressed.connect(func():
 		err.text = "Signing in..."
 		await Net.sign_in(email.text, pw.text)
 		if Net.signed_in_as != "":
-			_refresh()
+			_connect_world()
 		else:
 			err.text = Net.sign_in_error)
+	email.text_submitted.connect(func(_t): pw.grab_focus())
 	pw.text_submitted.connect(func(_t): go.pressed.emit())
-	row.add_child(go)
+	parent.add_child(go)
 	parent.add_child(err)
-	parent.add_child(UIKit.label("Your Xandflix account (Autharr). The Tainted World needs it.", 12, UIKit.TEXT_DIM, true))
-
-
-func _fill_servers() -> void:
-	if _server_box == null or not is_instance_valid(_server_box):
-		return
-	UIKit.clear(_server_box)
-	if _servers.is_empty():
-		_server_box.add_child(UIKit.label("Looking... (a game hosted on a phone or PC on this Wi-Fi shows up here)", 14, UIKit.TEXT_DIM, true))
-		return
-	for s in _servers:
-		var row := HBoxContainer.new()
-		row.add_theme_constant_override("separation", 10)
-		_server_box.add_child(row)
-		var l := UIKit.label("%s   (%d / %d online)" % [s.name, int(s.players), int(s.max)], 17, Color(0.92, 0.90, 0.84))
-		l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		row.add_child(l)
-		var addr: String = s.address
-		var b := UIKit.button("Join", Color(0.10, 0.20, 0.34), Color(0.45, 0.70, 1.0), Vector2(110, 42), 16)
-		b.pressed.connect(func(): _connect_to(addr))
-		row.add_child(b)
-
-
-## Loads the character (a server that keeps characters uses its own instead), then joins;
-## Net.status_changed says how it went.
-func _connect_to(address: String) -> void:
-	if not _selected.is_empty():
-		GameState.select_character(_selected)
-	Net.join(address)
+	parent.add_child(UIKit.label("Your Xandflix account (Autharr).", 13, UIKit.TEXT_DIM, true))
 
 
 func _on_net_status() -> void:
-	if is_instance_valid(_net_status):
-		_net_status.text = Net.status
-	if _online and Net.mode == Net.Mode.CLIENT and not Net.accounts:
-		get_tree().change_scene_to_file(_first_scene())  # in: off to town
-	elif Net.mode == Net.Mode.OFFLINE and not _online:
-		_pick_default()  # the device's characters again
-		_refresh()
+	if not _ready_to_play():
+		_refresh()  # connecting, refused, couldn't reach it...
 
 
 ## The server's characters for your account are here: show them (create one if there are none).
 func _on_account_ready() -> void:
-	_online = false
-	_pick_default()
-	_refresh()
-
-
-func _go_offline() -> void:
-	Net.leave()
 	_pick_default()
 	_refresh()
 

@@ -7,21 +7,16 @@ extends Node2D
 func _ready() -> void:
 	GameState.char_name = "Wanderer"
 	if "--select" in OS.get_cmdline_user_args():
-		# The online screen on character select, with the servers it finds
-		var cs = load("res://scenes/character_select.tscn").instantiate()
-		add_child(cs)
-		await get_tree().process_frame
-		if not cs._selected.is_empty():
-			cs._online = true
-			cs._refresh()
-		await get_tree().create_timer(3.0).timeout
+		# The start screen as it comes up: signing in and joining the Tainted World
+		var layer := CanvasLayer.new()  # (so the screen fills the window, as when it's the scene)
+		add_child(layer)
+		layer.add_child(load("res://scenes/character_select.tscn").instantiate())
+		await get_tree().create_timer(4.0).timeout
 		get_viewport().get_texture().get_image().save_png(ProjectSettings.globalize_path("res://scratch/net_select.png"))
 		print("saved net_select")
 		get_tree().quit()
 		return
-	if "--host" in OS.get_cmdline_user_args():
-		Net.host()  # this game is the server; bots join it
-	elif "--world" in OS.get_cmdline_user_args():
+	if "--world" in OS.get_cmdline_user_args():
 		Net.join_world()  # the Tainted World, as the online screen's Join does
 	else:
 		Net.join("127.0.0.1")
@@ -29,7 +24,7 @@ func _ready() -> void:
 		await get_tree().process_frame
 	print("capture: ", Net.status)
 	add_child(load("res://scenes/town.tscn").instantiate())
-	await get_tree().create_timer(9.0 if Net.mode == Net.Mode.HOST else 4.0).timeout
+	await get_tree().create_timer(4.0).timeout
 	if "--inspect" in OS.get_cmdline_user_args():
 		# Wear some gear (a bot inspects it), then inspect yourself for a screenshot of the window
 		var p: Player = GameState.player
