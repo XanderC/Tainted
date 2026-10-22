@@ -162,11 +162,13 @@ func _on_boss_died(pos: Vector2) -> void:
 	for i in kills:
 		if randf() < HORDE_ITEM_CHANCE:
 			rewards.append(LootGenerator.roll_item(item_level(level, i)))
-	# Beating your highest rift in time opens the next one
+	# Beating your highest rift in time opens the next one. In a party's rift above your highest it
+	# opens only your next one: being carried goes up a level at a time.
 	if on_time and level >= GameState.rift_unlocked:
-		GameState.rift_unlocked = level + 1
-		GameState.rift_level = level + 1
+		GameState.rift_unlocked += 1
+		GameState.rift_level = GameState.rift_unlocked
 		unlocked_next = true
+		Net.update_looks()  # the party sees your new highest
 	for i in rewards.size():
 		var pk := LootPickup.new()
 		pk.item = rewards[i]
@@ -544,7 +546,7 @@ func _show_result() -> void:
 	var t := "[color=#998877]Completion Time:[/color] [b]%s[/b]    [color=#998877]Kills:[/color] [b]%d[/b]\n" % [fmt_time(elapsed), kills]
 	t += "[color=#998877]Rift Level:[/color] [b]%d[/b]   [color=#998877]Rewards:[/color] [b]+%d%%[/b]\n" % [level, int(round((reward_mult(level) - 1.0) * 100.0))]
 	if unlocked_next:
-		t += "[color=#c084fc][b]🔓 RIFT LEVEL %d UNLOCKED![/b][/color]\n" % (level + 1)
+		t += "[color=#c084fc][b]🔓 RIFT LEVEL %d UNLOCKED![/b][/color]\n" % GameState.rift_unlocked
 	elif on_time:
 		t += "[color=#998877]Highest rift unlocked: %d[/color]\n" % GameState.rift_unlocked
 	else:

@@ -22,6 +22,9 @@ extends Node
 ## Revive: --revive (both): the guest falls and stays down in the rift; the host stands by it and
 ## revives it (half life); the host falls and its monsters still go for the guest; the guest falls
 ## too and the rift fails for both.
+## Levels: --levels: the leader has reached rift 3, the follower rift 1. The leader asks for a level 7
+## party rift and gets 3 (no higher than it has reached); the Rift Gate lists both; a clear in time
+## unlocks 4 for the leader and only 2 for the follower.
 
 var role := "leader"
 var bot_name := "Bot"
@@ -71,6 +74,7 @@ var _revive := false
 var _phase := 0
 var _phase_t := 0.0
 var _hurt_while_host_down := 0
+var _levels := false
 
 
 var runner := false  # the copy that runs, at the root (the scene itself is replaced on travel)
@@ -93,9 +97,13 @@ func _ready() -> void:
 		elif a == "--affixes": _affixes = true
 		elif a == "--allies": _allies = true
 		elif a == "--revive": _revive = true
+		elif a == "--levels": _levels = true
 	GameState.char_name = bot_name
 	GameState.appearance = Appearance.random_look()
 	GameState.give_starter_skills()
+	if _levels:
+		GameState.rift_unlocked = 3 if role == "leader" else 1
+		GameState.rift_level = GameState.rift_unlocked
 	if _allies:
 		var c := HirelingDB.roll_candidate("sellsword", 5)
 		c["dead"] = false
@@ -148,6 +156,11 @@ func _ready() -> void:
 			await get_tree().create_timer(0.3).timeout
 		if _zone:
 			ActDB.travel(get_tree(), "dune_wastes", "start")
+		elif _levels:
+			await get_tree().create_timer(1.0).timeout  # the party list with both members' highest
+			var text := RiftSelectUI._party_text()
+			_check("Lead [b]3[/b]" in text and "Fol [b]1[/b]" in text, "the Rift Gate lists each member's highest (%s)" % text.get_slice("\n", 2))
+			Net.open_party_rift(7)
 		else:
 			GameState.rift_level = 1
 			Net.open_party_rift(1)
@@ -280,6 +293,10 @@ func _finish(main) -> void:
 		_check(main != null and main.run.rewards.size() >= 2, "the boss drops it its own loot (%d items)" % (main.run.rewards.size() if main else 0))
 		if _drop_at > 0.0:
 			_check(_drop_done and _back_in, "it dropped mid-rift and came back into it")
+	if _levels and main != null:
+		_check(main.run.level == 3, "the party's rift is at the opener's highest, not above (%d)" % main.run.level)
+		var want := 4 if role == "leader" else 2
+		_check(GameState.rift_unlocked == want, "a clear in time unlocks the next level for it: %d (%d)" % [want, GameState.rift_unlocked])
 	print("%s: events %s" % [bot_name, _events])
 	print("%s: %d checks, %d failed" % ["host" if hosting else "guest", _checks, _failed])
 	await get_tree().create_timer(1.0).timeout

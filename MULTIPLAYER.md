@@ -25,8 +25,8 @@ commit). The README's Multiplayer section describes how what's done works.
       owner's game
 - [x] Dying in a party rift or zone: wait to be revived by a party member (or after a while), instead of
       going back to town; a party's rift fails only when everyone is down
-- [ ] Rift level and unlocks with a party: whose level a party rift is, and whether beating it unlocks
-      the next for everyone in it
+- [x] Rift level and unlocks with a party: the opener's level (no higher than they have reached); a
+      clear in time unlocks each member's next level; the Rift Gate lists everyone's highest
 - [ ] Markers pointing to party members off screen, and "go to" a party member (waypoint / portal)
 
 ## 2. Test with real devices

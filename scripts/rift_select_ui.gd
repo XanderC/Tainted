@@ -118,4 +118,17 @@ func _refresh() -> void:
 		"[color=#c084fc]Clear in %s to unlock the next level.[/color]   [color=#888888]Highest unlocked: %d[/color]") % [
 		DungeonRun.hp_mult(L), DungeonRun.damage_mult(L), DungeonRun.ILVL_PER_LEVEL * (L - 1),
 		int(round((DungeonRun.reward_mult(L) - 1.0) * 100.0)), int((L - 1) / float(DungeonRun.EXTRA_ITEM_EVERY)),
-		DungeonRun.fmt_time(DungeonRun.TIME_LIMIT), GameState.rift_unlocked]
+		DungeonRun.fmt_time(DungeonRun.TIME_LIMIT), GameState.rift_unlocked] + _party_text()
+
+
+## In a party: everyone goes in at this level; each member's highest, and what a clear in time
+## unlocks for them (their next level: one above a rift they hadn't reached goes a step at a time).
+static func _party_text() -> String:
+	if not Net.in_party():
+		return ""
+	var t := "\n\n[color=#9fd3ff]Your party goes in with you.[/color] [color=#888888]Highest unlocked:[/color] "
+	var parts: Array = []
+	for m in Net.party.get("members", []):
+		parts.append("%s [b]%d[/b]" % [String(m.get("name", "?")), int(m.get("rift", 1))])
+	t += ", ".join(parts)
+	return t + "\n[color=#888888]A clear in time unlocks each member's next level.[/color]"

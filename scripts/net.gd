@@ -527,7 +527,8 @@ func my_info() -> Dictionary:
 			gear["offhand"] = [off.base.id, off.base.weapon_type == "shield"]
 	var account := {"kind": "autharr", "token": _access_token} if _access_token != "" else {"kind": "device", "key": device_key()}
 	return {"name": GameState.char_name, "class": GameState.char_class, "level": GameState.level,
-		"look": GameState.appearance, "gear": gear, "token": _token, "account": account, "hl": _hireling_info()}
+		"look": GameState.appearance, "gear": gear, "token": _token, "account": account, "hl": _hireling_info(),
+		"rift": GameState.rift_unlocked}
 
 
 ## Your hireling's looks, for the others' copy of it (RemoteAlly); {} with none.
@@ -1487,6 +1488,7 @@ static func _clean_info(info: Dictionary) -> Dictionary:
 	var cls = info.get("class", "warrior")
 	var lvl = info.get("level", 1)
 	var hl = info.get("hl", {})
+	var rift = info.get("rift", 1)
 	var hireling := {}
 	if hl is Dictionary and not hl.is_empty():
 		var hlook = hl.get("look", {})
@@ -1497,7 +1499,7 @@ static func _clean_info(info: Dictionary) -> Dictionary:
 	return {"name": _clean_name(info.get("name", "?")), "class": String(cls).left(24) if cls is String else "warrior",
 		"level": clampi(int(lvl), 1, 999) if lvl is int or lvl is float else 1,
 		"look": Appearance.sanitize(look if look is Dictionary else {}), "gear": _clean_gear(info.get("gear", {})),
-		"hl": hireling}
+		"hl": hireling, "rift": clampi(int(rift), 1, 999) if rift is int or rift is float else 1}
 
 
 ## Worn gear as others see it: slot -> [item id, dye] (offhand: [item id, is a shield]).
@@ -1654,7 +1656,8 @@ func _on_open_instance(id: int, kind: String, level: int) -> void:
 	if not _peers.has(id) or _peers[id].party == 0 or kind != "rift":
 		return
 	var pid: int = _peers[id].party
-	var portal := {"inst": "%s:%d:%d" % [kind, pid, _next_inst], "kind": kind, "level": clampi(level, 1, 999),
+	level = clampi(level, 1, int(_peers[id].info.get("rift", 1)))  # no higher than they have reached
+	var portal := {"inst": "%s:%d:%d" % [kind, pid, _next_inst], "kind": kind, "level": level,
 		"by": id, "by_name": String(_peers[id].info.name)}
 	_next_inst += 1
 	_parties[pid].portal = portal
@@ -1774,7 +1777,7 @@ func _tell_party(pid: int, why := "") -> void:
 	var members: Array = []
 	for m in p.members:
 		var info: Dictionary = _peers[m].info
-		members.append({"id": m, "name": info.name, "level": info.level, "class": info["class"]})
+		members.append({"id": m, "name": info.name, "level": info.level, "class": info["class"], "rift": info.get("rift", 1)})
 	var away: Array = []
 	for t in p.get("away", {}):
 		var a: Dictionary = p.away[t]
