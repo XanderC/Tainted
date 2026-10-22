@@ -6,7 +6,8 @@ extends Control
 ##   can_accept_at - Callable(data: Dictionary, at: Vector2i) -> bool
 ##   on_drop_at    - Callable(data: Dictionary, at: Vector2i)
 ## `at` is the top-left cell an item would land on (ItemGrid.NONE for drops that aren't gear, such
-## as a merchant's ware, which can land anywhere).
+## as a merchant's ware, which can land anywhere). Something dropped onto an item rather than into
+## the grid (a socket gem) goes to can_accept_item / on_drop_item instead, with that item.
 
 signal item_clicked(item: ItemInstance)
 
@@ -21,6 +22,9 @@ var source := "bag"  # the payload's "from" for items dragged out of here
 var selected: ItemInstance = null
 var can_accept_at: Callable = Callable()
 var on_drop_at: Callable = Callable()
+## Drops onto an item (data["kind"] == "gem"): Callable(data, item) -> bool, Callable(data, item)
+var can_accept_item: Callable = Callable()
+var on_drop_item: Callable = Callable()
 
 var _hover := Rect2i()
 var _hover_ok := false
@@ -56,8 +60,16 @@ func refresh() -> void:
 		tile.grid_cell = cell
 		tile.payload = {"kind": "item", "from": source, "item": it}
 		var origin := Vector2(r.position) * cell
-		tile.can_accept_at = func(d: Dictionary, p: Vector2) -> bool: return _check(d, origin + p)
-		tile.on_drop_at = func(d: Dictionary, p: Vector2) -> void: _drop(d, origin + p)
+		tile.can_accept_at = func(d: Dictionary, p: Vector2) -> bool:
+			if d.get("kind", "") == "gem":  # onto this item (into a socket), not into the grid
+				return can_accept_item.is_valid() and bool(can_accept_item.call(d, it))
+			return _check(d, origin + p)
+		tile.on_drop_at = func(d: Dictionary, p: Vector2) -> void:
+			if d.get("kind", "") == "gem":
+				if on_drop_item.is_valid():
+					on_drop_item.call(d, it)
+				return
+			_drop(d, origin + p)
 		tile.clicked.connect(func(): item_clicked.emit(it))
 		add_child(tile)
 	move_child(_overlay, -1)

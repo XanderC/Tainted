@@ -94,6 +94,8 @@ func _ready() -> void:
 	_bag_view.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 	_bag_view.can_accept_at = _bag_accepts
 	_bag_view.on_drop_at = _bag_dropped
+	_bag_view.can_accept_item = func(d: Dictionary, it: ItemInstance) -> bool: return _gem_fits(d, it)
+	_bag_view.on_drop_item = func(d: Dictionary, it: ItemInstance) -> void: _gem_into(d, it)
 	_bag_view.item_clicked.connect(func(it: ItemInstance): menu.select(it))
 	v.add_child(_bag_view)
 
@@ -211,10 +213,15 @@ func _gear_cell(slot: String, cell_size: Vector2) -> DragSlot:
 			cell.tooltip_text = "%s\n%s: gives no stats until then" % [it.display_name,
 				Attributes.block_reason(it.base, GameState.attribute_totals())]
 	cell.can_accept = func(d: Dictionary) -> bool:
+		if d.get("kind", "") == "gem":
+			return _gem_fits(d, it)  # into the worn item's next free socket
 		var di: ItemInstance = d.get("item")
 		return d.get("kind", "") == "item" and d.get("from", "") in ["bag", "gear"] and di != null \
 			and player.valid_slots(di).has(slot)
 	cell.on_drop = func(d: Dictionary) -> void:
+		if d.get("kind", "") == "gem":
+			_gem_into(d, it)
+			return
 		var di: ItemInstance = d.get("item")
 		var why := player.slot_block_reason(di, slot)
 		if why == "" and player.equip_to(di, slot):
@@ -223,6 +230,17 @@ func _gear_cell(slot: String, cell_size: Vector2) -> DragSlot:
 			menu.feedback(why if why != "" else "Not enough bag space to swap.")
 			menu.refresh()
 	return cell
+
+
+## A socket gem (or rune) from the shared gems, dragged onto item `it` (worn or in the bag): it
+## goes in if the gems can be changed here (the stash, the Jeweler) and `it` has a free socket.
+func _gem_fits(d: Dictionary, it: ItemInstance) -> bool:
+	return d.get("from", "") == "pouch" and GameState.gem_station and it != null and not it.is_runeword() \
+		and it.gems.size() < it.sockets
+
+
+func _gem_into(d: Dictionary, it: ItemInstance) -> void:
+	GemsPanel.socket_into(menu, it, it.gems.size(), String(d.get("gem_id", "")))
 
 
 ## Whether something dragged over the bag may land with its top-left cell at `at`: gear from the
