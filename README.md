@@ -98,9 +98,11 @@ builds them:
   corners, a gold rule beneath), the bevel button plate (greyscale, tinted per button), the open-tab glow,
   the tooltip frame, slots, the square close button and the equipment slot silhouettes. `UIKit`
   (`mmo()`, `window_box`, `stone_box`, `tab_box`, `tooltip_box`, `inset_box`) is the one place they are used.
-- `assets/ui/hud`: the life and power globes (red, and grey tinted by the class's power colour), the round
-  skill and flask buttons, the joystick and the experience bar. `HudArt.HOLES` records where each round
-  frame's opening is, since the HUD places frames by their opening.
+- `assets/ui/hud`: the action bar laid out as the pack's (`HudBars`, `FlaskBar`): the life and power globes
+  (red, and grey tinted by the class's power colour) on the bottom edge, the square flask slots between
+  them with their keys, the experience line along the top of the row with a tag over its end, and the
+  curls at the globes' feet. Also the round skill buttons, the joystick, and `HudArt.HOLES`, where each
+  round frame's opening is (the HUD places them by their opening).
 
 The scrollbars are still the old stone art: the pack has none. Its fonts (Constantia, Cambria, Palatino)
 are Microsoft's and can't be shipped in the game, so the game uses two free ones in the same spirit, from
