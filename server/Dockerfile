@@ -19,7 +19,10 @@ RUN curl -fsSL -o /tmp/godot.zip \
 FROM debian:trixie-slim
 # Godot looks for fontconfig even headless (only a log line without it); its display libraries only
 # load with a window, which it never opens here.
-RUN apt-get update  && apt-get install -y --no-install-recommends libfontconfig1  && rm -rf /var/lib/apt/lists/*  && useradd --create-home --uid 1000 tainted
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends libfontconfig1 \
+ && rm -rf /var/lib/apt/lists/* \
+ && useradd --create-home --uid 1000 tainted
 COPY --from=godot /usr/local/bin/godot /usr/local/bin/godot
 COPY tainted.pck /game/tainted.pck
 USER tainted

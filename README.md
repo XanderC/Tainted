@@ -162,7 +162,7 @@ In town (`NetPresence`) everyone else there is a `RemotePlayer`, shown with thei
 name and level, walking where they walk. Going back to character select goes offline.
 
 **The server.** `.\deploy_server.ps1` deploys it:
-1. It exports the game as a pack (`builds\server	ainted.pck`, with a "Linux Server" export preset it
+1. It exports the game as a pack (`builds\server\tainted.pck`, with a "Linux Server" export preset it
    adds the first time).
 2. It copies the pack with `server\Dockerfile` and `server\docker-compose.yml` to
    `/opt/projects/Tainted/server` on the host.
@@ -174,7 +174,8 @@ capped at 512 MB and one CPU. It's on the `arr` network, and port 24601 is publi
 
 Clients and the server must be the same build (`Net.PROTOCOL`), so **redeploy the server whenever
 the game changes**, and bump `PROTOCOL` when the messages change. Logs: `docker logs -f tainted`
-on the host. A local server instead: `.un_server.ps1` or
+on the host. A local server instead: `.
+un_server.ps1` or
 `godot --headless --path . -- --server --name=Home --max=32`.
 
 **Opening it to the world (not done yet):**
