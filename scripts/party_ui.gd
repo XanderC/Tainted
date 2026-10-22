@@ -392,6 +392,14 @@ func _show_friends() -> void:
 		info.add_child(UIKit.label(String(f.where) if f.online and String(f.where) != "" else ("Online" if f.online else "Offline"), 12, UIKit.TEXT_DIM))
 		var fid := int(f.id)
 		var acc := String(f.account)
+		if f.online:
+			var fname := String(f.name)
+			var wb := UIKit.button("✉", Color(0.26, 0.12, 0.22), Color(1.0, 0.62, 0.88), Vector2(44, 38), 15)
+			wb.tooltip_text = "Whisper"
+			wb.pressed.connect(func():
+				_close_friends()
+				Net.chat_ui.whisper_to(fid, fname))
+			row.add_child(wb)
 		if f.online and not Net.is_member(fid) and (not Net.in_party() or Net.is_leader()):
 			var inv := UIKit.button("Invite", Color(0.12, 0.26, 0.40), Color(0.50, 0.80, 1.0), Vector2(84, 38), 13)
 			inv.pressed.connect(func(): Net.invite(fid))
@@ -399,6 +407,19 @@ func _show_friends() -> void:
 		var rm := UIKit.button("Remove", Color(0.22, 0.10, 0.10), Color(0.70, 0.35, 0.30), Vector2(84, 38), 13)
 		rm.pressed.connect(func(): Net.unfriend(acc))
 		row.add_child(rm)
+	if not Net.ignored.is_empty():  # players whose chat you muted
+		v.add_child(UIKit.label("MUTED", 14, UIKit.GOLD))
+		for e in Net.ignored:
+			var row := HBoxContainer.new()
+			row.add_theme_constant_override("separation", 8)
+			v.add_child(row)
+			var l := UIKit.label("🔇  " + String(e.name), 15, UIKit.TEXT_DIM)
+			l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			row.add_child(l)
+			var acc := String(e.account)
+			var un := UIKit.button("Unmute", Color(0.16, 0.16, 0.20), Color(0.70, 0.70, 0.75), Vector2(84, 38), 13)
+			un.pressed.connect(func(): Net.unmute_chat(acc))
+			row.add_child(un)
 
 
 func _close_friends() -> void:
@@ -454,6 +475,14 @@ func show_card(id: int) -> void:
 	head.add_child(x)
 	v.add_child(UIKit.label("Level %d %s" % [int(info.get("level", 1)), cd.display_name], 16, UIKit.TEXT_DIM))
 	_card_button(v, "🔍  Inspect", Color(0.16, 0.16, 0.20), Color(0.70, 0.70, 0.75), func(): Net.inspect(id))
+	var who := String(info.get("name", "?"))
+	_card_button(v, "✉  Whisper", Color(0.26, 0.12, 0.22), Color(1.0, 0.62, 0.88), func(): Net.chat_ui.whisper_to(id, who))
+	if Net.accounts:
+		if Net.is_ignored(id):
+			var acc := String(Net.ignored.filter(func(e): return int(e.id) == id)[0].account)
+			_card_button(v, "🔈  Unmute their chat", Color(0.16, 0.16, 0.20), Color(0.70, 0.70, 0.75), func(): Net.unmute_chat(acc))
+		else:
+			_card_button(v, "🔇  Mute their chat", Color(0.16, 0.16, 0.20), Color(0.70, 0.70, 0.75), func(): Net.mute_chat_of(id))
 	if Net.accounts and not Net.is_friend(id):
 		_card_button(v, "★  Add friend", Color(0.24, 0.20, 0.10), Color(0.95, 0.85, 0.55), func(): Net.add_friend(id))
 	if Net.accounts:

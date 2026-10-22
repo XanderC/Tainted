@@ -110,6 +110,7 @@ const FRIENDS_EVERY := 2.0
 const MAX_FRIENDS := 100
 const CHAT_MAX := 200
 const CHAT_EVERY := 0.6  ## seconds between one player's chat lines
+const MAX_IGNORED := 200  ## players one account can mute
 ## Words the chat masks with stars (whole words, any case).
 const CHAT_FILTER := ["fuck", "fucking", "fucker", "shit", "cunt", "bitch", "nigger", "nigga", "faggot", "fag",
 	"retard", "whore", "slut", "dick", "pussy", "asshole", "bastard", "twat", "wanker", "spastic"]
@@ -153,6 +154,9 @@ var _http: HTTPRequest  # client: talking to Autharr
 static var auth_file := AUTH_FILE  ## where the kept sign-in is (tests use their own)
 ## Your friends: [{"account", "name", "online", "id" (peer, if online), "where"}], online ones first.
 var friends: Array = []
+## Players whose chat you've muted (mute_chat_of): [{"account", "name", "id": peer id or 0}]; the
+## server sends you none of their lines or whispers.
+var ignored: Array = []
 var instance_host := 0  ## who hosts your instance (role_changed)
 var party_ui: PartyUI
 var chat_ui: ChatUI  ## the chat on screen (not on a dedicated server)
@@ -472,6 +476,7 @@ func _drop() -> void:
 	if not party.is_empty():
 		party = {}
 		party_changed.emit()
+	ignored = []
 	if not friends.is_empty():
 		friends = []
 		friends_changed.emit()
@@ -770,6 +775,26 @@ func say(channel: String, text: String) -> void:
 	text = text.strip_edges()
 	if text != "" and online():
 		_to_server("_on_chat", "_rpc_chat", [channel, text.left(CHAT_MAX)])
+
+
+## A line for player `id` only, wherever they are (chat shows "whisper" / "whisper_to").
+func whisper(id: int, text: String) -> void:
+	text = text.strip_edges()
+	if text != "" and online():
+		_to_server("_on_whisper", "_rpc_whisper", [id, text.left(CHAT_MAX)])
+
+
+## Stop seeing player `id`'s chat and whispers (on a server that keeps characters: kept with your account).
+func mute_chat_of(id: int) -> void:
+	_to_server("_on_ignore", "_rpc_ignore", [id])
+
+
+func unmute_chat(account: String) -> void:
+	_to_server("_on_unignore", "_rpc_unignore", [account])
+
+
+func is_ignored(id: int) -> bool:
+	return ignored.any(func(e): return int(e.get("id", 0)) == id)
 
 
 ## Stores one of GameState's save files on the server (only while it keeps your characters; while
@@ -1077,15 +1102,8 @@ static func _account_of(a) -> String:
 func _on_chat(id: int, channel: String, text: String) -> void:
 	if not _peers.has(id):
 		return
-	var left := moderation.mute_left(String(_peers[id].get("account", "")))
-	if left != 0:
-		_send(id, "_rpc_notice", ["You are muted." if left < 0 else "You are muted for %d more minute%s." % [ceili(left / 60.0), "" if left <= 60 else "s"]])
+	if not _may_chat(id):
 		return
-	var now := Time.get_ticks_msec()
-	if now - int(_chat_at.get(id, -100000)) < CHAT_EVERY * 1000.0:
-		_send(id, "_rpc_notice", ["Not so fast."])
-		return
-	_chat_at[id] = now
 	text = _clean_chat(text)
 	if text == "":
 		return
@@ -1102,7 +1120,75 @@ func _on_chat(id: int, channel: String, text: String) -> void:
 		who = _peers.keys().filter(func(p): return p == id or (inst != "" and _peers[p].instance == inst))
 	var name: String = _peers[id].info.name
 	for p in who:
-		_send(p, "_rpc_chat_of", [id, name, channel, text])
+		if not _ignores(p, id):
+			_send(p, "_rpc_chat_of", [id, name, channel, text])
+
+
+## Whether `id` may say something now: not muted by the server, and not too soon after its last line.
+func _may_chat(id: int) -> bool:
+	var left := moderation.mute_left(String(_peers[id].get("account", "")))
+	if left != 0:
+		_send(id, "_rpc_notice", ["You are muted." if left < 0 else "You are muted for %d more minute%s." % [ceili(left / 60.0), "" if left <= 60 else "s"]])
+		return false
+	var now := Time.get_ticks_msec()
+	if now - int(_chat_at.get(id, -100000)) < CHAT_EVERY * 1000.0:
+		_send(id, "_rpc_notice", ["Not so fast."])
+		return false
+	_chat_at[id] = now
+	return true
+
+
+## Whether player `p` has muted player `id`'s chat.
+func _ignores(p: int, id: int) -> bool:
+	if _store == null or not _peers.has(p) or not _peers.has(id):
+		return false
+	var mine := String(_peers[p].get("account", ""))
+	return mine != "" and _store.social(mine).get("ignore", {}).has(String(_peers[id].get("account", "")))
+
+
+func _on_whisper(id: int, target: int, text: String) -> void:
+	if not _peers.has(id):
+		return
+	if not _peers.has(target) or target == id:
+		_send(id, "_rpc_notice", ["They're not online."])
+		return
+	if not _may_chat(id):
+		return
+	text = _clean_chat(text)
+	if text == "":
+		return
+	if not _ignores(target, id):  # (muted: they don't get it, and you aren't told)
+		_send(target, "_rpc_chat_of", [id, String(_peers[id].info.name), "whisper", text])
+	_send(id, "_rpc_chat_of", [target, String(_peers[target].info.name), "whisper_to", text])
+
+
+func _on_ignore(id: int, target: int) -> void:
+	if _store == null or not _peers.has(id) or not _peers.has(target) or target == id:
+		return
+	var mine := String(_peers[id].get("account", ""))
+	var theirs := String(_peers[target].get("account", ""))
+	if mine == "" or theirs == "":
+		return
+	var soc := _store.social(mine).duplicate(true)
+	var ig: Dictionary = soc.get("ignore", {})
+	if ig.size() >= MAX_IGNORED and not ig.has(theirs):
+		_send(id, "_rpc_notice", ["You've muted as many players as you can (%d)." % MAX_IGNORED])
+		return
+	ig[theirs] = {"name": String(_peers[target].info.name)}
+	soc["ignore"] = ig
+	_store.set_social(mine, soc)
+	_send(id, "_rpc_notice", ["You won't see %s's chat now." % _peers[target].info.name])
+	_push_friends(id)
+
+
+func _on_unignore(id: int, account: String) -> void:
+	if _store == null or not _peers.has(id) or String(_peers[id].get("account", "")) == "":
+		return
+	var mine := String(_peers[id].account)
+	var soc := _store.social(mine).duplicate(true)
+	if soc.get("ignore", {}).erase(account):
+		_store.set_social(mine, soc)
+		_push_friends(id)
 
 
 ## A chat line as others see it: printable characters, at most CHAT_MAX, CHAT_FILTER words starred.
@@ -1193,11 +1279,17 @@ func _push_friends(id: int) -> void:
 		list.append({"account": acc, "name": name, "online": on, "id": pid if on else 0,
 			"where": String(_peers[pid].state.get("w", "")) if on else ""})
 	list.sort_custom(func(x, y): return x.online and not y.online or (x.online == y.online and String(x.name) < String(y.name)))
-	var key := JSON.stringify(list)
+	var muted: Array = []
+	var ig: Dictionary = _store.social(String(_peers[id].account)).get("ignore", {})
+	for acc in ig:
+		var pid: int = int(_online_accounts.get(acc, 0))
+		muted.append({"account": acc, "name": String(ig[acc].get("name", "?")), "id": pid if _peers.has(pid) else 0})
+	var key := JSON.stringify([list, muted])
 	if _friends_sent.get(id, "") == key:
 		return
 	_friends_sent[id] = key
 	_send(id, "_rpc_friends", [list])
+	_send(id, "_rpc_ignored", [muted])
 
 
 # ---------- trading: the server ----------
@@ -2068,6 +2160,27 @@ func _rpc_chat(channel: String, text: String) -> void:
 
 
 @rpc("any_peer", "call_remote", "reliable")
+func _rpc_whisper(target: int, text: String) -> void:
+	var id := multiplayer.get_remote_sender_id()
+	if is_server() and _within_rate(id):
+		_on_whisper(id, target, text.left(CHAT_MAX * 2))
+
+
+@rpc("any_peer", "call_remote", "reliable")
+func _rpc_ignore(target: int) -> void:
+	var id := multiplayer.get_remote_sender_id()
+	if is_server() and _within_rate(id):
+		_on_ignore(id, target)
+
+
+@rpc("any_peer", "call_remote", "reliable")
+func _rpc_unignore(account: String) -> void:
+	var id := multiplayer.get_remote_sender_id()
+	if is_server() and _within_rate(id):
+		_on_unignore(id, account.left(80))
+
+
+@rpc("any_peer", "call_remote", "reliable")
 func _rpc_account_files() -> void:
 	var id := multiplayer.get_remote_sender_id()
 	if is_server() and _within_rate(id):
@@ -2236,6 +2349,12 @@ func _rpc_trade_done(gave: Array, got: Array, orbs_gave: Dictionary, orbs_got: D
 @rpc("authority", "call_remote", "reliable")
 func _rpc_friends(list: Array) -> void:
 	friends = list
+	friends_changed.emit()
+
+
+@rpc("authority", "call_remote", "reliable")
+func _rpc_ignored(list: Array) -> void:
+	ignored = list
 	friends_changed.emit()
 
 

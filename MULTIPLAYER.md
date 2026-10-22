@@ -67,5 +67,6 @@ commit). The README's Multiplayer section describes how what's done works.
 ## 5. Nice to have
 
 - [x] Currency (orbs) in trades: − / + / +10 by each kind, held by the server to what you have
-- [ ] Whispers to friends, chat history you can scroll, muting a player
+- [x] Whispers (a player's card, a friend's row; "To <name>" in chat, replies to the last), chat
+      history you can scroll (100 lines), muting a player's chat (kept with your account)
 - [ ] Join a friend where they are (their copy of the town)
