@@ -215,6 +215,7 @@ func _gear_cell(slot: String, cell_size: Vector2) -> DragSlot:
 		var cap: String = UIKit.SLOT_NAMES.get(slot, slot) if cell_size.x > CharacterPanel.DOLL_U else UIKit.SLOT_ICONS.get(slot, "")
 		cell.setup(null, Color(0.28, 0.24, 0.30), Color(0.09, 0.08, 0.11), 0, cap,
 			"%s: drag gear here from your bag" % UIKit.SLOT_NAMES.get(slot, slot))
+		cell.set_placeholder(UIKit.slot_icon(slot))
 	else:
 		cell.payload = {"kind": "item", "from": "hireling", "slot": slot, "item": it}
 		cell.clicked.connect(func():

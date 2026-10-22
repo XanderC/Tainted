@@ -201,6 +201,7 @@ func _gear_cell(slot: String, cell_size: Vector2) -> DragSlot:
 		# A one-unit slot shows its icon; a bigger one its name
 		var cap: String = UIKit.SLOT_NAMES.get(slot, slot) if cell_size.x > DOLL_U else UIKit.SLOT_ICONS.get(slot, "")
 		cell.setup(null, Color(0.28, 0.24, 0.30), Color(0.09, 0.08, 0.11), 0, cap, UIKit.SLOT_NAMES.get(slot, slot))
+		cell.set_placeholder(UIKit.slot_icon(slot))  # its silhouette, where the pack has one
 	else:
 		cell.payload = {"kind": "item", "from": "gear", "slot": slot, "item": it}
 		cell.clicked.connect(menu.select.bind(it))

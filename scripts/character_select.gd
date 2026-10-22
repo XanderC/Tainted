@@ -141,7 +141,7 @@ func _build_list() -> void:
 		var b := Button.new()
 		b.custom_minimum_size = Vector2(0, 78)
 		# The picked character is lit stone; the rest are sunk into the panel
-		var face := UIKit.stone_box("menu_btn", Color(1.0, 0.85, 0.5)) if on else UIKit.inset_box(8)
+		var face := UIKit.tab_box(on)
 		b.add_theme_stylebox_override("normal", face)
 		b.add_theme_stylebox_override("hover", face)
 		b.add_theme_stylebox_override("pressed", face)

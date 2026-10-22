@@ -134,10 +134,10 @@ func _add_tabs() -> void:
 		b.custom_minimum_size = Vector2(0, 46)
 		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		b.add_theme_font_size_override("font_size", 16)
-		var face := UIKit.stone_box("menu_btn", Color(1.0, 0.82, 0.45)) if active else UIKit.inset_box(6)
+		var face := UIKit.tab_box(active)
 		b.add_theme_stylebox_override("normal", face)
 		b.add_theme_stylebox_override("hover", face)
-		b.add_theme_stylebox_override("pressed", UIKit.stone_box("menu_btn_pressed"))
+		b.add_theme_stylebox_override("pressed", UIKit.tab_box(true))
 		b.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 		b.add_theme_color_override("font_color", Color(1.0, 0.95, 0.70) if active else (Color(0.70, 0.65, 0.60) if open else Color(0.50, 0.46, 0.42)))
 		b.tooltip_text = String(t.desc) if open else String(t.unlock_text)

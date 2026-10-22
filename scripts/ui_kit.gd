@@ -41,6 +41,23 @@ const SLOT_ICONS := {
 }
 
 const GOLD := Color(0.95, 0.82, 0.45)
+## Windows, panels, buttons, tabs and slots: the CraftPix RPG & MMO UI pack (tools/import_mmo_ui.py)
+const MMO := "res://assets/ui/mmo/"
+static var _mmo := {}
+
+
+## The silhouette of what goes in an equipment slot (both ring slots share one), or null.
+static func slot_icon(slot: String) -> Texture2D:
+	var path := MMO + "slot_icons/" + ("ring" if slot.begins_with("ring") else slot) + ".png"
+	return mmo("slot_icons/" + ("ring" if slot.begins_with("ring") else slot)) if ResourceLoader.exists(path) else null
+
+
+## A texture from assets/ui/mmo by name ("window", "slot", ...).
+static func mmo(name: String) -> Texture2D:
+	if not _mmo.has(name):
+		_mmo[name] = load(MMO + name + ".png")
+	return _mmo[name]
+
 const TEXT_DIM := Color(0.65, 0.58, 0.48)
 const EMPTY_BORDER := Color(0.20, 0.18, 0.24)
 
@@ -79,8 +96,8 @@ static func button(text: String, bg: Color, border: Color, min_size := Vector2(0
 	b.text = text
 	b.custom_minimum_size = min_size
 	b.add_theme_font_size_override("font_size", font)
-	# Stone face, coloured by the accent the caller chose (green for allocate, red for close, ...)
-	var tint := Color(1, 1, 1).lerp(Color(border.r, border.g, border.b), 0.7)
+	# Bevel plate, coloured by the accent the caller chose (green for allocate, red for close, ...)
+	var tint := Color(0.36, 0.38, 0.42).lerp(Color(border.r, border.g, border.b), 0.5)
 	b.add_theme_stylebox_override("normal", stone_box("menu_btn", tint))
 	b.add_theme_stylebox_override("hover", stone_box("menu_btn", tint.lightened(0.1)))
 	b.add_theme_stylebox_override("pressed", stone_box("menu_btn_pressed", tint))
@@ -93,7 +110,7 @@ static func button(text: String, bg: Color, border: Color, min_size := Vector2(0
 	return b
 
 
-## A button in the HUD's stone style (the pack's menu button, stretched with its corners kept).
+## A plain button: the pack's bevel plate in dark slate, stretched with its corners kept.
 static func stone_button(text: String, min_size := Vector2(0, 46), font := 16) -> Button:
 	var b := Button.new()
 	b.text = text
@@ -102,47 +119,71 @@ static func stone_button(text: String, min_size := Vector2(0, 46), font := 16) -
 	b.add_theme_color_override("font_color", Color(0.95, 0.88, 0.70))
 	b.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.8))
 	b.add_theme_constant_override("outline_size", 3)
-	var normal := _stone_box("menu_btn")
-	var pressed := _stone_box("menu_btn_pressed")
-	b.add_theme_stylebox_override("normal", normal)
-	b.add_theme_stylebox_override("hover", normal)
-	b.add_theme_stylebox_override("pressed", pressed)
-	b.add_theme_stylebox_override("disabled", stone_box("menu_btn", Color(0.55, 0.55, 0.55)))
+	var slate := Color(0.36, 0.38, 0.42)
+	b.add_theme_stylebox_override("normal", stone_box("menu_btn", slate))
+	b.add_theme_stylebox_override("hover", stone_box("menu_btn", slate.lightened(0.12)))
+	b.add_theme_stylebox_override("pressed", stone_box("menu_btn_pressed", slate))
+	b.add_theme_stylebox_override("disabled", stone_box("menu_btn", slate.darkened(0.4)))
 	b.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 	b.add_theme_color_override("font_disabled_color", Color(0.55, 0.50, 0.45))
 	return b
 
 
-static func _stone_box(art: String) -> StyleBoxTexture:
-	return stone_box(art, Color.WHITE)
-
-
-## The stone button face (`art` is "menu_btn" or "menu_btn_pressed"), recoloured by `tint`.
-static func stone_box(art: String, tint := Color.WHITE) -> StyleBoxTexture:
+## A button face (`art` "menu_btn", or "menu_btn_pressed" for held down): the pack's greyscale
+## bevel plate, coloured by `tint`.
+static func stone_box(art: String, tint := Color(0.36, 0.38, 0.42)) -> StyleBoxTexture:
 	var s := StyleBoxTexture.new()
-	s.texture = HudArt.tex(art)
-	s.set_texture_margin_all(14.0)
+	s.texture = mmo("button")
+	s.set_texture_margin_all(10.0)
 	s.set_content_margin_all(8.0)
-	s.modulate_color = tint
+	s.modulate_color = tint.darkened(0.25) if art == "menu_btn_pressed" else tint
 	return s
 
 
-## The stone window frame, stretched with its border kept. `tint` recolours it (a rift's purple, say).
-## `header` gives it the pack's title band along the top, which a row of tabs or a title and close
-## button sit on (the content starts inside the band, so put that row first).
+## A tab's face: the open one glows with a bright rule along its foot, the others are bare.
+static func tab_box(active: bool) -> StyleBox:
+	if not active:
+		var e := StyleBoxEmpty.new()
+		e.set_content_margin_all(6.0)
+		return e
+	var s := StyleBoxTexture.new()
+	s.texture = mmo("tab_active")
+	s.set_texture_margin_all(6.0)
+	s.set_content_margin_all(6.0)
+	return s
+
+
+## Text colour of a tab's label.
+static func tab_font_color(active: bool) -> Color:
+	return Color(0.96, 0.93, 0.85) if active else Color(0.62, 0.62, 0.64)
+
+
+## The card frame of a tooltip (ItemTip).
+static func tooltip_box() -> StyleBoxTexture:
+	var s := StyleBoxTexture.new()
+	s.texture = mmo("tooltip")
+	s.set_texture_margin_all(10.0)
+	s.set_content_margin_all(14.0)
+	return s
+
+
+## A window: dark, with a thin gold edge, stretched with its border kept. `tint` recolours it (a
+## rift's purple, say). `header` gives it the title band along the top, scrollwork in its corners and
+## a gold rule beneath, which a row of tabs or a title and close button sit on (the content starts
+## inside the band, so put that row first).
 static func window_box(content := 20.0, tint := Color.WHITE, header := false) -> StyleBoxTexture:
 	var s := StyleBoxTexture.new()
 	s.set_content_margin_all(content)
 	if header:
-		s.texture = HudArt.tex("window_header")
-		s.texture_margin_left = 24.0
-		s.texture_margin_right = 24.0
-		s.texture_margin_top = 80.0
-		s.texture_margin_bottom = 24.0
+		s.texture = mmo("window_header")
+		s.texture_margin_left = 190.0  # the scrollwork in each corner keeps its shape
+		s.texture_margin_right = 190.0
+		s.texture_margin_top = 83.0
+		s.texture_margin_bottom = 12.0
 		s.content_margin_top = 19.0  # centres the header row on the band
 	else:
-		s.texture = HudArt.tex("window_frame")
-		s.set_texture_margin_all(24.0)
+		s.texture = mmo("window")
+		s.set_texture_margin_all(12.0)
 	s.modulate_color = tint
 	return s
 
@@ -150,7 +191,7 @@ static func window_box(content := 20.0, tint := Color.WHITE, header := false) ->
 ## The height of a window's header row, which sits on the title band, and the gap under it that
 ## keeps the body clear of the band.
 const HEADER_ROW_H := 50.0
-const HEADER_GAP := 9.0
+const HEADER_GAP := 14.0
 
 
 static func header_gap() -> Control:
@@ -161,15 +202,22 @@ static func header_gap() -> Control:
 
 
 ## A window's header row, on its title band: the title, then a close button when `on_close` is
-## given, then the gap that clears the band. Returns the row, to add more to it.
+## given, then the gap that clears the band. Returns the row, to add more to it (its title
+## label is the child named "Title").
 static func window_header(parent: Control, title: String, col := Color(0.95, 0.80, 0.40), on_close := Callable(),
 		font := 22) -> HBoxContainer:
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 12)
 	row.custom_minimum_size = Vector2(0, HEADER_ROW_H)
 	parent.add_child(row)
-	var l := label(title, font, col)
+	# The title in the middle of the band (a spacer the close button's width keeps it centred)
+	var pad := Control.new()
+	pad.custom_minimum_size = Vector2(44, 0) if on_close.is_valid() else Vector2.ZERO
+	row.add_child(pad)
+	var l := label(title.to_upper(), font, col)
+	l.name = "Title"  # found by name: a spacer comes before it
 	l.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(l)
 	if on_close.is_valid():
@@ -204,24 +252,24 @@ static func ui_theme() -> Theme:
 	return t
 
 
-## The pack's stone close button, for a window's header.
+## The pack's square close button, for a window's header.
 static func close_button(scale := 1.2) -> TextureButton:
 	var b := TextureButton.new()
-	b.texture_normal = HudArt.tex("close")
-	b.texture_hover = HudArt.tex("close_hover")
-	b.texture_pressed = HudArt.tex("close_pressed")
+	b.texture_normal = mmo("close")
+	b.texture_hover = mmo("close_hover")
+	b.texture_pressed = mmo("close_pressed")
 	b.ignore_texture_size = true
 	b.stretch_mode = TextureButton.STRETCH_KEEP_ASPECT_CENTERED
-	b.custom_minimum_size = Vector2(47, 43) * scale
+	b.custom_minimum_size = Vector2(46, 46) * scale
 	b.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	return b
 
 
-## A recessed dark panel (the pack's inner container), for cards and sections inside a window.
+## A section inside a window (the pack's list row: a faint lighter panel with a dark edge).
 static func inset_box(content := 10.0, tint := Color.WHITE) -> StyleBoxTexture:
 	var s := StyleBoxTexture.new()
-	s.texture = HudArt.tex("panel_inset")
-	s.set_texture_margin_all(8.0)  # small, so a one-line banner keeps its corners
+	s.texture = mmo("inset")
+	s.set_texture_margin_all(4.0)  # small, so a one-line banner keeps its corners
 	s.set_content_margin_all(content)
 	s.modulate_color = tint
 	return s

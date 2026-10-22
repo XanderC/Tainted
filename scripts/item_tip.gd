@@ -38,12 +38,7 @@ func _init() -> void:
 func _card_panel() -> PanelContainer:
 	var p := PanelContainer.new()
 	p.mouse_filter = Control.MOUSE_FILTER_STOP
-	var sb := UIKit.window_box(12, Color.WHITE, false)
-	# Clear of the frame's art: the text would otherwise sit on its edge
-	sb.content_margin_left = 20.0
-	sb.content_margin_right = 20.0
-	sb.content_margin_bottom = 20.0
-	p.add_theme_stylebox_override("panel", sb)
+	p.add_theme_stylebox_override("panel", UIKit.tooltip_box())
 	p.custom_minimum_size = Vector2(WIDTH, 0)
 	var body := VBoxContainer.new()
 	body.add_theme_constant_override("separation", 6)

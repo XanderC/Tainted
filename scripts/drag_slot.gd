@@ -38,7 +38,7 @@ func _init(slot_size := Vector2(60, 60)) -> void:
 	custom_minimum_size = slot_size
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	_style = StyleBoxTexture.new()
-	_style.texture = HudArt.tex("slot_bg")
+	_style.texture = UIKit.mmo("slot")
 	_style.set_texture_margin_all(8.0)
 	_style.set_content_margin_all(3)
 	add_theme_stylebox_override("panel", _style)
@@ -79,6 +79,17 @@ func _init(slot_size := Vector2(60, 60)) -> void:
 	_apply_style(_border)
 
 
+## An empty slot's picture of what goes in it (an equipment slot's silhouette): shown faintly in
+## place of its caption, and not an item (nothing to drag). Call after setup().
+func set_placeholder(tex: Texture2D) -> void:
+	if tex == null or _icon_tex != null:
+		return
+	_icon.texture = tex
+	_icon.visible = true
+	_icon.modulate = Color(1, 1, 1, 0.8)
+	_caption.visible = false
+
+
 ## Draw the icon in a dye (DyeDB id): the item's art recoloured, as it looks worn.
 func set_dye(dye: String, tex: Texture2D) -> void:
 	_icon.material = DyeDB.material(dye, tex)
@@ -93,6 +104,7 @@ func setup(icon: Texture2D, border: Color, bg: Color = Color(0.09, 0.08, 0.12),
 	_icon_tex = icon
 	_icon.texture = icon
 	_icon.visible = icon != null
+	_icon.modulate = Color.WHITE
 	_bg = bg
 	_border = border
 	_caption.text = caption

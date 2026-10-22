@@ -36,7 +36,7 @@ func _ready() -> void:
 	v.add_theme_constant_override("separation", 10)
 	panel.add_child(v)
 	var head := UIKit.window_header(v, "", UIKit.GOLD, close, 22)
-	_name_lbl = head.get_child(0)
+	_name_lbl = head.get_node("Title")
 	var box := PanelContainer.new()
 	box.add_theme_stylebox_override("panel", UIKit.inset_box(16))
 	v.add_child(box)

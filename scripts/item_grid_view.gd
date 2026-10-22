@@ -114,10 +114,18 @@ func _notification(what: int) -> void:
 
 
 func _draw() -> void:
-	var slot := HudArt.tex("slot_bg")
+	var slot := UIKit.mmo("slot")
+	# Not under an item: its tile is one slot of its own size, and the cells would show through it
+	var covered := {}
+	for it in grid.items():
+		var r := grid.rect_of(it)
+		for y in range(r.position.y, r.end.y):
+			for x in range(r.position.x, r.end.x):
+				covered[Vector2i(x, y)] = true
 	for y in grid.rows:
 		for x in grid.cols:
-			draw_texture_rect(slot, Rect2(x * cell, y * cell, cell, cell), false)
+			if not covered.has(Vector2i(x, y)):
+				draw_texture_rect(slot, Rect2(x * cell, y * cell, cell, cell), false)
 
 
 func _draw_hover() -> void:
