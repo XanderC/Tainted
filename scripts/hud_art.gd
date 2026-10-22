@@ -47,6 +47,9 @@ static func centred(ci: CanvasItem, name: String, at: Vector2, s := 1.0, tint :=
 static func sweep(ci: CanvasItem, c: Vector2, r: float, frac: float, col := Color(0, 0, 0, 0.65)) -> void:
 	if frac <= 0.02:
 		return
+	if frac >= 0.98:
+		ci.draw_circle(c, r, col)  # a whole pie's ends meet: a polygon that can't be drawn
+		return
 	var pts := PackedVector2Array([c])
 	for i in 25:
 		pts.append(c + Vector2.from_angle(-PI / 2.0 + TAU * frac * float(i) / 24.0) * r)

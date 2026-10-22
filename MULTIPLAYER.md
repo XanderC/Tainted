@@ -19,9 +19,10 @@ commit). The README's Multiplayer section describes how what's done works.
 
 - [x] Elite affixes hit every player, not only the host's (molten ground and death blast, frost orbs,
       teleporting next to its target, electrified sparks); the party sees the orbs and flashes
-- [ ] Other players' skills visible: the swing arcs, whirlwind, leap slam and other effects their game
-      draws, not only their animation
-- [ ] Hirelings visible to the party (and in town), fighting in each owner's game
+- [x] Other players' skills visible: the swing arcs, rings, whirlwind's spin, earthquake's ground and
+      battle standards their game draws, not only their animation
+- [ ] Hirelings and summoned Ancients visible to the party (and hirelings in town), fighting in each
+      owner's game
 - [ ] Dying in a party rift or zone: wait to be revived by a party member (or after a while), instead of
       going back to town
 - [ ] Rift level and unlocks with a party: whose level a party rift is, and whether beating it unlocks

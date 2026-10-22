@@ -92,6 +92,12 @@ static func slow_player(peer: int, seconds: float) -> void:
 		Net.send_event(peer, "slow", seconds)
 
 
+## Your skill's look (Player._show_swing and so on), for the others in the party's instance.
+static func player_fx(d: Array) -> void:
+	if active():
+		Net.send_event(0, "pfx", d)
+
+
 ## Something the followers should see happen (the host's games only).
 static func host_fx(kind: String, data: Dictionary) -> void:
 	if active() and current.is_host and int(data.get("id", 0)) != 0:
@@ -305,7 +311,12 @@ func _on_event(from: int, kind: String, data: Variant) -> void:
 			"fx":
 				if data is Array and data.size() == 2:
 					_fx(String(data[0]), data[1])
-	match kind:  # either way: what the host's monsters did to you
+	match kind:  # either way: what the host's monsters did to you, what the others' skills look like
+		"pfx":
+			if data is Array:
+				for rp in get_tree().get_nodes_in_group("remote_players"):
+					if rp.peer_id == from:
+						rp.show_fx(data)
 		"hurt":
 			if is_instance_valid(main.player) and not main.player.dead:
 				main.player.take_damage(clampf(float(data), 0.0, 1e7))

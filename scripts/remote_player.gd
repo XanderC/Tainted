@@ -18,6 +18,16 @@ var _facing := 1.0
 var _anim := "Idle"
 var _speed := 1.0
 var _oneshot := ""
+# Their skills' looks (show_fx), drawn as their game draws them (Player.draw_swing and so on)
+var _swing_t := 0.0
+var _swing_dir := Vector2.RIGHT
+var _swing_arc := 120.0
+var _swing_radius := 100.0
+var _swing_color := Color.WHITE
+var _ring_t := 0.0
+var _ring_radius := 100.0
+var _ring_color := Color.WHITE
+var _spin_t := 0.0
 
 
 func setup(id: int, info: Dictionary, state: Dictionary) -> void:
@@ -90,6 +100,63 @@ func apply_slow(seconds: float) -> void:
 	Coop.slow_player(peer_id, seconds)
 
 
+## One of their skills' looks (Coop.player_fx from their Player): a swing, a ring, Whirlwind's spin,
+## Earthquake's broken ground, a battle standard.
+func show_fx(d: Array) -> void:
+	if d.is_empty():
+		return
+	match [String(d[0]), d.size()]:
+		["swing", 6]:
+			_swing_dir = Vector2.from_angle(float(d[1]))
+			_swing_arc = clampf(float(d[2]), 0.0, 360.0)
+			_swing_radius = clampf(float(d[3]), 0.0, 600.0)
+			_swing_color = Color.from_string(String(d[4]), Color.WHITE)
+			_swing_t = clampf(float(d[5]), 0.0, 2.0)
+		["ring", 4]:
+			_ring_radius = clampf(float(d[1]), 0.0, 600.0)
+			_ring_color = Color.from_string(String(d[2]), Color.WHITE)
+			_ring_t = clampf(float(d[3]), 0.0, 2.0)
+		["spin", 4]:
+			_ring_radius = clampf(float(d[1]), 0.0, 600.0)
+			_ring_color = Color.from_string(String(d[2]), Color.WHITE)
+			_spin_t = clampf(float(d[3]), 0.0, 1.0)
+		["ground", 6], ["banner", 6]:
+			_ground(String(d[0]) == "banner", Vector2(float(d[1]), float(d[2])), clampf(float(d[3]), 0.0, 600.0),
+				Color.from_string(String(d[4]), Color.WHITE), clampf(float(d[5]), 0.0, 30.0))
+	queue_redraw()
+
+
+## Earthquake's broken ground or a battle standard, where they left it, for as long as it lasts.
+func _ground(banner: bool, at: Vector2, radius: float, col: Color, secs: float) -> void:
+	if get_parent() == null:
+		return
+	var n := Node2D.new()
+	n.z_index = -1
+	get_parent().add_child(n)
+	n.global_position = at
+	n.draw.connect(func():
+		if banner:
+			n.draw_circle(Vector2.ZERO, 16.0, col)
+			n.draw_arc(Vector2.ZERO, radius, 0.0, TAU, 40, Color(col.r, col.g, col.b, 0.4), 2.5)
+		else:
+			n.draw_circle(Vector2.ZERO, radius, Color(col.r, col.g, col.b, 0.15))
+			n.draw_arc(Vector2.ZERO, radius, 0.0, TAU, 36, Color(col.r, col.g, col.b, 0.6), 3.0))
+	n.queue_redraw()
+	var t := n.create_tween()
+	t.tween_interval(secs)
+	t.tween_property(n, "modulate:a", 0.0, 0.4)
+	t.tween_callback(n.queue_free)
+
+
+func _draw() -> void:
+	if _swing_t > 0.0:
+		Player.draw_swing(self, _swing_dir, _swing_arc, _swing_radius, _swing_color, _swing_t / Player.SWING_TIME)
+	if _ring_t > 0.0:
+		Player.draw_ring(self, _ring_radius, _ring_color, _ring_t / (Player.SWING_TIME * 2.5))
+	if _spin_t > 0.0:
+		Player.draw_spin(self, _ring_color)
+
+
 func thorns() -> float:
 	return 0.0  # their thorns hit back in their own game
 
@@ -105,3 +172,8 @@ func _process(delta: float) -> void:
 		position = position.lerp(_target, 1.0 - exp(-12.0 * delta))
 	rig.set_facing(_facing)
 	rig.play_loop(_anim, _speed)
+	if _swing_t > 0.0 or _ring_t > 0.0 or _spin_t > 0.0:
+		_swing_t = maxf(_swing_t - delta, 0.0)
+		_ring_t = maxf(_ring_t - delta, 0.0)
+		_spin_t = maxf(_spin_t - delta, 0.0)
+		queue_redraw()

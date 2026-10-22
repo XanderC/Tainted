@@ -344,9 +344,7 @@ func _hit_area(origin: Vector2, dir: Vector2, hit_radius: float, arc_deg: float,
 		t.tween_interval(0.24)
 		t.tween_callback(func():
 			if is_instance_valid(self):
-				_ring_t = SWING_TIME
-				_ring_radius = hit_radius * 0.9
-				_ring_color = skill.get_effective_color()
+				_show_ring(hit_radius * 0.9, skill.get_effective_color(), SWING_TIME)
 				_hit_area(origin, dir, hit_radius, arc_deg, skill, 0.0, true)
 		)
 
@@ -680,10 +678,7 @@ func cooldown_fraction(i: int) -> float:
 
 
 func _do_whirlwind(s: SkillDef) -> void:
-	_whirlwind_t = 0.28  # Keeps spin loop animation and cyclone ring active across ticks
-	_ring_t = 0.28
-	_ring_radius = s.get_effective_radius()
-	_ring_color = s.get_effective_color()
+	_show_spin(s.get_effective_radius(), s.get_effective_color())
 	var as_hz := stats.get_stat("attack_speed")
 	rig.play_loop("Slashing in The Air", maxf(1.4, 0.7 * as_hz))
 	_hit_area(global_position, facing, s.get_effective_radius(), 360.0, s)
@@ -707,9 +702,7 @@ func _do_leap_slam(s: SkillDef) -> void:
 		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	t.tween_callback(func():
 		_busy = false
-		_ring_t = SWING_TIME * 2.0
-		_ring_radius = s.get_effective_radius()
-		_ring_color = s.get_effective_color()
+		_show_ring(s.get_effective_radius(), s.get_effective_color(), SWING_TIME * 2.0)
 		rig.play_once("Slashing", 1.3)
 		_hit_area(global_position, facing, s.get_effective_radius(), 360.0, s, s.stun)
 	)
@@ -724,9 +717,7 @@ func _do_battle_cry(s: SkillDef) -> void:
 	_buff_active = true
 	_buff_t = s.duration
 	rig.pulse()
-	_ring_t = 0.4
-	_ring_radius = 180.0
-	_ring_color = s.get_effective_color()
+	_show_ring(180.0, s.get_effective_color(), 0.4)
 
 
 func _do_shield_slam(s: SkillDef) -> void:
@@ -734,11 +725,7 @@ func _do_shield_slam(s: SkillDef) -> void:
 	facing = facing.normalized()
 	velocity = facing * 180.0
 	rig.play_once("Slashing", 1.5)
-	_swing_dir = facing
-	_swing_arc = s.get_effective_arc()
-	_swing_radius = s.get_effective_radius()
-	_swing_color = s.get_effective_color()
-	_swing_t = SWING_TIME * 1.5
+	_show_swing(facing, s.get_effective_arc(), s.get_effective_radius(), s.get_effective_color(), SWING_TIME * 1.5)
 	_hit_area(global_position, facing, s.get_effective_radius(), s.get_effective_arc(), s, s.stun)
 
 	# Fortify buff
@@ -750,9 +737,7 @@ func _do_shield_slam(s: SkillDef) -> void:
 
 func _do_earthquake(s: SkillDef) -> void:
 	rig.play_once("Slashing", 1.1)
-	_ring_t = SWING_TIME * 3.0
-	_ring_radius = s.get_effective_radius()
-	_ring_color = s.get_effective_color()
+	_show_ring(s.get_effective_radius(), s.get_effective_color(), SWING_TIME * 3.0)
 	_hit_area(global_position, facing, s.get_effective_radius(), 360.0, s, 0.8)
 
 	# Lingering fractured ground zone
@@ -761,6 +746,7 @@ func _do_earthquake(s: SkillDef) -> void:
 	get_parent().add_child(zone)
 	var z_col := s.get_effective_color()
 	var z_rad := s.get_effective_radius()
+	Coop.player_fx(["ground", zone.global_position.x, zone.global_position.y, z_rad, z_col.to_html(false), s.duration])
 	zone.draw.connect(func():
 		zone.draw_circle(Vector2.ZERO, z_rad, Color(z_col.r, z_col.g, z_col.b, 0.15))
 		zone.draw_arc(Vector2.ZERO, z_rad, 0.0, TAU, 36, Color(z_col.r, z_col.g, z_col.b, 0.6), 3.0)
@@ -780,9 +766,7 @@ func _do_iron_skin(s: SkillDef) -> void:
 	_iron_skin_active = true
 	_iron_skin_t = s.duration
 	rig.pulse()
-	_ring_t = 0.3
-	_ring_radius = 80.0
-	_ring_color = s.get_effective_color()
+	_show_ring(80.0, s.get_effective_color(), 0.3)
 
 
 func _do_frenzy(s: SkillDef) -> void:
@@ -793,38 +777,26 @@ func _do_frenzy(s: SkillDef) -> void:
 	stats.add_mod("move_speed", StatBlock.ModType.INCREASED, _frenzy_stacks * 0.05, "frenzy")
 
 	rig.play_once("Slashing", 1.8)
-	_swing_dir = facing
-	_swing_arc = s.get_effective_arc()
-	_swing_radius = s.get_effective_radius()
-	_swing_color = s.get_effective_color()
-	_swing_t = SWING_TIME
+	_show_swing(facing, s.get_effective_arc(), s.get_effective_radius(), s.get_effective_color(), SWING_TIME)
 	_hit_area(global_position, facing, s.get_effective_radius(), s.get_effective_arc(), s)
 
 
 func _do_sundering_strike(s: SkillDef) -> void:
 	rig.play_once("Slashing", 1.3)
-	_swing_dir = facing
-	_swing_arc = s.get_effective_arc()
-	_swing_radius = s.get_effective_radius()
-	_swing_color = s.get_effective_color()
-	_swing_t = SWING_TIME * 1.5
+	_show_swing(facing, s.get_effective_arc(), s.get_effective_radius(), s.get_effective_color(), SWING_TIME * 1.5)
 	_hit_area(global_position, facing, s.get_effective_radius(), s.get_effective_arc(), s, 0.5)
 
 
 func _do_blade_vortex(s: SkillDef) -> void:
 	rig.play_once("Slashing in The Air", 1.4)
 	# Whirlwind axes outward
-	_ring_t = SWING_TIME * 2.0
-	_ring_radius = s.get_effective_radius()
-	_ring_color = s.get_effective_color()
+	_show_ring(s.get_effective_radius(), s.get_effective_color(), SWING_TIME * 2.0)
 	_hit_area(global_position, facing, s.get_effective_radius(), 360.0, s)
 
 
 func _do_battle_standard(s: SkillDef) -> void:
 	rig.pulse()
-	_ring_t = 0.4
-	_ring_radius = s.get_effective_radius()
-	_ring_color = s.get_effective_color()
+	_show_ring(s.get_effective_radius(), s.get_effective_color(), 0.4)
 
 	# Spawn Standard node on ground
 	var banner := Node2D.new()
@@ -832,6 +804,7 @@ func _do_battle_standard(s: SkillDef) -> void:
 	get_parent().add_child(banner)
 	var b_rad := s.get_effective_radius()
 	var b_col := s.get_effective_color()
+	Coop.player_fx(["banner", banner.global_position.x, banner.global_position.y, b_rad, b_col.to_html(false), s.duration])
 	banner.draw.connect(func():
 		banner.draw_circle(Vector2.ZERO, 16.0, b_col)
 		banner.draw_arc(Vector2.ZERO, b_rad, 0.0, TAU, 40, Color(b_col.r, b_col.g, b_col.b, 0.4), 2.5)
@@ -854,9 +827,7 @@ const ANCIENTS := [["Talic", "rusty_sword", "whirlwind"], ["Korlic", "battle_axe
 
 func _do_call_ancients(s: SkillDef) -> void:
 	rig.pulse()
-	_ring_t = 0.4
-	_ring_radius = 120.0
-	_ring_color = Color(0.6, 0.85, 1.0)
+	_show_ring(120.0, Color(0.6, 0.85, 1.0), 0.4)
 	var rank := GameState.get_skill_rank(s.id)
 	var per_hit := stats.get_stat("damage") * s.get_effective_damage_mult(rank) / 3.0
 	for i in ANCIENTS.size():
@@ -881,11 +852,7 @@ func _do_cleave_skill(s: SkillDef) -> void:
 	var anim_speed := maxf(1.0, 0.42 * as_hz)
 	var cur_speed := velocity.length()
 	rig.play_once("Run Slashing" if cur_speed > 25.0 else "Slashing", anim_speed)
-	_swing_dir = facing
-	_swing_arc = s.get_effective_arc()
-	_swing_radius = s.get_effective_radius()
-	_swing_color = s.get_effective_color()
-	_swing_t = SWING_TIME
+	_show_swing(facing, s.get_effective_arc(), s.get_effective_radius(), s.get_effective_color(), SWING_TIME)
 	_hit_area(global_position, facing, s.get_effective_radius(), s.get_effective_arc(), s)
 
 
@@ -1480,30 +1447,68 @@ func _draw() -> void:
 			draw_circle(Vector2.from_angle(ang) * 28.0, 3.5, Color(1.0, 0.8, 0.2, 0.9))
 
 	if _swing_t > 0.0:
-		var a := _swing_t / SWING_TIME
-		if _swing_arc >= 359.0:
-			draw_circle(Vector2.ZERO, _swing_radius, Color(_swing_color.r, _swing_color.g, _swing_color.b, 0.30 * a))
-			draw_arc(Vector2.ZERO, _swing_radius, 0.0, TAU, 36, Color(_swing_color.r, _swing_color.g, _swing_color.b, 0.9 * a), 3.0)
-		else:
-			var half := deg_to_rad(_swing_arc) * 0.5
-			var start := _swing_dir.angle() - half
-			var pts := PackedVector2Array([Vector2.ZERO])
-			for i in 13:
-				pts.append(Vector2.from_angle(start + half * 2.0 * float(i) / 12.0) * _swing_radius)
-			draw_colored_polygon(pts, Color(_swing_color.r, _swing_color.g, _swing_color.b, 0.40 * a))
-			var edge_pts := PackedVector2Array()
-			for i in 13:
-				edge_pts.append(Vector2.from_angle(start + half * 2.0 * float(i) / 12.0) * _swing_radius)
-			draw_polyline(edge_pts, Color(_swing_color.r, _swing_color.g, _swing_color.b, 0.9 * a), 3.0)
-
+		Player.draw_swing(self, _swing_dir, _swing_arc, _swing_radius, _swing_color, _swing_t / SWING_TIME)
 	if _ring_t > 0.0:
-		var a2 := _ring_t / (SWING_TIME * 2.5)
-		draw_arc(Vector2.ZERO, _ring_radius, 0.0, TAU, 48,
-			Color(_ring_color.r, _ring_color.g, _ring_color.b, clampf(a2, 0.0, 1.0)), 6.0)
-
+		Player.draw_ring(self, _ring_radius, _ring_color, _ring_t / (SWING_TIME * 2.5))
 	if _whirlwind_t > 0.0:
-		var spin_ang := float(Time.get_ticks_msec()) * 0.008
-		draw_arc(Vector2.ZERO, 145.0, 0.0, TAU, 48, Color(_ring_color.r, _ring_color.g, _ring_color.b, 0.5), 3.0)
-		for b in 3:
-			var b_ang := spin_ang + (b * TAU / 3.0)
-			draw_arc(Vector2.ZERO, 135.0, b_ang, b_ang + 1.1, 16, Color(1.0, 1.0, 1.0, 0.8), 3.0)
+		Player.draw_spin(self, _ring_color)
+
+
+## A skill's swing on `ci`: a cone `arc` degrees wide towards `dir` (a circle at 360), fading with `a`.
+## Also draws other players' swings (RemotePlayer).
+static func draw_swing(ci: CanvasItem, dir: Vector2, arc: float, radius: float, col: Color, a: float) -> void:
+	if arc >= 359.0:
+		ci.draw_circle(Vector2.ZERO, radius, Color(col.r, col.g, col.b, 0.30 * a))
+		ci.draw_arc(Vector2.ZERO, radius, 0.0, TAU, 36, Color(col.r, col.g, col.b, 0.9 * a), 3.0)
+		return
+	var half := deg_to_rad(arc) * 0.5
+	var start := dir.angle() - half
+	var edge := PackedVector2Array()
+	for i in 13:
+		edge.append(Vector2.from_angle(start + half * 2.0 * float(i) / 12.0) * radius)
+	ci.draw_colored_polygon(PackedVector2Array([Vector2.ZERO]) + edge, Color(col.r, col.g, col.b, 0.40 * a))
+	ci.draw_polyline(edge, Color(col.r, col.g, col.b, 0.9 * a), 3.0)
+
+
+static func draw_ring(ci: CanvasItem, radius: float, col: Color, a: float) -> void:
+	ci.draw_arc(Vector2.ZERO, radius, 0.0, TAU, 48, Color(col.r, col.g, col.b, clampf(a, 0.0, 1.0)), 6.0)
+
+
+## Whirlwind's cyclone: a ring and three blades going round.
+static func draw_spin(ci: CanvasItem, col: Color) -> void:
+	var spin_ang := float(Time.get_ticks_msec()) * 0.008
+	ci.draw_arc(Vector2.ZERO, 145.0, 0.0, TAU, 48, Color(col.r, col.g, col.b, 0.5), 3.0)
+	for b in 3:
+		var b_ang := spin_ang + (b * TAU / 3.0)
+		ci.draw_arc(Vector2.ZERO, 135.0, b_ang, b_ang + 1.1, 16, Color(1.0, 1.0, 1.0, 0.8), 3.0)
+
+
+## What a skill looks like: drawn here, and in a party rift or zone sent to the others (Coop.player_fx)
+## so their copy of you (RemotePlayer.show_fx) shows it too.
+func _show_swing(dir: Vector2, arc: float, radius: float, col: Color, t: float) -> void:
+	_swing_dir = dir
+	_swing_arc = arc
+	_swing_radius = radius
+	_swing_color = col
+	_swing_t = t
+	Coop.player_fx(["swing", snappedf(dir.angle(), 0.01), arc, radius, col.to_html(false), t])
+
+
+func _show_ring(radius: float, col: Color, t: float) -> void:
+	_ring_t = t
+	_ring_radius = radius
+	_ring_color = col
+	Coop.player_fx(["ring", radius, col.to_html(false), t])
+
+
+var _spin_sent := 0  # msec: whirlwind hits many times a second; the others hear of it 4 times a second
+
+
+func _show_spin(radius: float, col: Color) -> void:
+	_whirlwind_t = 0.28  # keeps the spin loop animation and cyclone ring going across its hits
+	_ring_t = 0.28
+	_ring_radius = radius
+	_ring_color = col
+	if Time.get_ticks_msec() - _spin_sent > 250:
+		_spin_sent = Time.get_ticks_msec()
+		Coop.player_fx(["spin", radius, col.to_html(false), 0.4])
