@@ -4,7 +4,7 @@ extends Interactable
 ## over its head, gliding to where they are and playing what they play. It has no collision and
 ## takes no part in the game here; walk up to it and tap the Talk button for its card (invite them
 ## to your party, and so on: PartyUI.show_card).
-## In a party rift the monsters (run by the instance's host, CoopRift) go for it like for you: what
+## In a party rift the monsters (run by the instance's host, Coop) go for it like for you: what
 ## hits it is sent to that player's game (take_damage, apply_slow), whose character takes it.
 
 const NAME_COLOR := Color(0.55, 0.85, 1.0)  # light blue, so players stand out from NPCs (gold)
@@ -83,11 +83,11 @@ func apply_state(state: Dictionary) -> void:
 ## A monster hit them: their game takes it (their own armour and so on applies there).
 func take_damage(amount: float, _crit := false, _dtype = 0, _ailment := "") -> void:
 	if not dead:
-		CoopRift.hurt_player(peer_id, amount)
+		Coop.hurt_player(peer_id, amount)
 
 
 func apply_slow(seconds: float) -> void:
-	CoopRift.slow_player(peer_id, seconds)
+	Coop.slow_player(peer_id, seconds)
 
 
 func thorns() -> float:

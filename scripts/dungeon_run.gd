@@ -51,7 +51,7 @@ const EXTRA_ITEM_EVERY := 3    # one more boss item every N levels
 
 var level := 1
 var forced_level := 0  ## a party rift's level (the opener's pick), instead of yours
-## A party rift followed from the host's game (CoopRift): its kills, time and stage come from the host
+## A party rift followed from the host's game (Coop): its kills, time and stage come from the host
 ## (apply_net_state), and its boss arrives as a copy (boss_arrived).
 var remote := false
 var unlocked_next := false
@@ -123,7 +123,7 @@ func _summon_boss() -> void:
 	b.size_mult = 2.0
 	b.display_name = boss_name
 	b.skin = String(MonsterKinds.BOSSES[boss_kind]["skin"])
-	b.max_hp = BOSS_HP * hp_mult(level) * CoopRift.hp_scale()
+	b.max_hp = BOSS_HP * hp_mult(level) * Coop.hp_scale()
 	b.speed = BOSS_SPEED * speed_mult(level)
 	b.touch_damage = BOSS_DAMAGE * damage_mult(level)
 	b.target = player

@@ -2,7 +2,7 @@ extends Node2D
 ## A rift run: hand-made mazes (MazeLibrary) full of monster packs. Fight your way through, step
 ## into the portal for another random maze, and once enough monsters are dead (DungeonRun) the boss
 ## appears. Move: left-thumb joystick (or arrow keys on desktop).
-## With a party (Net.coop, kind "rift") it's the party's rift: CoopRift shares it, the other players
+## With a party (Net.coop, kind "rift") it's the party's rift: Coop shares it, the other players
 ## are there (NetPresence), and the instance's host loads the mazes (start_host) while the others
 ## load what it loads (remote_maze) and ask it to go through the portal (party_travel).
 
@@ -29,7 +29,7 @@ var _cam: Camera2D
 var _arrow: PortalArrow
 var _fade: ColorRect
 var _travelling := false
-var coop: CoopRift = null
+var coop: Coop = null
 
 
 func _ready() -> void:
@@ -121,7 +121,7 @@ func _ready() -> void:
 		var presence := NetPresence.new()  # the party's other players, here with you
 		presence.instance = String(Net.coop.inst)
 		add_child(presence)
-		coop = CoopRift.new()
+		coop = Coop.new()
 		coop.main = self
 		add_child(coop)
 		_fade.color.a = 1.0  # dark until the maze is known (start_host / remote_maze)
@@ -179,6 +179,11 @@ func start_host() -> void:
 	run.remote = false
 	_load_maze()
 	create_tween().tween_property(_fade, "color:a", 0.0, 0.45)
+
+
+## A copy of the host's monster (Coop): its death counts here as your kills do.
+func coop_copy(e: Enemy, _d: Dictionary) -> void:
+	e.died.connect(_on_enemy_died.bind(e.kill_weight()))
 
 
 ## A party member stepped into the portal: through it we all go (the host's game).
@@ -286,7 +291,7 @@ func _spawn_enemy(pos: Vector2, pack: String, tier := 0) -> Enemy:
 	e.aggro_range = PACK_AGGRO
 	e.pack = pack
 	var lvl := run.level
-	e.max_hp = (25.0 + kills * 1.5) * DungeonRun.hp_mult(lvl) * CoopRift.hp_scale()
+	e.max_hp = (25.0 + kills * 1.5) * DungeonRun.hp_mult(lvl) * Coop.hp_scale()
 	e.touch_damage *= DungeonRun.damage_mult(lvl)
 	e.speed *= DungeonRun.speed_mult(lvl)
 	if not _pack_kind.has(pack):

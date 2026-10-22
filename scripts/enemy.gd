@@ -40,9 +40,9 @@ var _minions: Array = [] # Summoner
 
 signal minion_spawned(m: Enemy)
 
-## Party play (CoopRift): every monster has an id the party's games share. In a follower's game it is
+## Party play (Coop): every monster has an id the party's games share. In a follower's game it is
 ## `remote`: it doesn't think, it shows what the host's copy does (apply_snapshot), and hits on it go
-## to the host (CoopRift.forward_*), which sends back its life and its death (remote_die).
+## to the host (Coop.forward_*), which sends back its life and its death (remote_die).
 var net_id := 0
 var remote := false
 var _net_pos := Vector2.ZERO
@@ -236,7 +236,7 @@ func _loose_arrow() -> void:
 	a.target = _foe
 	a.maze = maze
 	get_parent().add_child(a)
-	CoopRift.host_fx("arrow", {"id": net_id, "x": a.global_position.x, "y": a.global_position.y, "dx": a.dir.x, "dy": a.dir.y})
+	Coop.host_fx("arrow", {"id": net_id, "x": a.global_position.x, "y": a.global_position.y, "dx": a.dir.x, "dy": a.dir.y})
 
 
 func _process_ailments(delta: float) -> void:
@@ -305,14 +305,14 @@ func stun(seconds: float) -> void:
 	if _dead or is_boss:
 		return
 	if remote:
-		CoopRift.forward_status(net_id, "stun", seconds)
+		Coop.forward_status(net_id, "stun", seconds)
 		return
 	_stun_t = maxf(_stun_t, seconds)
 
 
 func apply_sunder(seconds: float) -> void:
 	if remote:
-		CoopRift.forward_status(net_id, "sunder", seconds)
+		Coop.forward_status(net_id, "sunder", seconds)
 		return
 	_sunder_t = maxf(_sunder_t, seconds)
 
@@ -337,8 +337,9 @@ func _pick_foe() -> Node2D:
 	return best if best != null else target
 
 
-## A foe that can still be fought.
-func _alive(n: Node2D) -> bool:
+## A foe that can still be fought (untyped: a player who left the party's rift is freed, and a typed
+## argument would choke on it).
+func _alive(n) -> bool:
 	return is_instance_valid(n) and not n.dead
 
 
@@ -347,7 +348,7 @@ func taunt(by: Node2D, seconds: float) -> void:
 	if _dead:
 		return
 	if remote:
-		CoopRift.forward_status(net_id, "taunt", seconds)  # the host has it go for your character
+		Coop.forward_status(net_id, "taunt", seconds)  # the host has it go for your character
 		return
 	_taunter = by
 	_taunt_t = maxf(_taunt_t, seconds)
@@ -374,7 +375,7 @@ func take_damage(amount: float, crit: bool = false,
 		return
 	if remote:
 		# The host's copy takes it; the number shows here straight away
-		CoopRift.forward_hit(net_id, amount, crit, dtype, ailment)
+		Coop.forward_hit(net_id, amount, crit, dtype, ailment)
 		if _shield_t > 0.0:
 			_spawn_text("Immune", Color(0.85, 0.85, 1.0))
 		else:
@@ -593,7 +594,7 @@ func remote_die() -> void:
 		_die()
 
 
-## A follower's copy becomes the real one: its host left and this game hosts now (CoopRift).
+## A follower's copy becomes the real one: its host left and this game hosts now (Coop).
 func take_over(you: Player) -> void:
 	remote = false
 	target = you

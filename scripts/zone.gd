@@ -36,6 +36,7 @@ var _boss_lbl: Label
 var _death: Label
 var _near: Interactable = null
 var _leaving := false
+var coop: Coop = null  ## the party's zone (Net.coop kind "zone"): shared with the party
 
 
 func _ready() -> void:
@@ -60,9 +61,21 @@ func _ready() -> void:
 	player.died.connect(func(): _death.visible = true)
 	player.item_dropped.connect(_on_item_dropped)
 
-	_place_objects()
-	_spawn_packs()
+	# With a party, the party's copy of this zone: the first member in runs its monsters (Coop)
+	var party_zone := Net.online() and Net.in_party()
+	if party_zone:
+		Net.coop = {"inst": "zone:%d:%s" % [int(Net.party.id), zone_id], "kind": "zone"}
+	_place_objects(not party_zone)
+	if not party_zone:
+		_spawn_packs()
 	player.global_position = _arrival()
+	if party_zone:
+		var presence := NetPresence.new()
+		presence.instance = String(Net.coop.inst)
+		add_child(presence)
+		coop = Coop.new()
+		coop.main = self
+		add_child(coop)
 	_cam.reset_smoothing()
 
 	_build_hud()
@@ -105,7 +118,8 @@ func _arrival() -> Vector2:
 
 # ---------- the map's objects ----------
 
-func _place_objects() -> void:
+## The map's exits, waypoint, NPCs and quest things, and (`bosses`) its quest bosses still alive.
+func _place_objects(bosses := true) -> void:
 	for o in maze.portals:
 		var target := String(o.get("target", "town"))
 		if target == "":
@@ -124,8 +138,27 @@ func _place_objects() -> void:
 	for o in MapData.objects_of(maze.data, "trigger"):
 		_triggers.append(o)
 	for o in MapData.objects_of(maze.data, "boss"):
+		if bosses and Quests.boss_alive(String(o.get("id", ""))):
+			_spawn_boss(o)
+
+
+## This game hosts the party's zone: its monsters, as on a solo visit (Coop).
+func start_host() -> void:
+	_spawn_packs()
+	for o in MapData.objects_of(maze.data, "boss"):
 		if Quests.boss_alive(String(o.get("id", ""))):
 			_spawn_boss(o)
+
+
+## A copy of the host's monster (Coop): its death here is as a monster's: XP, quest credit, and loot
+## rolled in this game (each player's own). A quest boss's death counts for its quest.
+func coop_copy(e: Enemy, _d: Dictionary) -> void:
+	var boss_id := String(e.get_meta("boss_id", ""))
+	if e.is_boss and boss_id != "":
+		e.died.connect(func(at: Vector2): _on_boss_died(e, boss_id, at))
+		_boss = e
+	else:
+		e.died.connect(func(at: Vector2): _on_monster_died(e, at))
 
 
 func _add_waypoint(pos: Vector2) -> Interactable:
@@ -295,13 +328,16 @@ func _spawn_boss(o: Dictionary) -> void:
 	if o.has("skin"):
 		b.skin = String(o["skin"])
 	var boss_id := String(o.get("id", ""))
-	b.died.connect(func(at: Vector2):
-		Quests.notify("kill_boss", boss_id)
-		_drop_boss_loot(at)
-		_flash("%s is slain!" % b.display_name, Color(1.0, 0.6, 0.4))
-	)
+	b.set_meta("boss_id", boss_id)  # a party's copies know which quest boss it is
+	b.died.connect(func(at: Vector2): _on_boss_died(b, boss_id, at))
 	add_child(b)
 	_boss = b
+
+
+func _on_boss_died(b: Enemy, boss_id: String, at: Vector2) -> void:
+	Quests.notify("kill_boss", boss_id)
+	_drop_boss_loot(at)
+	_flash("%s is slain!" % b.display_name, Color(1.0, 0.6, 0.4))
 
 
 func _on_monster_died(e: Enemy, at: Vector2) -> void:
