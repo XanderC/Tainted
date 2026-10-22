@@ -29,7 +29,7 @@ extends Node
 ## Party instances (stage 3): a member opens a rift (open_party_rift); the server makes an instance
 ## "rift:<party>:<n>" only that party may enter, and tells the members (party_portal; the party data
 ## carries it too, so latecomers can join from the party list). The first member in is the instance's
-## host (role_changed): its game runs the monsters (CoopRift), the others' games follow it. Instance
+## host (role_changed): its game runs the monsters (Coop), the others' games follow it. Instance
 ## events (send_event / event) go between them through the server: to everyone else in the instance,
 ## to its host, or to one player. When the host leaves, the next member takes over.
 ##
@@ -80,7 +80,7 @@ var others := {}  ## the other players in your instance: id -> info
 ## Your party: {"id", "leader", "members": [{"id", "name", "level", "class"}]}, or {} when on your own.
 var party := {}
 ## The party instance this game is joining or in: {"inst", "kind", "level", "by", "by_name"}, else {}.
-## Read by the scene it loads (a rift: CoopRift).
+## Read by the scene it loads (a rift: Coop).
 var coop := {}
 var instance_host := 0  ## who hosts your instance (role_changed)
 var party_ui: PartyUI  ## the party list, invites and player cards on screen (not on a dedicated server)

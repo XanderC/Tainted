@@ -1,24 +1,28 @@
-class_name CoopRift
+class_name Coop
 extends Node
-## A rift played by a party (Net.coop, kind "rift"). Added by the rift scene (main.gd). One game
-## hosts the instance (Net.role_changed: the first member in, or whoever is left when it goes): it
-## runs the mazes, the monsters and the run, as for a solo rift, and tells the others what happens:
+## A rift or a story zone played by a party (Net.coop: kind "rift", or "zone"). Added by that scene
+## (main.gd, zone.gd), which provides start_host() (start as a solo visit would: the first maze, the
+## zone's packs) and coop_copy(e, d) (hook up a copy of the host's monster: what its death means
+## here); a rift also remote_maze(d, instant) and party_travel(), and has `run`.
+## One game hosts the instance (Net.role_changed: the first member in, or whoever is left when it
+## goes): it runs the monsters (and a rift's mazes and run) as for a solo visit, and tells the others:
 ##   "maze"  which maze is loaded            "spawn" monsters as they appear (describe)
 ##   "snap"  where each is, its life...       "die"   which died ("gone": removed without dying)
 ##   "run"   the run's kills, time and stage  "fx"    an archer's arrow, to draw
 ##   "sync"  all of it at once, for a player just arrived ("hello")
 ## The other games (followers) show those monsters as copies (Enemy.remote) and send what their
-## player and hireling do to them ("hits", "status") and when they step into the portal ("travel").
+## player and hireling do to them ("hits", "status") and when they step into a rift's portal
+## ("travel"). A copy's death does here what a monster's death does (the scene's coop_copy): XP,
+## quest credit, and loot rolled in this game, so each player's loot is their own.
 ## The host's monsters go for every player (RemotePlayer stands in for the others, and passes on
-## what hits them: "hurt", "slow"). Each game gives its own XP for each death, and rolls its own loot
-## when the boss dies (DungeonRun._on_boss_died), so loot is each player's own.
-## If the host leaves, the next player's copies become the real monsters (_take_over).
+## what hits them: "hurt", "slow"). If the host leaves, the next player's copies become the real
+## monsters (_take_over).
 
 const SNAP_HZ := 12.0
 const RUN_HZ := 2.0
 const HP_PER_PLAYER := 0.6  ## monsters' life x (1 + this per extra player in the rift)
 
-static var current: CoopRift = null
+static var current: Coop = null
 
 var main: Node2D  ## the rift scene (main.gd)
 var is_host := false
@@ -96,10 +100,17 @@ func _on_role(host_id: int) -> void:
 		if is_host:
 			main.start_host()
 		else:
-			main.run.remote = true
+			if _run() != null:
+				_run().remote = true
 			Net.send_event(-1, "hello", {})
 	elif is_host and not was:
 		_take_over()
+
+
+## The scene's rift run, or null in a zone.
+func _run() -> DungeonRun:
+	var r = main.get("run")
+	return r if r is DungeonRun else null
 
 
 ## The host left and this game hosts now: the copies become the real monsters, the run runs here.
@@ -109,8 +120,9 @@ func _take_over() -> void:
 		if is_instance_valid(e) and not e._dead:
 			e.take_over(main.player)
 		_next_id = maxi(_next_id, int(id) + 1)
-	main.run.remote = false
-	main.run.announce("You lead the rift now", Color(0.6, 0.9, 1.0))
+	if _run() != null:
+		_run().remote = false
+		_run().announce("You lead the rift now", Color(0.6, 0.9, 1.0))
 
 
 # ---------- the host: telling the others ----------
@@ -140,7 +152,7 @@ static func describe(e: Enemy) -> Dictionary:
 	return {"id": e.net_id, "kind": e.kind, "skin": e.skin, "name": e.display_name, "tier": e.tier,
 		"affixes": Array(e.affixes), "max_hp": e.max_hp, "hp": e.hp, "speed": e.speed, "touch": e.touch_damage,
 		"size": e.size_mult, "ranged": e.ranged, "boss": e.is_boss, "pack": e.pack, "aggro": e.aggro_range,
-		"x": e.global_position.x, "y": e.global_position.y}
+		"x": e.global_position.x, "y": e.global_position.y, "boss_id": String(e.get_meta("boss_id", ""))}
 
 
 func _physics_process(delta: float) -> void:
@@ -166,9 +178,9 @@ func _physics_process(delta: float) -> void:
 			if not snaps.is_empty():
 				Net.send_event(0, "snap", snaps)
 		_run_t -= delta
-		if _run_t <= 0.0:
+		if _run_t <= 0.0 and _run() != null:
 			_run_t = 1.0 / RUN_HZ
-			Net.send_event(0, "run", main.run.net_state())
+			Net.send_event(0, "run", _run().net_state())
 	elif not _hits.is_empty():
 		Net.send_event(-1, "hits", _hits.duplicate())
 		_hits.clear()
@@ -181,8 +193,8 @@ func _sync_data() -> Dictionary:
 		var e: Enemy = _enemies[id]
 		if is_instance_valid(e) and not e._dead:
 			list.append(describe(e))
-	return {"map": main.maze.map_id if main.maze != null else "", "n": main.mazes_visited,
-		"run": main.run.net_state(), "enemies": list}
+	return {"map": main.maze.map_id if main.maze != null else "", "n": main.get("mazes_visited"),
+		"run": _run().net_state() if _run() != null else {}, "enemies": list}
 
 
 ## A new maze is loaded (the host): the others load it too.
@@ -217,17 +229,20 @@ func _on_event(from: int, kind: String, data: Variant) -> void:
 									if rp.peer_id == from:
 										e.taunt(rp, secs)
 			"travel":
-				main.party_travel()
+				if main.has_method("party_travel"):
+					main.party_travel()
 	else:
 		match kind:
 			"sync":
 				if data is Dictionary:
-					main.remote_maze(data, true)
+					if main.has_method("remote_maze"):
+						main.remote_maze(data, true)
 					for d in data.get("enemies", []):
 						_spawn_copy(d)
-					main.run.apply_net_state(data.get("run", {}))
+					if _run() != null:
+						_run().apply_net_state(data.get("run", {}))
 			"maze":
-				if data is Dictionary:
+				if data is Dictionary and main.has_method("remote_maze"):
 					main.remote_maze(data, false)
 			"spawn":
 				if data is Array:
@@ -252,8 +267,8 @@ func _on_event(from: int, kind: String, data: Variant) -> void:
 						if is_instance_valid(e):
 							e.queue_free()
 			"run":
-				if data is Dictionary:
-					main.run.apply_net_state(data)
+				if data is Dictionary and _run() != null:
+					_run().apply_net_state(data)
 			"fx":
 				if data is Array and data.size() == 2:
 					_fx(String(data[0]), data[1])
@@ -290,15 +305,17 @@ func _spawn_copy(d) -> void:
 	e.target = main.player
 	e.maze = main.maze  # null until the first maze is known: a copy doesn't path-find anyway
 	var id := e.net_id
-	e.died.connect(main._on_enemy_died.bind(e.kill_weight()))
+	if String(d.get("boss_id", "")) != "":
+		e.set_meta("boss_id", String(d.boss_id))
 	e.tree_exiting.connect(func(): _enemies.erase(id))
+	main.coop_copy(e, d)  # what its death means in this scene (connected before it can die)
 	main.add_child(e)
 	if e.pack != "":
 		e.add_to_group(e.pack)
 	e.hp = float(d.hp)
 	_enemies[id] = e
-	if e.is_boss:
-		main.run.boss_arrived(e)
+	if e.is_boss and _run() != null:
+		_run().boss_arrived(e)
 
 
 ## Draws what the host's monsters did that isn't a monster: an archer's arrow (harmless here; the
