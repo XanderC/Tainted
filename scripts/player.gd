@@ -178,8 +178,9 @@ func _physics_process(delta: float) -> void:
 	_process_buffs(delta)
 	queue_redraw()
 
-	# Desktop continuous keys hold (Space/J for Main Attack, 1-3 for Skills / Channeling)
-	if can_fight and not dead and not _busy:
+	# Desktop continuous keys hold (Space/J for Main Attack, 1-3 for Skills / Channeling); not while
+	# typing in the chat
+	if can_fight and not dead and not _busy and not Net.chat_typing:
 		if _mouse_attack_down and (not Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT) or OS.has_feature("mobile")):
 			_mouse_attack_down = false
 		if Input.is_key_pressed(KEY_SPACE) or Input.is_key_pressed(KEY_J):
@@ -207,7 +208,7 @@ func _physics_process(delta: float) -> void:
 	var dir := Vector2.ZERO
 	if joystick:
 		dir = joystick.output
-	if dir == Vector2.ZERO:
+	if dir == Vector2.ZERO and not Net.chat_typing:
 		dir = Input.get_vector("ui_left", "ui_right", "ui_up", "ui_down")  # keyboard for desktop testing
 	dir = _walk_step(dir, delta)
 	velocity = dir * stats.get_stat("move_speed") * (0.6 if _slow_t > 0.0 else 1.0)

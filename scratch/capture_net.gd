@@ -30,6 +30,33 @@ func _ready() -> void:
 	print("capture: ", Net.status)
 	add_child(load("res://scenes/town.tscn").instantiate())
 	await get_tree().create_timer(9.0 if Net.mode == Net.Mode.HOST else 4.0).timeout
+	if "--inspect" in OS.get_cmdline_user_args():
+		# Wear some gear (a bot inspects it), then inspect yourself for a screenshot of the window
+		var p: Player = GameState.player
+		for spec in [["broad_sword", "weapon"], ["brigandine", "chest"], ["iron_helm", "helmet"], ["iron_gauntlets", "gloves"]]:
+			var it := LootGenerator.roll_item(14, ItemInstance.Rarity.RARE, "")
+			it.base = LootGenerator.base_by_id(spec[0])
+			it.display_name = it.base.display_name
+			p.bag.add(it)
+			p.equip_to(it, spec[1])
+		await get_tree().create_timer(9.0).timeout
+		Net.inspect(Net.my_id())
+		await get_tree().create_timer(1.5).timeout
+		_shot("net_inspect")
+		Net.leave()
+		get_tree().quit()
+		return
+	if "--chat" in OS.get_cmdline_user_args():
+		# Bots chat in town (net_bot --say): the lines at the bottom left, then the box open
+		await get_tree().create_timer(4.0).timeout
+		_shot("net_chat")
+		Net.chat_ui._set_open(true)
+		Net.chat_ui._edit.text = "anyone up for a rift?"
+		await get_tree().create_timer(0.5).timeout
+		_shot("net_chat_open")
+		Net.leave()
+		get_tree().quit()
+		return
 	if "--party" in OS.get_cmdline_user_args():
 		# An invite has come (a walker bot with --invite): its popup, then join, the party list, a card
 		_shot("net_invite")

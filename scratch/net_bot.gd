@@ -12,6 +12,11 @@ extends Node
 ##   town, in its party ("dropper: N checks, M failed").
 ## keeper: a partier that keeps its party, and checks a member who drops is shown away and comes back.
 ## counter: in town for a while, prints how many others it sees (for the town copies test).
+## --say=text: says it in town chat 3 s in (--party-say=text: in party chat).
+## --expect-chat=a|b: checks lines containing each of those came (prints "chat: N checks, M failed");
+## --no-chat=c: checks no line containing it came.
+## inspector: inspects the first player it sees and checks their gear and stats came
+##   ("inspector: N checks, M failed").
 
 var mode := "walker"
 var addr := "127.0.0.1"
@@ -28,6 +33,11 @@ var drop_at := 0.0
 var _dropped := false
 var _away_seen := false
 var _back_seen := false
+var _say := ""
+var _party_say := ""
+var _expect: Array = []
+var _no_chat := ""
+var _heard: Array = []
 var _vitals := {}  # id -> last life seen
 var _notices: Array = []
 
@@ -41,6 +51,10 @@ func _ready() -> void:
 		elif a == "--accept": accept = true
 		elif a == "--invite": invite_all = true
 		elif a.begins_with("--drop-at="): drop_at = float(a.get_slice("=", 1))
+		elif a.begins_with("--say="): _say = a.get_slice("=", 1)
+		elif a.begins_with("--party-say="): _party_say = a.get_slice("=", 1)
+		elif a.begins_with("--expect-chat="): _expect = Array(a.get_slice("=", 1).split("|"))
+		elif a.begins_with("--no-chat="): _no_chat = a.get_slice("=", 1)
 	GameState.char_name = bot_name
 	GameState.level = 7
 	GameState.appearance = Appearance.random_look()
@@ -68,6 +82,9 @@ func _ready() -> void:
 			Net.answer_invite(from_id, true))
 	Net.party_changed.connect(func():
 		print("%s: party now %s" % [bot_name, Net.party.get("members", []).map(func(m): return m.name)]))
+	Net.chat.connect(func(_id, from_name, channel, text):
+		_heard.append("%s/%s: %s" % [channel, from_name, text])
+		print("%s: heard %s/%s: %s" % [bot_name, channel, from_name, text]))
 	Net.party_vitals.connect(func(batch):
 		for id in batch:
 			_vitals[id] = batch[id].h)
@@ -89,8 +106,17 @@ func _ready() -> void:
 		_run_partier()
 	if mode == "keeper":
 		_run_keeper()
+	if mode == "inspector":
+		_run_inspector()
 	if drop_at > 0.0:
 		_run_dropper()
+	if _say != "" or _party_say != "":
+		await get_tree().create_timer(3.0).timeout
+		if _say != "":
+			Net.say("local", _say)
+		if _party_say != "":
+			await get_tree().create_timer(1.0).timeout
+			Net.say("party", _party_say)
 
 
 ## Drops its connection, then checks it got back where it was.
@@ -109,6 +135,22 @@ func _run_dropper() -> void:
 	_check(Net.instance == Net.TOWN, "it goes back into town")
 	_check(Net.in_party() == had_party, "it is back in its party")
 	print("dropper: %d checks, %d failed" % [_checks, _failed])
+
+
+## Inspects whoever it sees first and checks what comes back.
+func _run_inspector() -> void:
+	var got := {}
+	Net.inspected.connect(func(_id, data): got.merge(data))
+	await get_tree().create_timer(5.0).timeout
+	if not Net.others.is_empty():
+		Net.inspect(Net.others.keys()[0])
+	await get_tree().create_timer(2.0).timeout
+	_check(not got.is_empty(), "the inspected player's data came")
+	var eq = got.get("equipment", {})
+	_check(eq is Dictionary and eq.size() >= 2, "with their worn gear (%d pieces)" % (eq.size() if eq is Dictionary else 0))
+	_check(eq is Dictionary and eq.values().all(func(d): return ItemInstance.from_dict(d) != null), "which make real items here")
+	_check(float(got.get("stats", {}).get("max_life", 0.0)) > 0.0, "and their stats")
+	print("inspector: %d checks, %d failed" % [_checks, _failed])
 
 
 ## Keeps a party with whoever it invites; checks a member who drops is away, then back.
@@ -170,6 +212,12 @@ func _process(delta: float) -> void:
 	if _t < secs or mode == "partier" or (drop_at > 0.0 and _t < drop_at + 25.0):
 		return
 	set_process(false)
+	if not _expect.is_empty() or _no_chat != "":
+		for e in _expect:
+			_check(_heard.any(func(h): return e in h), "heard a line with \"%s\"" % e)
+		if _no_chat != "":
+			_check(not _heard.any(func(h): return _no_chat in h), "never heard \"%s\"" % _no_chat)
+		print("chat: %d checks, %d failed" % [_checks, _failed])
 	if mode == "counter":
 		print("counter: sees %d others" % Net.others.size())
 	if mode == "keeper":

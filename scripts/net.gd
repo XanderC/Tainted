@@ -47,6 +47,12 @@ extends Node
 ## with the hello: for now a random key this device keeps (device_key), later an Autharr sign-in.
 ## One game per account: a second one replaces the first.
 ##
+## Chat (say): "local" goes to everyone in your instance (your copy of the town, your rift or zone),
+## "party" to your party. The server cleans each line (printable, at most CHAT_MAX characters, a word
+## filter: _clean_chat) and allows one every CHAT_EVERY seconds.
+## Inspecting (inspect): the server asks that player's game for its worn gear and stats
+## (_inspect_data) and passes them on (inspected), if you can see them (same instance or party).
+##
 ## The server's records live in _peers (id -> {"info", "instance", "state", "party", "token",
 ## "account"}), _parties and _instances; the host is peer 1.
 ## RPC entry points (_rpc_*) take the sender from the MultiplayerAPI and call the _on_* handlers,
@@ -66,10 +72,12 @@ signal party_portal(portal: Dictionary)  ## a member opened a party instance: {"
 signal role_changed(host_id: int)  ## who hosts your instance (runs its monsters) changed; you if == my_id()
 signal event(from_id: int, kind: String, data: Variant)  ## an instance event (send_event)
 signal account_ready  ## the server's characters for your account are loaded (GameState.use_online_files)
+signal chat(from_id: int, from_name: String, channel: String, text: String)  ## a chat line (say)
+signal inspected(id: int, data: Dictionary)  ## a player's worn gear and stats (inspect)
 
 const PORT := 24601
 const DISCOVERY_PORT := 24602
-const PROTOCOL := 5  ## games with a different protocol can't play together
+const PROTOCOL := 6  ## games with a different protocol can't play together
 const MAX_ONLINE := 32
 const PARTY_MAX := 4
 const SEND_HZ := 15.0
@@ -80,6 +88,11 @@ const AWAY_GRACE := 60.0  ## seconds a dropped party member's place is kept
 const RECONNECT_EVERY := 4.0
 const RECONNECT_TRIES := 10
 const TOWN_CAP := 20  ## players in one copy of the town
+const CHAT_MAX := 200
+const CHAT_EVERY := 0.6  ## seconds between one player's chat lines
+## Words the chat masks with stars (whole words, any case).
+const CHAT_FILTER := ["fuck", "fucking", "fucker", "shit", "cunt", "bitch", "nigger", "nigga", "faggot", "fag",
+	"retard", "whore", "slut", "dick", "pussy", "asshole", "bastard", "twat", "wanker", "spastic"]
 const INVITE_TIMEOUT := 60.0  ## seconds an invite can be answered
 const VITALS_HZ := 2.0  ## party members' life and whereabouts, this often
 const HELLO_TIMEOUT := 10.0  ## seconds a new connection has to say hello before it is dropped
@@ -104,7 +117,10 @@ var coop := {}
 ## The server keeps your characters (its welcome said so): GameState saves to it (save_file).
 var accounts := false
 var instance_host := 0  ## who hosts your instance (role_changed)
-var party_ui: PartyUI  ## the party list, invites and player cards on screen (not on a dedicated server)
+var party_ui: PartyUI
+var chat_ui: ChatUI  ## the chat on screen (not on a dedicated server)
+var inspect_ui: InspectUI  ## another player's gear (inspect)
+var chat_typing := false  ## the chat box has the keyboard: the game ignores its keys meanwhile  ## the party list, invites and player cards on screen (not on a dedicated server)
 ## What this game sends as its player's state; by default the local Player's (bots replace it).
 var state_source: Callable = _player_state
 
@@ -139,6 +155,8 @@ var _rejoin_coop := {}
 var _store: AccountStore  # server only, with --data: the players' characters
 var _store_t := 0.0
 var _pending_saves := {}  # files to send once reconnected: vpath -> data (null: delete)
+var _chat_at := {}  # server only: id -> msec of its last chat line
+var _filter: RegEx
 
 
 func _ready() -> void:
@@ -165,6 +183,10 @@ func _ready() -> void:
 	else:
 		party_ui = PartyUI.new()
 		add_child(party_ui)
+		chat_ui = ChatUI.new()
+		add_child(chat_ui)
+		inspect_ui = InspectUI.new()
+		add_child(inspect_ui)
 
 
 ## Started as a dedicated server (`-- --server` on the command line).
@@ -465,6 +487,32 @@ static func device_key() -> String:
 	return key
 
 
+## Ask to see player `id`'s gear and stats (inspected).
+func inspect(id: int) -> void:
+	_to_server("_on_inspect", "_rpc_inspect", [id])
+
+
+## What others see when they inspect you: your worn gear (as saved) and a few stats.
+func _inspect_data() -> Dictionary:
+	var p = GameState.player
+	var eq := {}
+	var stats := {}
+	if is_instance_valid(p):
+		for slot in p.equipment:
+			eq[slot] = p.equipment[slot].to_dict()
+		for k in ["damage", "attack_speed", "crit_chance", "armor", "max_life", "move_speed"]:
+			stats[k] = p.stats.get_stat(k)
+	return {"name": GameState.char_name, "class": GameState.char_class, "level": GameState.level,
+		"equipment": eq, "stats": stats}
+
+
+## Says `text` on `channel` ("local" or "party").
+func say(channel: String, text: String) -> void:
+	text = text.strip_edges()
+	if text != "" and online():
+		_to_server("_on_chat", "_rpc_chat", [channel, text.left(CHAT_MAX)])
+
+
 ## Stores one of GameState's save files on the server (only while it keeps your characters; while
 ## reconnecting it waits and goes once back).
 func save_file(vpath: String, data: Dictionary) -> void:
@@ -628,6 +676,7 @@ func _on_peer_disconnected(id: int) -> void:
 	_dirty.erase(id)
 	_rate.erase(id)
 	_event_rate.erase(id)
+	_chat_at.erase(id)
 	_tell_instance(inst, id, "_rpc_gone", [id])
 	if mode == Mode.SERVER:
 		print("Net: %d left (%d online)" % [id, _peers.size()])
@@ -703,6 +752,71 @@ static func _account_of(a) -> String:
 		if key.length() >= 32 and key.length() <= 128:
 			return "d" + key.sha256_text().left(40)
 	return ""
+
+
+func _on_chat(id: int, channel: String, text: String) -> void:
+	if not _peers.has(id):
+		return
+	var now := Time.get_ticks_msec()
+	if now - int(_chat_at.get(id, -100000)) < CHAT_EVERY * 1000.0:
+		_send(id, "_rpc_notice", ["Not so fast."])
+		return
+	_chat_at[id] = now
+	text = _clean_chat(text)
+	if text == "":
+		return
+	var who: Array = []
+	if channel == "party":
+		var pid: int = _peers[id].party
+		if pid == 0 or not _parties.has(pid):
+			_send(id, "_rpc_notice", ["You're not in a party."])
+			return
+		who = _parties[pid].members
+	else:
+		channel = "local"
+		var inst: String = _peers[id].instance
+		who = _peers.keys().filter(func(p): return p == id or (inst != "" and _peers[p].instance == inst))
+	var name: String = _peers[id].info.name
+	for p in who:
+		_send(p, "_rpc_chat_of", [id, name, channel, text])
+
+
+## A chat line as others see it: printable characters, at most CHAT_MAX, CHAT_FILTER words starred.
+func _clean_chat(text: String) -> String:
+	var out := ""
+	for ch in text:
+		if ch.unicode_at(0) >= 32 and ch.unicode_at(0) != 127:
+			out += ch
+	out = out.strip_edges().left(CHAT_MAX)
+	if _filter == null:
+		_filter = RegEx.create_from_string("(?i)\\b(" + "|".join(PackedStringArray(CHAT_FILTER)) + ")\\b")
+	for m in _filter.search_all(out):
+		out = out.substr(0, m.get_start()) + "*".repeat(m.get_end() - m.get_start()) + out.substr(m.get_end())
+	return out
+
+
+## Whether `who` may see `id` (to inspect them): in the same instance, or in the same party.
+func _can_see(who: int, id: int) -> bool:
+	if not _peers.has(who) or not _peers.has(id):
+		return false
+	var inst: String = _peers[who].instance
+	return (inst != "" and inst == _peers[id].instance) or \
+		(_peers[who].party != 0 and _peers[who].party == _peers[id].party)
+
+
+func _on_inspect(who: int, id: int) -> void:
+	if not _can_see(who, id):
+		_send(who, "_rpc_notice", ["You can't see them from here."])
+		return
+	if id == 1 and mode == Mode.HOST:
+		_send(who, "_rpc_inspect_of", [1, _inspect_data()])
+	else:
+		_send(id, "_rpc_inspect_ask", [who])
+
+
+func _on_inspect_reply(id: int, who: int, data: Dictionary) -> void:
+	if _can_see(who, id) and JSON.stringify(data).length() < 128 * 1024:
+		_send(who, "_rpc_inspect_of", [id, data])
 
 
 func _on_account_files(id: int) -> void:
@@ -1150,6 +1264,27 @@ func _relay_vitals() -> void:
 # ---------- RPCs: client -> server ----------
 
 @rpc("any_peer", "call_remote", "reliable")
+func _rpc_inspect(id: int) -> void:
+	var who := multiplayer.get_remote_sender_id()
+	if is_server() and _within_rate(who):
+		_on_inspect(who, id)
+
+
+@rpc("any_peer", "call_remote", "reliable")
+func _rpc_inspect_reply(who: int, data: Dictionary) -> void:
+	var id := multiplayer.get_remote_sender_id()
+	if is_server() and _within_rate(id):
+		_on_inspect_reply(id, who, data)
+
+
+@rpc("any_peer", "call_remote", "reliable")
+func _rpc_chat(channel: String, text: String) -> void:
+	var id := multiplayer.get_remote_sender_id()
+	if is_server() and _within_rate(id):
+		_on_chat(id, channel.left(16), text.left(CHAT_MAX * 2))
+
+
+@rpc("any_peer", "call_remote", "reliable")
 func _rpc_account_files() -> void:
 	var id := multiplayer.get_remote_sender_id()
 	if is_server() and _within_rate(id):
@@ -1279,6 +1414,22 @@ func _rpc_welcome(name: String, _count: int, keeps_characters: bool) -> void:
 			instance = ""
 			enter(i)  # back where you were
 		update_looks()
+
+
+## Someone wants to see your gear: answer with it.
+@rpc("authority", "call_remote", "reliable")
+func _rpc_inspect_ask(who: int) -> void:
+	_rpc_inspect_reply.rpc_id(1, who, _inspect_data())
+
+
+@rpc("authority", "call_remote", "reliable")
+func _rpc_inspect_of(id: int, data: Dictionary) -> void:
+	inspected.emit(id, data)
+
+
+@rpc("authority", "call_remote", "reliable")
+func _rpc_chat_of(from: int, from_name: String, channel: String, text: String) -> void:
+	chat.emit(from, from_name, channel, text)
 
 
 ## Your characters on this server: the game plays from them now.

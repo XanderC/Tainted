@@ -318,6 +318,7 @@ func show_card(id: int) -> void:
 	x.pressed.connect(_close_card)
 	head.add_child(x)
 	v.add_child(UIKit.label("Level %d %s" % [int(info.get("level", 1)), cd.display_name], 16, UIKit.TEXT_DIM))
+	_card_button(v, "🔍  Inspect", Color(0.16, 0.16, 0.20), Color(0.70, 0.70, 0.75), func(): Net.inspect(id))
 	var member := Net.is_member(id)
 	if member:
 		v.add_child(UIKit.label("👑 Leads your party" if int(Net.party.leader) == id else "In your party", 15, UIKit.GOLD))

@@ -194,6 +194,18 @@ name and level, walking where they walk. Going back to character select goes off
 - Not yet shared: players' skill effects (others see their animations), hirelings (each fights in its
   owner's game), and the elite affixes that hit only the host's player (molten ground, frost orbs).
 
+**Chat** (`ChatUI`, `Net.say`):
+- The 💬 button at the bottom left (or Enter) opens a box; **Local** reaches everyone where you are (your
+  copy of the town, your rift or zone), **Party** your party.
+- Recent lines show above the button and fade after 12 s. The server cleans each line: printable text,
+  at most 200 characters, one every 0.6 s, and a word filter (`Net.CHAT_FILTER`) that stars whole words.
+- While you type, the game ignores its keys, and the movement stick leaves the button alone (the
+  `touch_exempt` group).
+
+**Inspect** (`InspectUI`): a player's card has 🔍 **Inspect**. The server asks their game for its worn gear
+and stats (only for players in the same place or party) and shows them by slot; tapping a piece shows its
+card beside what you wear there.
+
 **Online characters** (`AccountStore`, `GameState.use_online_files`):
 - The Tainted World keeps its players' characters. Each account is one JSON file under
   `/appdata/estate/tainted/accounts` on the host, written a moment after a change, with a copy of every
@@ -253,15 +265,16 @@ un_server.ps1` or
 4. Before strangers play: sign-in through Autharr, so names are owned and a player can be banned.
    Today any name is accepted and characters come from the player's own save.
 
-**Stages:** 1. shared town (done, LAN). 2. parties (done). 3. party rifts and zones (done). 4. staying connected (done). 5. online characters (done); Autharr sign-in, chat, inspecting players,
-friends and trading next.
+**Stages:** 1. shared town (done, LAN). 2. parties (done). 3. party rifts and zones (done). 4. staying connected (done). 5. online characters, chat and inspect (done); friends, trading and
+Autharr sign-in next.
 3. zones and rifts together: the party leader's game runs the monsters and each player's loot is
 their own. 4. open to the world (above).
 
 Test without a second device: `scratch/net_bot.tscn` (`-- --bot=walker`, `--bot=watcher` checks what
 it sees, `--bot=scan`, `--bot=partier` checks parties, `--drop-at=8` and `--bot=keeper` check reconnecting,
-`--bot=counter` with a server's `--town-cap=2` checks town copies, `--accept` / `--invite`, `--addr=ws://...`) and `scratch/capture_net.tscn` (a screenshot of the town
-online; `--world`, `--host`, `--party` for an invite, the party list and a card), and
+`--bot=counter` with a server's `--town-cap=2` checks town copies, `--say=` / `--party-say=` with
+`--expect-chat=` / `--no-chat=` check chat, `--bot=inspector` checks inspecting, `--accept` / `--invite`, `--addr=ws://...`) and `scratch/capture_net.tscn` (a screenshot of the town
+online; `--world`, `--host`, `--party` for an invite, the party list and a card, `--chat`, `--inspect`), and
 `scratch/account_bot.tscn` checks online characters against a server with `--data`
 (`--phase=create`, restart it, `--phase=check`; `--addr=ws://...`), and `scratch/coop_bot.tscn` plays a whole party rift with two bots (`--role=leader|follower`; `--zone`
 for the Dune Wastes instead; `--shot`

@@ -29,7 +29,8 @@ func _input(event: InputEvent) -> void:
 	if event is InputEventScreenTouch:
 		var vp := get_viewport_rect().size
 		# A touch on an item's name plate is for the plate (picking it up), not the stick
-		if event.pressed and _touch_index == -1 and event.position.x < vp.x * 0.45 				and not LootPickup.plate_at(get_viewport(), event.position):
+		if event.pressed and _touch_index == -1 and event.position.x < vp.x * 0.45 \
+				and not LootPickup.plate_at(get_viewport(), event.position) and not _exempt(event.position):
 			_touch_index = event.index
 			_center = event.position
 			_knob = event.position
@@ -46,6 +47,14 @@ func _input(event: InputEvent) -> void:
 		output = d / radius
 		queue_redraw()
 		get_viewport().set_input_as_handled()
+
+
+## A touch on a control in the "touch_exempt" group (the chat button, say) is for it, not the stick.
+func _exempt(pos: Vector2) -> bool:
+	for c in get_tree().get_nodes_in_group("touch_exempt"):
+		if c is Control and c.is_visible_in_tree() and c.get_global_rect().has_point(pos):
+			return true
+	return false
 
 
 func _draw() -> void:
