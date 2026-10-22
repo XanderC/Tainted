@@ -199,6 +199,9 @@ var _rejoin := ""  # the instance to go back into once reconnected
 var _rejoin_coop := {}
 var _store: AccountStore  # server only, with --data: the players' characters
 var _auth_check := ""  # server only, with --auth: Autharr's URL, to check sign-ins
+var _bot_key := ""  # server only, with --bot-key: a hello carrying it is a test bot's (no sign-in)
+## A test bot's game (TestBot, --bot-key): the server's bot key instead of a sign-in.
+var bot_key := ""
 var _store_t := 0.0
 var _pending_saves := {}  # files to send once reconnected: vpath -> data (null: delete)
 var _chat_at := {}  # server only: id -> msec of its last chat line
@@ -241,6 +244,8 @@ func _ready() -> void:
 				moderation = Moderation.new(a.get_slice("=", 1))
 			elif a.begins_with("--auth="):
 				_auth_check = a.get_slice("=", 1).trim_suffix("/")
+			elif a.begins_with("--bot-key="):
+				_bot_key = a.trim_prefix("--bot-key=")
 			elif a.begins_with("--admin="):
 				admin_dir = a.trim_prefix("--admin=")
 			elif a.begins_with("--update="):
@@ -608,6 +613,8 @@ func my_info() -> Dictionary:
 		if off != null:
 			gear["offhand"] = [off.base.id, off.base.weapon_type == "shield"]
 	var account := {"kind": "autharr", "token": _access_token} if _access_token != "" else {"kind": "device", "key": device_key()}
+	if bot_key != "":
+		account = {"kind": "bot", "key": bot_key}
 	return {"name": GameState.char_name, "class": GameState.char_class, "level": GameState.level,
 		"look": GameState.appearance, "gear": gear, "token": _token, "account": account, "hl": _hireling_info(),
 		"rift": GameState.rift_unlocked}
@@ -890,10 +897,11 @@ func enter(inst: String) -> void:
 	for id in others.keys():
 		peer_left.emit(id)
 	others.clear()
+	var old := instance
 	instance = inst
 	instance_host = 0
-	if coop.get("inst", "") != inst:
-		coop = {}  # left the party instance
+	if old != "" and old == String(coop.get("inst", "")):
+		coop = {}  # left the party's instance (not the town on the way to it: join_portal set it for there)
 	var s: Dictionary = state_source.call() if state_source.is_valid() else {}
 	_rpc_enter.rpc_id(1, inst, s)
 
@@ -1032,7 +1040,9 @@ func _on_hello(id: int, protocol: int, info: Dictionary) -> void:
 	var account := ""
 	if _store != null:
 		var a = info.get("account", {})
-		if _auth_check != "":
+		if _bot_key != "" and a is Dictionary and String(a.get("kind", "")) == "bot" and String(a.get("key", "")) == _bot_key:
+			account = "b" + hello_name.to_lower().sha256_text().left(40)  # a test bot (TestBot): its own account per name
+		elif _auth_check != "":
 			# Signing in is required: Autharr says who the token belongs to
 			if not a is Dictionary or String(a.get("kind", "")) != "autharr" or String(a.get("token", "")) == "":
 				_send(id, "_rpc_refused", ["Sign in to play on this server."])

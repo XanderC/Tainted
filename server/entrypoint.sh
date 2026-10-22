@@ -5,7 +5,7 @@
 mkdir -p /tmp/tainted-admin
 godot --headless --main-pack /game/tainted.pck -- --server --name="$TAINTED_NAME" --max="$TAINTED_MAX" \
   --data=/data --admin=/tmp/tainted-admin ${TAINTED_AUTH:+--auth=$TAINTED_AUTH} \
-  ${TAINTED_UPDATE:+"--update=$TAINTED_UPDATE"} &
+  ${TAINTED_UPDATE:+"--update=$TAINTED_UPDATE"} ${TAINTED_BOT_KEY:+"--bot-key=$TAINTED_BOT_KEY"} &
 pid=$!
 trap 'echo "Asked to stop: shutting down in ${TAINTED_STOP_WARNING:-10}s"; tainted-admin shutdown "${TAINTED_STOP_WARNING:-10}" >/dev/null 2>&1' TERM INT
 wait "$pid"   # returns early when the signal comes...

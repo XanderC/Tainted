@@ -72,6 +72,9 @@ Write-Host "Building and starting the container..." -ForegroundColor Cyan
 set -e
 mkdir -p /appdata/estate/tainted && chown 1000:1000 /appdata/estate/tainted  # the characters (uid of the container's user)
 cd $remote
+# TestBot's key (TAINTED_BOT_KEY): made once, kept in .env here (not in git, readable by root only)
+touch .env && chmod 600 .env
+grep -q '^TAINTED_BOT_KEY=.' .env || echo "TAINTED_BOT_KEY=`$(head -c 24 /dev/urandom | od -An -tx1 | tr -d ' \n')" >> .env
 docker compose up -d --build 2>&1 | tail -3
 for i in `$(seq 1 30); do
   s=`$(docker inspect -f '{{.State.Health.Status}}' tainted 2>/dev/null || echo missing)

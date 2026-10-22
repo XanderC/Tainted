@@ -24,6 +24,8 @@ services:
       - "TAINTED_UPDATE=${TAINTED_UPDATE-Get the new version from the NAS: Tainted > builds (Tainted.apk on a phone, Tainted.exe on a PC).}"
       # Seconds' warning players get when the container stops (a redeploy, docker stop)
       - TAINTED_STOP_WARNING=${TAINTED_STOP_WARNING:-10}
+      # TestBot's way in (see tainted-bot below; empty: no bots)
+      - TAINTED_BOT_KEY=${TAINTED_BOT_KEY:-}
     # Time for that warning and the saving after it before Docker kills it
     stop_grace_period: 30s
     ports:
@@ -42,6 +44,31 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
+
+  # TestBot: a player to try multiplayer with on your own (scripts/bots/test_bot.gd: whisper it "help").
+  # It comes in with the bot key instead of a sign-in: TAINTED_BOT_KEY, in .env beside this file
+  # (deploy_server.ps1 makes it once; it's not in git). The server lets that key in, and only that.
+  tainted-bot:
+    image: tainted-server
+    pull_policy: never
+    container_name: tainted-bot
+    restart: unless-stopped
+    depends_on:
+      - tainted
+    environment:
+      - TAINTED_BOT_KEY=${TAINTED_BOT_KEY:-}
+    command: ["sh", "-c", "exec godot --headless --main-pack /game/tainted.pck res://scenes/test_bot.tscn -- --addr=ws://tainted:24601 --bot-key=\"$$TAINTED_BOT_KEY\" --name=TestBot"]
+    healthcheck:
+      disable: true
+    networks:
+      - arr
+    mem_limit: 384m
+    cpus: 0.5
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "2"
 
 networks:
   arr:
