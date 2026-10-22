@@ -32,6 +32,13 @@ if (-not $Device) {
     $pattern = "_adb-tls-connect\._tcp\s+($([regex]::Escape($PhoneIp)):\d+)"
     for ($try = 0; $try -lt 8 -and -not $Device; $try++) {
         if ($try -gt 0) { Start-Sleep -Seconds 2 }
+        if ($try -eq 3) {
+            # adb can hold on to stale ports and miss the new one: restart it and look again
+            Write-Host "Restarting adb to look for the phone again..." -ForegroundColor Cyan
+            & $adb kill-server | Out-Null
+            & $adb start-server | Out-Null
+            Start-Sleep -Seconds 4
+        }
         $candidates = & $adb mdns services | Select-String $pattern | ForEach-Object { $_.Matches[0].Groups[1].Value }
         foreach ($c in $candidates) {
             Write-Host "Trying $c..." -ForegroundColor Cyan
