@@ -8,7 +8,10 @@ var _text: RichTextLabel
 
 
 func _ready() -> void:
-	add_theme_stylebox_override("panel", UIKit.inset_box(10, Color(1, 1, 1, 0.92)))
+	var sb := UIKit.tooltip_box()  # dark, so it reads over the ground
+	sb.set_content_margin_all(10.0)
+	sb.modulate_color = Color(1, 1, 1, 0.92)
+	add_theme_stylebox_override("panel", sb)
 	custom_minimum_size = Vector2(330, 0)
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	_text = UIKit.rich("", 14)

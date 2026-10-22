@@ -90,6 +90,21 @@ Flask icons are the CraftPix potion icons (`tools/import_potions.py`, pack folde
 red bottles for life, orange for power, small to large as they get grander, and a grey, blue,
 icy and yellow one for the Granite, Quicksilver, Silver and Sulphur flasks.
 
+### UI art
+Windows, panels, buttons, tabs, tooltips, slots and the HUD are the CraftPix RPG & MMO user interface
+pack (`craftpix-net-745192`, on the NAS under `/Tainted/assets/guis`). `tools/import_mmo_ui.py <zip>`
+builds them:
+- `assets/ui/mmo`: dark charcoal windows with a thin gold edge, the title band (blue scrollwork in its
+  corners, a gold rule beneath), the bevel button plate (greyscale, tinted per button), the open-tab glow,
+  the tooltip frame, slots, the square close button and the equipment slot silhouettes. `UIKit`
+  (`mmo()`, `window_box`, `stone_box`, `tab_box`, `tooltip_box`, `inset_box`) is the one place they are used.
+- `assets/ui/hud`: the life and power globes (red, and grey tinted by the class's power colour), the round
+  skill and flask buttons, the joystick and the experience bar. `HudArt.HOLES` records where each round
+  frame's opening is, since the HUD places frames by their opening.
+
+The scrollbars are still the old stone art: the pack has none. Its fonts (Constantia, Cambria, Palatino)
+are not used, because they are Microsoft's and can't be shipped in the game.
+
 ### Dyes
 **Dyer Calla** in Ashfall (west of the plaza, between the Blacksmith and the Sage) dyes helmets, body
 armour, gloves and boots: 30 dyes (`scripts/dye_db.gd`; the CraftPix paint icons, `tools/import_paints.py`), ten

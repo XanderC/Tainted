@@ -28,7 +28,7 @@ func _input(event: InputEvent) -> void:
 func _draw() -> void:
 	if player == null:
 		return
-	HudArt.bar(self, "menu_btn", Rect2(Vector2.ZERO, size), 16.0)
+	draw_style_box(UIKit.stone_box("menu_btn"), Rect2(Vector2.ZERO, size))
 	var font := ThemeDB.fallback_font
 	var y := size.y * 0.5 + 6.0
 	for i in 2:

@@ -1,18 +1,18 @@
 class_name HudArt
 extends RefCounted
-## The HUD's art (the CraftPix RPG UI pack, in assets/ui/hud) and where each frame's round opening
-## is, so fills, icons and cooldowns can be drawn inside it. Frames are placed by their opening,
+## The HUD's art (the CraftPix RPG & MMO UI pack, in assets/ui/hud, from tools/import_mmo_ui.py)
+## and where each frame's round opening is, so fills, icons and cooldowns can be drawn inside it. Frames are placed by their opening,
 ## not their corner, so a button's position is where its icon goes.
 
 const DIR := "res://assets/ui/hud/"
 
 ## Each frame's opening: centre (in the texture's own pixels) and radius.
 const HOLES := {
-	"orb_frame_left": [Vector2(74, 73.5), 69.0],
-	"orb_frame_right": [Vector2(106, 73.5), 69.0],
-	"frame_main": [Vector2(100.5, 104.5), 59.5],
-	"frame_flask": [Vector2(60, 69), 27.0],
-	"joy_frame": [Vector2(118, 116), 59.6],
+	"globe_bg": [Vector2(128, 125), 119.0],  # the life / resource orb
+	"abl_bg": [Vector2(138, 138), 120.0],  # the main attack's button
+	"abm_bg": [Vector2(113, 113), 100.0],  # the other skills' buttons
+	"consumable_bg": [Vector2(89, 89), 76.0],  # a flask's button
+	"joy_bg": [Vector2(188, 188), 170.0],
 }
 
 static var _cache := {}

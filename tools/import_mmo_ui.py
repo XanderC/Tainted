@@ -37,6 +37,23 @@ SWIRL_W = 170
 SWIRL_ALPHA = 0.55  # quiet enough for a row of tabs on the band to read over it
 SWIRL_TINT = (70, 170, 215)
 
+HUD_OUT = os.path.join(HERE, "..", "assets", "ui", "hud")
+HUD = {
+    "HUD/Action Bar/Globes/ActionBar_Globe_Background.png": "globe_bg",
+    "HUD/Action Bar/Globes/ActionBar_Globe_Fill_Red.png": "globe_fill_red",
+    "HUD/Action Bar/Globes/ActionBar_Globe_Fill_Grayscale.png": "globe_fill_grey",
+    "HUD/Action Bar/Globes/ActionBar_Globe_Fill_Empty.png": "globe_fill_empty",
+    "Mobile/Action Buttons/ABL_Background.png": "abl_bg",
+    "Mobile/Action Buttons/ABM_Background.png": "abm_bg",
+    "Mobile/Action Buttons/ABM_CooldownGlow.png": "abm_glow",
+    "Mobile/Consumable Buttons/Consumable_Background.png": "consumable_bg",
+    "Mobile/Consumable Buttons/Consumable_InnerGlow.png": "consumable_glow",
+    "Mobile/Joystick/Joystick_Background.png": "joy_bg",
+    "Mobile/Joystick/Joystick_Handle.png": "joy_handle",
+    "HUD/Action Bar/Experience Bar/XPBar_Background.png": "xp_bg",
+    "HUD/Action Bar/Experience Bar/XPBar_Fill.png": "xp_bar_fill",
+}
+
 # Equipment slot silhouettes: Tainted slot -> the pack's icon
 SLOT_ICONS = {
     "weapon": "MainWeapon", "offhand": "OffWeapon", "helmet": "Helmet", "chest": "Chest",
@@ -133,6 +150,12 @@ def main():
 
     for slot, name in SLOT_ICONS.items():
         save(img("Windows/Character/Equip Slot/Icons/%s.png" % name), "slot_icons/" + slot)
+
+    # The HUD: orbs, skill and flask buttons, joystick, experience bar (HudArt draws them, placed by
+    # the round opening inside each frame, measured in HudArt.HOLES)
+    for src, name in HUD.items():
+        im = img(src)
+        im.save(os.path.join(HUD_OUT, name + ".png"))
     print("wrote the MMO UI art to", os.path.abspath(OUT))
 
 

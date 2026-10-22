@@ -52,7 +52,7 @@ func _draw() -> void:
 	if _touch_index == -1:
 		return
 	# The base is centred on the touch, and the knob moves inside its opening
-	var s := radius * 0.42 / float(HudArt.HOLES["joy_frame"][1])
-	HudArt.frame(self, "joy_frame", _center, s, Color(1, 1, 1, 0.9))
-	var knob := _center + (_knob - _center) * 0.2
-	HudArt.disc(self, "joy_knob", knob, radius * 0.4)
+	var s := radius * 0.55 / float(HudArt.HOLES["joy_bg"][1])
+	HudArt.frame(self, "joy_bg", _center, s, Color(1, 1, 1, 0.9))
+	var knob := _center + (_knob - _center) * 0.3
+	HudArt.disc(self, "joy_handle", knob, radius * 0.38)

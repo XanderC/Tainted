@@ -1,11 +1,12 @@
 class_name SkillButton
 extends Control
 ## Round on-screen action button with cooldown sweep and hold-to-repeat attack.
-## Index 0 is the primary Main Attack (the large ornate frame); 1-5 are rings round it.
+## Index 0 is the primary Main Attack (the large round button); 1-5 are smaller ones round it.
 ## Each is placed by the centre of its opening (CENTRES, from the screen's bottom-right corner).
 
-const MAIN_S := 0.9  # scale of the main attack's frame
+const MAIN_S := 0.45  # scale of the main attack's frame
 const SMALL_R := 42.0  # radius of the other buttons' openings
+const SMALL_S := SMALL_R / 100.0  # their frame's scale (its opening is 100 px)
 const CENTRES := {
 	0: Vector2(-98, -150),
 	1: Vector2(-226, -72),
@@ -26,7 +27,7 @@ var _touch_id := -1
 
 ## Radius of button i's opening, the part that is its icon and its tap area.
 static func hole_radius(i: int) -> float:
-	return float(HudArt.HOLES["frame_main"][1]) * MAIN_S if i == 0 else SMALL_R
+	return float(HudArt.HOLES["abl_bg"][1]) * MAIN_S if i == 0 else SMALL_R
 
 
 ## Where button i's control goes, relative to the bottom-right corner.
@@ -74,16 +75,9 @@ func _draw() -> void:
 	var s := player.skills[index]
 	var c := Vector2(button_size, button_size) * 0.5
 	var r := button_size * 0.5
-	if index == 0:
-		HudArt.frame(self, "frame_main", c, MAIN_S)
-	else:
-		draw_circle(c, r, Color(0.03, 0.025, 0.03, 0.9))
+	HudArt.frame(self, "abl_bg" if index == 0 else "abm_bg", c, MAIN_S if index == 0 else SMALL_S)
 	if s == null:
-		# Empty action-bar slot: just the frame, so the layout stays readable
-		if index != 0:
-			HudArt.disc(self, "icon_ring", c, r * 2.0 + 8.0, Color(1, 1, 1, 0.85))
-			draw_arc(c, r - 1.0, 0.0, TAU, 40, Color(0.62, 0.50, 0.32, 0.6), 2.0)
-		return
+		return  # an empty slot: just its frame, so the layout stays readable
 	var frac := player.cooldown_fraction(index)
 	var col := s.get_effective_color()
 	if not player.can_afford(index):
@@ -106,13 +100,9 @@ func _draw() -> void:
 		draw_circle(c, inner_r, inner_col)
 	HudArt.sweep(self, c, inner_r, frac, Color(0, 0, 0, 0.70))
 
-	# Rim
-	var rim := Color(col.r, col.g, col.b, 1.0 if frac <= 0.0 else 0.4)
-	if index == 0:
-		draw_arc(c, r - 1.5, 0.0, TAU, 48, Color(1.0, 0.85, 0.4, 0.9 if frac <= 0.0 else 0.4), 3.0)
-	else:
-		HudArt.disc(self, "icon_ring", c, r * 2.0 + 8.0)
-		HudArt.disc(self, "ring_gray", c, r * 2.0 - 2.0, rim.lightened(0.15))
+	# A glow round it in the skill's colour while it is ready
+	if frac <= 0.0:
+		HudArt.disc(self, "abm_glow", c, r * 2.0 * 0.98, Color(col.r, col.g, col.b, 0.9).lightened(0.2))
 
 	# An elemental support linked to it: its icon as a small badge at the top right
 	for rn in s.get_runes():
