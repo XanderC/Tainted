@@ -125,6 +125,9 @@ const MAX_MSGS_PER_SEC := 40  ## per client; more are dropped
 const WORLD_NAME_DEFAULT := "Tainted World"
 const WORLD_ADDRESSES_DEFAULT := ["ws://192.168.86.18:24601"]
 const AUTH_URL_DEFAULT := "http://192.168.86.18:5180"  ## Autharr, for the sign-in (project setting tainted/net/auth_url)
+## Autharr's own pages, in the browser (creating an account, a forgotten password): public, unlike the
+## sign-in address above while the game is on the home network (project setting tainted/net/account_url)
+const ACCOUNT_URL_DEFAULT := "https://auth.xandflix.uk"
 const AUTH_CLIENT := "tainted-game"
 const AUTH_FILE := "user://autharr.dat"
 
@@ -365,6 +368,11 @@ static func world_name() -> String:
 
 static func world_addresses() -> Array:
 	return Array(ProjectSettings.get_setting("tainted/net/world_addresses", WORLD_ADDRESSES_DEFAULT))
+
+
+## Autharr's page `path` ("/register", "/forgot-password") for the browser.
+static func account_page(path: String) -> String:
+	return String(ProjectSettings.get_setting("tainted/net/account_url", ACCOUNT_URL_DEFAULT)).trim_suffix("/") + path
 
 
 ## A WebSocket URL for `address`: used as it is if it has a scheme, else ws://address:PORT.

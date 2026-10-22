@@ -341,6 +341,18 @@ func _build_sign_in(parent: Control) -> void:
 	parent.add_child(go)
 	parent.add_child(err)
 	parent.add_child(UIKit.label("Your Xandflix account (Autharr).", 13, UIKit.TEXT_DIM, true))
+	var links := HBoxContainer.new()  # Autharr's own pages, in the browser
+	links.alignment = BoxContainer.ALIGNMENT_CENTER
+	links.add_theme_constant_override("separation", 28)
+	parent.add_child(links)
+	for l in [["Create an account", "/register"], ["Forgot your password?", "/forgot-password"]]:
+		var b := LinkButton.new()
+		b.text = l[0]
+		b.add_theme_font_size_override("font_size", 16)
+		b.add_theme_color_override("font_color", Color(0.60, 0.80, 1.0))
+		var url := Net.account_page(l[1])
+		b.pressed.connect(func(): OS.shell_open(url))
+		links.add_child(b)
 
 
 func _on_net_status() -> void:

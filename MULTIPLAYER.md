@@ -58,7 +58,8 @@ commit). The README's Multiplayer section describes how what's done works.
 
 - [ ] Traefik route tainted.xandflix.uk and the Cloudflare hostname and allowlist rule
 - [ ] Game build with wss://tainted.xandflix.uk and https://auth.xandflix.uk for sign-in
-- [ ] Sign-in screen links: create an account, forgot password (Autharr's pages)
+- [x] Sign-in screen links: create an account, forgot password (Autharr's pages at auth.xandflix.uk,
+      already public; project setting tainted/net/account_url)
 - [ ] Per-address connection limits at Traefik / Cloudflare
 - [x] Town traffic grew with the square of a copy's players (each one's moves to all the others, 15
       times a second; ~10 Mbit/s up at 35 players). Now a player standing still sends nothing, and
