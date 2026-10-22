@@ -42,11 +42,15 @@ commit). The README's Multiplayer section describes how what's done works.
 
 ## 3. Running the server
 
-- [ ] Moderation: kick and ban an account (a file on the server, or Autharr's disable), mute in chat
-- [ ] "Update the game" when the versions differ, with where to get the new build
-- [ ] Save everything on shutdown (docker stop), checked
-- [ ] Off-site backups of /appdata/estate/tainted (now 7 days on the host itself)
-- [ ] Logs worth reading: joins, parties, trades, refused saves; a simple status (players online)
+- [x] Moderation: kick, ban (by account, kept in moderation.json) and mute, with `docker exec tainted
+      tainted-admin <command>`; also say, save, shutdown (scratch/admin_bot: 21 checks)
+- [x] "Update the game" when the versions differ, with where to get the new build (the NAS's
+      Tainted > builds, filled by publish_builds.ps1)
+- [x] Save everything on shutdown (docker stop): players warned, every account written (checked on
+      the host: stopped cleanly in 3 s)
+- [x] Off-host backups: every night to the NAS (/storage/Tainted/server-backups, 30 days; checked)
+- [x] Logs worth reading: dated lines for joins, leaves, refusals, parties, trades, refused saves and
+      admin commands; `tainted-admin status` for who is online
 
 ## 4. Going public (needs your go-ahead when ready)
 

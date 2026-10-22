@@ -25,14 +25,22 @@ RUN apt-get update \
  && useradd --create-home --uid 1000 tainted
 COPY --from=godot /usr/local/bin/godot /usr/local/bin/godot
 COPY tainted.pck /game/tainted.pck
+# The start script (a docker stop becomes a proper shutdown: everyone told, every account written)
+# and the admin command (docker exec tainted tainted-admin status / kick / ban / ...)
+COPY entrypoint.sh /usr/local/bin/tainted-server
+COPY tainted-admin /usr/local/bin/tainted-admin
+RUN sed -i 's/\r$//' /usr/local/bin/tainted-server /usr/local/bin/tainted-admin \
+ && chmod 755 /usr/local/bin/tainted-server /usr/local/bin/tainted-admin
 USER tainted
 WORKDIR /home/tainted
 # TAINTED_AUTH: Autharr's URL to require signing in (empty: a device key is an account, for the LAN)
-ENV TAINTED_NAME="Tainted World" TAINTED_MAX=32 TAINTED_AUTH=""
+# TAINTED_UPDATE: where to get the new build, told to a game too old to join
+# TAINTED_STOP_WARNING: seconds' warning players get when the container is stopped
+ENV TAINTED_NAME="Tainted World" TAINTED_MAX=32 TAINTED_AUTH="" TAINTED_UPDATE="" TAINTED_STOP_WARNING=10
 # The players' characters (AccountStore), with its daily backups: a volume (docker-compose.yml)
 VOLUME /data
 EXPOSE 24601
 # Healthy while the server's WebSocket port takes connections.
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
   CMD bash -c '</dev/tcp/127.0.0.1/24601' || exit 1
-CMD ["sh", "-c", "exec godot --headless --main-pack /game/tainted.pck -- --server --name=\"$TAINTED_NAME\" --max=\"$TAINTED_MAX\" --data=/data ${TAINTED_AUTH:+--auth=$TAINTED_AUTH}"]
+CMD ["/usr/local/bin/tainted-server"]

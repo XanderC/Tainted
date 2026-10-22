@@ -1,8 +1,10 @@
 # Deploys the Tainted World server to the main host (192.168.86.18), in Docker beside the estate:
 #   1. exports the game as a pack (builds\server\tainted.pck) with the "Linux Server" export preset
 #      (added to export_presets.cfg the first time; that file is not in git)
-#   2. copies it with server\Dockerfile and server\docker-compose.yml to /opt/projects/Tainted/server
-#   3. rebuilds and restarts the container there, and waits until it is healthy
+#   2. copies it with the server\ files (Dockerfile, compose file, start and admin scripts, the NAS
+#      backup and its timer) to /opt/projects/Tainted/server
+#   3. rebuilds and restarts the container there (the old one warns its players and saves first),
+#      waits until it is healthy, and installs the daily backup timer
 # Clients and server must be the same build: redeploy whenever the game changes.
 # Usage:  .\deploy_server.ps1 [-HostName root@192.168.86.18]
 param([string]$HostName = "root@192.168.86.18")
@@ -59,7 +61,9 @@ Write-Host ("Pack: {0:N0} MB" -f ((Get-Item $pck).Length / 1MB))
 # 2. Copy it over
 Write-Host "Copying to $HostName`:$remote..." -ForegroundColor Cyan
 & ssh @ssh $HostName "mkdir -p $remote"
-& scp @ssh -q (Join-Path $PSScriptRoot "server\Dockerfile") (Join-Path $PSScriptRoot "server\docker-compose.yml") $pck "$HostName`:$remote/"
+$files = "Dockerfile", "docker-compose.yml", "entrypoint.sh", "tainted-admin", "backup.sh", "tainted-backup.service", "tainted-backup.timer" |
+    ForEach-Object { Join-Path $PSScriptRoot "server\$_" }
+& scp @ssh -q @files $pck "$HostName`:$remote/"
 if ($LASTEXITCODE -ne 0) { Write-Error "Copy failed" }
 
 # 3. Rebuild, restart, wait for healthy
@@ -76,6 +80,12 @@ for i in `$(seq 1 30); do
 done
 echo "health: `$s"
 docker logs --tail 5 tainted 2>&1
+# The daily backup to the NAS (backup.sh), as a systemd timer on the host
+sed -i 's/\r`$//' backup.sh tainted-backup.service tainted-backup.timer
+cp tainted-backup.service tainted-backup.timer /etc/systemd/system/
+systemctl daemon-reload
+systemctl enable --now tainted-backup.timer >/dev/null 2>&1
+echo "backup timer: `$(systemctl is-active tainted-backup.timer), next `$(systemctl show tainted-backup.timer -p NextElapseUSecRealtime --value)"
 "@
 if ($LASTEXITCODE -ne 0) { Write-Error "Deploy failed" }
 Write-Host "Done: games on the home network join ws://192.168.86.18:24601" -ForegroundColor Green

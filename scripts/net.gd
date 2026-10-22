@@ -207,6 +207,12 @@ var _trades := {}  # server only: trade id -> {"p": [a, b], "offer": {id: [item 
 var _trade_of := {}  # server only: peer id -> trade id
 var _next_trade := 1
 var _filter: RegEx
+## Server only: bans and mutes (Moderation; kept in the --data dir). The admin commands (ServerAdmin,
+## reading --admin=<dir>) change them, and kick, announce and shut down through Net.
+var moderation := Moderation.new()
+var admin_dir := ""
+## Server only (--update=<text>): where to get the new build, told to a game too old to join.
+var update_where := ""
 
 
 func _ready() -> void:
@@ -228,8 +234,13 @@ func _ready() -> void:
 				town_cap = clampi(int(a.get_slice("=", 1)), 1, 1000)
 			elif a.begins_with("--data="):
 				_store = AccountStore.new(a.get_slice("=", 1))
+				moderation = Moderation.new(a.get_slice("=", 1))
 			elif a.begins_with("--auth="):
 				_auth_check = a.get_slice("=", 1).trim_suffix("/")
+			elif a.begins_with("--admin="):
+				admin_dir = a.trim_prefix("--admin=")
+			elif a.begins_with("--update="):
+				update_where = a.trim_prefix("--update=")
 		start_server(name_arg, true)
 		get_tree().change_scene_to_file.call_deferred("res://scenes/server.tscn")
 	else:
@@ -913,7 +924,7 @@ func _drop_silent() -> void:
 
 
 func _kick(id: int) -> void:
-	if multiplayer.multiplayer_peer is WebSocketMultiplayerPeer and id != 1:
+	if multiplayer.multiplayer_peer is WebSocketMultiplayerPeer and id != 1 and multiplayer.get_peers().has(id):
 		multiplayer.multiplayer_peer.disconnect_peer(id)
 
 
@@ -932,6 +943,7 @@ func _on_peer_disconnected(id: int) -> void:
 	_pending.erase(id)
 	if not is_server() or not _peers.has(id):
 		return
+	var who: String = _peers[id].info.name
 	if _store != null and String(_peers[id].get("account", "")) != "":
 		_store.flush_account(String(_peers[id].account))
 		if _online_accounts.get(_peers[id].account, 0) == id:
@@ -953,19 +965,24 @@ func _on_peer_disconnected(id: int) -> void:
 	_event_rate.erase(id)
 	_chat_at.erase(id)
 	_tell_instance(inst, id, "_rpc_gone", [id])
-	if mode == Mode.SERVER:
-		print("Net: %d left (%d online)" % [id, _peers.size()])
+	log_line("%s left (%d online)" % [who, _peers.size()])
 
 
 func _on_hello(id: int, protocol: int, info: Dictionary) -> void:
 	_pending.erase(id)
 	if _peers.has(id):
 		return
+	var hello_name := _clean_name(info.get("name", "?"))
 	if protocol != PROTOCOL:
-		_send(id, "_rpc_refused", ["That server runs a different version of Tainted: update the game."])
+		var msg := "This server runs an older version of Tainted than your game: it will be updated soon."
+		if protocol < PROTOCOL:
+			msg = "Your game is older than this server's: update it." + (" " + update_where if update_where != "" else "")
+		_send(id, "_rpc_refused", [msg])
+		log_line("Refused %s: their game's version is %d, the server's %d" % [hello_name, protocol, PROTOCOL])
 		return
 	if _peers.size() >= _max_online:
 		_send(id, "_rpc_refused", ["That server is full (%d players)." % _max_online])
+		log_line("Refused %s: full (%d)" % [hello_name, _max_online])
 		return
 	var token := String(info.get("token", "")).left(64) if info.get("token") is String else ""
 	var account := ""
@@ -983,11 +1000,17 @@ func _on_hello(id: int, protocol: int, info: Dictionary) -> void:
 				return  # gone while waiting
 			if account == "":
 				_send(id, "_rpc_refused", ["Your sign-in didn't work: sign in again."])
+				log_line("Refused %s: Autharr didn't accept the sign-in" % hello_name)
 				return
 		else:
 			account = _account_of(a)
 		if account == "":
 			_send(id, "_rpc_refused", ["That server needs you to sign in."])
+			return
+		if moderation.is_banned(account):
+			var r := moderation.ban_reason(account)
+			_send(id, "_rpc_refused", ["You are banned from this server." + (" Reason: " + r if r != "" else "")])
+			log_line("Refused %s (%s): banned" % [hello_name, account])
 			return
 		for other in _peers.keys():  # one game per account: the newer one replaces the older
 			if _peers[other].get("account", "") == account:
@@ -998,8 +1021,7 @@ func _on_hello(id: int, protocol: int, info: Dictionary) -> void:
 		_online_accounts[account] = id
 	_send(id, "_rpc_welcome", [server_name, _peers.size(), _store != null])
 	_restore_away(id, token)
-	if mode == Mode.SERVER:
-		print("Net: %s joined (%d online)" % [_peers[id].info.name, _peers.size()])
+	log_line("%s joined (%s, %d online)" % [_peers[id].info.name, account if account != "" else "no account", _peers.size()])
 
 
 func _on_enter(id: int, inst: String, state: Dictionary) -> void:
@@ -1066,6 +1088,10 @@ static func _account_of(a) -> String:
 
 func _on_chat(id: int, channel: String, text: String) -> void:
 	if not _peers.has(id):
+		return
+	var left := moderation.mute_left(String(_peers[id].get("account", "")))
+	if left != 0:
+		_send(id, "_rpc_notice", ["You are muted." if left < 0 else "You are muted for %d more minute%s." % [ceili(left / 60.0), "" if left <= 60 else "s"]])
 		return
 	var now := Time.get_ticks_msec()
 	if now - int(_chat_at.get(id, -100000)) < CHAT_EVERY * 1000.0:
@@ -1348,8 +1374,7 @@ func _complete_trade(tid: int) -> void:
 		_send(p, "_rpc_trade_done", [t.offer[p].map(func(d): return String(d.uid)), t.offer[o]])
 		_send(p, "_rpc_trade_state", [{}])
 	_trades.erase(tid)
-	if mode == Mode.SERVER:
-		print("Net: trade between %s and %s" % [_peers[a].info.name, _peers[b].info.name])
+	log_line("Trade: %s gave %d item(s) to %s and got %d" % [_peers[a].info.name, t.offer[a].size(), _peers[b].info.name, t.offer[b].size()])
 
 
 ## Whether `who` may see `id` (to inspect them): in the same instance, or in the same party.
@@ -1390,7 +1415,7 @@ func _on_save_file(id: int, vpath: String, data: Variant) -> void:
 		data = _strip_gone(String(_peers[id].account), data)
 	var why := _store.put(String(_peers[id].account), vpath, data)
 	if why != "":
-		push_warning("Net: refused %s's %s: %s" % [_peers[id].info.name, vpath, why])
+		log_line("Save refused: %s's %s: %s" % [_peers[id].info.name, vpath, why])
 
 
 func _on_delete_file(id: int, vpath: String) -> void:
@@ -1463,6 +1488,68 @@ func _relay_states() -> void:
 			_rpc_states(mine)
 		else:
 			_rpc_states.rpc_id(id, mine)
+
+
+# ---------- server: running it (ServerAdmin) ----------
+
+## A line in a dedicated server's log, with the date and time (UTC).
+func log_line(text: String) -> void:
+	if mode == Mode.SERVER:
+		print("[%s] %s" % [Time.get_datetime_string_from_system(true, true), text])
+
+
+## The online player `who` names: their name (any case) or their account. 0 if none.
+func find_player(who: String) -> int:
+	for id in _peers:
+		if String(_peers[id].get("account", "")) == who or String(_peers[id].info.name).to_lower() == who.to_lower():
+			return id
+	return 0
+
+
+## Who is online: [{"id", "name", "account", "level", "where", "party"}].
+func players_online() -> Array:
+	var out: Array = []
+	for id in _peers:
+		var p: Dictionary = _peers[id]
+		out.append({"id": id, "name": String(p.info.name), "account": String(p.get("account", "")), "level": int(p.info.get("level", 1)),
+			"where": String(p.instance), "party": int(p.party)})
+	return out
+
+
+## Sends player `id` away: their game shows `reason` as when a join is refused.
+func kick_player(id: int, reason: String) -> void:
+	_send(id, "_rpc_refused", [reason])
+	get_tree().create_timer(1.0).timeout.connect(_kick.bind(id))  # their game leaves first, having read it
+
+
+## A line from the server to everyone online: in their chat and at the top of their screen.
+func announce(text: String) -> void:
+	log_line("Announced: " + text)
+	for id in _peers:
+		_send(id, "_rpc_chat_of", [0, "Server", "server", text])
+		_send(id, "_rpc_notice", [text])
+
+
+## Writes every account now.
+func save_all() -> void:
+	if _store != null:
+		_store.flush(true)
+
+
+## Stops the server in `secs`, telling everyone first. Everyone's account is written before it
+## goes; their games try to reconnect meanwhile, so they come back once it's up again.
+func shutdown(secs: float) -> void:
+	if secs > 0.0:
+		announce("The server restarts in %d second%s. Your progress is saved." % [int(secs), "" if int(secs) == 1 else "s"])
+		await get_tree().create_timer(secs).timeout
+	log_line("Shutting down: saving every account")
+	for id in _peers.keys():
+		_on_peer_disconnected(id)  # each account written as its player goes
+	if multiplayer.multiplayer_peer is WebSocketMultiplayerPeer:
+		multiplayer.multiplayer_peer.close()
+	save_all()
+	log_line("Stopped")
+	get_tree().quit()
 
 
 ## Sends `method(args)` to every player in `inst` but `except`.
@@ -1671,6 +1758,7 @@ func _on_answer(target: int, from: int, accept: bool) -> void:
 	_peers[target].party = pid
 	_invites.erase(target)  # in a party now: other invites lapse
 	_tell_party(pid, "%s joined the party." % tname)
+	log_line("Party %d: %s joined (%s leads, %d in it)" % [pid, tname, _peers[int(_parties[pid].leader)].info.name, _parties[pid].members.size()])
 
 
 func _on_leave_party(id: int) -> void:
@@ -1707,6 +1795,7 @@ func _on_open_instance(id: int, kind: String, level: int) -> void:
 		"by": id, "by_name": String(_peers[id].info.name)}
 	_next_inst += 1
 	_parties[pid].portal = portal
+	log_line("Party %d: %s opened Rift %d" % [pid, _peers[id].info.name, level])
 	_tell_party(pid)
 	for m in _parties[pid].members:
 		_send(m, "_rpc_portal", [portal])
@@ -1767,6 +1856,7 @@ func _remove_from_party(id: int, why: String, away := false) -> void:
 	var p: Dictionary = _parties[pid]
 	p.members.erase(id)
 	_peers[id].party = 0
+	log_line("Party %d: %s %s" % [pid, _peers[id].info.name, "dropped (their place kept a minute)" if away else "left"])
 	if not p.has("away"):
 		p.away = {}
 	if away and String(_peers[id].get("token", "")) != "":
@@ -1793,6 +1883,7 @@ func _settle_party(pid: int, why: String) -> void:
 		_send(m, "_rpc_party", [{}])
 		_send(m, "_rpc_notice", [why + " The party disbanded."])
 		_parties.erase(pid)
+		log_line("Party %d: disbanded" % pid)
 		return
 	if not p.members.has(p.leader):
 		p.leader = p.members[0]

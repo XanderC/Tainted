@@ -1,0 +1,5 @@
+# The server's scripts run in Linux (the container and the host): Unix line endings, always
+server/*.sh text eol=lf
+server/tainted-admin text eol=lf
+server/*.service text eol=lf
+server/*.timer text eol=lf

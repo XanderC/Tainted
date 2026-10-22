@@ -1,0 +1,22 @@
+#!/bin/sh
+# Tells the running Tainted World server something and prints its answer (ServerAdmin):
+#   docker exec tainted tainted-admin status
+#   docker exec tainted tainted-admin kick Brom spamming
+# `tainted-admin help` lists the commands.
+dir=/tmp/tainted-admin
+mkdir -p "$dir"
+id="$$-$(date +%s%N)"
+printf '%s\n' "${*:-help}" > "$dir/$id.tmp" && mv "$dir/$id.tmp" "$dir/$id.cmd"
+i=0
+while [ ! -f "$dir/$id.out" ] && [ "$i" -lt 100 ]; do
+  sleep 0.1
+  i=$((i + 1))
+done
+if [ -f "$dir/$id.out" ]; then
+  cat "$dir/$id.out"
+  rm -f "$dir/$id.out"
+else
+  rm -f "$dir/$id.cmd"
+  echo "The server didn't answer."
+  exit 1
+fi

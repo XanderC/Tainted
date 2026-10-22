@@ -264,21 +264,36 @@ to party and Remove. Friends can inspect each other from anywhere.
 **The server.** `.\deploy_server.ps1` deploys it:
 1. It exports the game as a pack (`builds\server\tainted.pck`, with a "Linux Server" export preset it
    adds the first time).
-2. It copies the pack with `server\Dockerfile` and `server\docker-compose.yml` to
-   `/opt/projects/Tainted/server` on the host.
-3. It rebuilds the `tainted` container and waits until it's healthy.
+2. It copies the pack and the `server\` files (Dockerfile, compose file, start and admin scripts, the
+   NAS backup and its timer) to `/opt/projects/Tainted/server` on the host.
+3. It rebuilds the `tainted` container (the old one warns its players and saves first), waits until
+   it's healthy, and installs the daily backup timer.
 
 The container is Godot's official Linux build (checksum pinned), headless, as an unprivileged user,
 capped at 512 MB and one CPU. It's on the `arr` network, and port 24601 is published on the host
-(LAN only: the router forwards just 80 and 443).
+(LAN only: the router forwards just 80 and 443). Players sign in with Autharr (`TAINTED_AUTH`).
 
 Clients and the server must be the same build (`Net.PROTOCOL`), so **redeploy the server whenever
-the game changes**, and bump `PROTOCOL` when the messages change. Logs: `docker logs -f tainted`
-on the host. A local server instead: `.
-un_server.ps1` or
+the game changes**, and bump `PROTOCOL` when the messages change. A game too old to join is told to
+update and where (`TAINTED_UPDATE`: the NAS's Tainted > builds, which `.\publish_builds.ps1` fills
+with `Tainted.exe`, `Tainted.apk` and `version.txt`). A local server instead: `.\run_server.ps1` or
 `godot --headless --path . -- --server --name=Home --max=32`.
 
-**Opening it to the world (not done yet):**
+**Running it** (on the host):
+- `docker exec tainted tainted-admin status`: who is online, where, in which party; the server's state.
+- `kick <player> [reason]`, `ban <player> [reason]` / `unban` / `bans`, `mute <player> [minutes]` /
+  `unmute` / `mutes`, `say <text>` (a line to everyone), `save`, `shutdown [seconds]`; `help` lists
+  them. A player is their name while online, or their account (`a...`, as `status` shows). Bans and
+  mutes are by account, kept in `/appdata/estate/tainted/moderation.json` (ServerAdmin, Moderation).
+- `docker stop tainted` (and a redeploy) tells everyone it restarts in `TAINTED_STOP_WARNING` (10)
+  seconds, writes every account and stops; their games reconnect when it's back.
+- Logs: `docker logs -f tainted`, a dated line for each join, leave and refused join (version, full,
+  sign-in, banned), party (joins, leaves, disbands, rifts opened), trade, refused save, admin command.
+- Backups: the server copies every account daily to `/appdata/estate/tainted/backups` (7 days), and
+  `tainted-backup.timer` packs them onto the NAS every night at 04:30
+  (`/storage/Tainted/server-backups/tainted-<date>.tar.gz`, 30 days; `server/backup.sh`).
+
+**Opening it to the world (not done yet):** see MULTIPLAYER.md, section 4.
 1. Traefik, in `estate/traefik/dynamic.yml`: a router `tainted-public` with entry point
    `[websecure]`, rule ``Host(`tainted.xandflix.uk`)``, middlewares
    `[proxied, public-headers, public-ratelimit]` and the `cloudflare` cert resolver, like
@@ -287,13 +302,8 @@ un_server.ps1` or
    hostname allowlist rule (`estate/docs/cloudflare-rules.md`).
 3. The game: `wss://tainted.xandflix.uk` added to `tainted/net/world_addresses` after the LAN
    address (home games still go direct), then a new build for players and a server redeploy.
-4. Before strangers play: sign-in through Autharr, so names are owned and a player can be banned.
-   Today any name is accepted and characters come from the player's own save.
 
-**Stages:** 1. shared town (done, LAN). 2. parties (done). 3. party rifts and zones (done). 4. staying connected (done). 5. online characters, chat, inspect, friends, trading and Autharr sign-in
-(done).
-3. zones and rifts together: the party leader's game runs the monsters and each player's loot is
-their own. 4. open to the world (above).
+What's done and what's left: MULTIPLAYER.md.
 
 Test without a second device: `scratch/net_bot.tscn` (`-- --bot=walker`, `--bot=watcher` checks what
 it sees, `--bot=scan`, `--bot=partier` checks parties, `--drop-at=8` and `--bot=keeper` check reconnecting,
@@ -304,10 +314,12 @@ online; `--world`, `--host`, `--party` for an invite, the party list and a card,
 `scratch/account_bot.tscn` checks online characters against a server with `--data`
 (`--phase=create`, restart it, `--phase=check`; `--addr=ws://...`), `scratch/signin_bot.tscn` checks signing in
 against an Autharr (`--auth= --email= --password=`, `--phase=first` then `--phase=again`), `scratch/trade_bot.tscn`
-checks a trade and the anti-duplication (`--role=a` and `--role=b`, `--shot`), and `scratch/coop_bot.tscn` plays a whole party rift with two bots (`--role=leader|follower`; `--zone`
-for the Dune Wastes instead; `--shot`
-for a screenshot, `--leave-after=12` and `--takeover` to test a handover, `--drop-at=5` a reconnect
-mid-rift).
+checks a trade and the anti-duplication (`--role=a` and `--role=b`, `--shot`), `scratch/admin_bot.tscn` checks the
+admin commands against a server with `--data= --admin=`, and `scratch/coop_bot.tscn` plays a whole party rift with
+two bots (`--role=leader|follower`; `--zone` for the Dune Wastes instead; `--shot` for a screenshot,
+`--leave-after=6 --takeover` a handover, `--drop-at=6` a reconnect mid-rift, `--affixes` elite affixes on the
+guest, `--allies` hirelings and Ancients, `--revive` falling and reviving, `--levels` party rift levels,
+`--goto` arrows and "go to"; `--addr= --key= --partner=` for many pairs on one server, as in the load test).
 
 ### Hirelings
 Diablo II's mercenaries (`scripts/hirelings.gd` the rules, `hireling_db.gd` the types,

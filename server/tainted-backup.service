@@ -1,0 +1,7 @@
+[Unit]
+Description=Tainted World characters: backup to the NAS
+After=network-online.target remote-fs.target
+
+[Service]
+Type=oneshot
+ExecStart=/bin/sh /opt/projects/Tainted/server/backup.sh

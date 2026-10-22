@@ -20,6 +20,12 @@ services:
       # Require an Autharr sign-in, checked over the arr network (Autharr has the tainted-game client).
       # Set TAINTED_AUTH= (empty) to run without it: device keys as accounts.
       - TAINTED_AUTH=${TAINTED_AUTH-http://autharr:5180}
+      # Told to a game too old to join (publish_builds.ps1 puts the builds there)
+      - "TAINTED_UPDATE=${TAINTED_UPDATE-Get the new version from the NAS: Tainted > builds (Tainted.apk on a phone, Tainted.exe on a PC).}"
+      # Seconds' warning players get when the container stops (a redeploy, docker stop)
+      - TAINTED_STOP_WARNING=${TAINTED_STOP_WARNING:-10}
+    # Time for that warning and the saving after it before Docker kills it
+    stop_grace_period: 30s
     ports:
       - "24601:24601"   # LAN only: not forwarded on the router
     volumes:

@@ -10,7 +10,8 @@ const KEEP := 40  ## lines remembered
 const SHOWN := 6  ## lines shown while the box is shut
 const FADE_AFTER := 12.0
 const WIDTH := 400.0  ## clear of the life globe
-const COLORS := {"local": Color(0.92, 0.90, 0.84), "party": Color(0.55, 0.85, 1.0), "notice": Color(1.0, 0.85, 0.45)}
+const COLORS := {"local": Color(0.92, 0.90, 0.84), "party": Color(0.55, 0.85, 1.0), "notice": Color(1.0, 0.85, 0.45),
+	"server": Color(1.0, 0.62, 0.35)}
 
 var _layer: CanvasLayer
 var _log: VBoxContainer
@@ -132,7 +133,7 @@ func _send(text: String) -> void:
 
 func _on_chat(_from: int, from_name: String, channel: String, text: String) -> void:
 	var col: Color = COLORS.get(channel, COLORS.local)
-	var tag := "[Party] " if channel == "party" else ""
+	var tag := "[Party] " if channel == "party" else ("[Server] " if channel == "server" else "")
 	_lines.append({"text": "[color=#%s]%s[b]%s:[/b] %s[/color]" % [col.to_html(false), tag, _esc(from_name), _esc(text)],
 		"at": Time.get_ticks_msec()})
 	if _lines.size() > KEEP:
