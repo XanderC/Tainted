@@ -1,0 +1,32 @@
+# The Tainted World's dedicated server: Godot's official Linux build, headless, running the game's
+# exported pack (tainted.pck, made by deploy_server.ps1) as a server (Net.dedicated_requested).
+# It plays no character and renders nothing; it only passes on who is where.
+
+FROM debian:trixie-slim AS godot
+ARG GODOT_VERSION=4.4.1
+# Godot's published SHA512 for Godot_v4.4.1-stable_linux.x86_64.zip (SHA512-SUMS.txt in the release)
+ARG GODOT_SHA512=ef4e76880a514257175544952c61191106fdef3095b909bafed9fcbeb230c3e5533920a0f3012882dd4bbde83028a67549825794e2d2c3cf76eba7918b71370e
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends ca-certificates curl unzip \
+ && rm -rf /var/lib/apt/lists/*
+RUN curl -fsSL -o /tmp/godot.zip \
+      "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip" \
+ && echo "${GODOT_SHA512}  /tmp/godot.zip" | sha512sum -c - \
+ && unzip -q /tmp/godot.zip -d /tmp \
+ && mv "/tmp/Godot_v${GODOT_VERSION}-stable_linux.x86_64" /usr/local/bin/godot \
+ && chmod +x /usr/local/bin/godot
+
+FROM debian:trixie-slim
+# Godot looks for fontconfig even headless (only a log line without it); its display libraries only
+# load with a window, which it never opens here.
+RUN apt-get update  && apt-get install -y --no-install-recommends libfontconfig1  && rm -rf /var/lib/apt/lists/*  && useradd --create-home --uid 1000 tainted
+COPY --from=godot /usr/local/bin/godot /usr/local/bin/godot
+COPY tainted.pck /game/tainted.pck
+USER tainted
+WORKDIR /home/tainted
+ENV TAINTED_NAME="Tainted World" TAINTED_MAX=32
+EXPOSE 24601
+# Healthy while the server's WebSocket port takes connections.
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
+  CMD bash -c '</dev/tcp/127.0.0.1/24601' || exit 1
+CMD ["sh", "-c", "exec godot --headless --main-pack /game/tainted.pck -- --server --name=\"$TAINTED_NAME\" --max=\"$TAINTED_MAX\""]

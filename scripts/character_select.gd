@@ -269,6 +269,20 @@ func _build_online() -> void:
 	_net_status = UIKit.label(Net.status if Net.mode != Net.Mode.OFFLINE or Net.status != "Offline" else "", 15, Color(1.0, 0.75, 0.45), true)
 	_right.add_child(_net_status)
 
+	var world := UIKit.section(_right, Net.world_name().to_upper())
+	var wrow := HBoxContainer.new()
+	wrow.add_theme_constant_override("separation", 10)
+	world.add_child(wrow)
+	var wl := UIKit.label("The shared world: everyone online, whatever their Wi-Fi.", 15, Color(0.85, 0.88, 0.95), true)
+	wl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	wrow.add_child(wl)
+	var wb := UIKit.button("🌍  Join", Color(0.12, 0.26, 0.40), Color(0.50, 0.80, 1.0), Vector2(130, 46), 17)
+	wb.pressed.connect(func():
+		if GameState.select_character(_selected):
+			Net.join_world()
+	)
+	wrow.add_child(wb)
+
 	var sec := UIKit.section(_right, "GAMES ON YOUR WI-FI")
 	_server_box = VBoxContainer.new()
 	_server_box.add_theme_constant_override("separation", 6)
@@ -280,7 +294,7 @@ func _build_online() -> void:
 	row.add_theme_constant_override("separation", 8)
 	addr_sec.add_child(row)
 	_addr_edit = LineEdit.new()
-	_addr_edit.placeholder_text = "e.g. 192.168.86.18"
+	_addr_edit.placeholder_text = "e.g. 192.168.86.20 or wss://..."
 	_addr_edit.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_addr_edit.custom_minimum_size = Vector2(0, 46)
 	_addr_edit.add_theme_font_size_override("font_size", 18)

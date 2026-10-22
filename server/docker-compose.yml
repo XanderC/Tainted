@@ -1,0 +1,37 @@
+# The Tainted World: the game's dedicated server, beside the estate's applications on 192.168.86.18.
+# Brought up by deploy_server.ps1 (run on the development PC), from /opt/projects/Tainted/server.
+#
+# LAN: port 24601 is published on the host, so games on the home network join ws://192.168.86.18:24601
+# (project setting tainted/net/world_addresses). The router doesn't forward it, so it's LAN-only.
+#
+# Public (not switched on): on the shared `arr` network the proxy can reach it as http://tainted:24601,
+# so going public is a Traefik router for tainted.xandflix.uk (WebSockets pass through as they are)
+# and a public hostname on the Cloudflare Tunnel, then wss://tainted.xandflix.uk added first to
+# tainted/net/world_addresses. See the README's Multiplayer section.
+services:
+  tainted:
+    build: .
+    image: tainted-server
+    container_name: tainted
+    restart: unless-stopped
+    environment:
+      - TAINTED_NAME=${TAINTED_NAME:-Tainted World}
+      - TAINTED_MAX=${TAINTED_MAX:-32}
+    ports:
+      - "24601:24601"   # LAN only: not forwarded on the router
+    networks:
+      - arr
+    # It keeps nothing: characters are in each player's save. A ceiling, so a flood can't starve
+    # the estate's applications.
+    mem_limit: 512m
+    cpus: 1.0
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  arr:
+    external: true
+    name: arr

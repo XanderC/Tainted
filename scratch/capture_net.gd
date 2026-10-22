@@ -21,6 +21,8 @@ func _ready() -> void:
 		return
 	if "--host" in OS.get_cmdline_user_args():
 		Net.host()  # this game is the server; bots join it
+	elif "--world" in OS.get_cmdline_user_args():
+		Net.join_world()  # the Tainted World, as the online screen's Join does
 	else:
 		Net.join("127.0.0.1")
 	while Net.mode == Net.Mode.CONNECTING:

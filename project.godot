@@ -21,6 +21,11 @@ window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
 window/handheld/orientation=0
 
+[tainted]
+
+net/world_name="Tainted World"
+net/world_addresses=PackedStringArray("ws://192.168.86.18:24601")
+
 [gui]
 
 theme/custom_font="res://assets/fonts/body.tres"

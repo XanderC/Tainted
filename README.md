@@ -139,24 +139,63 @@ put it on until you have them. Gear that stops meeting them (points taken back) 
 red, and gives nothing until it does again. Older characters get all their points to add.
 
 ### Multiplayer
-Everyone online meets in Ashfall Outpost; parties of up to 4 will play zones and rifts together,
-each with their own loot. For now it works over the Wi-Fi. Being built in stages:
-1. **Shared town (done).** `Net` (autoload, `scripts/net.gd`) is the server, a host or a client over
-   ENet on port 24601. On character select, **🌐 Play Online** lists the games on your Wi-Fi (servers
-   answer a broadcast on port 24602), joins one by address, or hosts one on this device. In town
-   (`NetPresence`) you see everyone else there as a `RemotePlayer`: their looks, gear, dyes, name and
-   level, walking where they walk. Each game runs its own town; the server only passes on who is where
-   (`Net.enter(instance)`, states about 15 times a second). Characters stay in each player's save.
-   Going back to character select goes offline; a host doing so ends the game for everyone.
-2. Parties: invite a player in town, a party list and their life bars on the HUD.
-3. Zones and rifts together: the party leader's game runs the monsters, the others' games follow it;
-   each player's loot drops only for them.
-4. Over the internet: a server reachable from outside (a port forwarded to it).
+Everyone online meets in Ashfall Outpost; parties of up to 4 will play zones and rifts together, each
+with their own loot. The **Tainted World** is the shared server, on the main host (192.168.86.18) in
+Docker beside the estate. It's LAN-only for now, and set up so it can be opened to the internet later.
 
-A dedicated server (no window): `.\run_server.ps1 [-Name Home]`, or
-`godot --headless --path . -- --server --name=Home`. Test without a second device:
-`scratch/net_bot.tscn` (`-- --bot=walker`, `--bot=watcher` checks what it sees, `--bot=scan`) and
-`scratch/capture_net.tscn` (a screenshot of the town online).
+**How it fits together.** `Net` (autoload, `scripts/net.gd`) is a server, a host or a client. They talk
+over WebSockets on port 24601: `ws://` on the LAN, and `wss://` through a TLS proxy for the public
+(Traefik behind the Cloudflare Tunnel, which carries WebSockets, so no port is forwarded). Each game
+runs its own town; the server only passes on who is where (`Net.enter(instance)`, states about 15 times
+a second) and keeps nothing: characters stay in each player's save. It takes nothing on trust: a
+connection must say hello within 10 s, messages are rate-limited, states and looks are cleaned of
+anything unexpected, and only plain values are decoded.
+
+**Playing.** On character select, **🌐 Play Online** offers:
+- **Tainted World**, which tries the addresses in the project setting `tainted/net/world_addresses` in order
+  (now `ws://192.168.86.18:24601`)
+- games hosted on your Wi-Fi (they answer a broadcast on port 24602)
+- joining by address (an IP, or a `ws://` / `wss://` URL)
+- hosting a game on this device.
+
+In town (`NetPresence`) everyone else there is a `RemotePlayer`, shown with their looks, gear, dyes,
+name and level, walking where they walk. Going back to character select goes offline.
+
+**The server.** `.\deploy_server.ps1` deploys it:
+1. It exports the game as a pack (`builds\server	ainted.pck`, with a "Linux Server" export preset it
+   adds the first time).
+2. It copies the pack with `server\Dockerfile` and `server\docker-compose.yml` to
+   `/opt/projects/Tainted/server` on the host.
+3. It rebuilds the `tainted` container and waits until it's healthy.
+
+The container is Godot's official Linux build (checksum pinned), headless, as an unprivileged user,
+capped at 512 MB and one CPU. It's on the `arr` network, and port 24601 is published on the host
+(LAN only: the router forwards just 80 and 443).
+
+Clients and the server must be the same build (`Net.PROTOCOL`), so **redeploy the server whenever
+the game changes**, and bump `PROTOCOL` when the messages change. Logs: `docker logs -f tainted`
+on the host. A local server instead: `.un_server.ps1` or
+`godot --headless --path . -- --server --name=Home --max=32`.
+
+**Opening it to the world (not done yet):**
+1. Traefik, in `estate/traefik/dynamic.yml`: a router `tainted-public` with entry point
+   `[websecure]`, rule ``Host(`tainted.xandflix.uk`)``, middlewares
+   `[proxied, public-headers, public-ratelimit]` and the `cloudflare` cert resolver, like
+   `retroflix-public`. Its service is `tainted`, load-balancing `http://tainted:24601`.
+2. Cloudflare: a public hostname `tainted.xandflix.uk` on the tunnel, and that name added to the
+   hostname allowlist rule (`estate/docs/cloudflare-rules.md`).
+3. The game: `wss://tainted.xandflix.uk` added to `tainted/net/world_addresses` after the LAN
+   address (home games still go direct), then a new build for players and a server redeploy.
+4. Before strangers play: sign-in through Autharr, so names are owned and a player can be banned.
+   Today any name is accepted and characters come from the player's own save.
+
+**Stages:** 1. shared town (done, LAN). 2. parties: invites, a party list and their life bars.
+3. zones and rifts together: the party leader's game runs the monsters and each player's loot is
+their own. 4. open to the world (above).
+
+Test without a second device: `scratch/net_bot.tscn` (`-- --bot=walker`, `--bot=watcher` checks what
+it sees, `--bot=scan`, `--addr=ws://...`) and `scratch/capture_net.tscn` (a screenshot of the town
+online; `--world`, `--host`).
 
 ### Hirelings
 Diablo II's mercenaries (`scripts/hirelings.gd` the rules, `hireling_db.gd` the types,
