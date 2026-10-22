@@ -1,8 +1,9 @@
 class_name RemotePlayer
-extends Node2D
+extends Interactable
 ## Another player, seen in your instance (Net): their character as it looks, its name and level
-## over its head, gliding to where they are and playing what they play. Only a picture: it has no
-## collision and takes no part in the game here.
+## over its head, gliding to where they are and playing what they play. It has no collision and
+## takes no part in the game here; walk up to it and tap the Talk button for its card (invite them
+## to your party, and so on: PartyUI.show_card).
 
 const NAME_COLOR := Color(0.55, 0.85, 1.0)  # light blue, so players stand out from NPCs (gold)
 
@@ -35,6 +36,10 @@ func setup(id: int, info: Dictionary, state: Dictionary) -> void:
 	_name.position = Vector2(-100, -128)
 	_name.z_index = 5
 	add_child(_name)
+	radius = 110.0
+	action = func():
+		if Net.party_ui != null:
+			Net.party_ui.show_card(peer_id)
 	apply_looks(info)
 	apply_state(state)
 	if state.has("p"):
@@ -52,6 +57,7 @@ func apply_looks(info: Dictionary) -> void:
 	rig.set_offhand(String(off[0]) if off is Array else "", off is Array and bool(off[1]))
 	var cd := ClassLibrary.get_class_def(String(info.get("class", "warrior")))
 	_name.text = "%s\nLv %d %s" % [info.get("name", "?"), int(info.get("level", 1)), cd.display_name if cd != null else ""]
+	prompt = "👥 %s" % info.get("name", "?")
 
 
 ## Where they are and what they are doing now.

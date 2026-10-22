@@ -161,6 +161,15 @@ anything unexpected, and only plain values are decoded.
 In town (`NetPresence`) everyone else there is a `RemotePlayer`, shown with their looks, gear, dyes,
 name and level, walking where they walk. Going back to character select goes offline.
 
+**Parties** (up to 4; `Net` keeps them on the server, `PartyUI` shows them):
+- Walk up to another player in town and tap the Talk button (it shows their name) for their card,
+  then **Invite to party**. They get a Join / No thanks pop-up, which lapses after a minute.
+- The inviter leads the party. Only the leader invites, removes members or hands over the lead
+  (👑 on the cards); anyone can **Leave**. A party of one disbands.
+- The party list, top right under the menu buttons, shows each other member's name, level, life
+  and whereabouts (town, zone, rift), wherever you each are. Tap a row for their card.
+- Notices along the top: who joined, left or now leads. Leaving the game takes you out of your party.
+
 **The server.** `.\deploy_server.ps1` deploys it:
 1. It exports the game as a pack (`builds\server\tainted.pck`, with a "Linux Server" export preset it
    adds the first time).
@@ -190,13 +199,13 @@ un_server.ps1` or
 4. Before strangers play: sign-in through Autharr, so names are owned and a player can be banned.
    Today any name is accepted and characters come from the player's own save.
 
-**Stages:** 1. shared town (done, LAN). 2. parties: invites, a party list and their life bars.
+**Stages:** 1. shared town (done, LAN). 2. parties (done).
 3. zones and rifts together: the party leader's game runs the monsters and each player's loot is
 their own. 4. open to the world (above).
 
 Test without a second device: `scratch/net_bot.tscn` (`-- --bot=walker`, `--bot=watcher` checks what
-it sees, `--bot=scan`, `--addr=ws://...`) and `scratch/capture_net.tscn` (a screenshot of the town
-online; `--world`, `--host`).
+it sees, `--bot=scan`, `--bot=partier` checks parties, `--accept` / `--invite`, `--addr=ws://...`) and `scratch/capture_net.tscn` (a screenshot of the town
+online; `--world`, `--host`, `--party` for an invite, the party list and a card).
 
 ### Hirelings
 Diablo II's mercenaries (`scripts/hirelings.gd` the rules, `hireling_db.gd` the types,

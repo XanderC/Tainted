@@ -4,6 +4,10 @@ extends Node
 ## walker:  joins, enters town and walks in a circle by the spawn, in some gear, then leaves.
 ## watcher: joins, enters town, and checks what it sees (prints "watcher: N checks, M failed").
 ## scan:    looks for servers on the Wi-Fi and prints them.
+## partier: joins, invites everyone it sees, and checks the party forms, members' life arrives, a
+##          member can be made leader, and leaving works (prints "partier: N checks, M failed").
+## --accept: a walker or watcher that joins any party it is invited to.
+## --invite: a walker that invites everyone it sees, two seconds in.
 
 var mode := "walker"
 var addr := "127.0.0.1"
@@ -14,6 +18,10 @@ var _checks := 0
 var _failed := 0
 var _seen := {}  # id -> {"info", "states"}
 var _left := []
+var accept := false
+var invite_all := false
+var _vitals := {}  # id -> last life seen
+var _notices: Array = []
 
 
 func _ready() -> void:
@@ -22,6 +30,8 @@ func _ready() -> void:
 		elif a.begins_with("--addr="): addr = a.get_slice("=", 1)
 		elif a.begins_with("--name="): bot_name = a.get_slice("=", 1)
 		elif a.begins_with("--secs="): secs = float(a.get_slice("=", 1))
+		elif a == "--accept": accept = true
+		elif a == "--invite": invite_all = true
 	GameState.char_name = bot_name
 	GameState.level = 7
 	GameState.appearance = Appearance.random_look()
@@ -40,6 +50,18 @@ func _ready() -> void:
 		if _seen.has(id):
 			_seen[id].states += 1)
 	Net.peer_left.connect(func(id): _left.append(id))
+	Net.notice.connect(func(t):
+		_notices.append(t)
+		print("%s: notice: %s" % [bot_name, t]))
+	Net.invited.connect(func(from_id, from_name):
+		print("%s: invited by %s" % [bot_name, from_name])
+		if accept:
+			Net.answer_invite(from_id, true))
+	Net.party_changed.connect(func():
+		print("%s: party now %s" % [bot_name, Net.party.get("members", []).map(func(m): return m.name)]))
+	Net.party_vitals.connect(func(batch):
+		for id in batch:
+			_vitals[id] = batch[id].h)
 	Net.join(addr)
 	while Net.mode == Net.Mode.CONNECTING:
 		await get_tree().process_frame
@@ -50,12 +72,47 @@ func _ready() -> void:
 	Net.enter(Net.TOWN)
 	if mode == "walker":
 		_send_gear()
+	if invite_all:
+		await get_tree().create_timer(2.0).timeout
+		for id in Net.others:
+			Net.invite(id)
+	if mode == "partier":
+		_run_partier()
+
+
+## Invites everyone in town, then checks the party: forming, life, leadership, leaving.
+func _run_partier() -> void:
+	await get_tree().create_timer(2.0).timeout
+	for id in Net.others:
+		Net.invite(id)
+	await get_tree().create_timer(3.0).timeout
+	var n: int = Net.party.get("members", []).size()
+	_check(n >= 2, "the party forms (%d members)" % n)
+	_check(Net.is_leader(), "the inviter leads it")
+	await get_tree().create_timer(2.0).timeout
+	var others_life := _vitals.keys().filter(func(id): return id != Net.my_id())
+	_check(not others_life.is_empty() and others_life.all(func(id): return absf(_vitals[id] - 0.75) < 0.01),
+		"members' life arrives (%s)" % [_vitals])
+	if n >= 2:
+		var other := int(Net.party.members.filter(func(m): return int(m.id) != Net.my_id())[0].id)
+		Net.promote(other)
+		await get_tree().create_timer(1.5).timeout
+		_check(int(Net.party.get("leader", 0)) == other and not Net.is_leader(), "the lead can be handed over")
+		Net.invite(other)  # not the leader any more: refused
+		await get_tree().create_timer(1.0).timeout
+		_check(_notices.any(func(t): return "Only the party leader" in t), "a member can't invite")
+	Net.leave_party()
+	await get_tree().create_timer(1.5).timeout
+	_check(not Net.in_party(), "leaving the party works")
+	print("partier: %d checks, %d failed" % [_checks, _failed])
+	Net.leave()
+	get_tree().quit(1 if _failed > 0 else 0)
 
 
 ## Walks in a circle by the town's spawn point.
 func _state() -> Dictionary:
 	var p := Vector2(0, 360) + Vector2(140, 0).rotated(_t * 0.8) + Vector2(-60, -40)
-	return {"p": p, "f": -sin(_t * 0.8), "a": "Walking", "s": 1.0}
+	return {"p": p, "f": -sin(_t * 0.8), "a": "Walking", "s": 1.0, "h": 0.75, "w": ActDB.TOWN_NAME}
 
 
 ## Pretends to wear a sword, a helmet and armour (as Net.my_info would send them).
@@ -67,7 +124,7 @@ func _send_gear() -> void:
 
 func _process(delta: float) -> void:
 	_t += delta
-	if _t < secs:
+	if _t < secs or mode == "partier":
 		return
 	set_process(false)
 	if mode == "watcher":
