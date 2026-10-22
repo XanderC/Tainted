@@ -15,6 +15,10 @@ extends Node
 ## --say=text: says it in town chat 3 s in (--party-say=text: in party chat).
 ## --expect-chat=a|b: checks lines containing each of those came (prints "chat: N checks, M failed");
 ## --no-chat=c: checks no line containing it came.
+## --key=abc: its own account on a server that keeps characters (Net.test_key).
+## --befriend: asks the first player it sees to be friends; --accept-friend accepts any friend request.
+## --expect-friend=Name: checks Name is in its friends list (and, with --friend-online=yes/no, online or
+##   not) at the end ("friends: N checks, M failed").
 ## inspector: inspects the first player it sees and checks their gear and stats came
 ##   ("inspector: N checks, M failed").
 
@@ -37,6 +41,10 @@ var _say := ""
 var _party_say := ""
 var _expect: Array = []
 var _no_chat := ""
+var _befriend := false
+var _accept_friend := false
+var _expect_friend := ""
+var _friend_online := ""
 var _heard: Array = []
 var _vitals := {}  # id -> last life seen
 var _notices: Array = []
@@ -55,6 +63,11 @@ func _ready() -> void:
 		elif a.begins_with("--party-say="): _party_say = a.get_slice("=", 1)
 		elif a.begins_with("--expect-chat="): _expect = Array(a.get_slice("=", 1).split("|"))
 		elif a.begins_with("--no-chat="): _no_chat = a.get_slice("=", 1)
+		elif a.begins_with("--key="): Net.test_key = a.get_slice("=", 1).rpad(40, "0")
+		elif a == "--befriend": _befriend = true
+		elif a == "--accept-friend": _accept_friend = true
+		elif a.begins_with("--expect-friend="): _expect_friend = a.get_slice("=", 1)
+		elif a.begins_with("--friend-online="): _friend_online = a.get_slice("=", 1)
 	GameState.char_name = bot_name
 	GameState.level = 7
 	GameState.appearance = Appearance.random_look()
@@ -82,6 +95,12 @@ func _ready() -> void:
 			Net.answer_invite(from_id, true))
 	Net.party_changed.connect(func():
 		print("%s: party now %s" % [bot_name, Net.party.get("members", []).map(func(m): return m.name)]))
+	Net.friend_asked.connect(func(from_id, from_name):
+		print("%s: %s wants to be friends" % [bot_name, from_name])
+		if _accept_friend:
+			Net.answer_friend(from_id, true))
+	Net.friends_changed.connect(func():
+		print("%s: friends %s" % [bot_name, Net.friends.map(func(f): return "%s(%s)" % [f.name, "on" if f.online else "off"])]))
 	Net.chat.connect(func(_id, from_name, channel, text):
 		_heard.append("%s/%s: %s" % [channel, from_name, text])
 		print("%s: heard %s/%s: %s" % [bot_name, channel, from_name, text]))
@@ -110,6 +129,10 @@ func _ready() -> void:
 		_run_inspector()
 	if drop_at > 0.0:
 		_run_dropper()
+	if _befriend:
+		await get_tree().create_timer(3.0).timeout
+		if not Net.others.is_empty():
+			Net.add_friend(Net.others.keys()[0])
 	if _say != "" or _party_say != "":
 		await get_tree().create_timer(3.0).timeout
 		if _say != "":
@@ -212,6 +235,12 @@ func _process(delta: float) -> void:
 	if _t < secs or mode == "partier" or (drop_at > 0.0 and _t < drop_at + 25.0):
 		return
 	set_process(false)
+	if _expect_friend != "":
+		var f: Array = Net.friends.filter(func(x): return x.name == _expect_friend)
+		_check(not f.is_empty(), "%s is a friend" % _expect_friend)
+		if _friend_online != "" and not f.is_empty():
+			_check(bool(f[0].online) == (_friend_online == "yes"), "%s shows %s" % [_expect_friend, "online" if _friend_online == "yes" else "offline"])
+		print("friends: %d checks, %d failed" % [_checks, _failed])
 	if not _expect.is_empty() or _no_chat != "":
 		for e in _expect:
 			_check(_heard.any(func(h): return e in h), "heard a line with \"%s\"" % e)

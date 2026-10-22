@@ -38,6 +38,19 @@ func put(account: String, vpath: String, data: Variant) -> String:
 	return ""
 
 
+## What the server itself keeps for an account (friends; a player's game can't write it: check()
+## refuses its path).
+func social(account: String) -> Dictionary:
+	var d = _rec(account).files.get("social", {})
+	return d if d is Dictionary else {}
+
+
+func set_social(account: String, data: Dictionary) -> void:
+	var rec := _rec(account)
+	rec.files["social"] = data
+	_mark(rec)
+
+
 func remove(account: String, vpath: String) -> void:
 	if not vpath.begins_with("characters/"):
 		return

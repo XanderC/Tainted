@@ -50,6 +50,10 @@ extends Node
 ## Chat (say): "local" goes to everyone in your instance (your copy of the town, your rift or zone),
 ## "party" to your party. The server cleans each line (printable, at most CHAT_MAX characters, a word
 ## filter: _clean_chat) and allows one every CHAT_EVERY seconds.
+## Friends (on a server that keeps characters): ask a player (add_friend), they accept, and each
+## account keeps the other (AccountStore.social, which a game can't write). Every FRIENDS_EVERY
+## seconds the server sends each player their friends: who is online, where, and their peer id (to
+## invite them to a party from anywhere).
 ## Inspecting (inspect): the server asks that player's game for its worn gear and stats
 ## (_inspect_data) and passes them on (inspected), if you can see them (same instance or party).
 ##
@@ -74,10 +78,12 @@ signal event(from_id: int, kind: String, data: Variant)  ## an instance event (s
 signal account_ready  ## the server's characters for your account are loaded (GameState.use_online_files)
 signal chat(from_id: int, from_name: String, channel: String, text: String)  ## a chat line (say)
 signal inspected(id: int, data: Dictionary)  ## a player's worn gear and stats (inspect)
+signal friends_changed  ## `friends` changed
+signal friend_asked(from_id: int, from_name: String)  ## someone wants to be your friend (answer_friend)
 
 const PORT := 24601
 const DISCOVERY_PORT := 24602
-const PROTOCOL := 6  ## games with a different protocol can't play together
+const PROTOCOL := 7  ## games with a different protocol can't play together
 const MAX_ONLINE := 32
 const PARTY_MAX := 4
 const SEND_HZ := 15.0
@@ -88,6 +94,8 @@ const AWAY_GRACE := 60.0  ## seconds a dropped party member's place is kept
 const RECONNECT_EVERY := 4.0
 const RECONNECT_TRIES := 10
 const TOWN_CAP := 20  ## players in one copy of the town
+const FRIENDS_EVERY := 2.0
+const MAX_FRIENDS := 100
 const CHAT_MAX := 200
 const CHAT_EVERY := 0.6  ## seconds between one player's chat lines
 ## Words the chat masks with stars (whole words, any case).
@@ -116,6 +124,8 @@ var party := {}
 var coop := {}
 ## The server keeps your characters (its welcome said so): GameState saves to it (save_file).
 var accounts := false
+## Your friends: [{"account", "name", "online", "id" (peer, if online), "where"}], online ones first.
+var friends: Array = []
 var instance_host := 0  ## who hosts your instance (role_changed)
 var party_ui: PartyUI
 var chat_ui: ChatUI  ## the chat on screen (not on a dedicated server)
@@ -156,6 +166,10 @@ var _store: AccountStore  # server only, with --data: the players' characters
 var _store_t := 0.0
 var _pending_saves := {}  # files to send once reconnected: vpath -> data (null: delete)
 var _chat_at := {}  # server only: id -> msec of its last chat line
+var _online_accounts := {}  # server only: account -> peer id
+var _friend_asks := {}  # server only: asked id -> {asking id: msec}
+var _friends_sent := {}  # server only: id -> the friend list last sent (sent again only when it changes)
+var _friends_t := 0.0
 var _filter: RegEx
 
 
@@ -374,6 +388,12 @@ func _drop() -> void:
 	if not party.is_empty():
 		party = {}
 		party_changed.emit()
+	if not friends.is_empty():
+		friends = []
+		friends_changed.emit()
+	_online_accounts.clear()
+	_friend_asks.clear()
+	_friends_sent.clear()
 	if mode != Mode.OFFLINE:
 		_set_status(Mode.OFFLINE, "Offline")
 
@@ -485,6 +505,25 @@ static func device_key() -> String:
 	if f != null:
 		f.store_string(key)
 	return key
+
+
+## Ask player `id` to be friends (they're asked: friend_asked).
+func add_friend(id: int) -> void:
+	_to_server("_on_friend_request", "_rpc_friend_request", [id])
+
+
+func answer_friend(from_id: int, accept: bool) -> void:
+	_to_server("_on_friend_answer", "_rpc_friend_answer", [from_id, accept])
+
+
+## No longer friends with `account` (both sides).
+func unfriend(account: String) -> void:
+	_to_server("_on_unfriend", "_rpc_unfriend", [account])
+
+
+## Whether player `id` (online now) is a friend.
+func is_friend(id: int) -> bool:
+	return friends.any(func(f): return int(f.get("id", 0)) == id)
 
 
 ## Ask to see player `id`'s gear and stats (inspected).
@@ -625,6 +664,11 @@ func _process(delta: float) -> void:
 		if _vitals_t <= 0.0:
 			_vitals_t = 1.0 / VITALS_HZ
 			_relay_vitals()
+		_friends_t -= delta
+		if _friends_t <= 0.0 and _store != null:
+			_friends_t = FRIENDS_EVERY
+			for id in _peers:
+				_push_friends(id)
 
 
 # ---------- server: who is where ----------
@@ -665,6 +709,10 @@ func _on_peer_disconnected(id: int) -> void:
 		return
 	if _store != null and String(_peers[id].get("account", "")) != "":
 		_store.flush_account(String(_peers[id].account))
+		if _online_accounts.get(_peers[id].account, 0) == id:
+			_online_accounts.erase(_peers[id].account)
+	_friend_asks.erase(id)
+	_friends_sent.erase(id)
 	var inst: String = _peers[id].instance
 	_peers[id].instance = ""
 	_instance_left(inst, id)
@@ -704,6 +752,8 @@ func _on_hello(id: int, protocol: int, info: Dictionary) -> void:
 				_send(other, "_rpc_refused", ["You started playing this account somewhere else."])
 				_kick(other)
 	_peers[id] = {"info": _clean_info(info), "instance": "", "state": {}, "party": 0, "token": token, "account": account}
+	if account != "":
+		_online_accounts[account] = id
 	_send(id, "_rpc_welcome", [server_name, _peers.size(), _store != null])
 	_restore_away(id, token)
 	if mode == Mode.SERVER:
@@ -795,12 +845,95 @@ func _clean_chat(text: String) -> String:
 	return out
 
 
+func _on_friend_request(from: int, target: int) -> void:
+	if _store == null or not _peers.has(from) or not _peers.has(target) or from == target:
+		return
+	var a := String(_peers[from].get("account", ""))
+	var b := String(_peers[target].get("account", ""))
+	if a == "" or b == "" or a == b:
+		return
+	if _store.social(a).get("friends", {}).has(b):
+		_send(from, "_rpc_notice", ["You're friends already."])
+		return
+	if _store.social(a).get("friends", {}).size() >= MAX_FRIENDS:
+		_send(from, "_rpc_notice", ["Your friends list is full."])
+		return
+	if not _friend_asks.has(target):
+		_friend_asks[target] = {}
+	_friend_asks[target][from] = Time.get_ticks_msec()
+	_send(target, "_rpc_friend_ask", [from, String(_peers[from].info.name)])
+	_send(from, "_rpc_notice", ["Asked %s to be friends." % _peers[target].info.name])
+
+
+func _on_friend_answer(target: int, from: int, accept: bool) -> void:
+	var asked: Dictionary = _friend_asks.get(target, {})
+	if not asked.has(from) or not _peers.has(from) or not _peers.has(target):
+		_send(target, "_rpc_notice", ["That request is no longer open."])
+		return
+	asked.erase(from)
+	if not accept:
+		_send(from, "_rpc_notice", ["%s said no." % _peers[target].info.name])
+		return
+	var a := String(_peers[from].account)
+	var b := String(_peers[target].account)
+	_befriend(a, b, String(_peers[target].info.name))
+	_befriend(b, a, String(_peers[from].info.name))
+	for p in [from, target]:
+		_send(p, "_rpc_notice", ["%s and %s are friends now." % [_peers[from].info.name, _peers[target].info.name]])
+		_push_friends(p)
+
+
+func _befriend(account: String, friend: String, name: String) -> void:
+	var soc := _store.social(account).duplicate(true)
+	var fr: Dictionary = soc.get("friends", {})
+	fr[friend] = {"name": name}
+	soc["friends"] = fr
+	_store.set_social(account, soc)
+
+
+func _on_unfriend(id: int, other: String) -> void:
+	if _store == null or not _peers.has(id) or String(_peers[id].get("account", "")) == "":
+		return
+	var me := String(_peers[id].account)
+	for pair in [[me, other], [other, me]]:
+		var soc := _store.social(pair[0]).duplicate(true)
+		if soc.get("friends", {}).erase(pair[1]):
+			_store.set_social(pair[0], soc)
+	_push_friends(id)
+	if _online_accounts.has(other):
+		_push_friends(int(_online_accounts[other]))
+
+
+## Sends `id` its friends (if the list changed since last time): who is online, where, their peer id.
+func _push_friends(id: int) -> void:
+	if _store == null or not _peers.has(id) or String(_peers[id].get("account", "")) == "":
+		return
+	var list: Array = []
+	var fr: Dictionary = _store.social(String(_peers[id].account)).get("friends", {})
+	for acc in fr:
+		var pid: int = int(_online_accounts.get(acc, 0))
+		var on := pid != 0 and _peers.has(pid)
+		var name := String(_peers[pid].info.name) if on else String(fr[acc].get("name", "?"))
+		if on and name != "?" and name != String(fr[acc].get("name", "")):
+			_befriend(String(_peers[id].account), acc, name)  # they play another character now
+		list.append({"account": acc, "name": name, "online": on, "id": pid if on else 0,
+			"where": String(_peers[pid].state.get("w", "")) if on else ""})
+	list.sort_custom(func(x, y): return x.online and not y.online or (x.online == y.online and String(x.name) < String(y.name)))
+	var key := JSON.stringify(list)
+	if _friends_sent.get(id, "") == key:
+		return
+	_friends_sent[id] = key
+	_send(id, "_rpc_friends", [list])
+
+
 ## Whether `who` may see `id` (to inspect them): in the same instance, or in the same party.
 func _can_see(who: int, id: int) -> bool:
 	if not _peers.has(who) or not _peers.has(id):
 		return false
 	var inst: String = _peers[who].instance
-	return (inst != "" and inst == _peers[id].instance) or \
+	var friend: bool = _store != null and String(_peers[who].get("account", "")) != "" and \
+		_store.social(String(_peers[who].account)).get("friends", {}).has(String(_peers[id].get("account", "")))
+	return (inst != "" and inst == _peers[id].instance) or friend or \
 		(_peers[who].party != 0 and _peers[who].party == _peers[id].party)
 
 
@@ -1264,6 +1397,27 @@ func _relay_vitals() -> void:
 # ---------- RPCs: client -> server ----------
 
 @rpc("any_peer", "call_remote", "reliable")
+func _rpc_friend_request(target: int) -> void:
+	var id := multiplayer.get_remote_sender_id()
+	if is_server() and _within_rate(id):
+		_on_friend_request(id, target)
+
+
+@rpc("any_peer", "call_remote", "reliable")
+func _rpc_friend_answer(from: int, accept: bool) -> void:
+	var id := multiplayer.get_remote_sender_id()
+	if is_server() and _within_rate(id):
+		_on_friend_answer(id, from, accept)
+
+
+@rpc("any_peer", "call_remote", "reliable")
+func _rpc_unfriend(account: String) -> void:
+	var id := multiplayer.get_remote_sender_id()
+	if is_server() and _within_rate(id):
+		_on_unfriend(id, account.left(64))
+
+
+@rpc("any_peer", "call_remote", "reliable")
 func _rpc_inspect(id: int) -> void:
 	var who := multiplayer.get_remote_sender_id()
 	if is_server() and _within_rate(who):
@@ -1414,6 +1568,17 @@ func _rpc_welcome(name: String, _count: int, keeps_characters: bool) -> void:
 			instance = ""
 			enter(i)  # back where you were
 		update_looks()
+
+
+@rpc("authority", "call_remote", "reliable")
+func _rpc_friends(list: Array) -> void:
+	friends = list
+	friends_changed.emit()
+
+
+@rpc("authority", "call_remote", "reliable")
+func _rpc_friend_ask(from: int, from_name: String) -> void:
+	friend_asked.emit(from, from_name)
 
 
 ## Someone wants to see your gear: answer with it.

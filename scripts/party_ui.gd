@@ -8,6 +8,9 @@ extends Node
 ##    party list has a Join button too, for whoever said not now or came later.
 ##  - a player's card (show_card): name, level, class, and Invite / Make leader / Remove as fits.
 ##  - short notices from the server ("Kael joined the party").
+##  - friends (on a server that keeps characters): "★ Friends n/m" at the top of the list opens them
+##    (online first, with where they are, Invite to party and Remove); a friend request asks like an
+##    invite; a player's card has Add friend.
 ## Hidden while offline and on the character select screen.
 
 const ROW_W := 236.0
@@ -18,7 +21,8 @@ var _pop_layer: CanvasLayer
 var _frame: VBoxContainer
 var _rows := {}  # member id -> {"life": ColorRect, "where": Label, "dead": Label}
 var _invite_box: PanelContainer
-var _invites: Array = []  # [{"id", "name", "at"}] or [{"portal": {...}, "at"}], oldest first
+var _invites: Array = []  # [{"id", "name", "at"}], [{"portal": {...}, "at"}] or [{"friend": id, "name", "at"}]
+var _friends_win: PanelContainer
 var _card: PanelContainer
 var _card_id := 0
 var _toast: Label
@@ -62,6 +66,13 @@ func _ready() -> void:
 	Net.party_vitals.connect(_on_vitals)
 	Net.invited.connect(_on_invited)
 	Net.party_portal.connect(_on_portal)
+	Net.friend_asked.connect(func(from_id, from_name):
+		_invites.append({"friend": from_id, "name": from_name, "at": Time.get_ticks_msec()})
+		_show_invite())
+	Net.friends_changed.connect(func():
+		_rebuild()
+		if _friends_win != null:
+			_show_friends())
 	Net.notice.connect(say)
 	Net.status_changed.connect(func():
 		if not Net.online():
@@ -99,6 +110,15 @@ func say(text: String) -> void:
 func _rebuild() -> void:
 	UIKit.clear(_frame)
 	_rows.clear()
+	if Net.accounts:
+		var on := Net.friends.filter(func(f): return f.online).size()
+		var fb := UIKit.button("★  Friends  %d / %d" % [on, Net.friends.size()], Color(0.16, 0.14, 0.10), Color(0.85, 0.75, 0.45), Vector2(ROW_W, 32), 13)
+		fb.pressed.connect(func():
+			if _friends_win != null:
+				_close_friends()
+			else:
+				_show_friends())
+		_frame.add_child(fb)
 	if not Net.in_party():
 		return
 	var me := Net.my_id()
@@ -220,6 +240,9 @@ func _show_invite() -> void:
 	if inv.has("portal"):
 		_show_portal_ask(inv.portal)
 		return
+	if inv.has("friend"):
+		_show_friend_ask(inv)
+		return
 	_invite_box = PanelContainer.new()
 	_invite_box.add_theme_stylebox_override("panel", UIKit.window_box(16))
 	_invite_box.set_anchors_preset(Control.PRESET_CENTER_TOP)
@@ -272,6 +295,78 @@ func _show_portal_ask(portal: Dictionary) -> void:
 	row.add_child(no)
 
 
+func _show_friend_ask(inv: Dictionary) -> void:
+	_invite_box = PanelContainer.new()
+	_invite_box.add_theme_stylebox_override("panel", UIKit.window_box(16))
+	_invite_box.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	_invite_box.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	_invite_box.offset_top = 90.0
+	_pop_layer.add_child(_invite_box)
+	var v := VBoxContainer.new()
+	v.add_theme_constant_override("separation", 10)
+	_invite_box.add_child(v)
+	var l := UIKit.label("★  %s wants to be friends" % inv.name, 18, Color(0.95, 0.85, 0.55))
+	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	v.add_child(l)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 12)
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	v.add_child(row)
+	var id: int = inv.friend
+	for pair in [["Accept", true, Color(0.14, 0.34, 0.18), Color(0.40, 1.0, 0.55)], ["No thanks", false, Color(0.22, 0.10, 0.10), Color(0.70, 0.35, 0.30)]]:
+		var b := UIKit.button(pair[0], pair[2], pair[3], Vector2(140, 46), 17)
+		var yes: bool = pair[1]
+		b.pressed.connect(func():
+			Net.answer_friend(id, yes)
+			_invites = _invites.filter(func(i): return i.get("friend", 0) != id)
+			_show_invite())
+		row.add_child(b)
+
+
+# ---------- friends ----------
+
+func _show_friends() -> void:
+	_close_friends()
+	_friends_win = PanelContainer.new()
+	_friends_win.add_theme_stylebox_override("panel", UIKit.window_box(18, Color.WHITE, true))
+	_friends_win.custom_minimum_size = Vector2(440, 0)
+	_friends_win.set_anchors_preset(Control.PRESET_CENTER)
+	_friends_win.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	_friends_win.grow_vertical = Control.GROW_DIRECTION_BOTH
+	_pop_layer.add_child(_friends_win)
+	var v := VBoxContainer.new()
+	v.add_theme_constant_override("separation", 8)
+	_friends_win.add_child(v)
+	UIKit.window_header(v, "FRIENDS", Color(0.95, 0.85, 0.55), _close_friends, 20)
+	if Net.friends.is_empty():
+		v.add_child(UIKit.label("No friends yet. Walk up to a player, tap Talk, then Add friend.", 15, UIKit.TEXT_DIM, true))
+	for f in Net.friends:
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 8)
+		v.add_child(row)
+		var info := VBoxContainer.new()
+		info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		row.add_child(info)
+		info.add_child(UIKit.label(("●  " if f.online else "○  ") + String(f.name), 16,
+			Color(0.55, 1.0, 0.6) if f.online else UIKit.TEXT_DIM))
+		info.add_child(UIKit.label(String(f.where) if f.online and String(f.where) != "" else ("Online" if f.online else "Offline"), 12, UIKit.TEXT_DIM))
+		var fid := int(f.id)
+		var acc := String(f.account)
+		if f.online and not Net.is_member(fid) and (not Net.in_party() or Net.is_leader()):
+			var inv := UIKit.button("Invite", Color(0.12, 0.26, 0.40), Color(0.50, 0.80, 1.0), Vector2(84, 38), 13)
+			inv.pressed.connect(func(): Net.invite(fid))
+			row.add_child(inv)
+		var rm := UIKit.button("Remove", Color(0.22, 0.10, 0.10), Color(0.70, 0.35, 0.30), Vector2(84, 38), 13)
+		rm.pressed.connect(func(): Net.unfriend(acc))
+		row.add_child(rm)
+
+
+func _close_friends() -> void:
+	if _friends_win != null:
+		_friends_win.queue_free()
+		_friends_win = null
+
+
 func _drop_portal_asks() -> void:
 	_invites = _invites.filter(func(i): return not i.has("portal"))
 	_show_invite()
@@ -319,6 +414,8 @@ func show_card(id: int) -> void:
 	head.add_child(x)
 	v.add_child(UIKit.label("Level %d %s" % [int(info.get("level", 1)), cd.display_name], 16, UIKit.TEXT_DIM))
 	_card_button(v, "🔍  Inspect", Color(0.16, 0.16, 0.20), Color(0.70, 0.70, 0.75), func(): Net.inspect(id))
+	if Net.accounts and not Net.is_friend(id):
+		_card_button(v, "★  Add friend", Color(0.24, 0.20, 0.10), Color(0.95, 0.85, 0.55), func(): Net.add_friend(id))
 	var member := Net.is_member(id)
 	if member:
 		v.add_child(UIKit.label("👑 Leads your party" if int(Net.party.leader) == id else "In your party", 15, UIKit.GOLD))
