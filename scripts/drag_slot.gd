@@ -104,10 +104,14 @@ func setup(icon: Texture2D, border: Color, bg: Color = Color(0.09, 0.08, 0.12),
 
 
 func _apply_style(border: Color) -> void:
-	# The slot art, warmed a little towards the item's colour; the outline shows for an item or for feedback
-	_style.modulate_color = Color.WHITE.lerp(_bg.lightened(0.6), 0.3) if _icon_tex != null else Color.WHITE
+	# The slot art is the cell: no outline at rest. Holding something, it is tinted towards its
+	# colour (an item's rarity); the outline only marks the picked one (white) and, while
+	# something is dragged over it, whether it can land (green / red).
+	var picked := _border == Color.WHITE
+	_style.modulate_color = Color.WHITE.lerp(_border.lightened(0.25), 0.65) if _icon_tex != null and not picked else Color.WHITE
+	_rim.visible = picked or border != _border
 	_rim_style.border_color = border
-	_rim_style.set_border_width_all(2 if _icon_tex != null or border != _border else 1)
+	_rim_style.set_border_width_all(2)
 
 
 # ---------- drag and drop ----------
