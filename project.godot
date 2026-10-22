@@ -25,6 +25,7 @@ window/handheld/orientation=0
 
 net/world_name="Tainted World"
 net/world_addresses=PackedStringArray("ws://192.168.86.18:24601")
+net/auth_url="http://192.168.86.18:5180"
 
 [gui]
 

@@ -17,6 +17,9 @@ services:
     environment:
       - TAINTED_NAME=${TAINTED_NAME:-Tainted World}
       - TAINTED_MAX=${TAINTED_MAX:-32}
+      # Require an Autharr sign-in, checked over the arr network. Empty until Autharr knows the game
+      # (the tainted-game client); then: TAINTED_AUTH=http://autharr:5180
+      - TAINTED_AUTH=${TAINTED_AUTH:-}
     ports:
       - "24601:24601"   # LAN only: not forwarded on the router
     volumes:

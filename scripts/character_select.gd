@@ -47,6 +47,7 @@ func _ready() -> void:
 		Net.leave()  # back from a hosted game: offline, free to pick any character
 	Net.status_changed.connect(_on_net_status)
 	Net.account_ready.connect(_on_account_ready)
+	Net.resume_sign_in()  # a kept sign-in: signed in already when you get to the online screen
 	Net.servers_found.connect(_on_servers_found)
 	_build()
 	_selected = GameState.last_character if not GameState.character_info(GameState.last_character).is_empty() else ""
@@ -283,6 +284,7 @@ func _build_online() -> void:
 	_right.add_child(_net_status)
 
 	var world := UIKit.section(_right, Net.world_name().to_upper())
+	_build_sign_in(world)
 	var wrow := HBoxContainer.new()
 	wrow.add_theme_constant_override("separation", 10)
 	world.add_child(wrow)
@@ -339,6 +341,50 @@ func _on_servers_found(list: Array) -> void:
 	_servers = list
 	if _online:
 		_fill_servers()
+
+
+## Who you're signed in as (with Sign out), or email and password fields to sign in (Autharr).
+func _build_sign_in(parent: Control) -> void:
+	if Net.signed_in_as != "":
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 10)
+		parent.add_child(row)
+		var l := UIKit.label("Signed in as %s" % Net.signed_in_as, 15, Color(0.55, 1.0, 0.6))
+		l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		row.add_child(l)
+		var out := UIKit.button("Sign out", Color(0.16, 0.14, 0.18), Color(0.50, 0.45, 0.50), Vector2(110, 38), 14)
+		out.pressed.connect(func():
+			Net.sign_out()
+			_refresh())
+		row.add_child(out)
+		return
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 6)
+	parent.add_child(row)
+	var email := LineEdit.new()
+	email.placeholder_text = "Email"
+	email.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	email.custom_minimum_size = Vector2(0, 42)
+	row.add_child(email)
+	var pw := LineEdit.new()
+	pw.placeholder_text = "Password"
+	pw.secret = true
+	pw.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	pw.custom_minimum_size = Vector2(0, 42)
+	row.add_child(pw)
+	var go := UIKit.button("Sign in", Color(0.12, 0.26, 0.40), Color(0.50, 0.80, 1.0), Vector2(110, 42), 15)
+	var err := UIKit.label(Net.sign_in_error, 13, Color(1.0, 0.6, 0.5), true)
+	go.pressed.connect(func():
+		err.text = "Signing in..."
+		await Net.sign_in(email.text, pw.text)
+		if Net.signed_in_as != "":
+			_refresh()
+		else:
+			err.text = Net.sign_in_error)
+	pw.text_submitted.connect(func(_t): go.pressed.emit())
+	row.add_child(go)
+	parent.add_child(err)
+	parent.add_child(UIKit.label("Your Xandflix account (Autharr). The Tainted World needs it.", 12, UIKit.TEXT_DIM, true))
 
 
 func _fill_servers() -> void:

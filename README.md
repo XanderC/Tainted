@@ -231,8 +231,20 @@ to party and Remove. Friends can inspect each other from anywhere.
 - **The server checks every file** before storing it: only those two kinds of path, plain data under
   512 KB, and a sane shape (character list, level 1-100, items). Saves made while reconnecting go once
   the connection is back. One game per account: playing it elsewhere replaces the first.
-- **Who an account is:** for now a random key kept on the device (`user://device_key.txt`); Autharr
-  sign-in takes its place. Tests use their own key (`Net.test_key`).
+- **Who an account is:** an **Autharr sign-in** when the server asks for one, else a random key kept on
+  the device (`user://device_key.txt`). Tests use their own key (`Net.test_key`).
+
+**Signing in** (Autharr; `Net.sign_in`):
+- The online screen's Tainted World entry has Email / Password / **Sign in** (your estate account), then
+  "Signed in as ..." with Sign out.
+- The game uses Autharr's password grant for the `tainted-game` client (project setting
+  `tainted/net/auth_url`, now `http://192.168.86.18:5180`), and keeps the refresh token encrypted with
+  the device's key (`user://autharr.dat`), so the next start signs in by itself.
+- A server started with `--auth=<Autharr URL>` (the container's `TAINTED_AUTH`) turns away anyone not
+  signed in, checks each sign-in against Autharr's `/connect/userinfo`, and keys the account by the
+  Autharr user (`a<id>`). Disabling an account in Autharr keeps that player out.
+- Autharr needs the `tainted-game` client: Autharr's `tainted-sign-in` branch registers it. Until that's
+  deployed, the server runs without `--auth` (device accounts, LAN only).
 - **What it does and doesn't stop.** Players can't edit their characters, since the saves are the
   server's, and trades will be done by the server. A modified game can still cheat, because each game
   rolls its own loot (stopping that means running the game itself on the server).
@@ -278,8 +290,8 @@ un_server.ps1` or
 4. Before strangers play: sign-in through Autharr, so names are owned and a player can be banned.
    Today any name is accepted and characters come from the player's own save.
 
-**Stages:** 1. shared town (done, LAN). 2. parties (done). 3. party rifts and zones (done). 4. staying connected (done). 5. online characters, chat, inspect, friends and trading (done); Autharr
-sign-in next.
+**Stages:** 1. shared town (done, LAN). 2. parties (done). 3. party rifts and zones (done). 4. staying connected (done). 5. online characters, chat, inspect, friends, trading and Autharr sign-in
+(done; sign-in switches on once Autharr is updated).
 3. zones and rifts together: the party leader's game runs the monsters and each player's loot is
 their own. 4. open to the world (above).
 
@@ -290,7 +302,8 @@ it sees, `--bot=scan`, `--bot=partier` checks parties, `--drop-at=8` and `--bot=
 `--expect-friend=` check friends, `--accept` / `--invite`, `--addr=ws://...`) and `scratch/capture_net.tscn` (a screenshot of the town
 online; `--world`, `--host`, `--party` for an invite, the party list and a card, `--chat`, `--inspect`), and
 `scratch/account_bot.tscn` checks online characters against a server with `--data`
-(`--phase=create`, restart it, `--phase=check`; `--addr=ws://...`), `scratch/trade_bot.tscn`
+(`--phase=create`, restart it, `--phase=check`; `--addr=ws://...`), `scratch/signin_bot.tscn` checks signing in
+against an Autharr (`--auth= --email= --password=`, `--phase=first` then `--phase=again`), `scratch/trade_bot.tscn`
 checks a trade and the anti-duplication (`--role=a` and `--role=b`, `--shot`), and `scratch/coop_bot.tscn` plays a whole party rift with two bots (`--role=leader|follower`; `--zone`
 for the Dune Wastes instead; `--shot`
 for a screenshot, `--leave-after=12` and `--takeover` to test a handover, `--drop-at=5` a reconnect

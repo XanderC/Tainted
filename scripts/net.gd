@@ -44,7 +44,10 @@ extends Node
 ## characters (AccountStore), and says so in its welcome (`accounts`). Its players' games then load
 ## their account from the server (GameState.use_online_files) and save to it (save_file), instead of
 ## the device; offline play and hosted games keep the device's characters. Who an account is comes
-## with the hello: for now a random key this device keeps (device_key), later an Autharr sign-in.
+## with the hello: an Autharr sign-in (sign_in: email and password, Autharr's password grant for the
+## tainted-game client; a refresh token kept encrypted on the device signs you in next time), or on a
+## server that doesn't ask for one, a random key this device keeps (device_key). A server started with
+## --auth=<Autharr URL> asks for it and checks each sign-in against Autharr's /connect/userinfo.
 ## One game per account: a second one replaces the first.
 ##
 ## Chat (say): "local" goes to everyone in your instance (your copy of the town, your rift or zone),
@@ -89,10 +92,11 @@ signal friend_asked(from_id: int, from_name: String)  ## someone wants to be you
 signal trade_asked(from_id: int, from_name: String)  ## someone wants to trade (answer_trade)
 signal trade_changed(state: Dictionary)  ## a trade opened or changed: {"with", "name", "mine", "theirs", "ready_me", "ready_them"}; {} closed
 signal trade_finished(received: Array)  ## the trade went through: what you got (now in your stash)
+signal signed_in_changed  ## signed in or out of Autharr (`signed_in_as`), or a sign-in failed (`sign_in_error`)
 
 const PORT := 24601
 const DISCOVERY_PORT := 24602
-const PROTOCOL := 8  ## games with a different protocol can't play together
+const PROTOCOL := 9  ## games with a different protocol can't play together
 const MAX_ONLINE := 32
 const PARTY_MAX := 4
 const SEND_HZ := 15.0
@@ -120,6 +124,9 @@ const MAX_MSGS_PER_SEC := 40  ## per client; more are dropped
 ## The Tainted World, unless project settings say otherwise.
 const WORLD_NAME_DEFAULT := "Tainted World"
 const WORLD_ADDRESSES_DEFAULT := ["ws://192.168.86.18:24601"]
+const AUTH_URL_DEFAULT := "http://192.168.86.18:5180"  ## Autharr, for the sign-in (project setting tainted/net/auth_url)
+const AUTH_CLIENT := "tainted-game"
+const AUTH_FILE := "user://autharr.dat"
 
 enum Mode { OFFLINE, CONNECTING, CLIENT, HOST, SERVER, RECONNECTING }
 
@@ -135,6 +142,12 @@ var party := {}
 var coop := {}
 ## The server keeps your characters (its welcome said so): GameState saves to it (save_file).
 var accounts := false
+var auth_url := String(ProjectSettings.get_setting("tainted/net/auth_url", AUTH_URL_DEFAULT))
+var signed_in_as := ""  ## the Autharr account's name ("" when not signed in)
+var sign_in_error := ""
+var _access_token := ""
+var _http: HTTPRequest  # client: talking to Autharr
+static var auth_file := AUTH_FILE  ## where the kept sign-in is (tests use their own)
 ## Your friends: [{"account", "name", "online", "id" (peer, if online), "where"}], online ones first.
 var friends: Array = []
 var instance_host := 0  ## who hosts your instance (role_changed)
@@ -175,6 +188,7 @@ var _reconnect_tries := 0
 var _rejoin := ""  # the instance to go back into once reconnected
 var _rejoin_coop := {}
 var _store: AccountStore  # server only, with --data: the players' characters
+var _auth_check := ""  # server only, with --auth: Autharr's URL, to check sign-ins
 var _store_t := 0.0
 var _pending_saves := {}  # files to send once reconnected: vpath -> data (null: delete)
 var _chat_at := {}  # server only: id -> msec of its last chat line
@@ -208,9 +222,14 @@ func _ready() -> void:
 				town_cap = clampi(int(a.get_slice("=", 1)), 1, 1000)
 			elif a.begins_with("--data="):
 				_store = AccountStore.new(a.get_slice("=", 1))
+			elif a.begins_with("--auth="):
+				_auth_check = a.get_slice("=", 1).trim_suffix("/")
 		start_server(name_arg, true)
 		get_tree().change_scene_to_file.call_deferred("res://scenes/server.tscn")
 	else:
+		_http = HTTPRequest.new()
+		_http.timeout = 15.0
+		add_child(_http)
 		party_ui = PartyUI.new()
 		add_child(party_ui)
 		chat_ui = ChatUI.new()
@@ -301,8 +320,9 @@ func start_server(name: String, dedicated := false) -> bool:
 		push_warning("Net: discovery port %d is busy; the server won't show up in the list" % DISCOVERY_PORT)
 		_disc_server = null
 	if dedicated:
-		_set_status(Mode.SERVER, "Server \"%s\" running on port %d (up to %d players)%s" % [name, PORT, _max_online,
-			", characters in %s" % _store.base_dir if _store != null else ""])
+		_set_status(Mode.SERVER, "Server \"%s\" running on port %d (up to %d players)%s%s" % [name, PORT, _max_online,
+			", characters in %s" % _store.base_dir if _store != null else "",
+			", sign-in checked with %s" % _auth_check if _auth_check != "" else ""])
 		print(status)
 	else:
 		_peers[1] = {"info": my_info(), "instance": "", "state": {}, "party": 0}
@@ -322,8 +342,10 @@ func join(address: String) -> void:
 	_connect(address)
 
 
-## Join the Tainted World: its addresses in turn until one answers.
+## Join the Tainted World: its addresses in turn until one answers (signing in again first if a
+## sign-in is kept).
 func join_world() -> void:
+	await resume_sign_in()
 	_world_queue = world_addresses().duplicate()
 	_try_next_world()
 
@@ -503,9 +525,89 @@ func my_info() -> Dictionary:
 		var off: ItemInstance = p.equipment.get("offhand")
 		if off != null:
 			gear["offhand"] = [off.base.id, off.base.weapon_type == "shield"]
+	var account := {"kind": "autharr", "token": _access_token} if _access_token != "" else {"kind": "device", "key": device_key()}
 	return {"name": GameState.char_name, "class": GameState.char_class, "level": GameState.level,
-		"look": GameState.appearance, "gear": gear, "token": _token,
-		"account": {"kind": "device", "key": device_key()}}
+		"look": GameState.appearance, "gear": gear, "token": _token, "account": account}
+
+
+# ---------- signing in (Autharr) ----------
+
+## Signs in to Autharr with an email and password (signed_in_changed says how it went). The refresh
+## token is kept, encrypted with this device's key, so the next start signs in by itself.
+func sign_in(email: String, password: String) -> void:
+	await _token_request({"grant_type": "password", "username": email.strip_edges(), "password": password,
+		"scope": "openid profile email offline_access tainted"})
+
+
+## Signs in again with the kept refresh token, if there is one (at start, and before joining).
+func resume_sign_in() -> void:
+	var refresh := _kept_refresh()
+	if refresh != "" and _access_token == "":
+		await _token_request({"grant_type": "refresh_token", "refresh_token": refresh})
+
+
+func sign_out() -> void:
+	_access_token = ""
+	signed_in_as = ""
+	if FileAccess.file_exists(auth_file):
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(auth_file))
+	signed_in_changed.emit()
+
+
+func _token_request(form: Dictionary) -> void:
+	if _http == null:
+		return
+	form["client_id"] = AUTH_CLIENT
+	var body := "&".join(PackedStringArray(form.keys().map(func(k): return "%s=%s" % [k, String(form[k]).uri_encode()])))
+	sign_in_error = ""
+	if _http.get_http_client_status() != HTTPClient.STATUS_DISCONNECTED:
+		_http.cancel_request()
+	var err := _http.request(auth_url + "/connect/token", ["Content-Type: application/x-www-form-urlencoded"], HTTPClient.METHOD_POST, body)
+	if err != OK:
+		sign_in_error = "Couldn't reach the sign-in server."
+		signed_in_changed.emit()
+		return
+	var res: Array = await _http.request_completed
+	var code: int = res[1]
+	var data = JSON.parse_string((res[3] as PackedByteArray).get_string_from_utf8())
+	if res[0] != HTTPRequest.RESULT_SUCCESS:
+		sign_in_error = "Couldn't reach the sign-in server."
+	elif code != 200 or not data is Dictionary or not data.has("access_token"):
+		sign_in_error = String(data.get("error_description", "Sign-in failed.")) if data is Dictionary else "Sign-in failed."
+		if form.grant_type == "refresh_token":
+			sign_out()  # the kept sign-in no longer works: ask again
+			return
+	else:
+		_access_token = String(data.access_token)
+		if data.has("refresh_token"):
+			_keep_refresh(String(data.refresh_token))
+		signed_in_as = _name_in_token(_access_token)
+	signed_in_changed.emit()
+
+
+## The name (or email) in a JWT's claims, for showing who you are signed in as.
+static func _name_in_token(jwt: String) -> String:
+	var parts := jwt.split(".")
+	if parts.size() < 2:
+		return "?"
+	var b64 := parts[1].replace("-", "+").replace("_", "/")
+	while b64.length() % 4 != 0:
+		b64 += "="
+	var claims = JSON.parse_string(Marshalls.base64_to_utf8(b64))
+	return String(claims.get("name", claims.get("email", "?"))) if claims is Dictionary else "?"
+
+
+func _keep_refresh(token: String) -> void:
+	var f := FileAccess.open_encrypted_with_pass(auth_file, FileAccess.WRITE, device_key())
+	if f != null:
+		f.store_string(token)
+
+
+func _kept_refresh() -> String:
+	if not FileAccess.file_exists(auth_file):
+		return ""
+	var f := FileAccess.open_encrypted_with_pass(auth_file, FileAccess.READ, device_key())
+	return f.get_as_text().strip_edges() if f != null else ""
 
 
 ## This device's account key (made once, kept in user://): who you are to a server that keeps
@@ -792,7 +894,22 @@ func _on_hello(id: int, protocol: int, info: Dictionary) -> void:
 	var token := String(info.get("token", "")).left(64) if info.get("token") is String else ""
 	var account := ""
 	if _store != null:
-		account = _account_of(info.get("account", {}))
+		var a = info.get("account", {})
+		if _auth_check != "":
+			# Signing in is required: Autharr says who the token belongs to
+			if not a is Dictionary or String(a.get("kind", "")) != "autharr" or String(a.get("token", "")) == "":
+				_send(id, "_rpc_refused", ["Sign in to play on this server."])
+				return
+			_pending[id] = Time.get_ticks_msec()  # a moment more while Autharr answers
+			account = await _check_sign_in(String(a.token).left(8192))
+			_pending.erase(id)
+			if not multiplayer.get_peers().has(id) and id != 1:
+				return  # gone while waiting
+			if account == "":
+				_send(id, "_rpc_refused", ["Your sign-in didn't work: sign in again."])
+				return
+		else:
+			account = _account_of(a)
 		if account == "":
 			_send(id, "_rpc_refused", ["That server needs you to sign in."])
 			return
@@ -840,6 +957,24 @@ func _on_enter(id: int, inst: String, state: Dictionary) -> void:
 		if other != id and _peers[other].instance == inst:
 			_send(id, "_rpc_present", [other, _peers[other].info, _peers[other].state])
 	_tell_instance(inst, id, "_rpc_present", [id, rec.info, state])
+
+
+## Asks Autharr whose access token this is ("a" + its subject, or "" if it isn't a valid one).
+func _check_sign_in(access_token: String) -> String:
+	var http := HTTPRequest.new()
+	http.timeout = 8.0
+	add_child(http)
+	var err := http.request(_auth_check + "/connect/userinfo", ["Authorization: Bearer " + access_token])
+	if err != OK:
+		http.queue_free()
+		return ""
+	var res: Array = await http.request_completed
+	http.queue_free()
+	if res[0] != HTTPRequest.RESULT_SUCCESS or res[1] != 200:
+		return ""
+	var d = JSON.parse_string((res[3] as PackedByteArray).get_string_from_utf8())
+	var sub := String(d.get("sub", "")) if d is Dictionary else ""
+	return ("a" + sub.left(64)) if sub != "" else ""
 
 
 ## The account a hello's `account` field stands for ("" if none): a device key for now.
