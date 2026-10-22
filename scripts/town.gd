@@ -42,6 +42,7 @@ var _leaving := false
 func _ready() -> void:
 	y_sort_enabled = true
 	add_child(TownMap.new())
+	add_child(NetPresence.new())  # online: everyone else in town (Net.TOWN)
 
 	player = Player.new()
 	player.class_def = ClassLibrary.get_class_def(GameState.char_class)

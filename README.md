@@ -138,6 +138,26 @@ light armour nothing. The item card lists the requirements, red where you fall s
 put it on until you have them. Gear that stops meeting them (points taken back) stays on, tinted
 red, and gives nothing until it does again. Older characters get all their points to add.
 
+### Multiplayer
+Everyone online meets in Ashfall Outpost; parties of up to 4 will play zones and rifts together,
+each with their own loot. For now it works over the Wi-Fi. Being built in stages:
+1. **Shared town (done).** `Net` (autoload, `scripts/net.gd`) is the server, a host or a client over
+   ENet on port 24601. On character select, **🌐 Play Online** lists the games on your Wi-Fi (servers
+   answer a broadcast on port 24602), joins one by address, or hosts one on this device. In town
+   (`NetPresence`) you see everyone else there as a `RemotePlayer`: their looks, gear, dyes, name and
+   level, walking where they walk. Each game runs its own town; the server only passes on who is where
+   (`Net.enter(instance)`, states about 15 times a second). Characters stay in each player's save.
+   Going back to character select goes offline; a host doing so ends the game for everyone.
+2. Parties: invite a player in town, a party list and their life bars on the HUD.
+3. Zones and rifts together: the party leader's game runs the monsters, the others' games follow it;
+   each player's loot drops only for them.
+4. Over the internet: a server reachable from outside (a port forwarded to it).
+
+A dedicated server (no window): `.\run_server.ps1 [-Name Home]`, or
+`godot --headless --path . -- --server --name=Home`. Test without a second device:
+`scratch/net_bot.tscn` (`-- --bot=walker`, `--bot=watcher` checks what it sees, `--bot=scan`) and
+`scratch/capture_net.tscn` (a screenshot of the town online).
+
 ### Hirelings
 Diablo II's mercenaries (`scripts/hirelings.gd` the rules, `hireling_db.gd` the types,
 `hireling.gd` the fighter, `hire_ui.gd` the Captain's window, `hireling_panel.gd` its inventory tab,

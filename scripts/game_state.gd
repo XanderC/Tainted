@@ -99,6 +99,8 @@ var _save_queued := false
 
 func _ready() -> void:
 	get_tree().root.theme = UIKit.ui_theme()  # the pack's scrollbars everywhere
+	if "--server" in OS.get_cmdline_user_args():
+		return  # a dedicated server (Net) plays no character: nothing to load or save
 	SkillTree.init_skills()
 	RuneDef.DB.init_catalog()
 	_new_game()  # defaults until a character is picked on the select screen
@@ -528,6 +530,7 @@ func add_xp(amount: float) -> void:
 	if gained:
 		skills_changed.emit()
 		_changed()
+		Net.update_looks()  # others see your new level
 	else:
 		_queue_save()  # no UI refresh needed for plain XP ticks
 

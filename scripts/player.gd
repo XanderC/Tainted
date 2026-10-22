@@ -1438,6 +1438,8 @@ func _sync_gear_visuals() -> void:
 	if rig == null:
 		return
 	dress_rig(rig, equipment)
+	if GameState.player == self:
+		Net.update_looks()  # others online see the new gear
 
 
 ## Whether worn (or wearable) gear meets its attribute requirements, so its stats count.

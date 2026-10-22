@@ -3,6 +3,8 @@ extends Control
 ## The game's start screen: your characters on the left, the picked one standing on the right
 ## with Play and Delete. "Create New Character" swaps the right side for the creation form
 ## (pick a class, enter a name). Each character has its own save; the stash is shared.
+## "Play Online" swaps it for the online screen: games on your Wi-Fi (Net.scan), join by address,
+## or host one on this device. Coming back here takes you offline (you may pick another character).
 
 const SCENE := "res://scenes/character_select.tscn"
 const TOWN_SCENE := "res://scenes/town.tscn"
@@ -20,6 +22,12 @@ var _rig: RigSprite
 var _name_edit: LineEdit
 var _name_error: Label
 var _delete_armed := false
+var _online := false  # the online screen is shown on the right
+var _servers: Array = []  # games found on the Wi-Fi (Net.servers_found)
+var _scan_t := 0.0
+var _net_status: Label
+var _server_box: VBoxContainer
+var _addr_edit: LineEdit
 
 
 func _ready() -> void:
@@ -32,6 +40,10 @@ func _ready() -> void:
 			GameState.give_starter_skills()
 			get_tree().change_scene_to_file.call_deferred("res://scenes/main.tscn")
 			return
+	if Net.online() or Net.mode == Net.Mode.CONNECTING:
+		Net.leave()  # back from a game: offline, free to pick any character
+	Net.status_changed.connect(_on_net_status)
+	Net.servers_found.connect(_on_servers_found)
 	_build()
 	_selected = GameState.last_character if not GameState.character_info(GameState.last_character).is_empty() else ""
 	if _selected == "" and not GameState.characters.is_empty():
@@ -117,10 +129,25 @@ func _build() -> void:
 	rrow.add_child(_right)
 
 
+func _exit_tree() -> void:
+	Net.stop_scan()
+
+
+func _process(delta: float) -> void:
+	if _online:
+		_scan_t -= delta
+		if _scan_t <= 0.0:
+			_scan_t = 3.0  # ask again now and then: servers come and go
+			Net.scan()
+
+
 func _refresh() -> void:
 	_delete_armed = false
 	_build_list()
-	if _creating:
+	if _online and not _creating:
+		_build_online()
+		_dress(GameState.peek_equipment(_selected))
+	elif _creating:
 		_build_create()
 		_dress({})
 	else:
@@ -152,6 +179,7 @@ func _build_list() -> void:
 		b.pressed.connect(func():
 			_selected = id
 			_creating = false
+			_online = false
 			_refresh()
 		)
 		_list.add_child(b)
@@ -200,6 +228,13 @@ func _build_info() -> void:
 	var play := UIKit.button("▶  PLAY", Color(0.14, 0.38, 0.18), Color(0.40, 1.0, 0.55), Vector2(0, 72), 26)
 	play.pressed.connect(_play)
 	_right.add_child(play)
+	var online := UIKit.button("🌐  Play Online", Color(0.10, 0.20, 0.34), Color(0.45, 0.70, 1.0), Vector2(0, 56), 20)
+	online.pressed.connect(func():
+		_online = true
+		_scan_t = 0.0
+		_refresh()
+	)
+	_right.add_child(online)
 	var del := UIKit.button("🗑  Delete Character", Color(0.20, 0.08, 0.08), Color(0.60, 0.25, 0.25), Vector2(0, 50), 16)
 	del.pressed.connect(func():
 		if not _delete_armed:
@@ -222,6 +257,93 @@ func _build_info() -> void:
 func _play() -> void:
 	if GameState.select_character(_selected):
 		get_tree().change_scene_to_file(_first_scene())
+
+
+# ---------- right: playing online ----------
+
+func _build_online() -> void:
+	UIKit.clear(_right)
+	var c := GameState.character_info(_selected)
+	_right.add_child(UIKit.label("PLAY ONLINE", 30, Color(0.70, 0.85, 1.0)))
+	_right.add_child(UIKit.label("as %s. Everyone online meets in Ashfall Outpost." % String(c.get("name", "")), 15, UIKit.TEXT_DIM, true))
+	_net_status = UIKit.label(Net.status if Net.mode != Net.Mode.OFFLINE or Net.status != "Offline" else "", 15, Color(1.0, 0.75, 0.45), true)
+	_right.add_child(_net_status)
+
+	var sec := UIKit.section(_right, "GAMES ON YOUR WI-FI")
+	_server_box = VBoxContainer.new()
+	_server_box.add_theme_constant_override("separation", 6)
+	sec.add_child(_server_box)
+	_fill_servers()
+
+	var addr_sec := UIKit.section(_right, "JOIN BY ADDRESS")
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 8)
+	addr_sec.add_child(row)
+	_addr_edit = LineEdit.new()
+	_addr_edit.placeholder_text = "e.g. 192.168.86.18"
+	_addr_edit.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_addr_edit.custom_minimum_size = Vector2(0, 46)
+	_addr_edit.add_theme_font_size_override("font_size", 18)
+	row.add_child(_addr_edit)
+	var join := UIKit.button("Join", Color(0.10, 0.20, 0.34), Color(0.45, 0.70, 1.0), Vector2(120, 46), 17)
+	join.pressed.connect(func():
+		if _addr_edit.text.strip_edges() != "":
+			_connect_to(_addr_edit.text)
+	)
+	row.add_child(join)
+
+	var host := UIKit.button("🏠  Host a game on this device", Color(0.14, 0.30, 0.18), Color(0.40, 0.95, 0.55), Vector2(0, 52), 18)
+	host.pressed.connect(func():
+		if GameState.select_character(_selected) and Net.host():
+			get_tree().change_scene_to_file(_first_scene())
+	)
+	_right.add_child(host)
+	var back := UIKit.button("←  Back", Color(0.16, 0.14, 0.18), Color(0.50, 0.45, 0.50), Vector2(0, 44), 15)
+	back.pressed.connect(func():
+		Net.leave()
+		_online = false
+		_refresh()
+	)
+	_right.add_child(back)
+
+
+func _on_servers_found(list: Array) -> void:
+	_servers = list
+	if _online:
+		_fill_servers()
+
+
+func _fill_servers() -> void:
+	if _server_box == null or not is_instance_valid(_server_box):
+		return
+	UIKit.clear(_server_box)
+	if _servers.is_empty():
+		_server_box.add_child(UIKit.label("Looking... (a game hosted on a phone or PC on this Wi-Fi shows up here)", 14, UIKit.TEXT_DIM, true))
+		return
+	for s in _servers:
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 10)
+		_server_box.add_child(row)
+		var l := UIKit.label("%s   (%d / %d online)" % [s.name, int(s.players), int(s.max)], 17, Color(0.92, 0.90, 0.84))
+		l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		row.add_child(l)
+		var addr: String = s.address
+		var b := UIKit.button("Join", Color(0.10, 0.20, 0.34), Color(0.45, 0.70, 1.0), Vector2(110, 42), 16)
+		b.pressed.connect(func(): _connect_to(addr))
+		row.add_child(b)
+
+
+## Loads the character, then joins; Net.status_changed says how it went.
+func _connect_to(address: String) -> void:
+	if GameState.select_character(_selected):
+		Net.join(address)
+
+
+func _on_net_status() -> void:
+	if is_instance_valid(_net_status):
+		_net_status.text = Net.status
+	if _online and Net.mode == Net.Mode.CLIENT:
+		get_tree().change_scene_to_file(_first_scene())  # in: off to town
 
 
 ## New characters (and ones who quit midway) go to the tutorial map first.
