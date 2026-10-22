@@ -40,6 +40,15 @@ var _minions: Array = [] # Summoner
 
 signal minion_spawned(m: Enemy)
 
+## Party play (CoopRift): every monster has an id the party's games share. In a follower's game it is
+## `remote`: it doesn't think, it shows what the host's copy does (apply_snapshot), and hits on it go
+## to the host (CoopRift.forward_*), which sends back its life and its death (remote_die).
+var net_id := 0
+var remote := false
+var _net_pos := Vector2.ZERO
+var _net_anim := ""
+var _net_flags := 0
+
 ## Who it is going for: you, or your hireling when that is nearer (or taunted it). `target` stays
 ## you: it is who wakes it, gets the kill and is struck by its affixes.
 var _foe: Node2D = null
@@ -99,6 +108,9 @@ func _ready() -> void:
 
 func _physics_process(delta: float) -> void:
 	if _dead:
+		return
+	if remote:
+		_remote_step(delta)
 		return
 
 	# Handle status effect timers and DoTs
@@ -224,6 +236,7 @@ func _loose_arrow() -> void:
 	a.target = _foe
 	a.maze = maze
 	get_parent().add_child(a)
+	CoopRift.host_fx("arrow", {"id": net_id, "x": a.global_position.x, "y": a.global_position.y, "dx": a.dir.x, "dy": a.dir.y})
 
 
 func _process_ailments(delta: float) -> void:
@@ -291,23 +304,37 @@ func _apply_dot(amount: float, dtype: RuneDef.DamageType) -> void:
 func stun(seconds: float) -> void:
 	if _dead or is_boss:
 		return
+	if remote:
+		CoopRift.forward_status(net_id, "stun", seconds)
+		return
 	_stun_t = maxf(_stun_t, seconds)
 
 
 func apply_sunder(seconds: float) -> void:
+	if remote:
+		CoopRift.forward_status(net_id, "sunder", seconds)
+		return
 	_sunder_t = maxf(_sunder_t, seconds)
 
 
-## Its foe: a hireling that taunted it, else whichever of you and your hireling is nearer (the
-## hireling only when clearly nearer, so it doesn't flip between you).
+## Its foe: a hireling that taunted it, else whichever of you, your hireling and the other players in
+## your party (RemotePlayer, in a party rift) is nearest (a hireling only when clearly nearer, so it
+## doesn't flip between you).
 func _pick_foe() -> Node2D:
 	if _taunt_t > 0.0 and _alive(_taunter):
 		return _taunter
+	var best: Node2D = target if _alive(target) else null
+	var best_d := best.global_position.distance_to(global_position) if best != null else INF
+	for rp in get_tree().get_nodes_in_group("remote_players"):
+		if _alive(rp):
+			var d: float = rp.global_position.distance_to(global_position)
+			if d < best_d:
+				best = rp
+				best_d = d
 	var h: Hireling = Hirelings.node
-	if _alive(h) and h.is_inside_tree() and (not _alive(target)
-			or h.global_position.distance_to(global_position) < target.global_position.distance_to(global_position) * 0.85):
+	if _alive(h) and h.is_inside_tree() and h.global_position.distance_to(global_position) < best_d * 0.85:
 		return h
-	return target
+	return best if best != null else target
 
 
 ## A foe that can still be fought.
@@ -318,6 +345,9 @@ func _alive(n: Node2D) -> bool:
 ## A hireling's taunt: it comes for the hireling for a while, whoever is nearer.
 func taunt(by: Node2D, seconds: float) -> void:
 	if _dead:
+		return
+	if remote:
+		CoopRift.forward_status(net_id, "taunt", seconds)  # the host has it go for your character
 		return
 	_taunter = by
 	_taunt_t = maxf(_taunt_t, seconds)
@@ -341,6 +371,14 @@ func take_damage(amount: float, crit: bool = false,
 		dtype: RuneDef.DamageType = RuneDef.DamageType.PHYSICAL,
 		ailment: String = "") -> void:
 	if _dead:
+		return
+	if remote:
+		# The host's copy takes it; the number shows here straight away
+		CoopRift.forward_hit(net_id, amount, crit, dtype, ailment)
+		if _shield_t > 0.0:
+			_spawn_text("Immune", Color(0.85, 0.85, 1.0))
+		else:
+			_spawn_number(amount * _resist(dtype), crit, dtype)
 		return
 	wake()
 	if _shield_t > 0.0:
@@ -412,7 +450,8 @@ func _die() -> void:
 
 func _do_slam() -> void:
 	queue_redraw()
-	for who in [target, Hirelings.node]:  # the slam hits you and your hireling alike
+	# The slam hits you, your hireling and the party alike
+	for who in [target, Hirelings.node] + get_tree().get_nodes_in_group("remote_players"):
 		if _alive(who) and who.global_position.distance_to(global_position) < SLAM_RADIUS:
 			who.take_damage(touch_damage * 2.0)
 	var ring := Node2D.new()
@@ -493,6 +532,73 @@ func _draw() -> void:
 		return
 	draw_rect(Rect2(-18, top, 36, 5), Color(0, 0, 0, 0.6))
 	draw_rect(Rect2(-18, top, 36.0 * clampf(hp / max_hp, 0.0, 1.0), 5), Color(0.9, 0.15, 0.15))
+
+
+# ---------- party play: a follower's copy ----------
+
+## What the host's copy is doing now, for the followers: [id, x, y, life, animation, facing, flags].
+func snapshot() -> Array:
+	var flags := 0
+	for pair in [[_chill_t, 1], [_freeze_t, 2], [_burn_t, 4], [_shock_t, 8], [_poison_t, 16], [_stun_t, 32],
+			[_slam_t, 64], [_shield_t, 128]]:
+		if pair[0] > 0.0:
+			flags |= int(pair[1])
+	if _aggro:
+		flags |= 256
+	return [net_id, global_position.x, global_position.y, hp, rig.current_anim if rig != null else "",
+		-1.0 if rig != null and rig._facing_left else 1.0, flags]
+
+
+## The host's copy, as it is now (a follower's game).
+func apply_snapshot(s: Array) -> void:
+	_net_pos = Vector2(float(s[1]), float(s[2]))
+	if absf(float(s[3]) - hp) > 0.01:
+		hp = float(s[3])
+		hp_changed.emit(hp, max_hp)
+		queue_redraw()
+	_net_anim = String(s[4])
+	if rig != null:
+		rig.set_facing(float(s[5]))
+	_net_flags = int(s[6])
+	_slam_t = SLAM_WINDUP * 0.5 if _net_flags & 64 else 0.0
+	_shield_t = 1.0 if _net_flags & 128 else 0.0
+	_aggro = (_net_flags & 256) != 0
+
+
+## A follower's copy: glides to where the host's is, plays what it plays, tinted by its ailments.
+func _remote_step(delta: float) -> void:
+	if _net_pos == Vector2.ZERO:
+		_net_pos = global_position
+	if global_position.distance_to(_net_pos) > 300.0:
+		global_position = _net_pos  # a teleport, or far behind
+	else:
+		global_position = global_position.lerp(_net_pos, 1.0 - exp(-14.0 * delta))
+	if _net_anim != "" and rig != null:
+		if _net_anim in ["Walking", "Idle", "Idle Blinking", "Running"]:
+			rig.play_loop(_net_anim)
+		elif rig.current_anim != _net_anim and not rig.is_busy():
+			rig.play_once(_net_anim, 1.3)
+	var f := _net_flags
+	rig.modulate = Color(0.4, 0.85, 1.0) if f & 2 else Color(0.65, 0.88, 1.0) if f & 1 else \
+		Color(1.0, 0.5, 0.2) if f & 4 else Color(1.0, 0.95, 0.4) if f & 8 else Color(0.7, 0.3, 0.95) if f & 16 else \
+		Color(1.0, 1.0, 0.5) if f & 32 else _tint
+	if _slam_t > 0.0 or _shield_t > 0.0:
+		queue_redraw()
+
+
+## The host's copy died: so does this one (its XP and the kill count here, as for your own kills).
+func remote_die() -> void:
+	if not _dead:
+		hp = 0.0
+		_die()
+
+
+## A follower's copy becomes the real one: its host left and this game hosts now (CoopRift).
+func take_over(you: Player) -> void:
+	remote = false
+	target = you
+	if _net_pos != Vector2.ZERO:
+		global_position = _net_pos
 
 
 # ---------- Elite / Legendary ----------

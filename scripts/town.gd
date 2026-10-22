@@ -270,6 +270,9 @@ func _to_character_select() -> void:
 
 func enter_dungeon() -> void:
 	GameState.save()
+	if Net.in_party():
+		Net.open_party_rift(GameState.rift_level)  # the party is asked along; you go in (Net.join_portal)
+		return
 	get_tree().change_scene_to_file(DUNGEON_SCENE)
 
 

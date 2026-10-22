@@ -170,6 +170,25 @@ name and level, walking where they walk. Going back to character select goes off
   and whereabouts (town, zone, rift), wherever you each are. Tap a row for their card.
 - Notices along the top: who joined, left or now leads. Leaving the game takes you out of your party.
 
+**Party rifts** (`CoopRift`, with `Enemy.remote` and `DungeonRun.remote`):
+- Entering a rift at the Rift Gate while in a party opens it for the party (`Net.open_party_rift`). You
+  go in, and the others get "Brom opened a Rift (level 3)" with **Join** / Not now. While it's open
+  the party list has a Join button too, for latecomers. Only that party can enter it.
+- The first member in **hosts** it: their game runs the mazes, monsters and run as a solo rift does,
+  and sends the others what happens (maze, spawns, positions and life about 12 times a second,
+  deaths, the run's kills, time and stage, archers' arrows).
+- The others' games show **copies** of those monsters. Every hit their player or hireling lands goes
+  to the host's game, which applies it. The host's monsters go for every player (the nearest), and
+  what hits another player is sent to their game, which takes it with their own armour.
+- Stepping into the portal asks the host to take everyone through. Monsters have +60% life per extra
+  player.
+- **Rewards:** each game gives its own XP for every death, and when the boss dies each player's game
+  rolls **their own loot** (and orbs, gems, runes), so nobody can take anyone else's.
+- **Handover:** if the host leaves, the next player takes over; their copies become the real monsters
+  and the run carries on.
+- Not yet shared: players' skill effects (others see their animations), hirelings (each fights in its
+  owner's game), and the elite affixes that hit only the host's player (molten ground, frost orbs).
+
 **The server.** `.\deploy_server.ps1` deploys it:
 1. It exports the game as a pack (`builds\server\tainted.pck`, with a "Linux Server" export preset it
    adds the first time).
@@ -199,13 +218,15 @@ un_server.ps1` or
 4. Before strangers play: sign-in through Autharr, so names are owned and a player can be banned.
    Today any name is accepted and characters come from the player's own save.
 
-**Stages:** 1. shared town (done, LAN). 2. parties (done).
+**Stages:** 1. shared town (done, LAN). 2. parties (done). 3. party rifts (done); story zones next.
 3. zones and rifts together: the party leader's game runs the monsters and each player's loot is
 their own. 4. open to the world (above).
 
 Test without a second device: `scratch/net_bot.tscn` (`-- --bot=walker`, `--bot=watcher` checks what
 it sees, `--bot=scan`, `--bot=partier` checks parties, `--accept` / `--invite`, `--addr=ws://...`) and `scratch/capture_net.tscn` (a screenshot of the town
-online; `--world`, `--host`, `--party` for an invite, the party list and a card).
+online; `--world`, `--host`, `--party` for an invite, the party list and a card), and
+`scratch/coop_bot.tscn` plays a whole party rift with two bots (`--role=leader|follower`; `--shot`
+for a screenshot, `--leave-after=12` and `--takeover` to test a handover).
 
 ### Hirelings
 Diablo II's mercenaries (`scripts/hirelings.gd` the rules, `hireling_db.gd` the types,

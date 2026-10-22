@@ -85,7 +85,7 @@ func _on_status() -> void:
 
 
 func _refresh_line() -> void:
-	if not Net.online():
+	if not Net.online() or Net.party_of_instance(instance) != 0:  # a party's rift: the party list says who's there
 		_line.text = ""
 		return
 	var n := _remotes.size()

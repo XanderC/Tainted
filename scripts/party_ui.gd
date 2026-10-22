@@ -4,6 +4,8 @@ extends Node
 ##  - the party list, top right under the menu buttons: each other member's name, level, life and
 ##    whereabouts, the leader crowned; tap one for their card. "Leave" under it.
 ##  - an invite: "Brom invites you to their party", Join / No (it lapses after Net.INVITE_TIMEOUT).
+##  - a party rift opened by a member: "Brom opened Rift 3", Join / Not now; while it's open the
+##    party list has a Join button too, for whoever said not now or came later.
 ##  - a player's card (show_card): name, level, class, and Invite / Make leader / Remove as fits.
 ##  - short notices from the server ("Kael joined the party").
 ## Hidden while offline and on the character select screen.
@@ -16,7 +18,7 @@ var _pop_layer: CanvasLayer
 var _frame: VBoxContainer
 var _rows := {}  # member id -> {"life": ColorRect, "where": Label, "dead": Label}
 var _invite_box: PanelContainer
-var _invites: Array = []  # [{"id", "name", "at"}], oldest first
+var _invites: Array = []  # [{"id", "name", "at"}] or [{"portal": {...}, "at"}], oldest first
 var _card: PanelContainer
 var _card_id := 0
 var _toast: Label
@@ -50,9 +52,16 @@ func _ready() -> void:
 	_toast.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_pop_layer.add_child(_toast)
 
-	Net.party_changed.connect(_rebuild)
+	Net.party_changed.connect(func():
+		if Net.in_party():  # in a party now (however the invite was answered): other invites lapse
+			var n := _invites.size()
+			_invites = _invites.filter(func(i): return i.has("portal"))
+			if _invites.size() != n:
+				_show_invite()
+		_rebuild())
 	Net.party_vitals.connect(_on_vitals)
 	Net.invited.connect(_on_invited)
+	Net.party_portal.connect(_on_portal)
 	Net.notice.connect(say)
 	Net.status_changed.connect(func():
 		if not Net.online():
@@ -67,6 +76,9 @@ func _process(_delta: float) -> void:
 	var show := Net.online() and scene != null and not scene is CharacterSelect
 	_frame_layer.visible = show
 	_pop_layer.visible = show
+	# A rift you're in already needs no asking
+	if not _invites.is_empty() and _invites[0].has("portal") and Net.instance == String(_invites[0].portal.inst):
+		_drop_portal_asks()
 	# Invites run out
 	if not _invites.is_empty() and Time.get_ticks_msec() - int(_invites[0].at) > Net.INVITE_TIMEOUT * 1000.0:
 		_invites.pop_front()
@@ -100,6 +112,12 @@ func _rebuild() -> void:
 	var leave := UIKit.button("Leave", Color(0.22, 0.10, 0.10), Color(0.70, 0.35, 0.30), Vector2(70, 28), 12)
 	leave.pressed.connect(Net.leave_party)
 	head.add_child(leave)
+	var portal: Dictionary = Net.party.get("portal", {})
+	if not portal.is_empty() and Net.instance != String(portal.inst):
+		var join := UIKit.button("🌀  Join %s's Rift %d" % [portal.by_name, int(portal.level)],
+			Color(0.20, 0.10, 0.30), Color(0.85, 0.55, 1.0), Vector2(ROW_W, 40), 14)
+		join.pressed.connect(func(): Net.join_portal(Net.party.get("portal", {})))
+		_frame.add_child(join)
 	for m in Net.party.members:
 		if int(m.id) != me:
 			_frame.add_child(_row(m))
@@ -130,7 +148,7 @@ func _row(m: Dictionary) -> Control:
 	var top := HBoxContainer.new()
 	top.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	v.add_child(top)
-	var lead := "ðŸ‘‘ " if int(Net.party.leader) == id else ""
+	var lead := "👑 " if int(Net.party.leader) == id else ""
 	var n := UIKit.label("%s%s" % [lead, m.name], 14, RemotePlayer.NAME_COLOR)
 	n.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	n.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -164,13 +182,22 @@ func _on_vitals(batch: Dictionary) -> void:
 			var h := clampf(float(batch[id].get("h", 1.0)), 0.0, 1.0)
 			_rows[id].life.anchor_right = h
 			var w := String(batch[id].get("w", ""))
-			_rows[id].where.text = ("â˜  Dead  â€¢  " if h <= 0.0 else "") + (w if w != "" else "Choosing a character")
+			_rows[id].where.text = ("☠ Dead  •  " if h <= 0.0 else "") + (w if w != "" else "Choosing a character")
 
 
 # ---------- invites ----------
 
+## A member opened a party rift: ask (unless it's yours: you're on your way in).
+func _on_portal(portal: Dictionary) -> void:
+	if int(portal.get("by", 0)) == Net.my_id():
+		return
+	_invites = _invites.filter(func(i): return not i.has("portal"))
+	_invites.append({"portal": portal, "at": Time.get_ticks_msec()})
+	_show_invite()
+
+
 func _on_invited(from_id: int, from_name: String) -> void:
-	_invites = _invites.filter(func(i): return i.id != from_id)
+	_invites = _invites.filter(func(i): return i.get("id", 0) != from_id)
 	_invites.append({"id": from_id, "name": from_name, "at": Time.get_ticks_msec()})
 	_show_invite()
 
@@ -183,6 +210,9 @@ func _show_invite() -> void:
 	if _invites.is_empty():
 		return
 	var inv: Dictionary = _invites[0]
+	if inv.has("portal"):
+		_show_portal_ask(inv.portal)
+		return
 	_invite_box = PanelContainer.new()
 	_invite_box.add_theme_stylebox_override("panel", UIKit.window_box(16))
 	_invite_box.set_anchors_preset(Control.PRESET_CENTER_TOP)
@@ -192,7 +222,7 @@ func _show_invite() -> void:
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 10)
 	_invite_box.add_child(v)
-	var l := UIKit.label("âš”  %s invites you to their party" % inv.name, 18, Color(0.92, 0.90, 0.84))
+	var l := UIKit.label("⚔  %s invites you to their party" % inv.name, 18, Color(0.92, 0.90, 0.84))
 	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	v.add_child(l)
 	var row := HBoxContainer.new()
@@ -208,11 +238,43 @@ func _show_invite() -> void:
 	row.add_child(no)
 
 
+func _show_portal_ask(portal: Dictionary) -> void:
+	_invite_box = PanelContainer.new()
+	_invite_box.add_theme_stylebox_override("panel", UIKit.window_box(16))
+	_invite_box.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	_invite_box.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	_invite_box.offset_top = 90.0
+	_pop_layer.add_child(_invite_box)
+	var v := VBoxContainer.new()
+	v.add_theme_constant_override("separation", 10)
+	_invite_box.add_child(v)
+	var l := UIKit.label("🌀  %s opened a Rift (level %d)" % [portal.by_name, int(portal.level)], 18, Color(0.88, 0.72, 1.0))
+	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	v.add_child(l)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 12)
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	v.add_child(row)
+	var yes := UIKit.button("Join", Color(0.20, 0.10, 0.30), Color(0.85, 0.55, 1.0), Vector2(140, 46), 17)
+	yes.pressed.connect(func():
+		_drop_portal_asks()
+		Net.join_portal(portal))
+	row.add_child(yes)
+	var no := UIKit.button("Not now", Color(0.16, 0.14, 0.18), Color(0.50, 0.45, 0.50), Vector2(140, 46), 17)
+	no.pressed.connect(_drop_portal_asks)
+	row.add_child(no)
+
+
+func _drop_portal_asks() -> void:
+	_invites = _invites.filter(func(i): return not i.has("portal"))
+	_show_invite()
+
+
 func _answer(id: int, accept: bool) -> void:
 	Net.answer_invite(id, accept)
-	_invites = _invites.filter(func(i): return i.id != id)
+	_invites = _invites.filter(func(i): return i.get("id", 0) != id)
 	if accept:
-		_invites.clear()  # in a party now: the rest lapse
+		_invites = _invites.filter(func(i): return i.has("portal"))  # in a party now: other invites lapse
 	_show_invite()
 
 
@@ -251,12 +313,12 @@ func show_card(id: int) -> void:
 	v.add_child(UIKit.label("Level %d %s" % [int(info.get("level", 1)), cd.display_name], 16, UIKit.TEXT_DIM))
 	var member := Net.is_member(id)
 	if member:
-		v.add_child(UIKit.label("ðŸ‘‘ Leads your party" if int(Net.party.leader) == id else "In your party", 15, UIKit.GOLD))
+		v.add_child(UIKit.label("👑 Leads your party" if int(Net.party.leader) == id else "In your party", 15, UIKit.GOLD))
 		if Net.is_leader():
-			_card_button(v, "ðŸ‘‘  Make leader", Color(0.30, 0.26, 0.10), UIKit.GOLD, func(): Net.promote(id))
+			_card_button(v, "👑  Make leader", Color(0.30, 0.26, 0.10), UIKit.GOLD, func(): Net.promote(id))
 			_card_button(v, "Remove from party", Color(0.22, 0.10, 0.10), Color(0.70, 0.35, 0.30), func(): Net.kick(id))
 	elif not Net.in_party() or Net.is_leader():
-		_card_button(v, "âš”  Invite to party", Color(0.12, 0.26, 0.40), Color(0.50, 0.80, 1.0), func(): Net.invite(id))
+		_card_button(v, "⚔  Invite to party", Color(0.12, 0.26, 0.40), Color(0.50, 0.80, 1.0), func(): Net.invite(id))
 	else:
 		v.add_child(UIKit.label("Only your party's leader can invite.", 14, UIKit.TEXT_DIM, true))
 

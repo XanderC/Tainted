@@ -2,6 +2,9 @@ extends Node2D
 ## A rift run: hand-made mazes (MazeLibrary) full of monster packs. Fight your way through, step
 ## into the portal for another random maze, and once enough monsters are dead (DungeonRun) the boss
 ## appears. Move: left-thumb joystick (or arrow keys on desktop).
+## With a party (Net.coop, kind "rift") it's the party's rift: CoopRift shares it, the other players
+## are there (NetPresence), and the instance's host loads the mazes (start_host) while the others
+## load what it loads (remote_maze) and ask it to go through the portal (party_travel).
 
 const PACKS_PER_MAZE := 6        # how many of a maze's "m" spots get a monster pack
 const PACK_SIZE := Vector2i(3, 5)
@@ -26,6 +29,7 @@ var _cam: Camera2D
 var _arrow: PortalArrow
 var _fade: ColorRect
 var _travelling := false
+var coop: CoopRift = null
 
 
 func _ready() -> void:
@@ -104,12 +108,25 @@ func _ready() -> void:
 	run = DungeonRun.new()
 	run.player = player
 	run.main = self
+	var party_rift: bool = Net.online() and String(Net.coop.get("kind", "")) == "rift"
+	if party_rift:
+		run.forced_level = int(Net.coop.get("level", 1))
+		run.remote = true  # until it's known who hosts
 	add_child(run)
 	run.boss_summoned.connect(func(_pos):
 		if portal != null:
 			portal.active = false
 	)
-	_load_maze()
+	if party_rift:
+		var presence := NetPresence.new()  # the party's other players, here with you
+		presence.instance = String(Net.coop.inst)
+		add_child(presence)
+		coop = CoopRift.new()
+		coop.main = self
+		add_child(coop)
+		_fade.color.a = 1.0  # dark until the maze is known (start_host / remote_maze)
+	else:
+		_load_maze()
 
 	menu = GameMenu.new()
 	menu.player = player
@@ -128,7 +145,12 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	if portal != null and portal.active and not _travelling and not player.dead \
 			and player.global_position.distance_to(portal.global_position) < PORTAL_REACH:
-		_travel()
+		if coop != null and not coop.is_host:
+			if not coop.travel_asked:
+				coop.travel_asked = true  # the host takes the party through
+				Net.send_event(-1, "travel", {})
+		else:
+			_travel()
 
 	for p in get_tree().get_nodes_in_group("currency_pickups"):
 		if p.delay <= 0.0 and p.global_position.distance_to(player.global_position) < 70.0:
@@ -152,19 +174,58 @@ func return_to_town() -> void:
 
 # ---------- mazes ----------
 
-## Replace the current maze with a random different one and fill it with monster packs.
-func _load_maze() -> void:
+## This game hosts the party's rift: the first maze, as for a solo rift.
+func start_host() -> void:
+	run.remote = false
+	_load_maze()
+	create_tween().tween_property(_fade, "color:a", 0.0, 0.45)
+
+
+## A party member stepped into the portal: through it we all go (the host's game).
+func party_travel() -> void:
+	if not _travelling and portal != null and portal.active:
+		_travel()
+
+
+## The host loaded a maze (`d`: {"map", "n"}): load the same one, without monsters (the host's
+## arrive as copies). `instant`: just arrived, no fade out first.
+func remote_maze(d: Dictionary, instant: bool) -> void:
+	var map := String(d.get("map", ""))
+	if map == "":
+		return
+	var load_it := func():
+		_load_maze(map, false)
+		mazes_visited = int(d.get("n", mazes_visited))
+		coop.travel_asked = false
+	if instant:
+		load_it.call()
+		create_tween().tween_property(_fade, "color:a", 0.0, 0.45)
+		return
+	_travelling = true
+	var t := create_tween()
+	t.tween_property(_fade, "color:a", 1.0, 0.35)
+	t.tween_callback(load_it)
+	t.tween_property(_fade, "color:a", 0.0, 0.45)
+	t.tween_callback(func(): _travelling = false)
+
+
+## Replace the current maze with a random different one (or `map`) and, if `spawn`, fill it with
+## monster packs.
+func _load_maze(map := "", spawn := true) -> void:
 	var prev := ""
 	if maze != null:
 		prev = maze.map_id
 		maze.queue_free()
 		portal.queue_free()
-		for e in get_tree().get_nodes_in_group("enemies"):
-			if not e.is_boss:
-				e.queue_free()
+		if spawn:  # a party member's copies go when the host says so ("gone")
+			for e in get_tree().get_nodes_in_group("enemies"):
+				if not e.is_boss:
+					e.queue_free()
 	maze = MazeMap.new()
 	# The map editor's "Test in Game" plays one map over and over (GameState.test_map)
-	maze.setup(GameState.test_map if GameState.test_map != "" else MazeLibrary.random_name(prev))
+	if map == "":
+		map = GameState.test_map if GameState.test_map != "" else MazeLibrary.random_name(prev)
+	maze.setup(map)
 	add_child(maze)
 	mazes_visited += 1
 
@@ -181,6 +242,9 @@ func _load_maze() -> void:
 	_cam.limit_bottom = int(maze.rows * MazeMap.CELL)
 	_cam.reset_smoothing()
 
+	if not spawn:
+		run.announce("%s  —  maze %d" % [maze.map_name, mazes_visited], Color(0.85, 0.7, 1.0))
+		return
 	# Monster packs on some of the maze's "m" spots (never right next to the start)
 	var spots := maze.packs.filter(func(o): return Vector2(o.x, o.y).distance_to(maze.start_pos) > 450.0)
 	spots.shuffle()
@@ -197,6 +261,8 @@ func _load_maze() -> void:
 			_spawn_enemy(at + Vector2(randf_range(-50, 50), randf_range(-50, 50)), pack,
 				lead_tier if j == 0 else MonsterAffix.Tier.NORMAL)
 	run.announce("%s  —  maze %d" % [maze.map_name, mazes_visited], Color(0.85, 0.7, 1.0))
+	if coop != null:
+		coop.maze_loaded()
 
 
 ## Step through the portal: fade out, new maze, fade in.
@@ -220,7 +286,7 @@ func _spawn_enemy(pos: Vector2, pack: String, tier := 0) -> Enemy:
 	e.aggro_range = PACK_AGGRO
 	e.pack = pack
 	var lvl := run.level
-	e.max_hp = (25.0 + kills * 1.5) * DungeonRun.hp_mult(lvl)
+	e.max_hp = (25.0 + kills * 1.5) * DungeonRun.hp_mult(lvl) * CoopRift.hp_scale()
 	e.touch_damage *= DungeonRun.damage_mult(lvl)
 	e.speed *= DungeonRun.speed_mult(lvl)
 	if not _pack_kind.has(pack):

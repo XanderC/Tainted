@@ -50,6 +50,10 @@ const REWARD_PER_LEVEL := 0.25 # +25% shards / orbs per level
 const EXTRA_ITEM_EVERY := 3    # one more boss item every N levels
 
 var level := 1
+var forced_level := 0  ## a party rift's level (the opener's pick), instead of yours
+## A party rift followed from the host's game (CoopRift): its kills, time and stage come from the host
+## (apply_net_state), and its boss arrives as a copy (boss_arrived).
+var remote := false
 var unlocked_next := false
 var state := State.FIGHTING
 var kills := 0
@@ -81,7 +85,7 @@ var _min_town_btn: Button
 
 
 func _ready() -> void:
-	level = clampi(GameState.rift_level, 1, GameState.rift_unlocked)
+	level = forced_level if forced_level > 0 else clampi(GameState.rift_level, 1, GameState.rift_unlocked)
 	_build_hud()
 	player.died.connect(_on_player_died)
 	_update_hud()
@@ -99,7 +103,7 @@ func spawning_allowed() -> bool:
 
 ## weight: how much the kill counts towards the boss (Elites and Legendaries count for more).
 func on_enemy_killed(weight := 1) -> void:
-	if state != State.FIGHTING:
+	if state != State.FIGHTING or remote:
 		return
 	kills = mini(kills + weight, KILL_TARGET)
 	if kills >= KILL_TARGET:
@@ -110,6 +114,8 @@ func on_enemy_killed(weight := 1) -> void:
 
 func _summon_boss() -> void:
 	state = State.BOSS
+	if remote:
+		return  # the host's boss arrives as a copy (boss_arrived)
 	for e in get_tree().get_nodes_in_group("enemies"):
 		e.call("_die")  # the summoning wipes the trash so the boss fight is clean
 	var b := Enemy.new()
@@ -117,7 +123,7 @@ func _summon_boss() -> void:
 	b.size_mult = 2.0
 	b.display_name = boss_name
 	b.skin = String(MonsterKinds.BOSSES[boss_kind]["skin"])
-	b.max_hp = BOSS_HP * hp_mult(level)
+	b.max_hp = BOSS_HP * hp_mult(level) * CoopRift.hp_scale()
 	b.speed = BOSS_SPEED * speed_mult(level)
 	b.touch_damage = BOSS_DAMAGE * damage_mult(level)
 	b.target = player
@@ -126,9 +132,15 @@ func _summon_boss() -> void:
 		b.position = main.maze.random_floor_near(player.global_position, 300.0, 520.0)
 	else:
 		b.position = player.global_position + Vector2.from_angle(randf() * TAU) * 450.0
+	main.add_child(b)
+	boss_arrived(b)
+
+
+## The boss is here: yours, or in a party rift a copy of the host's.
+func boss_arrived(b: Enemy) -> void:
+	state = State.BOSS
 	b.died.connect(_on_boss_died)
 	b.hp_changed.connect(func(h, m): _boss_bar.value = maxf(h, 0.0) / m * 100.0)
-	main.add_child(b)
 	boss = b
 	_boss_name.text = boss_name
 	_boss_bar.value = 100.0
@@ -190,6 +202,23 @@ func _on_boss_died(pos: Vector2) -> void:
 			main.spawn_currency("recipe", plan_drop, 1, pos + Vector2(60, 90))
 	_show_result()
 	finished.emit(on_time)
+
+
+# ---------- party rifts ----------
+
+## What the followers' runs need: stage, kills, time and which boss.
+func net_state() -> Dictionary:
+	return {"s": int(state), "k": kills, "e": elapsed, "b": boss_kind}
+
+
+func apply_net_state(d: Dictionary) -> void:
+	if d.is_empty():
+		return
+	kills = int(d.get("k", kills))
+	elapsed = float(d.get("e", elapsed))
+	boss_kind = String(d.get("b", boss_kind))
+	if int(d.get("s", state)) == State.BOSS and state == State.FIGHTING:
+		state = State.BOSS  # its boss arrives as a copy
 
 
 # ---------- rift level scaling ----------

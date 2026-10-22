@@ -26,8 +26,15 @@ extends Node
 ## leave. Members see each other's life and whereabouts wherever they are (party_vitals), and
 ## (stage 3) play zones and rifts together.
 ##
-## The server's records live in _peers (id -> {"info", "instance", "state", "party"}) and _parties;
-## the host is peer 1.
+## Party instances (stage 3): a member opens a rift (open_party_rift); the server makes an instance
+## "rift:<party>:<n>" only that party may enter, and tells the members (party_portal; the party data
+## carries it too, so latecomers can join from the party list). The first member in is the instance's
+## host (role_changed): its game runs the monsters (CoopRift), the others' games follow it. Instance
+## events (send_event / event) go between them through the server: to everyone else in the instance,
+## to its host, or to one player. When the host leaves, the next member takes over.
+##
+## The server's records live in _peers (id -> {"info", "instance", "state", "party"}), _parties and
+## _instances; the host is peer 1.
 ## RPC entry points (_rpc_*) take the sender from the MultiplayerAPI and call the _on_* handlers,
 ## which the host also calls directly for its own player.
 
@@ -41,15 +48,19 @@ signal party_changed  ## you joined, left or were removed, or the party's member
 signal invited(from_id: int, from_name: String)  ## someone invites you to their party (answer_invite)
 signal party_vitals(batch: Dictionary)  ## members' life and whereabouts: id -> {"h": 0-1, "w": place}
 signal notice(text: String)  ## a line for the player: "Brom joined the party", "Kael is already in a party"...
+signal party_portal(portal: Dictionary)  ## a member opened a party instance: {"inst", "kind", "level", "by", "by_name"}
+signal role_changed(host_id: int)  ## who hosts your instance (runs its monsters) changed; you if == my_id()
+signal event(from_id: int, kind: String, data: Variant)  ## an instance event (send_event)
 
 const PORT := 24601
 const DISCOVERY_PORT := 24602
-const PROTOCOL := 2  ## games with a different protocol can't play together
+const PROTOCOL := 3  ## games with a different protocol can't play together
 const MAX_ONLINE := 32
 const PARTY_MAX := 4
 const SEND_HZ := 15.0
 const DISCOVER_MSG := "TAINTED_DISCOVER"
 const TOWN := "town"
+const MAX_EVENTS_PER_SEC := 240  ## instance events per client (monster updates, hits...)
 const INVITE_TIMEOUT := 60.0  ## seconds an invite can be answered
 const VITALS_HZ := 2.0  ## party members' life and whereabouts, this often
 const HELLO_TIMEOUT := 10.0  ## seconds a new connection has to say hello before it is dropped
@@ -68,6 +79,10 @@ var instance := ""  ## the instance this game's player is in ("" while in none)
 var others := {}  ## the other players in your instance: id -> info
 ## Your party: {"id", "leader", "members": [{"id", "name", "level", "class"}]}, or {} when on your own.
 var party := {}
+## The party instance this game is joining or in: {"inst", "kind", "level", "by", "by_name"}, else {}.
+## Read by the scene it loads (a rift: CoopRift).
+var coop := {}
+var instance_host := 0  ## who hosts your instance (role_changed)
 var party_ui: PartyUI  ## the party list, invites and player cards on screen (not on a dedicated server)
 ## What this game sends as its player's state; by default the local Player's (bots replace it).
 var state_source: Callable = _player_state
@@ -89,6 +104,9 @@ var _parties := {}  # server only: party id -> {"leader": id, "members": [ids]}
 var _next_party := 1
 var _invites := {}  # server only: invited id -> {inviter id: msec}
 var _vitals_t := 0.0
+var _instances := {}  # server only: party instance -> {"host": id}
+var _next_inst := 1
+var _event_rate := {}  # server only: id -> [second, events that second]
 
 
 func _ready() -> void:
@@ -133,6 +151,18 @@ func is_leader() -> bool:
 ## Whether `id` is in your party.
 func is_member(id: int) -> bool:
 	return in_party() and party.members.any(func(m): return int(m.id) == id)
+
+
+## Whether this game hosts its instance (runs the monsters for the party there).
+func is_instance_host() -> bool:
+	return online() and instance_host == my_id()
+
+
+## A party instance's id ("rift:3:12" -> party 3), or 0 for a shared one like the town.
+static func party_of_instance(inst: String) -> int:
+	if inst.begins_with("rift:") or inst.begins_with("zone:"):
+		return int(inst.get_slice(":", 1))
+	return 0
 
 
 func online() -> bool:
@@ -256,6 +286,10 @@ func leave() -> void:
 	_world_queue.clear()
 	_parties.clear()
 	_invites.clear()
+	_instances.clear()
+	_event_rate.clear()
+	coop = {}
+	instance_host = 0
 	instance = ""
 	if not party.is_empty():
 		party = {}
@@ -339,6 +373,9 @@ func enter(inst: String) -> void:
 		peer_left.emit(id)
 	others.clear()
 	instance = inst
+	instance_host = 0
+	if coop.get("inst", "") != inst:
+		coop = {}  # left the party instance
 	var s: Dictionary = state_source.call() if state_source.is_valid() else {}
 	if mode == Mode.HOST:
 		_on_enter(1, inst, s)
@@ -429,6 +466,8 @@ func _on_peer_disconnected(id: int) -> void:
 	if not is_server() or not _peers.has(id):
 		return
 	var inst: String = _peers[id].instance
+	_peers[id].instance = ""
+	_instance_left(inst, id)
 	_remove_from_party(id, "%s left the game" % _peers[id].info.name)
 	_invites.erase(id)
 	for t in _invites:
@@ -436,6 +475,7 @@ func _on_peer_disconnected(id: int) -> void:
 	_peers.erase(id)
 	_dirty.erase(id)
 	_rate.erase(id)
+	_event_rate.erase(id)
 	_tell_instance(inst, id, "_rpc_gone", [id])
 	if mode == Mode.SERVER:
 		print("Net: %d left (%d online)" % [id, _peers.size()])
@@ -461,14 +501,25 @@ func _on_enter(id: int, inst: String, state: Dictionary) -> void:
 	if not _peers.has(id):
 		return
 	state = _clean_state(state)
+	var pid := party_of_instance(inst)
+	if pid != 0 and _peers[id].party != pid:
+		_send(id, "_rpc_notice", ["That belongs to another party."])
+		return
 	var rec: Dictionary = _peers[id]
 	var old: String = rec.instance
 	if old != "":
 		_tell_instance(old, id, "_rpc_gone", [id])
 	rec.instance = inst
 	rec.state = state
+	if old != "":
+		_instance_left(old, id)
 	if inst == "":
 		return
+	if pid != 0:
+		if not _instances.has(inst) or not _peers.has(int(_instances[inst].host)) \
+				or _peers[int(_instances[inst].host)].instance != inst:
+			_instances[inst] = {"host": id}
+		_send(id, "_rpc_role", [int(_instances[inst].host)])
 	for other in _peers:
 		if other != id and _peers[other].instance == inst:
 			_send(id, "_rpc_present", [other, _peers[other].info, _peers[other].state])
@@ -601,6 +652,30 @@ func promote(id: int) -> void:
 	_to_server("_on_promote", "_rpc_promote", [id])
 
 
+## Open a rift of `level` for your party: everyone in it is asked to join (party_portal), you go in.
+func open_party_rift(level: int) -> void:
+	_to_server("_on_open_instance", "_rpc_open_instance", ["rift", level])
+
+
+## Go into a party instance (a party_portal): loads its scene. From anywhere but the tutorial.
+func join_portal(portal: Dictionary) -> void:
+	if portal.is_empty() or not in_party():
+		return
+	coop = portal.duplicate()
+	GameState.save()
+	get_tree().paused = false
+	match String(portal.kind):
+		"rift":
+			get_tree().change_scene_to_file.call_deferred("res://scenes/main.tscn")
+
+
+## Sends an instance event: to 0 = everyone else in your instance, -1 = its host, or a player's id.
+func send_event(to: int, kind: String, data: Variant) -> void:
+	if not online() or instance == "":
+		return
+	_to_server("_on_event", "_rpc_event", [to, kind, data])
+
+
 ## Runs `on_method(my id, args...)` on the server: here when hosting, else by RPC `rpc_method`.
 func _to_server(on_method: String, rpc_method: String, args: Array) -> void:
 	if mode == Mode.HOST:
@@ -689,6 +764,65 @@ func _on_promote(leader: int, target: int) -> void:
 	_tell_party(pid, "%s now leads the party." % _peers[target].info.name)
 
 
+func _on_open_instance(id: int, kind: String, level: int) -> void:
+	if not _peers.has(id) or _peers[id].party == 0 or kind != "rift":
+		return
+	var pid: int = _peers[id].party
+	var portal := {"inst": "%s:%d:%d" % [kind, pid, _next_inst], "kind": kind, "level": clampi(level, 1, 999),
+		"by": id, "by_name": String(_peers[id].info.name)}
+	_next_inst += 1
+	_parties[pid].portal = portal
+	_tell_party(pid)
+	for m in _parties[pid].members:
+		_send(m, "_rpc_portal", [portal])
+
+
+## Someone left instance `inst`: if they hosted it the next player there takes over; an empty party
+## instance closes (its portal with it).
+func _instance_left(inst: String, id: int) -> void:
+	if not _instances.has(inst):
+		return
+	var left := _peers.keys().filter(func(p): return _peers[p].instance == inst)
+	if left.is_empty():
+		_instances.erase(inst)
+		var pid := party_of_instance(inst)
+		if _parties.has(pid) and _parties[pid].get("portal", {}).get("inst", "") == inst:
+			_parties[pid].portal = {}
+			_tell_party(pid)
+		return
+	if int(_instances[inst].host) == id:
+		_instances[inst].host = left[0]
+		for p in left:
+			_send(p, "_rpc_role", [int(left[0])])
+
+
+func _on_event(from: int, to: int, kind: String, data: Variant) -> void:
+	if not _peers.has(from):
+		return
+	var inst: String = _peers[from].instance
+	if inst == "":
+		return
+	if to == -1:
+		to = int(_instances.get(inst, {}).get("host", 0))
+	if to > 0:
+		if _peers.has(to) and _peers[to].instance == inst and to != from:
+			_send(to, "_rpc_event_of", [from, kind.left(24), data])
+		return
+	for p in _peers:
+		if p != from and _peers[p].instance == inst:
+			_send(p, "_rpc_event_of", [from, kind.left(24), data])
+
+
+func _within_event_rate(id: int) -> bool:
+	var sec := Time.get_ticks_msec() / 1000
+	var r: Array = _event_rate.get(id, [sec, 0])
+	if r[0] != sec:
+		r = [sec, 0]
+	r[1] += 1
+	_event_rate[id] = r
+	return r[1] <= MAX_EVENTS_PER_SEC
+
+
 ## Takes `id` out of its party: the lead passes on if it led, and a party of one disbands.
 func _remove_from_party(id: int, why: String) -> void:
 	var pid: int = _peers[id].party if _peers.has(id) else 0
@@ -719,7 +853,7 @@ func _tell_party(pid: int, why := "") -> void:
 	for m in p.members:
 		var info: Dictionary = _peers[m].info
 		members.append({"id": m, "name": info.name, "level": info.level, "class": info["class"]})
-	var data := {"id": pid, "leader": p.leader, "members": members}
+	var data := {"id": pid, "leader": p.leader, "members": members, "portal": p.get("portal", {})}
 	for m in p.members:
 		_send(m, "_rpc_party", [data])
 		if why != "":
@@ -745,6 +879,20 @@ func _relay_vitals() -> void:
 
 
 # ---------- RPCs: client -> server ----------
+
+@rpc("any_peer", "call_remote", "reliable")
+func _rpc_open_instance(kind: String, level: int) -> void:
+	var id := multiplayer.get_remote_sender_id()
+	if is_server() and _within_rate(id):
+		_on_open_instance(id, kind, level)
+
+
+@rpc("any_peer", "call_remote", "reliable")
+func _rpc_event(to: int, kind: String, data: Variant) -> void:
+	var id := multiplayer.get_remote_sender_id()
+	if is_server() and _within_event_rate(id):
+		_on_event(id, to, kind, data)
+
 
 @rpc("any_peer", "call_remote", "reliable")
 func _rpc_invite(target: int) -> void:
@@ -857,6 +1005,24 @@ func _rpc_looks_of(id: int, info: Dictionary) -> void:
 func _rpc_party(data: Dictionary) -> void:
 	party = data
 	party_changed.emit()
+
+
+@rpc("authority", "call_remote", "reliable")
+func _rpc_portal(portal: Dictionary) -> void:
+	party_portal.emit(portal)
+	if int(portal.get("by", 0)) == my_id():
+		join_portal(portal)  # you opened it: in you go
+
+
+@rpc("authority", "call_remote", "reliable")
+func _rpc_role(host_id: int) -> void:
+	instance_host = host_id
+	role_changed.emit(host_id)
+
+
+@rpc("authority", "call_remote", "reliable")
+func _rpc_event_of(from: int, kind: String, data: Variant) -> void:
+	event.emit(from, kind, data)
 
 
 @rpc("authority", "call_remote", "reliable")
