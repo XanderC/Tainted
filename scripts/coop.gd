@@ -16,7 +16,8 @@ extends Node
 ## quest credit, and loot rolled in this game, so each player's loot is their own.
 ## The host's monsters go for every player (RemotePlayer stands in for the others, and passes on
 ## what hits them: "hurt", "slow"). If the host leaves, the next player's copies become the real
-## monsters (_take_over).
+## monsters (_take_over). A player who lost the connection and comes back (Net reconnects) starts
+## again from what the host has now ("hello" -> "sync"), or hosts if nobody else is there.
 
 const SNAP_HZ := 12.0
 const RUN_HZ := 2.0
@@ -35,12 +36,16 @@ var _gone: Array = []
 var _hits: Array = []
 var _snap_t := 0.0
 var _run_t := 0.0
+var _resync := false  # the connection dropped: start again from the host's when back
 var travel_asked := false  ## a follower asked the host to go through the portal (reset each maze)
 
 
 func _ready() -> void:
 	current = self
 	Net.role_changed.connect(_on_role)
+	Net.status_changed.connect(func():
+		if Net.mode == Net.Mode.RECONNECTING:
+			_resync = true)
 	Net.event.connect(_on_event)
 	get_tree().node_added.connect(_on_node_added)
 
@@ -100,6 +105,25 @@ func _on_role(host_id: int) -> void:
 		if is_host:
 			main.start_host()
 		else:
+			if _run() != null:
+				_run().remote = true
+			Net.send_event(-1, "hello", {})
+	elif _resync:
+		_resync = false
+		_hits.clear()
+		if is_host:
+			if not was:
+				_take_over()  # nobody else is here: what you see becomes the real thing
+		else:
+			# Someone else ran it meanwhile: drop what you have, take theirs
+			for id in _enemies.keys():
+				var e: Enemy = _enemies[id]
+				if is_instance_valid(e):
+					e.queue_free()
+			_enemies.clear()
+			_spawns.clear()
+			_deaths.clear()
+			_gone.clear()
 			if _run() != null:
 				_run().remote = true
 			Net.send_event(-1, "hello", {})
@@ -283,7 +307,8 @@ func _on_event(from: int, kind: String, data: Variant) -> void:
 
 ## A copy of the host's monster `d` (describe).
 func _spawn_copy(d) -> void:
-	if not d is Dictionary or _enemies.has(int(d.get("id", 0))):
+	if not d is Dictionary or (_enemies.has(int(d.get("id", 0))) and is_instance_valid(_enemies[int(d.id)]) \
+			and not _enemies[int(d.id)].is_queued_for_deletion()):
 		return
 	var e := Enemy.new()
 	e.remote = true

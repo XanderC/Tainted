@@ -194,6 +194,18 @@ name and level, walking where they walk. Going back to character select goes off
 - Not yet shared: players' skill effects (others see their animations), hirelings (each fights in its
   owner's game), and the elite affixes that hit only the host's player (molten ground, frost orbs).
 
+**Staying connected:**
+- A dropped connection reconnects by itself: a try every 4 s for about 40 s, and at once when the app
+  comes back to the front on Android. You go back into the town, zone or rift you were in. The line at
+  the top says "Reconnecting..." meanwhile.
+- The server keeps a dropped party member's place for a minute, shown greyed as "Reconnecting...", and
+  their game's session token puts them back in. A rift they hosted passes on at once. A guest who comes
+  back takes the host's fight as it is now; a player who comes back to an empty rift runs it themselves.
+- A busy town is split into copies of 20 (`Net.TOWN_CAP`, a dedicated server's `--town-cap`), and
+  party members are put in the same copy.
+- Leaving the game (back to character select) also counts as a drop, so your party place is kept
+  for that minute.
+
 **The server.** `.\deploy_server.ps1` deploys it:
 1. It exports the game as a pack (`builds\server\tainted.pck`, with a "Linux Server" export preset it
    adds the first time).
@@ -223,16 +235,18 @@ un_server.ps1` or
 4. Before strangers play: sign-in through Autharr, so names are owned and a player can be banned.
    Today any name is accepted and characters come from the player's own save.
 
-**Stages:** 1. shared town (done, LAN). 2. parties (done). 3. party rifts and zones (done).
+**Stages:** 1. shared town (done, LAN). 2. parties (done). 3. party rifts and zones (done). 4. staying connected (done).
 3. zones and rifts together: the party leader's game runs the monsters and each player's loot is
 their own. 4. open to the world (above).
 
 Test without a second device: `scratch/net_bot.tscn` (`-- --bot=walker`, `--bot=watcher` checks what
-it sees, `--bot=scan`, `--bot=partier` checks parties, `--accept` / `--invite`, `--addr=ws://...`) and `scratch/capture_net.tscn` (a screenshot of the town
+it sees, `--bot=scan`, `--bot=partier` checks parties, `--drop-at=8` and `--bot=keeper` check reconnecting,
+`--bot=counter` with a server's `--town-cap=2` checks town copies, `--accept` / `--invite`, `--addr=ws://...`) and `scratch/capture_net.tscn` (a screenshot of the town
 online; `--world`, `--host`, `--party` for an invite, the party list and a card), and
 `scratch/coop_bot.tscn` plays a whole party rift with two bots (`--role=leader|follower`; `--zone`
 for the Dune Wastes instead; `--shot`
-for a screenshot, `--leave-after=12` and `--takeover` to test a handover).
+for a screenshot, `--leave-after=12` and `--takeover` to test a handover, `--drop-at=5` a reconnect
+mid-rift).
 
 ### Hirelings
 Diablo II's mercenaries (`scripts/hirelings.gd` the rules, `hireling_db.gd` the types,

@@ -33,8 +33,15 @@ extends Node
 ## events (send_event / event) go between them through the server: to everyone else in the instance,
 ## to its host, or to one player. When the host leaves, the next member takes over.
 ##
-## The server's records live in _peers (id -> {"info", "instance", "state", "party"}), _parties and
-## _instances; the host is peer 1.
+## Staying connected (stage 4): a client that loses the server reconnects by itself (RECONNECTING, a
+## try every RECONNECT_EVERY seconds for a while; at once when an Android app comes back to the front),
+## then goes back into the instance it was in. Each game has a random session token, sent with its
+## hello: a party member who drops is kept "away" in the party for AWAY_GRACE seconds, and coming back
+## with the same token puts them back in it. A busy town is split into copies of TOWN_CAP players
+## ("town", "town~2"...), party members kept together.
+##
+## The server's records live in _peers (id -> {"info", "instance", "state", "party", "token"}),
+## _parties and _instances; the host is peer 1.
 ## RPC entry points (_rpc_*) take the sender from the MultiplayerAPI and call the _on_* handlers,
 ## which the host also calls directly for its own player.
 
@@ -54,13 +61,17 @@ signal event(from_id: int, kind: String, data: Variant)  ## an instance event (s
 
 const PORT := 24601
 const DISCOVERY_PORT := 24602
-const PROTOCOL := 3  ## games with a different protocol can't play together
+const PROTOCOL := 4  ## games with a different protocol can't play together
 const MAX_ONLINE := 32
 const PARTY_MAX := 4
 const SEND_HZ := 15.0
 const DISCOVER_MSG := "TAINTED_DISCOVER"
 const TOWN := "town"
 const MAX_EVENTS_PER_SEC := 240  ## instance events per client (monster updates, hits...)
+const AWAY_GRACE := 60.0  ## seconds a dropped party member's place is kept
+const RECONNECT_EVERY := 4.0
+const RECONNECT_TRIES := 10
+const TOWN_CAP := 20  ## players in one copy of the town
 const INVITE_TIMEOUT := 60.0  ## seconds an invite can be answered
 const VITALS_HZ := 2.0  ## party members' life and whereabouts, this often
 const HELLO_TIMEOUT := 10.0  ## seconds a new connection has to say hello before it is dropped
@@ -70,7 +81,7 @@ const MAX_MSGS_PER_SEC := 40  ## per client; more are dropped
 const WORLD_NAME_DEFAULT := "Tainted World"
 const WORLD_ADDRESSES_DEFAULT := ["ws://192.168.86.18:24601"]
 
-enum Mode { OFFLINE, CONNECTING, CLIENT, HOST, SERVER }
+enum Mode { OFFLINE, CONNECTING, CLIENT, HOST, SERVER, RECONNECTING }
 
 var mode := Mode.OFFLINE
 var status := ""  ## a line for the player: "Connected to Home", "Connection failed"...
@@ -96,6 +107,7 @@ var _disc_server: PacketPeerUDP  # server: answers discovery broadcasts
 var _disc_client: PacketPeerUDP  # client: scanning for servers
 var _found := {}  # address -> server info, while scanning
 var _max_online := MAX_ONLINE
+var town_cap := TOWN_CAP  ## players in one copy of the town (a dedicated server's --town-cap)
 var _world_queue: Array = []  # Tainted World addresses still to try
 var _keep_t := 0.0
 var _pending := {}  # server only: id -> msec it connected, until it says hello
@@ -107,10 +119,18 @@ var _vitals_t := 0.0
 var _instances := {}  # server only: party instance -> {"host": id}
 var _next_inst := 1
 var _event_rate := {}  # server only: id -> [second, events that second]
+var _token := ""  # this game's session token (who you are across a reconnect)
+var _url := ""  # the server being connected to
+var _reconnect_url := ""  # the server to reconnect to ("" when you left on purpose)
+var _reconnect_t := 0.0
+var _reconnect_tries := 0
+var _rejoin := ""  # the instance to go back into once reconnected
+var _rejoin_coop := {}
 
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS  # keep talking while a menu pauses the game
+	_token = Crypto.new().generate_random_bytes(12).hex_encode()
 	multiplayer.peer_connected.connect(_on_peer_connected)
 	multiplayer.peer_disconnected.connect(_on_peer_disconnected)
 	multiplayer.connected_to_server.connect(_on_connected)
@@ -123,6 +143,8 @@ func _ready() -> void:
 				name_arg = a.get_slice("=", 1)
 			elif a.begins_with("--max="):
 				_max_online = clampi(int(a.get_slice("=", 1)), 1, 1000)
+			elif a.begins_with("--town-cap="):
+				town_cap = clampi(int(a.get_slice("=", 1)), 1, 1000)
 		start_server(name_arg, true)
 		get_tree().change_scene_to_file.call_deferred("res://scenes/server.tscn")
 	else:
@@ -249,13 +271,20 @@ func _connect(address: String) -> void:
 	var keep_queue := _world_queue.duplicate()
 	leave()
 	_world_queue = keep_queue
-	var peer := _ws_peer()
-	if peer.create_client(url_of(address)) != OK:
-		_on_connection_failed()
-		return
-	multiplayer.multiplayer_peer = peer
 	server_name = address
-	_set_status(Mode.CONNECTING, "Connecting to %s..." % address)
+	if _open_client(url_of(address)):
+		_set_status(Mode.CONNECTING, "Connecting to %s..." % address)
+
+
+## Starts connecting to `url` (false, and the failure handled, if it can't even start).
+func _open_client(url: String) -> bool:
+	_url = url
+	var peer := _ws_peer()
+	if peer.create_client(url) != OK:
+		_on_connection_failed()
+		return false
+	multiplayer.multiplayer_peer = peer
+	return true
 
 
 ## A WebSocket peer sized for the game's messages (a town's states fit easily; anything far bigger is refused).
@@ -268,8 +297,16 @@ func _ws_peer() -> WebSocketMultiplayerPeer:
 	return peer
 
 
-## Go offline (stop hosting, or leave the server).
+## Go offline (stop hosting, or leave the server). No reconnecting after this.
 func leave() -> void:
+	_reconnect_url = ""
+	_rejoin = ""
+	_rejoin_coop = {}
+	_drop()
+
+
+## Closes the connection and forgets the online world (leave() also stops any reconnecting).
+func _drop() -> void:
 	if multiplayer.multiplayer_peer != null and not multiplayer.multiplayer_peer is OfflineMultiplayerPeer:
 		multiplayer.multiplayer_peer.close()
 	multiplayer.multiplayer_peer = OfflineMultiplayerPeer.new()
@@ -309,6 +346,13 @@ func _on_connected() -> void:
 
 
 func _on_connection_failed() -> void:
+	if _reconnect_url != "" and _reconnect_tries < RECONNECT_TRIES:
+		_wait_to_reconnect()
+		return
+	if _reconnect_url != "":
+		leave()
+		_set_status(Mode.OFFLINE, "Couldn't reconnect to %s" % server_name)
+		return
 	if not _world_queue.is_empty():
 		_try_next_world()  # the next of the Tainted World's addresses
 		return
@@ -317,9 +361,48 @@ func _on_connection_failed() -> void:
 	_set_status(Mode.OFFLINE, "Couldn't connect to %s" % what)
 
 
+## The connection dropped (not by leaving): try to get back, into the same place.
 func _on_server_lost() -> void:
-	leave()
-	_set_status(Mode.OFFLINE, "Lost the connection to the server")
+	if mode != Mode.CLIENT or _reconnect_url == "":
+		leave()
+		_set_status(Mode.OFFLINE, "Lost the connection to the server")
+		return
+	_rejoin = instance
+	_rejoin_coop = coop.duplicate()
+	_reconnect_tries = 0
+	_wait_to_reconnect()
+
+
+func _wait_to_reconnect() -> void:
+	var keep := [_reconnect_url, _rejoin, _rejoin_coop, _reconnect_tries, server_name]
+	_drop()
+	_reconnect_url = keep[0]
+	_rejoin = keep[1]
+	_rejoin_coop = keep[2]
+	_reconnect_tries = keep[3]
+	server_name = keep[4]
+	coop = _rejoin_coop.duplicate()  # the scene you're in is still the party's
+	_reconnect_t = 1.0 if _reconnect_tries == 0 else RECONNECT_EVERY
+	_set_status(Mode.RECONNECTING, "Connection lost: reconnecting to %s..." % server_name)
+
+
+func _try_reconnect() -> void:
+	_reconnect_tries += 1
+	_set_status(Mode.RECONNECTING, "Reconnecting to %s (try %d)..." % [server_name, _reconnect_tries])
+	_open_client(_reconnect_url)
+
+
+## Back in front (Android): reconnect now rather than at the next try.
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_APPLICATION_RESUMED and mode == Mode.RECONNECTING:
+		_reconnect_t = 0.0
+
+
+## For tests: lose the connection as a bad signal would.
+func simulate_drop() -> void:
+	if mode == Mode.CLIENT:
+		multiplayer.multiplayer_peer.close()
+		_on_server_lost()
 
 
 # ---------- who you are, and where you stand ----------
@@ -337,7 +420,7 @@ func my_info() -> Dictionary:
 		if off != null:
 			gear["offhand"] = [off.base.id, off.base.weapon_type == "shield"]
 	return {"name": GameState.char_name, "class": GameState.char_class, "level": GameState.level,
-		"look": GameState.appearance, "gear": gear}
+		"look": GameState.appearance, "gear": gear, "token": _token}
 
 
 ## The local player's state: position, facing, and the animation it is playing.
@@ -401,6 +484,10 @@ func update_looks() -> void:
 
 func _process(delta: float) -> void:
 	_poll_discovery()
+	if mode == Mode.RECONNECTING:
+		_reconnect_t -= delta
+		if _reconnect_t <= 0.0 and multiplayer.multiplayer_peer is OfflineMultiplayerPeer:
+			_try_reconnect()
 	if mode == Mode.CLIENT:
 		_keep_t -= delta
 		if _keep_t <= 0.0:
@@ -468,7 +555,7 @@ func _on_peer_disconnected(id: int) -> void:
 	var inst: String = _peers[id].instance
 	_peers[id].instance = ""
 	_instance_left(inst, id)
-	_remove_from_party(id, "%s left the game" % _peers[id].info.name)
+	_remove_from_party(id, "%s lost their connection." % _peers[id].info.name, true)
 	_invites.erase(id)
 	for t in _invites:
 		_invites[t].erase(id)
@@ -491,8 +578,10 @@ func _on_hello(id: int, protocol: int, info: Dictionary) -> void:
 	if _peers.size() >= _max_online:
 		_send(id, "_rpc_refused", ["That server is full (%d players)." % _max_online])
 		return
-	_peers[id] = {"info": _clean_info(info), "instance": "", "state": {}, "party": 0}
+	var token := String(info.get("token", "")).left(64) if info.get("token") is String else ""
+	_peers[id] = {"info": _clean_info(info), "instance": "", "state": {}, "party": 0, "token": token}
 	_send(id, "_rpc_welcome", [server_name, _peers.size()])
+	_restore_away(id, token)
 	if mode == Mode.SERVER:
 		print("Net: %s joined (%d online)" % [_peers[id].info.name, _peers.size()])
 
@@ -505,8 +594,12 @@ func _on_enter(id: int, inst: String, state: Dictionary) -> void:
 	if pid != 0 and _peers[id].party != pid:
 		_send(id, "_rpc_notice", ["That belongs to another party."])
 		return
+	if inst == TOWN:
+		inst = _town_copy(id)
 	var rec: Dictionary = _peers[id]
 	var old: String = rec.instance
+	if old == inst:
+		return
 	if old != "":
 		_tell_instance(old, id, "_rpc_gone", [id])
 	rec.instance = inst
@@ -524,6 +617,29 @@ func _on_enter(id: int, inst: String, state: Dictionary) -> void:
 		if other != id and _peers[other].instance == inst:
 			_send(id, "_rpc_present", [other, _peers[other].info, _peers[other].state])
 	_tell_instance(inst, id, "_rpc_present", [id, rec.info, state])
+
+
+## Which copy of the town `id` goes into: one a party member is in if it has room, else the first
+## with room, else a new one.
+func _town_copy(id: int) -> String:
+	var counts := {}
+	for p in _peers:
+		var i: String = _peers[p].instance
+		if p != id and (i == TOWN or i.begins_with(TOWN + "~")):
+			counts[i] = int(counts.get(i, 0)) + 1
+	var pid: int = _peers[id].party
+	if pid != 0 and _parties.has(pid):
+		for m in _parties[pid].members:
+			var i: String = _peers[m].instance if _peers.has(m) else ""
+			if m != id and counts.has(i) and int(counts[i]) < town_cap:
+				return i
+	var n := 1
+	while true:
+		var name := TOWN if n == 1 else "%s~%d" % [TOWN, n]
+		if int(counts.get(name, 0)) < town_cap:
+			return name
+		n += 1
+	return TOWN
 
 
 func _on_state(id: int, state: Dictionary) -> void:
@@ -823,25 +939,61 @@ func _within_event_rate(id: int) -> bool:
 	return r[1] <= MAX_EVENTS_PER_SEC
 
 
-## Takes `id` out of its party: the lead passes on if it led, and a party of one disbands.
-func _remove_from_party(id: int, why: String) -> void:
+## Takes `id` out of its party: the lead passes on if it led, and a party of one disbands. `away`: it
+## lost its connection, so its place is kept for AWAY_GRACE (coming back with its token restores it).
+func _remove_from_party(id: int, why: String, away := false) -> void:
 	var pid: int = _peers[id].party if _peers.has(id) else 0
 	if pid == 0 or not _parties.has(pid):
 		return
 	var p: Dictionary = _parties[pid]
 	p.members.erase(id)
 	_peers[id].party = 0
-	_send(id, "_rpc_party", [{}])
-	if p.members.size() <= 1:
-		for m in p.members:
-			_peers[m].party = 0
-			_send(m, "_rpc_party", [{}])
-			_send(m, "_rpc_notice", [why + " The party disbanded."])
+	if not p.has("away"):
+		p.away = {}
+	if away and String(_peers[id].get("token", "")) != "":
+		var info: Dictionary = _peers[id].info
+		p.away[String(_peers[id].token)] = {"name": info.name, "level": info.level, "class": info["class"],
+			"until": Time.get_ticks_msec() + int(AWAY_GRACE * 1000.0)}
+	else:
+		_send(id, "_rpc_party", [{}])
+	_settle_party(pid, why)
+
+
+## After someone left party `pid`: it disbands if one player is left with nobody away, it closes if
+## nobody is left at all, else the lead passes to someone there and the members are told.
+func _settle_party(pid: int, why: String) -> void:
+	var p: Dictionary = _parties[pid]
+	var away: Dictionary = p.get("away", {})
+	if p.members.is_empty():
+		if away.is_empty():
+			_parties.erase(pid)
+		return
+	if p.members.size() == 1 and away.is_empty():
+		var m: int = p.members[0]
+		_peers[m].party = 0
+		_send(m, "_rpc_party", [{}])
+		_send(m, "_rpc_notice", [why + " The party disbanded."])
 		_parties.erase(pid)
 		return
-	if p.leader == id:
+	if not p.members.has(p.leader):
 		p.leader = p.members[0]
 	_tell_party(pid, why)
+
+
+## `id` said hello with `token`: if a party kept its place while it was away, it's back in.
+func _restore_away(id: int, token: String) -> void:
+	if token == "":
+		return
+	for pid in _parties:
+		var away: Dictionary = _parties[pid].get("away", {})
+		if away.has(token):
+			away.erase(token)
+			_parties[pid].members.append(id)
+			_peers[id].party = pid
+			if not _parties[pid].members.has(_parties[pid].leader):
+				_parties[pid].leader = id
+			_tell_party(pid, "%s is back." % _peers[id].info.name)
+			return
 
 
 ## Sends party `pid`'s members and leader to each member, with `why` as a notice.
@@ -853,7 +1005,11 @@ func _tell_party(pid: int, why := "") -> void:
 	for m in p.members:
 		var info: Dictionary = _peers[m].info
 		members.append({"id": m, "name": info.name, "level": info.level, "class": info["class"]})
-	var data := {"id": pid, "leader": p.leader, "members": members, "portal": p.get("portal", {})}
+	var away: Array = []
+	for t in p.get("away", {}):
+		var a: Dictionary = p.away[t]
+		away.append({"name": a.name, "level": a.level, "class": a["class"]})
+	var data := {"id": pid, "leader": p.leader, "members": members, "away": away, "portal": p.get("portal", {})}
 	for m in p.members:
 		_send(m, "_rpc_party", [data])
 		if why != "":
@@ -869,6 +1025,15 @@ func _relay_vitals() -> void:
 				_invites[t].erase(f)
 		if _invites[t].is_empty():
 			_invites.erase(t)
+	for pid in _parties.keys():  # places kept for players who dropped run out
+		var away: Dictionary = _parties[pid].get("away", {})
+		for t in away.keys():
+			if now > int(away[t].until):
+				var who: String = away[t].name
+				away.erase(t)
+				_settle_party(pid, "%s didn't come back." % who)
+				if not _parties.has(pid):
+					break
 	for pid in _parties:
 		var batch := {}
 		for m in _parties[pid].members:
@@ -965,8 +1130,20 @@ func _rpc_looks(info: Dictionary) -> void:
 
 @rpc("authority", "call_remote", "reliable")
 func _rpc_welcome(name: String, _count: int) -> void:
+	var back := mode == Mode.RECONNECTING
 	server_name = name
-	_set_status(Mode.CLIENT, "Online: %s" % name)
+	_reconnect_url = _url
+	_reconnect_tries = 0
+	_set_status(Mode.CLIENT, ("Reconnected to %s" if back else "Online: %s") % name)
+	if back:
+		coop = _rejoin_coop
+		var i := _rejoin
+		_rejoin = ""
+		_rejoin_coop = {}
+		if i != "":
+			instance = ""
+			enter(i)  # back where you were
+		update_looks()
 
 
 @rpc("authority", "call_remote", "reliable")

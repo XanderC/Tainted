@@ -8,6 +8,10 @@ extends Node
 ##          member can be made leader, and leaving works (prints "partier: N checks, M failed").
 ## --accept: a walker or watcher that joins any party it is invited to.
 ## --invite: a walker that invites everyone it sees, two seconds in.
+## --drop-at=8: loses its connection 8 s in (Net.simulate_drop) and checks it comes back: online, in
+##   town, in its party ("dropper: N checks, M failed").
+## keeper: a partier that keeps its party, and checks a member who drops is shown away and comes back.
+## counter: in town for a while, prints how many others it sees (for the town copies test).
 
 var mode := "walker"
 var addr := "127.0.0.1"
@@ -20,6 +24,10 @@ var _seen := {}  # id -> {"info", "states"}
 var _left := []
 var accept := false
 var invite_all := false
+var drop_at := 0.0
+var _dropped := false
+var _away_seen := false
+var _back_seen := false
 var _vitals := {}  # id -> last life seen
 var _notices: Array = []
 
@@ -32,6 +40,7 @@ func _ready() -> void:
 		elif a.begins_with("--secs="): secs = float(a.get_slice("=", 1))
 		elif a == "--accept": accept = true
 		elif a == "--invite": invite_all = true
+		elif a.begins_with("--drop-at="): drop_at = float(a.get_slice("=", 1))
 	GameState.char_name = bot_name
 	GameState.level = 7
 	GameState.appearance = Appearance.random_look()
@@ -78,6 +87,40 @@ func _ready() -> void:
 			Net.invite(id)
 	if mode == "partier":
 		_run_partier()
+	if mode == "keeper":
+		_run_keeper()
+	if drop_at > 0.0:
+		_run_dropper()
+
+
+## Drops its connection, then checks it got back where it was.
+func _run_dropper() -> void:
+	await get_tree().create_timer(drop_at).timeout
+	var had_party := Net.in_party()
+	print("%s: dropping (in a party: %s)" % [bot_name, had_party])
+	Net.simulate_drop()
+	_check(Net.mode == Net.Mode.RECONNECTING, "it starts reconnecting")
+	var t := 0.0
+	while not Net.online() and t < 20.0:
+		await get_tree().create_timer(0.25).timeout
+		t += 0.25
+	await get_tree().create_timer(1.5).timeout
+	_check(Net.online(), "it reconnects (%.1f s)" % t)
+	_check(Net.instance == Net.TOWN, "it goes back into town")
+	_check(Net.in_party() == had_party, "it is back in its party")
+	print("dropper: %d checks, %d failed" % [_checks, _failed])
+
+
+## Keeps a party with whoever it invites; checks a member who drops is away, then back.
+func _run_keeper() -> void:
+	await get_tree().create_timer(2.0).timeout
+	for id in Net.others:
+		Net.invite(id)
+	Net.party_changed.connect(func():
+		if not Net.party.get("away", []).is_empty():
+			_away_seen = true
+		elif _away_seen and Net.party.get("members", []).size() >= 2:
+			_back_seen = true)
 
 
 ## Invites everyone in town, then checks the party: forming, life, leadership, leaving.
@@ -124,9 +167,16 @@ func _send_gear() -> void:
 
 func _process(delta: float) -> void:
 	_t += delta
-	if _t < secs or mode == "partier":
+	if _t < secs or mode == "partier" or (drop_at > 0.0 and _t < drop_at + 25.0):
 		return
 	set_process(false)
+	if mode == "counter":
+		print("counter: sees %d others" % Net.others.size())
+	if mode == "keeper":
+		_check(_away_seen, "the member who dropped is shown away")
+		_check(_back_seen, "and back in the party when they return")
+		_check(Net.others.size() >= 1, "and back in town with it")
+		print("keeper: %d checks, %d failed" % [_checks, _failed])
 	if mode == "watcher":
 		_check(_seen.size() >= 1, "sees at least one other player")
 		for id in _seen:

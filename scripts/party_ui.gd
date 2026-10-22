@@ -121,6 +121,13 @@ func _rebuild() -> void:
 	for m in Net.party.members:
 		if int(m.id) != me:
 			_frame.add_child(_row(m))
+	for a in Net.party.get("away", []):  # dropped: their place is kept a while
+		var row := _row({"id": -1, "name": a.name, "level": a.level})
+		row.modulate = Color(1, 1, 1, 0.5)
+		row.disabled = true
+		_frame.add_child(row)
+		(_rows[-1].where as Label).text = "Reconnecting..."
+		_rows.erase(-1)
 
 
 func _row(m: Dictionary) -> Control:

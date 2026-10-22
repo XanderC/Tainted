@@ -9,6 +9,8 @@ extends Node
 ## Survives the scene changes (a copy of it runs at the root).
 ## Zone: --zone takes both into the Dune Wastes instead (the leader first): the guest kills the host's
 ## monsters there and checks its copies die, give XP and drop its own loot.
+## Reconnect: --drop-at=15 makes the guest lose its connection 15 s into the rift; it should come back
+## into the rift, pick up the host's monsters again and still finish it.
 ## Handover: --leave-after=12 makes the host quit 12 s into the rift; the guest with --takeover then
 ## checks it took over (hosts, its copies are real monsters, the run runs there).
 
@@ -35,6 +37,9 @@ var _rift_t := 0.0
 var _host_since := -1.0
 var _was_guest := false
 var _zone := false
+var _drop_at := 0.0
+var _drop_done := false
+var _back_in := false
 var _drops_seen := 0
 var _shot_taken := false
 
@@ -55,6 +60,7 @@ func _ready() -> void:
 		elif a.begins_with("--leave-after="): _leave_after = float(a.get_slice("=", 1))
 		elif a == "--takeover": _takeover = true
 		elif a == "--zone": _zone = true
+		elif a.begins_with("--drop-at="): _drop_at = float(a.get_slice("=", 1))
 	GameState.char_name = bot_name
 	GameState.appearance = Appearance.random_look()
 	GameState.give_starter_skills()
@@ -63,7 +69,7 @@ func _ready() -> void:
 	Net.party_portal.connect(func(p):
 		print("%s: portal %s" % [bot_name, p])
 		if role == "follower":
-			if _takeover:
+			if _takeover or _drop_at > 0.0:
 				await get_tree().create_timer(3.0).timeout  # let the leader host
 			Net.join_portal(p))
 	Net.invited.connect(func(from_id, _n):
@@ -115,6 +121,13 @@ func _process(delta: float) -> void:
 			Net.leave()
 			get_tree().quit(0)
 			return
+		if _drop_at > 0.0 and not _drop_done and _rift_t > _drop_at and not Net.is_instance_host():
+			_drop_done = true
+			print("%s: dropping the connection mid-rift" % bot_name)
+			Net.simulate_drop()
+		if _drop_done and not _back_in and Net.online() and Net.instance == String(Net.coop.get("inst", "?")):
+			_back_in = true
+			print("%s: back in the rift after reconnecting" % bot_name)
 		if not Net.is_instance_host():
 			_was_guest = true
 		if _zone:
@@ -188,6 +201,8 @@ func _finish(main) -> void:
 		_check(_mazes.size() >= 1, "it loads the host's mazes (%d)" % _mazes.size())
 		_check(main != null and main.run.state == DungeonRun.State.COMPLETE, "it finishes the rift (%s)" % [main.run.state if main else "?"])
 		_check(main != null and main.run.rewards.size() >= 2, "the boss drops it its own loot (%d items)" % (main.run.rewards.size() if main else 0))
+		if _drop_at > 0.0:
+			_check(_drop_done and _back_in, "it dropped mid-rift and came back into it")
 	print("%s: events %s" % [bot_name, _events])
 	print("%s: %d checks, %d failed" % ["host" if hosting else "guest", _checks, _failed])
 	await get_tree().create_timer(1.0).timeout

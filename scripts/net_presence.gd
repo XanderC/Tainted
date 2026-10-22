@@ -79,12 +79,17 @@ func _on_status() -> void:
 		for id in _remotes.keys():
 			_remotes[id].queue_free()
 		_remotes.clear()
-		if Net.status != "":
+		if Net.status != "" and Net.mode != Net.Mode.RECONNECTING:
 			_say(Net.status)
+	elif Net.status.begins_with("Reconnected"):
+		_say(Net.status)
 	_refresh_line()
 
 
 func _refresh_line() -> void:
+	if Net.mode == Net.Mode.RECONNECTING:
+		_line.text = "⚠ " + Net.status
+		return
 	if not Net.online() or Net.party_of_instance(instance) != 0:  # a party's rift: the party list says who's there
 		_line.text = ""
 		return
