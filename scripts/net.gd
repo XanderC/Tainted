@@ -1450,7 +1450,10 @@ func _relay_states() -> void:
 				by_inst[inst] = {}
 			by_inst[inst][id] = _peers[id].state
 	_dirty.clear()
+	var live := multiplayer.get_peers()
 	for id in _peers:
+		if id != 1 and not live.has(id):
+			continue  # gone: their leaving is handled next
 		var batch: Dictionary = by_inst.get(_peers[id].instance, {})
 		if batch.is_empty() or (batch.size() == 1 and batch.has(id)):
 			continue
@@ -1475,7 +1478,7 @@ func _tell_instance(inst: String, except: int, method: String, args: Array) -> v
 func _send(id: int, method: String, args: Array) -> void:
 	if id == 1 and mode == Mode.HOST:
 		callv(method, args)
-	elif id != 1:
+	elif id != 1 and multiplayer.get_peers().has(id):  # not one whose leaving isn't handled yet
 		callv("rpc_id", [id, method] + args)
 
 

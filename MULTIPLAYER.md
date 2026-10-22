@@ -34,7 +34,10 @@ commit). The README's Multiplayer section describes how what's done works.
 
 - [ ] Phone and PC together on the Tainted World: sign in, town, party, rift, zone, chat, trade
       (waiting for the phone to be reachable)
-- [ ] Load test: 30 bots in town and a few party rifts on the host; server CPU, memory, bandwidth
+- [x] Load test: 30 bots in town and a few party rifts on the host; server CPU, memory, bandwidth.
+      22 Oct 2026, a throwaway server with the live one's limits (1 CPU, 512 MB): 35 online at the
+      peak (town 20 + town~2 11 + 3 party rifts, every pair's checks passed). Server CPU 7-8.5% of its
+      core, memory 143 -> 156 MB, out ~1.3 MB/s (~10 Mbit/s), in ~0.16 MB/s.
 
 ## 3. Running the server
 
@@ -50,6 +53,9 @@ commit). The README's Multiplayer section describes how what's done works.
 - [ ] Game build with wss://tainted.xandflix.uk and https://auth.xandflix.uk for sign-in
 - [ ] Sign-in screen links: create an account, forgot password (Autharr's pages)
 - [ ] Per-address connection limits at Traefik / Cloudflare
+- [ ] Town traffic grows with the square of a copy's players (each one's moves to all the others, 15
+      times a second): ~10 Mbit/s up at 35 players. Before many players: send far-off players less
+      often, or a smaller town cap
 
 ## 5. Nice to have
 

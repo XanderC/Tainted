@@ -10,7 +10,7 @@ extends Node
 ## Survives the scene changes (a copy of it runs at the root).
 ## Zone: --zone takes both into the Dune Wastes instead (the leader first): the guest kills the host's
 ## monsters there and checks its copies die, give XP and drop its own loot.
-## Reconnect: --drop-at=15 makes the guest lose its connection 15 s into the rift; it should come back
+## Reconnect: --drop-at=6 makes the guest lose its connection 6 s into the rift (it uses no skills then, or it would be over); it should come back
 ## into the rift, pick up the host's monsters again and still finish it.
 ## Handover: --leave-after=12 makes the host quit 12 s into the rift; the guest with --takeover then
 ## checks it took over (hosts, its copies are real monsters, the run runs there).
@@ -81,6 +81,8 @@ var _goto := false
 var _went := false
 var _arrow_seen := false
 var _guest_left := false
+var _addr := "127.0.0.1"  ## --addr: the server (a load test runs many pairs against one)
+var _partner := ""        ## --partner=Name: the leader invites only that player (else the first it sees)
 
 
 var runner := false  # the copy that runs, at the root (the scene itself is replaced on travel)
@@ -105,6 +107,9 @@ func _ready() -> void:
 		elif a == "--revive": _revive = true
 		elif a == "--levels": _levels = true
 		elif a == "--goto": _goto = true
+		elif a.begins_with("--addr="): _addr = a.get_slice("=", 1)
+		elif a.begins_with("--key="): Net.test_key = a.get_slice("=", 1).rpad(40, "0")
+		elif a.begins_with("--partner="): _partner = a.get_slice("=", 1)
 	GameState.char_name = bot_name
 	GameState.appearance = Appearance.random_look()
 	GameState.give_starter_skills()
@@ -151,16 +156,21 @@ func _ready() -> void:
 		if kind in ["spawn", "die"] and int(_events[kind]) <= 3:
 			print("%s: event %s %s" % [bot_name, kind, str(data).left(160)]))
 	await get_tree().create_timer(0.5).timeout
-	Net.join("127.0.0.1")
+	Net.join(_addr)
 	while Net.mode == Net.Mode.CONNECTING:
 		await get_tree().process_frame
 	Net.enter(Net.TOWN)
 	if _goto and role == "follower":
 		get_tree().change_scene_to_file("res://scenes/town.tscn")  # the real town: its arrows, its "go to"
 	if role == "leader":
-		while Net.others.is_empty():
+		var mate := func() -> int:
+			for id in Net.others:
+				if _partner == "" or String(Net.others[id].get("name", "")) == _partner:
+					return int(id)
+			return 0
+		while mate.call() == 0:
 			await get_tree().create_timer(0.5).timeout
-		Net.invite(Net.others.keys()[0])
+		Net.invite(mate.call())
 		while Net.party.get("members", []).size() < 2:
 			await get_tree().create_timer(0.3).timeout
 		if _zone:
@@ -206,7 +216,7 @@ func _process(delta: float) -> void:
 		for a in get_tree().get_nodes_in_group("remote_allies"):
 			_ally_kinds[a.kind] = true
 		_rift_t += delta
-		if _leave_after > 0.0 and _rift_t > _leave_after and Net.is_instance_host():
+		if _leave_after > 0.0 and role == "leader" and _rift_t > _leave_after and Net.is_instance_host():
 			print("%s: leaving the rift mid-run" % bot_name)
 			Net.leave()
 			get_tree().quit(0)
@@ -273,7 +283,7 @@ func _follow(main, delta: float) -> void:
 		main.player._do_call_ancients(SkillTree.get_skill("ancients"))
 		print("%s: called the Ancients (hireling: %s)" % [bot_name, is_instance_valid(Hirelings.node)])
 	_skill_t -= delta
-	if _skill_t <= 0.0:
+	if _skill_t <= 0.0 and _drop_at <= 0.0 and not _takeover:  # skills clear a rift in seconds: too soon to drop
 		_skill_t = 0.6
 		main.player.resource = main.player.max_resource()
 		for i in main.player.skills.size():
@@ -303,7 +313,8 @@ func _finish(main) -> void:
 		_check(_remote_deaths >= 10, "its monsters die from the follower's hits (%d)" % _remote_deaths)
 		_check(_most_players == 1, "the other player is in the rift with it")
 		_check(main != null and main.run.state == DungeonRun.State.COMPLETE, "the rift is completed (%s)" % [main.run.state if main else "?"])
-		_check(int(_events.get("pfx", 0)) > 0 and _fx_drawn > 0, "it sees the guest's skills (%d sent, %d frames shown)" % [int(_events.get("pfx", 0)), _fx_drawn])
+		if _drop_at <= 0.0:  # (a guest that will drop uses no skills)
+			_check(int(_events.get("pfx", 0)) > 0 and _fx_drawn > 0, "it sees the guest's skills (%d sent, %d frames shown)" % [int(_events.get("pfx", 0)), _fx_drawn])
 		if _allies:
 			_check(_ally_kinds.has("h"), "it sees the guest's hireling (%s)" % [_ally_kinds.keys()])
 			_check(_ally_kinds.has("a0") and _ally_kinds.has("a1") and _ally_kinds.has("a2"), "it sees the guest's Ancients")
