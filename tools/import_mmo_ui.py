@@ -46,12 +46,13 @@ HUD = {
     "Mobile/Action Buttons/ABL_Background.png": "abl_bg",
     "Mobile/Action Buttons/ABM_Background.png": "abm_bg",
     "Mobile/Action Buttons/ABM_CooldownGlow.png": "abm_glow",
-    "Mobile/Consumable Buttons/Consumable_Background.png": "consumable_bg",
-    "Mobile/Consumable Buttons/Consumable_InnerGlow.png": "consumable_glow",
     "Mobile/Joystick/Joystick_Background.png": "joy_bg",
     "Mobile/Joystick/Joystick_Handle.png": "joy_handle",
     "HUD/Action Bar/Experience Bar/XPBar_Background.png": "xp_bg",
     "HUD/Action Bar/Experience Bar/XPBar_Fill.png": "xp_bar_fill",
+    "HUD/Action Bar/Slots/ActionBar_MainSlot_Background.png": "bar_slot",
+    "HUD/Action Bar/XP Tooltip/XPTooltip_Background_Side.png": "xp_tag",
+    "HUD/Action Bar/XP Tooltip/XPTooltip_Background_Arrow.png": "xp_tag_arrow",
 }
 
 # Equipment slot silhouettes: Tainted slot -> the pack's icon
@@ -156,6 +157,10 @@ def main():
     for src, name in HUD.items():
         im = img(src)
         im.save(os.path.join(HUD_OUT, name + ".png"))
+    # The curl at the foot of each globe, between it and the bar (the pack's is the left globe's)
+    curl = img("HUD/Action Bar/ActionBar_Tribals.png")
+    curl.save(os.path.join(HUD_OUT, "bar_curl_left.png"))
+    ImageOps.mirror(curl).save(os.path.join(HUD_OUT, "bar_curl_right.png"))
     print("wrote the MMO UI art to", os.path.abspath(OUT))
 
 

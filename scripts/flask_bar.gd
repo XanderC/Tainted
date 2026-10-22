@@ -1,9 +1,9 @@
 class_name FlaskBar
 extends Control
-## The flask row at the bottom centre, between the life and resource orbs (see HudBars): a frame
-## for each of the five slots, the ones the belt opens (Player.flask_slot_count) lit. Tap one to
-## drink it (also Q E R T F on a computer). Each shows its flask, the cooldown sweep, and a glow
-## in its rarity's colour while it is ready.
+## The flask slots in the action bar at the bottom centre, between the globes (see HudBars): the
+## UI pack's square bar slot for each of the five, the ones the belt opens (Player.flask_slot_count)
+## lit, each with its key in the corner. Tap one to drink it (also Q E R T F on a computer). Each
+## shows its flask, dimmed and shaded from the top while it recharges.
 
 const KEYS := ["Q", "E", "R", "T", "F"]
 
@@ -19,13 +19,6 @@ func _process(_delta: float) -> void:
 	queue_redraw()
 
 
-## Slot i's tap area, in screen coordinates.
-func _rect(i: int) -> Rect2:
-	var c := HudBars.flask_centre(size, i)
-	var w := HudBars.flask_width()
-	return Rect2(c.x - w * 0.5, c.y - w * 0.5, w, w)
-
-
 func _input(event: InputEvent) -> void:
 	if player == null or get_tree().paused:
 		return
@@ -35,7 +28,7 @@ func _input(event: InputEvent) -> void:
 		return
 	var local: Vector2 = get_global_transform_with_canvas().affine_inverse() * event.position
 	for i in player.flask_slot_count():
-		if _rect(i).has_point(local):
+		if HudBars.slot_rect(size, i).has_point(local):
 			player.use_flask(i)
 			get_viewport().set_input_as_handled()
 			return
@@ -45,23 +38,24 @@ func _draw() -> void:
 	if player == null:
 		return
 	var n := player.flask_slot_count()
+	var slot := HudArt.tex("bar_slot")
 	for i in HudBars.FLASK_COUNT:
-		var c := HudBars.flask_centre(size, i)
+		var r := HudBars.slot_rect(size, i)
 		var open := i < n
+		# A dark backing so the row reads solid over the ground; a slot the belt doesn't open is darker
+		draw_rect(r.grow(-3.0), Color(0.07, 0.07, 0.08, 0.9))
+		draw_texture_rect(slot, r, false, Color.WHITE if open else Color(0.45, 0.43, 0.46))
+		if not open:
+			continue
 		var it: ItemInstance = player.flasks[i]
-		var frac := player.flask_cooldown_fraction(i)
-		var ready := open and it != null and frac <= 0.0
-		var r := HudArt.frame(self, "consumable_bg", c, HudBars.FLASK_S, Color.WHITE if open else Color(0.4, 0.38, 0.42))  # a locked slot is dark, not see-through
-		if open and it != null:
-			var col: Color = it.base.color
-			draw_circle(c, r, Color(col.r, col.g, col.b, 0.30 if ready else 0.10))
+		if it != null:
+			var frac := player.flask_cooldown_fraction(i)
+			var ready := frac <= 0.0
 			if it.base.icon != null:
-				var s := r * 2.0
-				draw_texture_rect(it.base.icon, Rect2(c - Vector2(s, s) * 0.5, Vector2(s, s)), false,
-					Color.WHITE if ready else Color(1, 1, 1, 0.45))
-			HudArt.sweep(self, c, r, frac)
-			if ready:
-				var rim: Color = ItemInstance.RARITY_COLORS[it.rarity]
-				HudArt.disc(self, "consumable_glow", c, r * 2.0, Color(rim.r, rim.g, rim.b, 0.9))
-		if open:
-			HudArt.label(self, Vector2(c.x - 20.0, c.y + r + 18.0), KEYS[i], 11, Color(1, 1, 1, 0.75), 40.0)
+				draw_texture_rect(it.base.icon, r.grow(-6.0), false, Color.WHITE if ready else Color(1, 1, 1, 0.45))
+			if not ready:
+				# The share still recharging, shaded down from the top
+				var inner := r.grow(-4.0)
+				draw_rect(Rect2(inner.position, Vector2(inner.size.x, inner.size.y * frac)), Color(0, 0, 0, 0.6))
+		HudArt.label(self, Vector2(r.position.x, r.end.y - 5.0), KEYS[i], 12, Color(0.93, 0.90, 0.82), r.size.x - 6.0,
+			HORIZONTAL_ALIGNMENT_RIGHT)

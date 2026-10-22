@@ -11,7 +11,6 @@ const HOLES := {
 	"globe_bg": [Vector2(128, 125), 119.0],  # the life / resource orb
 	"abl_bg": [Vector2(138, 138), 120.0],  # the main attack's button
 	"abm_bg": [Vector2(113, 113), 100.0],  # the other skills' buttons
-	"consumable_bg": [Vector2(89, 89), 76.0],  # a flask's button
 	"joy_bg": [Vector2(188, 188), 170.0],
 }
 
