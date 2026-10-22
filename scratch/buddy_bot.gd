@@ -87,11 +87,19 @@ func _ready() -> void:
 	var p: Player = GameState.player
 	var k0 := _kills
 	t = 0.0
-	while t < 25.0 and _kills - k0 < 5:
+	var pack_t := 0.0
+	while t < 30.0 and _kills - k0 < 5:
 		await _wait(0.5)
 		t += 0.5
+		pack_t -= 0.5
 		if is_instance_valid(p):
 			p.hp = p.stats.get_stat("max_life")
+			if pack_t <= 0.0:  # you go towards the monsters (never hitting them): it comes along and fights
+				pack_t = 4.0
+				var foes := get_tree().get_nodes_in_group("enemies").filter(func(e): return not e._dead and not e.remote)
+				foes.sort_custom(func(a, b): return a.global_position.distance_to(p.global_position) < b.global_position.distance_to(p.global_position))
+				if not foes.is_empty():
+					p.global_position = foes[0].global_position + Vector2(220, 0)
 	_check(_kills - k0 >= 5, "it fights: monsters die without you lifting a finger (%d)" % (_kills - k0))
 	Net.whisper(bot, "die")
 	await _wait(1.5)

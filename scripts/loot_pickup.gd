@@ -1,7 +1,7 @@
 class_name LootPickup
 extends Node2D
 ## An item lying on the ground, Diablo / Path of Exile style: a name plate in the item's rarity
-## colour. Walking over it does nothing; tap (or click) the plate to pick it up. When it's out of
+## colour (currency on the ground has one too: CurrencyPickup). Walking over it does nothing; tap (or click) the plate to pick it up. When it's out of
 ## reach the player walks over first. The scene it lies in takes it (take_loot(pickup) -> bool on
 ## the nearest ancestor that has it), so each scene decides bag / equip / upgrade prompt.
 ## Plates near each other stack upwards instead of overlapping (layout()).
@@ -23,19 +23,7 @@ static var _layout_dirty := true
 func _ready() -> void:
 	add_to_group("pickups")
 	texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
-	var col: Color = ItemInstance.RARITY_COLORS[item.rarity]
-	_plate = Button.new()
-	_plate.text = item.display_name
-	_plate.focus_mode = Control.FOCUS_NONE
-	_plate.add_theme_font_size_override("font_size", PLATE_FONT)
-	for st in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color"]:
-		_plate.add_theme_color_override(st, col)
-	_plate.add_theme_color_override("font_hover_color", col.lightened(0.35))
-	_plate.add_theme_stylebox_override("normal", _plate_box(Color(0, 0, 0, 0.72)))
-	_plate.add_theme_stylebox_override("hover", _plate_box(Color(0.16, 0.14, 0.20, 0.85), col))
-	_plate.add_theme_stylebox_override("pressed", _plate_box(Color(0.24, 0.20, 0.28, 0.9), col))
-	_plate.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
-	_plate.pressed.connect(request_pickup)
+	_plate = make_plate(item.display_name, ItemInstance.RARITY_COLORS[item.rarity], request_pickup)
 	add_child(_plate)
 	_layout_dirty = true
 
@@ -44,7 +32,25 @@ func _exit_tree() -> void:
 	_layout_dirty = true
 
 
-func _plate_box(bg: Color, border := Color(0, 0, 0, 0)) -> StyleBoxFlat:
+## A name plate for something on the ground (an item, currency: CurrencyPickup): its name in `col`,
+## pressed to pick it up.
+static func make_plate(text: String, col: Color, on_press: Callable) -> Button:
+	var plate := Button.new()
+	plate.text = text
+	plate.focus_mode = Control.FOCUS_NONE
+	plate.add_theme_font_size_override("font_size", PLATE_FONT)
+	for st in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color"]:
+		plate.add_theme_color_override(st, col)
+	plate.add_theme_color_override("font_hover_color", col.lightened(0.35))
+	plate.add_theme_stylebox_override("normal", _plate_box(Color(0, 0, 0, 0.72)))
+	plate.add_theme_stylebox_override("hover", _plate_box(Color(0.16, 0.14, 0.20, 0.85), col))
+	plate.add_theme_stylebox_override("pressed", _plate_box(Color(0.24, 0.20, 0.28, 0.9), col))
+	plate.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+	plate.pressed.connect(on_press)
+	return plate
+
+
+static func _plate_box(bg: Color, border := Color(0, 0, 0, 0)) -> StyleBoxFlat:
 	var sb := StyleBoxFlat.new()
 	sb.bg_color = bg
 	sb.border_color = border

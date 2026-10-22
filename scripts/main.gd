@@ -155,12 +155,6 @@ func _process(delta: float) -> void:
 		else:
 			_travel()
 
-	for p in get_tree().get_nodes_in_group("currency_pickups"):
-		if p.delay <= 0.0 and p.global_position.distance_to(player.global_position) < 70.0:
-			drop_label.text = p.collect()
-			drop_label.modulate = p.color().lightened(0.3)
-			p.queue_free()
-
 	_update_hud()
 
 
@@ -328,6 +322,12 @@ func spawn_currency(kind: String, id: String, amount: int, pos: Vector2) -> void
 	c.amount = amount
 	c.position = pos + Vector2.from_angle(randf() * TAU) * randf_range(20.0, 55.0)
 	add_child(c)
+
+
+## Currency on the ground was picked up (its label tapped: CurrencyPickup); it's in the shared stash.
+func currency_taken(text: String, col: Color) -> void:
+	drop_label.text = text
+	drop_label.modulate = col
 
 
 ## An item's name plate was tapped and the player reached it (LootPickup). It goes into the bag;

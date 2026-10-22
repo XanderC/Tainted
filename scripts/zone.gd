@@ -382,6 +382,11 @@ func spawn_currency(kind: String, id: String, amount: int, pos: Vector2) -> void
 
 # ---------- loot hookup (LootPickup asks the scene) ----------
 
+## Currency on the ground was picked up (its label tapped: CurrencyPickup); it's in the shared stash.
+func currency_taken(text: String, col: Color) -> void:
+	_flash(text, col)
+
+
 func take_loot(p: LootPickup) -> bool:
 	var better := player.is_better_in_slot(p.item)
 	if not player.pick_up(p.item):
@@ -428,10 +433,6 @@ func _process(_delta: float) -> void:
 				q["node"].add_to_group("interactables")
 			else:
 				q["node"].remove_from_group("interactables")
-	for c in get_tree().get_nodes_in_group("currency_pickups"):
-		if c.delay <= 0.0 and c.global_position.distance_to(p) < 70.0:
-			_flash(c.collect(), c.color().lightened(0.3))
-			c.queue_free()
 	# The nearest thing to talk to or use
 	_near = null
 	var best := INF

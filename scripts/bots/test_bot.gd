@@ -202,10 +202,10 @@ func _fight_step(p: Player, main: Node) -> void:
 		p.walk_to(b._target + Vector2(25, 0), 20.0, _arrived)
 		return
 	var foe: Enemy = null
-	var best := 420.0
+	var best := 900.0  # monsters about you (it doesn't run off on its own)
 	for e in get_tree().get_nodes_in_group("enemies"):
 		var d: float = e.global_position.distance_to(p.global_position)
-		if not e._dead and d < best and e.global_position.distance_to(b._target) < 700.0:
+		if not e._dead and d < best and e.global_position.distance_to(b._target) < 900.0:
 			best = d
 			foe = e
 	if foe != null:
