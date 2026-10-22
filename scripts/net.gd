@@ -54,6 +54,12 @@ extends Node
 ## account keeps the other (AccountStore.social, which a game can't write). Every FRIENDS_EVERY
 ## seconds the server sends each player their friends: who is online, where, and their peer id (to
 ## invite them to a party from anywhere).
+## Trading (on a server that keeps characters): ask a player (trade_with); once they accept, each
+## offers items from their bag (trade_offer, by item id), checked against the bag the server has
+## saved; both press Ready (any change resets it), and the server swaps them: it takes the items out of
+## the givers' saved bags, puts them in the receivers' saved stash (overflow), tells both games
+## (trade_done), and from then on strips the given items from the givers' saves (their "gone" ids), so
+## a game can't keep what it traded.
 ## Inspecting (inspect): the server asks that player's game for its worn gear and stats
 ## (_inspect_data) and passes them on (inspected), if you can see them (same instance or party).
 ##
@@ -80,10 +86,13 @@ signal chat(from_id: int, from_name: String, channel: String, text: String)  ## 
 signal inspected(id: int, data: Dictionary)  ## a player's worn gear and stats (inspect)
 signal friends_changed  ## `friends` changed
 signal friend_asked(from_id: int, from_name: String)  ## someone wants to be your friend (answer_friend)
+signal trade_asked(from_id: int, from_name: String)  ## someone wants to trade (answer_trade)
+signal trade_changed(state: Dictionary)  ## a trade opened or changed: {"with", "name", "mine", "theirs", "ready_me", "ready_them"}; {} closed
+signal trade_finished(received: Array)  ## the trade went through: what you got (now in your stash)
 
 const PORT := 24601
 const DISCOVERY_PORT := 24602
-const PROTOCOL := 7  ## games with a different protocol can't play together
+const PROTOCOL := 8  ## games with a different protocol can't play together
 const MAX_ONLINE := 32
 const PARTY_MAX := 4
 const SEND_HZ := 15.0
@@ -94,6 +103,8 @@ const AWAY_GRACE := 60.0  ## seconds a dropped party member's place is kept
 const RECONNECT_EVERY := 4.0
 const RECONNECT_TRIES := 10
 const TOWN_CAP := 20  ## players in one copy of the town
+const TRADE_MAX_ITEMS := 10
+const GONE_KEEP := 2000  ## traded-away item ids remembered per account
 const FRIENDS_EVERY := 2.0
 const MAX_FRIENDS := 100
 const CHAT_MAX := 200
@@ -130,6 +141,7 @@ var instance_host := 0  ## who hosts your instance (role_changed)
 var party_ui: PartyUI
 var chat_ui: ChatUI  ## the chat on screen (not on a dedicated server)
 var inspect_ui: InspectUI  ## another player's gear (inspect)
+var trade_ui: TradeUI  ## an open trade
 var chat_typing := false  ## the chat box has the keyboard: the game ignores its keys meanwhile  ## the party list, invites and player cards on screen (not on a dedicated server)
 ## What this game sends as its player's state; by default the local Player's (bots replace it).
 var state_source: Callable = _player_state
@@ -170,6 +182,10 @@ var _online_accounts := {}  # server only: account -> peer id
 var _friend_asks := {}  # server only: asked id -> {asking id: msec}
 var _friends_sent := {}  # server only: id -> the friend list last sent (sent again only when it changes)
 var _friends_t := 0.0
+var _trade_asks := {}  # server only: asked id -> {asking id: msec}
+var _trades := {}  # server only: trade id -> {"p": [a, b], "offer": {id: [item dicts]}, "ready": {id: bool}}
+var _trade_of := {}  # server only: peer id -> trade id
+var _next_trade := 1
 var _filter: RegEx
 
 
@@ -201,6 +217,8 @@ func _ready() -> void:
 		add_child(chat_ui)
 		inspect_ui = InspectUI.new()
 		add_child(inspect_ui)
+		trade_ui = TradeUI.new()
+		add_child(trade_ui)
 
 
 ## Started as a dedicated server (`-- --server` on the command line).
@@ -394,6 +412,9 @@ func _drop() -> void:
 	_online_accounts.clear()
 	_friend_asks.clear()
 	_friends_sent.clear()
+	_trade_asks.clear()
+	_trades.clear()
+	_trade_of.clear()
 	if mode != Mode.OFFLINE:
 		_set_status(Mode.OFFLINE, "Offline")
 
@@ -524,6 +545,32 @@ func unfriend(account: String) -> void:
 ## Whether player `id` (online now) is a friend.
 func is_friend(id: int) -> bool:
 	return friends.any(func(f): return int(f.get("id", 0)) == id)
+
+
+## Ask player `id` to trade (they're asked: trade_asked).
+func trade_with(id: int) -> void:
+	GameState.save()  # the server checks offers against your saved bag
+	_to_server("_on_trade_request", "_rpc_trade_request", [id])
+
+
+func answer_trade(from_id: int, accept: bool) -> void:
+	if accept:
+		GameState.save()
+	_to_server("_on_trade_answer", "_rpc_trade_answer", [from_id, accept])
+
+
+## What you offer: the ids of items in your bag (at most TRADE_MAX_ITEMS).
+func trade_offer(uids: Array) -> void:
+	GameState.save()
+	_to_server("_on_trade_offer", "_rpc_trade_offer", [uids.slice(0, TRADE_MAX_ITEMS)])
+
+
+func trade_ready(on: bool) -> void:
+	_to_server("_on_trade_ready", "_rpc_trade_ready", [on])
+
+
+func trade_cancel() -> void:
+	_to_server("_on_trade_cancel", "_rpc_trade_cancel", [])
 
 
 ## Ask to see player `id`'s gear and stats (inspected).
@@ -713,6 +760,8 @@ func _on_peer_disconnected(id: int) -> void:
 			_online_accounts.erase(_peers[id].account)
 	_friend_asks.erase(id)
 	_friends_sent.erase(id)
+	_trade_asks.erase(id)
+	_end_trade(id, "%s left." % _peers[id].info.name)
 	var inst: String = _peers[id].instance
 	_peers[id].instance = ""
 	_instance_left(inst, id)
@@ -926,6 +975,172 @@ func _push_friends(id: int) -> void:
 	_send(id, "_rpc_friends", [list])
 
 
+# ---------- trading: the server ----------
+
+## `data` (a save file) without the items this account traded away (its "gone" ids).
+func _strip_gone(account: String, data: Dictionary) -> Dictionary:
+	var gone: Dictionary = _store.social(account).get("gone", {})
+	if gone.is_empty():
+		return data
+	var keep := func(d) -> bool: return not (d is Dictionary and gone.has(String(d.get("uid", ""))))
+	for key in ["inventory", "stash"]:
+		if data.get(key) is Array:
+			data[key] = data[key].filter(func(e): return keep.call(e.get("item") if e is Dictionary and e.has("item") else e))
+	if data.get("stash_overflow") is Array:
+		data["stash_overflow"] = data.stash_overflow.filter(keep)
+	if data.get("equipment") is Dictionary:
+		for slot in data.equipment.keys():
+			if not keep.call(data.equipment[slot]):
+				data.equipment.erase(slot)
+	return data
+
+
+## The character `id` is playing, as the server has it saved ({} if none).
+func _saved_character(id: int) -> Dictionary:
+	var files := _store.files(String(_peers[id].account))
+	var last := String(files.get("account", {}).get("last", ""))
+	var c = files.get("characters/" + last, {})
+	return c if c is Dictionary else {}
+
+
+## The items with these ids in `id`'s saved bag (only those it really has), as saved.
+func _bag_items(id: int, uids: Array) -> Array:
+	var out: Array = []
+	for e in _saved_character(id).get("inventory", []):
+		var d = e.get("item") if e is Dictionary else null
+		if d is Dictionary and String(d.get("uid", "")) in uids and out.size() < TRADE_MAX_ITEMS:
+			out.append(d)
+	return out
+
+
+func _on_trade_request(from: int, target: int) -> void:
+	if _store == null or not _can_see(from, target) or from == target:
+		return
+	if _trade_of.has(from) or _trade_of.has(target):
+		_send(from, "_rpc_notice", ["One of you is trading already."])
+		return
+	if not _trade_asks.has(target):
+		_trade_asks[target] = {}
+	_trade_asks[target][from] = Time.get_ticks_msec()
+	_send(target, "_rpc_trade_ask", [from, String(_peers[from].info.name)])
+	_send(from, "_rpc_notice", ["Asked %s to trade." % _peers[target].info.name])
+
+
+func _on_trade_answer(target: int, from: int, accept: bool) -> void:
+	var asked: Dictionary = _trade_asks.get(target, {})
+	if not asked.has(from) or not _peers.has(from) or not _peers.has(target):
+		return
+	asked.erase(from)
+	if not accept:
+		_send(from, "_rpc_notice", ["%s doesn't want to trade." % _peers[target].info.name])
+		return
+	if _trade_of.has(from) or _trade_of.has(target):
+		return
+	var tid := _next_trade
+	_next_trade += 1
+	_trades[tid] = {"p": [from, target], "offer": {from: [], target: []}, "ready": {from: false, target: false}}
+	_trade_of[from] = tid
+	_trade_of[target] = tid
+	_tell_trade(tid)
+
+
+func _on_trade_offer(id: int, uids: Array) -> void:
+	if not _trade_of.has(id):
+		return
+	var t: Dictionary = _trades[_trade_of[id]]
+	t.offer[id] = _bag_items(id, uids.map(func(u): return String(u)))
+	for p in t.p:
+		t.ready[p] = false  # anything changed: both look again
+	_tell_trade(_trade_of[id])
+
+
+func _on_trade_ready(id: int, on: bool) -> void:
+	if not _trade_of.has(id):
+		return
+	var tid: int = _trade_of[id]
+	var t: Dictionary = _trades[tid]
+	t.ready[id] = on
+	if t.ready.values().all(func(r): return r):
+		_complete_trade(tid)
+	else:
+		_tell_trade(tid)
+
+
+func _on_trade_cancel(id: int) -> void:
+	if _peers.has(id):
+		_end_trade(id, "%s cancelled the trade." % _peers[id].info.name)
+
+
+## Closes `id`'s trade (if any), telling both why.
+func _end_trade(id: int, why: String) -> void:
+	if not _trade_of.has(id):
+		return
+	var tid: int = _trade_of[id]
+	for p in _trades[tid].p:
+		_trade_of.erase(p)
+		_send(p, "_rpc_trade_state", [{}])
+		_send(p, "_rpc_notice", [why])
+	_trades.erase(tid)
+
+
+func _tell_trade(tid: int) -> void:
+	var t: Dictionary = _trades[tid]
+	for p in t.p:
+		var o: int = t.p[1] if p == t.p[0] else t.p[0]
+		_send(p, "_rpc_trade_state", [{"with": o, "name": String(_peers[o].info.name), "mine": t.offer[p],
+			"theirs": t.offer[o], "ready_me": t.ready[p], "ready_them": t.ready[o]}])
+
+
+## Both are ready: check the offers against the saved bags once more, then swap them in the saves and
+## tell both games.
+func _complete_trade(tid: int) -> void:
+	var t: Dictionary = _trades[tid]
+	var a: int = t.p[0]
+	var b: int = t.p[1]
+	for p in t.p:
+		var uids: Array = t.offer[p].map(func(d): return String(d.uid))
+		if _bag_items(p, uids).size() != uids.size():
+			_end_trade(p, "The trade was called off: an item is no longer in %s's bag." % _peers[p].info.name)
+			return
+	for pair in [[a, b], [b, a]]:
+		var giver: int = pair[0]
+		var taker: int = pair[1]
+		var given: Array = t.offer[giver]
+		var uids: Array = given.map(func(d): return String(d.uid))
+		# Out of the giver's saved bag, and kept out of its saves from now on
+		var gacc := String(_peers[giver].account)
+		var files := _store.files(gacc)
+		var last := String(files.get("account", {}).get("last", ""))
+		var ch: Dictionary = files.get("characters/" + last, {}).duplicate(true)
+		ch["inventory"] = ch.get("inventory", []).filter(func(e): return not (e is Dictionary and e.get("item") is Dictionary and String(e.item.get("uid", "")) in uids))
+		_store.put(gacc, "characters/" + last, ch)
+		var soc := _store.social(gacc).duplicate(true)
+		var gone: Dictionary = soc.get("gone", {})
+		for u in uids:
+			gone[u] = true
+		while gone.size() > GONE_KEEP:
+			gone.erase(gone.keys()[0])
+		soc["gone"] = gone
+		_store.set_social(gacc, soc)
+		# Into the taker's saved stash (where its game puts them too), and no longer "gone" for it
+		var tacc := String(_peers[taker].account)
+		var acc: Dictionary = _store.files(tacc).get("account", {}).duplicate(true)
+		acc["stash_overflow"] = acc.get("stash_overflow", []) + given
+		_store.put(tacc, "account", acc)
+		var tsoc := _store.social(tacc).duplicate(true)
+		for u in uids:
+			tsoc.get("gone", {}).erase(u)
+		_store.set_social(tacc, tsoc)
+	for p in t.p:
+		var o: int = b if p == a else a
+		_trade_of.erase(p)
+		_send(p, "_rpc_trade_done", [t.offer[p].map(func(d): return String(d.uid)), t.offer[o]])
+		_send(p, "_rpc_trade_state", [{}])
+	_trades.erase(tid)
+	if mode == Mode.SERVER:
+		print("Net: trade between %s and %s" % [_peers[a].info.name, _peers[b].info.name])
+
+
 ## Whether `who` may see `id` (to inspect them): in the same instance, or in the same party.
 func _can_see(who: int, id: int) -> bool:
 	if not _peers.has(who) or not _peers.has(id):
@@ -960,6 +1175,8 @@ func _on_account_files(id: int) -> void:
 func _on_save_file(id: int, vpath: String, data: Variant) -> void:
 	if _store == null or not _peers.has(id) or String(_peers[id].get("account", "")) == "":
 		return
+	if data is Dictionary:
+		data = _strip_gone(String(_peers[id].account), data)
 	var why := _store.put(String(_peers[id].account), vpath, data)
 	if why != "":
 		push_warning("Net: refused %s's %s: %s" % [_peers[id].info.name, vpath, why])
@@ -1397,6 +1614,41 @@ func _relay_vitals() -> void:
 # ---------- RPCs: client -> server ----------
 
 @rpc("any_peer", "call_remote", "reliable")
+func _rpc_trade_request(target: int) -> void:
+	var id := multiplayer.get_remote_sender_id()
+	if is_server() and _within_rate(id):
+		_on_trade_request(id, target)
+
+
+@rpc("any_peer", "call_remote", "reliable")
+func _rpc_trade_answer(from: int, accept: bool) -> void:
+	var id := multiplayer.get_remote_sender_id()
+	if is_server() and _within_rate(id):
+		_on_trade_answer(id, from, accept)
+
+
+@rpc("any_peer", "call_remote", "reliable")
+func _rpc_trade_offer(uids: Array) -> void:
+	var id := multiplayer.get_remote_sender_id()
+	if is_server() and _within_rate(id):
+		_on_trade_offer(id, uids)
+
+
+@rpc("any_peer", "call_remote", "reliable")
+func _rpc_trade_ready(on: bool) -> void:
+	var id := multiplayer.get_remote_sender_id()
+	if is_server() and _within_rate(id):
+		_on_trade_ready(id, on)
+
+
+@rpc("any_peer", "call_remote", "reliable")
+func _rpc_trade_cancel() -> void:
+	var id := multiplayer.get_remote_sender_id()
+	if is_server() and _within_rate(id):
+		_on_trade_cancel(id)
+
+
+@rpc("any_peer", "call_remote", "reliable")
 func _rpc_friend_request(target: int) -> void:
 	var id := multiplayer.get_remote_sender_id()
 	if is_server() and _within_rate(id):
@@ -1568,6 +1820,35 @@ func _rpc_welcome(name: String, _count: int, keeps_characters: bool) -> void:
 			instance = ""
 			enter(i)  # back where you were
 		update_looks()
+
+
+@rpc("authority", "call_remote", "reliable")
+func _rpc_trade_ask(from: int, from_name: String) -> void:
+	trade_asked.emit(from, from_name)
+
+
+@rpc("authority", "call_remote", "reliable")
+func _rpc_trade_state(state: Dictionary) -> void:
+	trade_changed.emit(state)
+
+
+## The trade went through: what you gave leaves your bag, what you got goes to your stash.
+@rpc("authority", "call_remote", "reliable")
+func _rpc_trade_done(gave: Array, got: Array) -> void:
+	var p = GameState.player
+	if is_instance_valid(p):
+		for it in p.inventory.duplicate():
+			if it != null and it.uid in gave:
+				p.bag.remove(it)
+		p.inventory_changed.emit()
+	var items: Array[ItemInstance] = []
+	for d in got:
+		var it := ItemInstance.from_dict(d) if d is Dictionary else null
+		if it != null:
+			items.append(it)
+	GameState.store_items(items)
+	GameState.save()
+	trade_finished.emit(items)
 
 
 @rpc("authority", "call_remote", "reliable")

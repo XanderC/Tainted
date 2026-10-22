@@ -49,6 +49,14 @@ var hidden_name := ""
 ## Dye (DyeDB id, "" for the item's own colours): armour can be dyed by the Dyer in town.
 ## It is only how the item looks, and stays through crafting.
 @export var dye: String = ""
+## This item's own id (made the first time it's saved): a trade moves it by id, and the server keeps a
+## traded-away item out of the giver's saves. A copy (the Mirror) gets a new one.
+var uid := ""
+
+
+## A new random id for an item.
+static func new_uid() -> String:
+	return Crypto.new().generate_random_bytes(8).hex_encode()
 
 const MAX_QUALITY := 20
 const IMPLICIT_ROLL := [0.9, 1.1]
@@ -271,7 +279,14 @@ func to_dict() -> Dictionary:
 		"identified": identified,
 		"hidden_name": hidden_name,
 		"dye": dye,
+		"uid": _ensure_uid(),
 	}
+
+
+func _ensure_uid() -> String:
+	if uid == "":
+		uid = new_uid()
+	return uid
 
 
 static func from_dict(d: Dictionary) -> ItemInstance:
@@ -280,6 +295,7 @@ static func from_dict(d: Dictionary) -> ItemInstance:
 		return null
 	var it := ItemInstance.new()
 	it.base = b
+	it.uid = String(d.get("uid", "")).left(32) if d.get("uid") is String else ""
 	it.display_name = String(d.get("name", b.display_name))
 	it.rarity = int(d.get("rarity", 0)) as Rarity
 	it.ilvl = int(d.get("ilvl", 1))

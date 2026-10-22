@@ -66,6 +66,15 @@ func _ready() -> void:
 	Net.party_vitals.connect(_on_vitals)
 	Net.invited.connect(_on_invited)
 	Net.party_portal.connect(_on_portal)
+	Net.trade_changed.connect(func(state):
+		if not state.is_empty():  # a trade is open: other trade asks lapse
+			var n := _invites.size()
+			_invites = _invites.filter(func(i): return not i.has("trade"))
+			if _invites.size() != n:
+				_show_invite())
+	Net.trade_asked.connect(func(from_id, from_name):
+		_invites.append({"trade": from_id, "name": from_name, "at": Time.get_ticks_msec()})
+		_show_invite())
 	Net.friend_asked.connect(func(from_id, from_name):
 		_invites.append({"friend": from_id, "name": from_name, "at": Time.get_ticks_msec()})
 		_show_invite())
@@ -243,6 +252,9 @@ func _show_invite() -> void:
 	if inv.has("friend"):
 		_show_friend_ask(inv)
 		return
+	if inv.has("trade"):
+		_show_trade_ask(inv)
+		return
 	_invite_box = PanelContainer.new()
 	_invite_box.add_theme_stylebox_override("panel", UIKit.window_box(16))
 	_invite_box.set_anchors_preset(Control.PRESET_CENTER_TOP)
@@ -293,6 +305,34 @@ func _show_portal_ask(portal: Dictionary) -> void:
 	var no := UIKit.button("Not now", Color(0.16, 0.14, 0.18), Color(0.50, 0.45, 0.50), Vector2(140, 46), 17)
 	no.pressed.connect(_drop_portal_asks)
 	row.add_child(no)
+
+
+func _show_trade_ask(inv: Dictionary) -> void:
+	_invite_box = PanelContainer.new()
+	_invite_box.add_theme_stylebox_override("panel", UIKit.window_box(16))
+	_invite_box.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	_invite_box.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	_invite_box.offset_top = 90.0
+	_pop_layer.add_child(_invite_box)
+	var v := VBoxContainer.new()
+	v.add_theme_constant_override("separation", 10)
+	_invite_box.add_child(v)
+	var l := UIKit.label("🤝  %s wants to trade" % inv.name, 18, Color(0.85, 0.95, 0.75))
+	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	v.add_child(l)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 12)
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	v.add_child(row)
+	var id: int = inv.trade
+	for pair in [["Trade", true, Color(0.14, 0.34, 0.18), Color(0.40, 1.0, 0.55)], ["No thanks", false, Color(0.22, 0.10, 0.10), Color(0.70, 0.35, 0.30)]]:
+		var b := UIKit.button(pair[0], pair[2], pair[3], Vector2(140, 46), 17)
+		var yes: bool = pair[1]
+		b.pressed.connect(func():
+			Net.answer_trade(id, yes)
+			_invites = _invites.filter(func(i): return i.get("trade", 0) != id)
+			_show_invite())
+		row.add_child(b)
 
 
 func _show_friend_ask(inv: Dictionary) -> void:
@@ -416,6 +456,8 @@ func show_card(id: int) -> void:
 	_card_button(v, "🔍  Inspect", Color(0.16, 0.16, 0.20), Color(0.70, 0.70, 0.75), func(): Net.inspect(id))
 	if Net.accounts and not Net.is_friend(id):
 		_card_button(v, "★  Add friend", Color(0.24, 0.20, 0.10), Color(0.95, 0.85, 0.55), func(): Net.add_friend(id))
+	if Net.accounts:
+		_card_button(v, "🤝  Trade", Color(0.12, 0.24, 0.14), Color(0.55, 0.95, 0.60), func(): Net.trade_with(id))
 	var member := Net.is_member(id)
 	if member:
 		v.add_child(UIKit.label("👑 Leads your party" if int(Net.party.leader) == id else "In your party", 15, UIKit.GOLD))

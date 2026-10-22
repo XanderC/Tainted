@@ -93,6 +93,7 @@ static func apply_orb(player: Player, item: ItemInstance, orb: String) -> Dictio
 	GameState.add_orb(orb, -1)
 	if orb == "mirror":
 		var copy := ItemInstance.from_dict(item.to_dict())
+		copy.uid = ItemInstance.new_uid()  # a copy is an item of its own
 		copy.mirrored = true
 		player.add_to_bag(copy)
 		return {"ok": true, "msg": "Mirrored %s!" % item.display_name}

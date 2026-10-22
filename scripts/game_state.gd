@@ -1125,6 +1125,7 @@ func attach_player(p: Player) -> void:
 	p.inventory_changed.connect(_changed)
 	p.sync_skills_from_state()
 	p.inventory_changed.emit()
+	Net.update_looks()  # online: others see this character (its name, level and gear)
 
 
 ## The Sage in town: identifies everything in the bag and the stash, free. Returns how many.

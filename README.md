@@ -206,6 +206,19 @@ name and level, walking where they walk. Going back to character select goes off
 and stats (only for players in the same place or party) and shows them by slot; tapping a piece shows its
 card beside what you wear there.
 
+**Friends** (on a server that keeps characters): a player's card has ★ **Add friend**; once they
+accept, each account keeps the other, on the server where a game can't edit it (`AccountStore.social`).
+**★ Friends n/m**, at the top of the party list, shows them online first, with where they are, **Invite**
+to party and Remove. Friends can inspect each other from anywhere.
+
+**Trading** (on a server that keeps characters, `TradeUI`):
+- A player's card has 🤝 **Trade**. Once they accept, each picks up to 10 items from their bag, and both
+  press **Ready** (any change makes both look again).
+- The server checks each offer against the bag it has saved, then swaps them **in the saves**: out of
+  each giver's bag, into each receiver's stash. Both games are told, and what you get is in your stash.
+- Every item has an id (`ItemInstance.uid`; a Mirror copy gets its own). The server keeps a giver's
+  traded-away ids and strips them from that account's later saves, so a game can't keep what it traded.
+
 **Online characters** (`AccountStore`, `GameState.use_online_files`):
 - The Tainted World keeps its players' characters. Each account is one JSON file under
   `/appdata/estate/tainted/accounts` on the host, written a moment after a change, with a copy of every
@@ -265,18 +278,20 @@ un_server.ps1` or
 4. Before strangers play: sign-in through Autharr, so names are owned and a player can be banned.
    Today any name is accepted and characters come from the player's own save.
 
-**Stages:** 1. shared town (done, LAN). 2. parties (done). 3. party rifts and zones (done). 4. staying connected (done). 5. online characters, chat and inspect (done); friends, trading and
-Autharr sign-in next.
+**Stages:** 1. shared town (done, LAN). 2. parties (done). 3. party rifts and zones (done). 4. staying connected (done). 5. online characters, chat, inspect, friends and trading (done); Autharr
+sign-in next.
 3. zones and rifts together: the party leader's game runs the monsters and each player's loot is
 their own. 4. open to the world (above).
 
 Test without a second device: `scratch/net_bot.tscn` (`-- --bot=walker`, `--bot=watcher` checks what
 it sees, `--bot=scan`, `--bot=partier` checks parties, `--drop-at=8` and `--bot=keeper` check reconnecting,
 `--bot=counter` with a server's `--town-cap=2` checks town copies, `--say=` / `--party-say=` with
-`--expect-chat=` / `--no-chat=` check chat, `--bot=inspector` checks inspecting, `--accept` / `--invite`, `--addr=ws://...`) and `scratch/capture_net.tscn` (a screenshot of the town
+`--expect-chat=` / `--no-chat=` check chat, `--bot=inspector` checks inspecting, `--key=` with `--befriend` / `--accept-friend` /
+`--expect-friend=` check friends, `--accept` / `--invite`, `--addr=ws://...`) and `scratch/capture_net.tscn` (a screenshot of the town
 online; `--world`, `--host`, `--party` for an invite, the party list and a card, `--chat`, `--inspect`), and
 `scratch/account_bot.tscn` checks online characters against a server with `--data`
-(`--phase=create`, restart it, `--phase=check`; `--addr=ws://...`), and `scratch/coop_bot.tscn` plays a whole party rift with two bots (`--role=leader|follower`; `--zone`
+(`--phase=create`, restart it, `--phase=check`; `--addr=ws://...`), `scratch/trade_bot.tscn`
+checks a trade and the anti-duplication (`--role=a` and `--role=b`, `--shot`), and `scratch/coop_bot.tscn` plays a whole party rift with two bots (`--role=leader|follower`; `--zone`
 for the Dune Wastes instead; `--shot`
 for a screenshot, `--leave-after=12` and `--takeover` to test a handover, `--drop-at=5` a reconnect
 mid-rift).
