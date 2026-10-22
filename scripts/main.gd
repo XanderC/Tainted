@@ -93,7 +93,7 @@ func _ready() -> void:
 	layer.add_child(death_label)
 
 	player.item_picked.connect(_on_item_picked)
-	player.died.connect(func(): death_label.visible = true)
+	player.died.connect(func(): death_label.visible = coop == null)  # a party's rift: PartyDeath
 	player.item_dropped.connect(_on_item_dropped)
 
 	_arrow = PortalArrow.new()
@@ -124,6 +124,9 @@ func _ready() -> void:
 		coop = Coop.new()
 		coop.main = self
 		add_child(coop)
+		var fall := PartyDeath.new()
+		fall.main = self
+		add_child(fall)
 		_fade.color.a = 1.0  # dark until the maze is known (start_host / remote_maze)
 	else:
 		_load_maze()
@@ -162,8 +165,14 @@ func _process(delta: float) -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if player.dead and ((event is InputEventScreenTouch and event.pressed) or (event is InputEventKey and event.pressed)):
+	if player.dead and coop == null and ((event is InputEventScreenTouch and event.pressed) or (event is InputEventKey and event.pressed)):
 		return_to_town()
+
+
+## Fell in a party's rift and waited (PartyDeath): up again at the maze's start, at full life.
+func get_up() -> void:
+	player.revive(1.0)
+	player.global_position = maze.start_pos
 
 
 func return_to_town() -> void:

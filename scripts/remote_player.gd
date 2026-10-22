@@ -28,6 +28,7 @@ var _ring_t := 0.0
 var _ring_radius := 100.0
 var _ring_color := Color.WHITE
 var _spin_t := 0.0
+var revive_frac := 0.0  ## you are reviving them: how far along (PartyDeath), drawn as a ring
 var _allies := {}  # "h" / "a0".. -> RemoteAlly: their hireling and Ancients, in your world beside them
 var _hl := {}      # their hireling's looks (Net.my_info "hl")
 
@@ -91,11 +92,13 @@ func apply_state(state: Dictionary) -> void:
 	var a := String(state.get("a", "Idle"))
 	_speed = float(state.get("s", 1.0))
 	if a in ["Idle", "Walking", "Running", "Slashing in The Air"]:
+		if _oneshot == "Dying":
+			rig.stop_once()  # back on their feet
 		_anim = a
 		_oneshot = ""
 	elif a != _oneshot:
-		_oneshot = a  # a swing or a leap: once
-		rig.play_once(a, _speed)
+		_oneshot = a  # a swing or a leap: once (a fall: they stay down)
+		rig.play_once(a, _speed, a == "Dying")
 	_sync_allies(state.get("al", []))
 
 
@@ -195,6 +198,9 @@ func _draw() -> void:
 		Player.draw_ring(self, _ring_radius, _ring_color, _ring_t / (Player.SWING_TIME * 2.5))
 	if _spin_t > 0.0:
 		Player.draw_spin(self, _ring_color)
+	if revive_frac > 0.0:
+		draw_arc(Vector2(0, -20), 46.0, 0.0, TAU, 48, Color(0, 0, 0, 0.5), 7.0)
+		draw_arc(Vector2(0, -20), 46.0, -PI / 2.0, -PI / 2.0 + TAU * revive_frac, 48, Color(0.55, 1.0, 0.6), 5.0)
 
 
 func thorns() -> float:
@@ -212,7 +218,7 @@ func _process(delta: float) -> void:
 		position = position.lerp(_target, 1.0 - exp(-12.0 * delta))
 	rig.set_facing(_facing)
 	rig.play_loop(_anim, _speed)
-	if _swing_t > 0.0 or _ring_t > 0.0 or _spin_t > 0.0:
+	if _swing_t > 0.0 or _ring_t > 0.0 or _spin_t > 0.0 or revive_frac > 0.0:
 		_swing_t = maxf(_swing_t - delta, 0.0)
 		_ring_t = maxf(_ring_t - delta, 0.0)
 		_spin_t = maxf(_spin_t - delta, 0.0)

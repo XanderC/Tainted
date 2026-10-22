@@ -881,6 +881,16 @@ func take_damage(amount: float) -> void:
 		_hurt_cd = 0.7
 
 
+## Back on your feet with `frac` of your life (a party member revived you, or you got up: PartyDeath).
+func revive(frac: float) -> void:
+	if not dead:
+		return
+	dead = false
+	hp = maxf(stats.get_stat("max_life") * frac, 1.0)
+	rig.stop_once()
+	rig.pulse()
+
+
 func bag_item_count() -> int:
 	return bag.count()
 

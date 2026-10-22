@@ -135,7 +135,7 @@ func _physics_process(delta: float) -> void:
 			rig.play_loop("Idle Blinking")
 		return
 
-	if not is_instance_valid(target) or target.dead:
+	if not _alive(target) and _players().is_empty():  # in a party it goes on after the others
 		velocity = Vector2.ZERO
 		rig.play_loop("Idle")
 		return

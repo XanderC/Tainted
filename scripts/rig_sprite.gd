@@ -188,6 +188,14 @@ func play_once(anim_name: String, speed := 1.0, hold_last := false) -> void:
 	_start(anim_name, speed)
 
 
+## Ends a one-shot, a held one too (a death pose): back to the loop.
+func stop_once() -> void:
+	if _oneshot != "":
+		_oneshot = ""
+		_held = false
+		_start(_loop_anim, _loop_speed)
+
+
 func is_busy() -> bool:
 	return _oneshot != ""
 

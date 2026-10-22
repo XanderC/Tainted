@@ -219,6 +219,8 @@ func apply_net_state(d: Dictionary) -> void:
 	boss_kind = String(d.get("b", boss_kind))
 	if int(d.get("s", state)) == State.BOSS and state == State.FIGHTING:
 		state = State.BOSS  # its boss arrives as a copy
+	elif int(d.get("s", state)) == State.FAILED:
+		party_wiped()  # everyone in it is down
 
 
 # ---------- rift level scaling ----------
@@ -311,6 +313,13 @@ static func _append_unique(out: Array[ItemInstance], ilvl: int, set_item: bool) 
 
 
 func _on_player_died() -> void:
+	if main.get("coop") != null:
+		return  # a party's rift fails only when everyone is down (PartyDeath)
+	party_wiped()
+
+
+## The run has failed: you died, or in a party's rift everyone is down.
+func party_wiped() -> void:
 	if state == State.FIGHTING or state == State.BOSS:
 		state = State.FAILED
 		_boss_box.visible = false

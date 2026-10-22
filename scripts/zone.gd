@@ -58,7 +58,7 @@ func _ready() -> void:
 	_cam.limit_right = int(maze.cols * MazeMap.CELL)
 	_cam.limit_bottom = int(maze.rows * MazeMap.CELL)
 	player.add_child(_cam)
-	player.died.connect(func(): _death.visible = true)
+	player.died.connect(func(): _death.visible = coop == null)  # a party's zone: PartyDeath
 	player.item_dropped.connect(_on_item_dropped)
 
 	# With a party, the party's copy of this zone: the first member in runs its monsters (Coop)
@@ -76,6 +76,9 @@ func _ready() -> void:
 		coop = Coop.new()
 		coop.main = self
 		add_child(coop)
+		var fall := PartyDeath.new()
+		fall.main = self
+		add_child(fall)
 	_cam.reset_smoothing()
 
 	_build_hud()
@@ -446,10 +449,15 @@ func _process(_delta: float) -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if player.dead and ((event is InputEventScreenTouch and event.pressed) or (event is InputEventKey and event.pressed)):
+	if player.dead and coop == null and ((event is InputEventScreenTouch and event.pressed) or (event is InputEventKey and event.pressed)):
 		_respawn()
 	elif event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_E and _near != null:
 		_near.action.call()
+
+
+## Fell in a party's zone and waited (PartyDeath): back at the waypoint, as when alone.
+func get_up() -> void:
+	_respawn()
 
 
 ## Died: back at the waypoint (or the entrance) with the zone reset.

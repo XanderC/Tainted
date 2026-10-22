@@ -19,6 +19,9 @@ extends Node
 ## frost orbs (seen and slowing it), sparks, burning ground and the death blast.
 ## Allies: --allies (both) gives each a hireling; the guest also calls the Ancients, and the host
 ## checks it sees the guest's hireling and Ancients beside it.
+## Revive: --revive (both): the guest falls and stays down in the rift; the host stands by it and
+## revives it (half life); the host falls and its monsters still go for the guest; the guest falls
+## too and the rift fails for both.
 
 var role := "leader"
 var bot_name := "Bot"
@@ -64,6 +67,10 @@ var _fx_drawn := 0  # host: frames the guest's copy showed one of its skills
 var _allies := false
 var _called := false
 var _ally_kinds := {}  # host: the guest's allies it saw ("h", "a0"...)
+var _revive := false
+var _phase := 0
+var _phase_t := 0.0
+var _hurt_while_host_down := 0
 
 
 var runner := false  # the copy that runs, at the root (the scene itself is replaced on travel)
@@ -85,6 +92,7 @@ func _ready() -> void:
 		elif a.begins_with("--drop-at="): _drop_at = float(a.get_slice("=", 1))
 		elif a == "--affixes": _affixes = true
 		elif a == "--allies": _allies = true
+		elif a == "--revive": _revive = true
 	GameState.char_name = bot_name
 	GameState.appearance = Appearance.random_look()
 	GameState.give_starter_skills()
@@ -116,6 +124,8 @@ func _ready() -> void:
 		_events[kind] = int(_events.get(kind, 0)) + 1
 		if kind == "hurt":
 			_hurt_total += float(data)
+			if _revive and _phase == 3:
+				_hurt_while_host_down += 1
 			if _killed_at >= 0.0:
 				_hurt_after_death += float(data)
 		elif kind == "fx" and data is Array and data.size() == 2:
@@ -181,6 +191,9 @@ func _process(delta: float) -> void:
 			return
 		if _affixes:
 			_affix_step(main, delta)
+			return
+		if _revive:
+			_revive_step(main, delta)
 			return
 		if _takeover and _was_guest and Net.is_instance_host():
 			if _host_since < 0.0:
@@ -325,6 +338,102 @@ func _finish_takeover(main) -> void:
 	print("takeover: %d checks, %d failed" % [_checks, _failed])
 	Net.leave()
 	get_tree().quit(1 if _failed > 0 else 0)
+
+
+## Revive: see the top. The guest leads the steps; the host answers what it sees of the guest.
+func _revive_step(main, delta: float) -> void:
+	_phase_t += delta
+	var p: Player = main.player
+	var others := get_tree().get_nodes_in_group("remote_players")
+	var other = others[0] if not others.is_empty() else null
+	var fall: Array = main.get_children().filter(func(n): return n is PartyDeath)
+	if Net.is_instance_host():
+		match _phase:
+			0:  # wait for the guest to fall, then stand by it
+				p.hp = p.stats.get_stat("max_life")
+				if other != null and other.dead:
+					_phase = 1
+					print("%s: the guest is down, going to it" % bot_name)
+			1:
+				p.hp = p.stats.get_stat("max_life")
+				if other != null:
+					p.global_position = other.global_position + Vector2(30, 0)
+					if not other.dead:
+						_check(true, "it revived the guest by standing beside it")
+						_phase = 2
+						_phase_t = 0.0
+				if _phase_t > 15.0:
+					_check(false, "it revived the guest by standing beside it")
+					_phase = 2
+			2:  # a moment, then it falls itself
+				p.hp = p.stats.get_stat("max_life")
+				if _phase_t > 3.0:
+					p.take_damage(1.0e7)
+					print("%s: fell on purpose" % bot_name)
+					_phase = 3
+					_phase_t = 0.0
+			3:  # the guest falls too: the rift fails
+				if main.run.state == DungeonRun.State.FAILED:
+					_check(p.dead and other != null and other.dead, "the rift fails once everyone is down")
+					_phase = 4
+					_phase_t = 0.0
+				elif _phase_t > 25.0:
+					_check(false, "the rift fails once everyone is down (%s)" % main.run.state)
+					_phase = 4
+			4:
+				if _phase_t > 3.0:
+					set_process(false)
+					print("revive host: %d checks, %d failed" % [_checks, _failed])
+					Net.leave()
+					get_tree().quit(1 if _failed > 0 else 0)
+		return
+	match _phase:
+		0:  # in the rift a while, then fall
+			p.hp = p.stats.get_stat("max_life")
+			if _rift_t > 6.0:
+				p.take_damage(1.0e7)
+				_phase = 1
+				_phase_t = 0.0
+		1:
+			if _phase_t > 0.5:
+				_check(p.dead and get_tree().current_scene == main, "falling in a party's rift keeps it in the rift")
+				_check(not fall.is_empty() and fall[0]._layer.visible, "it waits to be revived")
+				_check(main.run.state != DungeonRun.State.FAILED, "the rift goes on while the host stands")
+				_phase = 2
+				_phase_t = 0.0
+		2:  # the host comes and revives it
+			if not p.dead:
+				var frac := p.hp / p.stats.get_stat("max_life")
+				_check(frac > 0.4 and frac < 0.6, "revived at half life (%d%%)" % int(frac * 100.0))
+				_check(not fall[0]._layer.visible, "the fallen screen goes")
+				_phase = 3
+				_phase_t = 0.0
+				_hurt_while_host_down = 0
+			elif _phase_t > 20.0:
+				_check(false, "revived by the host")
+				_phase = 4
+		3:  # the host falls; its monsters still come for it
+			p.hp = p.stats.get_stat("max_life")
+			var foes := get_tree().get_nodes_in_group("enemies").filter(func(e): return e.remote and not e._dead)
+			if not foes.is_empty():
+				p.global_position = foes[0].global_position + Vector2(40, 0)  # stands among them, never hitting
+			if other != null and other.dead and _phase_t > 6.0:
+				_check(_hurt_while_host_down > 0, "the host's monsters still fight it while the host is down (%d hits)" % _hurt_while_host_down)
+				p.take_damage(1.0e7)
+				_phase = 4
+				_phase_t = 0.0
+			elif _phase_t > 30.0:
+				_check(false, "the host fell")
+				_phase = 4
+		4:
+			if (main.run.state == DungeonRun.State.FAILED and _phase_t > 1.0) or _phase_t > 15.0:  # its screen a frame behind
+				_check(main.run.state == DungeonRun.State.FAILED, "the rift fails for it too")
+				_check(not fall.is_empty() and not fall[0]._get_up.visible, "no getting up in a failed rift")
+				set_process(false)
+				print("revive guest: %d checks, %d failed" % [_checks, _failed])
+				await get_tree().create_timer(1.0).timeout
+				Net.leave()
+				get_tree().quit(1 if _failed > 0 else 0)
 
 
 ## Affixes: the host sets a legendary on the guest; the guest checks what of it reaches its game.

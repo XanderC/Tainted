@@ -23,8 +23,8 @@ commit). The README's Multiplayer section describes how what's done works.
       battle standards their game draws, not only their animation
 - [x] Hirelings and summoned Ancients visible to the party (and hirelings in town), fighting in each
       owner's game
-- [ ] Dying in a party rift or zone: wait to be revived by a party member (or after a while), instead of
-      going back to town
+- [x] Dying in a party rift or zone: wait to be revived by a party member (or after a while), instead of
+      going back to town; a party's rift fails only when everyone is down
 - [ ] Rift level and unlocks with a party: whose level a party rift is, and whether beating it unlocks
       the next for everyone in it
 - [ ] Markers pointing to party members off screen, and "go to" a party member (waypoint / portal)
