@@ -290,6 +290,13 @@ update and where (`TAINTED_UPDATE`: the NAS's Tainted > builds, which `.\publish
 with `Tainted.exe`, `Tainted.apk` and `version.txt`). A local server instead: `.\run_server.ps1` or
 `godot --headless --path . -- --server --name=Home --max=32`.
 
+**TestBot**, to try multiplayer on your own: a player always on the Tainted World (the `tainted-bot`
+container, `scripts/bots/test_bot.gd`). Walk up to it in Ashfall, or whisper it `help`: it answers
+`invite`, `trade`, `friend`, `follow`, `stay`, `rift`, `die` (in a rift: then revive it), `leave` and
+`say <text>`; it accepts invites, trades and friend requests, follows its party into rifts and zones and
+fights there. It comes in with the server's bot key (`TAINTED_BOT_KEY` in the host's `.env`, made by
+the deploy) instead of a sign-in. `scratch/buddy_bot.tscn` checks it against a local server.
+
 **Running it** (on the host):
 - `docker exec tainted tainted-admin status`: who is online, where, in which party; the server's state.
 - `kick <player> [reason]`, `ban <player> [reason]` / `unban` / `bans`, `mute <player> [minutes]` /
