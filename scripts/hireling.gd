@@ -88,6 +88,7 @@ func refresh() -> void:
 			skills.append(sk)
 			_cd.append(randf_range(0.5, 2.0) if i > 0 else 0.0)  # it doesn't open with everything at once
 	_dress()
+	Net.update_looks()  # others see its gear too
 
 
 func on_level_up() -> void:

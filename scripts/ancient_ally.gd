@@ -59,6 +59,7 @@ var _quake_dir := Vector2.RIGHT
 
 
 func _ready() -> void:
+	add_to_group("ancients")  # party members see them (Net._player_state)
 	_life0 = maxf(lifetime, 0.1)
 	# Walls stop it, but nothing bumps into it (it never blocks the player or enemies)
 	collision_layer = 0

@@ -21,7 +21,7 @@ commit). The README's Multiplayer section describes how what's done works.
       teleporting next to its target, electrified sparks); the party sees the orbs and flashes
 - [x] Other players' skills visible: the swing arcs, rings, whirlwind's spin, earthquake's ground and
       battle standards their game draws, not only their animation
-- [ ] Hirelings and summoned Ancients visible to the party (and hirelings in town), fighting in each
+- [x] Hirelings and summoned Ancients visible to the party (and hirelings in town), fighting in each
       owner's game
 - [ ] Dying in a party rift or zone: wait to be revived by a party member (or after a while), instead of
       going back to town

@@ -17,6 +17,8 @@ extends Node
 ## Affixes: --affixes (both) has the host clear its monsters, step away and set a molten, frozen,
 ## electrified legendary on the guest; the guest pokes it, then kills it, and checks what reached it:
 ## frost orbs (seen and slowing it), sparks, burning ground and the death blast.
+## Allies: --allies (both) gives each a hireling; the guest also calls the Ancients, and the host
+## checks it sees the guest's hireling and Ancients beside it.
 
 var role := "leader"
 var bot_name := "Bot"
@@ -59,6 +61,9 @@ var _guest_seen := false
 var _elite_set := false
 var _skill_t := 0.0
 var _fx_drawn := 0  # host: frames the guest's copy showed one of its skills
+var _allies := false
+var _called := false
+var _ally_kinds := {}  # host: the guest's allies it saw ("h", "a0"...)
 
 
 var runner := false  # the copy that runs, at the root (the scene itself is replaced on travel)
@@ -79,9 +84,18 @@ func _ready() -> void:
 		elif a == "--zone": _zone = true
 		elif a.begins_with("--drop-at="): _drop_at = float(a.get_slice("=", 1))
 		elif a == "--affixes": _affixes = true
+		elif a == "--allies": _allies = true
 	GameState.char_name = bot_name
 	GameState.appearance = Appearance.random_look()
 	GameState.give_starter_skills()
+	if _allies:
+		var c := HirelingDB.roll_candidate("sellsword", 5)
+		c["dead"] = false
+		c["xp"] = 0.0
+		c["attributes"] = {}
+		GameState.hireling = c
+		GameState.hireling_gear = {}
+		GameState.hireling_flasks = [null, null]
 	Net.status_changed.connect(func(): print("%s: %s" % [bot_name, Net.status]))
 	Net.notice.connect(func(t): print("%s: notice: %s" % [bot_name, t]))
 	Net.party_portal.connect(func(p):
@@ -145,6 +159,8 @@ func _process(delta: float) -> void:
 		for rp in get_tree().get_nodes_in_group("remote_players"):
 			if rp._swing_t > 0.0 or rp._ring_t > 0.0 or rp._spin_t > 0.0:
 				_fx_drawn += 1
+		for a in get_tree().get_nodes_in_group("remote_allies"):
+			_ally_kinds[a.kind] = true
 		_rift_t += delta
 		if _leave_after > 0.0 and _rift_t > _leave_after and Net.is_instance_host():
 			print("%s: leaving the rift mid-run" % bot_name)
@@ -202,6 +218,10 @@ func _follow(main, delta: float) -> void:
 			if not _copies_seen.has(e.net_id):
 				_copies_seen[e.net_id] = true
 				e.died.connect(func(_p): _copy_deaths += 1)
+	if _allies and not _called and _rift_t > 3.0:
+		_called = true
+		main.player._do_call_ancients(SkillTree.get_skill("ancients"))
+		print("%s: called the Ancients (hireling: %s)" % [bot_name, is_instance_valid(Hirelings.node)])
 	_skill_t -= delta
 	if _skill_t <= 0.0:
 		_skill_t = 0.6
@@ -234,6 +254,9 @@ func _finish(main) -> void:
 		_check(_most_players == 1, "the other player is in the rift with it")
 		_check(main != null and main.run.state == DungeonRun.State.COMPLETE, "the rift is completed (%s)" % [main.run.state if main else "?"])
 		_check(int(_events.get("pfx", 0)) > 0 and _fx_drawn > 0, "it sees the guest's skills (%d sent, %d frames shown)" % [int(_events.get("pfx", 0)), _fx_drawn])
+		if _allies:
+			_check(_ally_kinds.has("h"), "it sees the guest's hireling (%s)" % [_ally_kinds.keys()])
+			_check(_ally_kinds.has("a0") and _ally_kinds.has("a1") and _ally_kinds.has("a2"), "it sees the guest's Ancients")
 	else:
 		_check(_in_rift, "the guest is in the rift")
 		_check(_copies_seen.size() >= 10, "it gets copies of the host's monsters (%d)" % _copies_seen.size())

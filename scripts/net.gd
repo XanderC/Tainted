@@ -527,7 +527,24 @@ func my_info() -> Dictionary:
 			gear["offhand"] = [off.base.id, off.base.weapon_type == "shield"]
 	var account := {"kind": "autharr", "token": _access_token} if _access_token != "" else {"kind": "device", "key": device_key()}
 	return {"name": GameState.char_name, "class": GameState.char_class, "level": GameState.level,
-		"look": GameState.appearance, "gear": gear, "token": _token, "account": account}
+		"look": GameState.appearance, "gear": gear, "token": _token, "account": account, "hl": _hireling_info()}
+
+
+## Your hireling's looks, for the others' copy of it (RemoteAlly); {} with none.
+func _hireling_info() -> Dictionary:
+	if GameState.hireling.is_empty():
+		return {}
+	var gear := {}
+	for slot in GameState.hireling_gear:
+		var it: ItemInstance = GameState.hireling_gear[slot]
+		if it == null:
+			continue
+		if slot == "offhand":
+			gear[slot] = [it.base.id, it.base.weapon_type == "shield"]
+		elif slot in Player.VISIBLE_SLOTS:
+			gear[slot] = [it.base.id, it.dye if slot in DyeDB.SLOTS else ""]
+	return {"name": String(GameState.hireling.get("name", "")), "skin": String(GameState.hireling.get("skin", "")),
+		"look": GameState.hireling.get("look", {}), "gear": gear}
 
 
 # ---------- signing in (Autharr) ----------
@@ -723,8 +740,23 @@ func _player_state() -> Dictionary:
 	if not is_instance_valid(p) or p.rig == null:
 		return {}
 	var anim: String = p.rig.oneshot_name() if p.rig.is_busy() else p.rig._loop_anim
+	var allies: Array = []
+	var h: Hireling = Hirelings.node
+	if is_instance_valid(h) and h.is_inside_tree() and not h.dead and h.rig != null:
+		allies.append(_ally_state("h", h, h._facing.x))
+	for a in get_tree().get_nodes_in_group("ancients"):
+		var i := Player.ANCIENTS.map(func(x): return x[0]).find(a.ancient_name)
+		if i >= 0 and a.rig != null and a.owner_player == p:
+			allies.append(_ally_state("a%d" % i, a, a._facing.x))
 	return {"p": p.global_position, "f": p.facing.x, "a": anim, "s": p.rig._speed,
-		"h": 0.0 if p.dead else p.hp / maxf(p.stats.get_stat("max_life"), 1.0), "w": where_label()}
+		"h": 0.0 if p.dead else p.hp / maxf(p.stats.get_stat("max_life"), 1.0), "w": where_label(), "al": allies}
+
+
+## Your hireling or an Ancient you called, for the others' copy of it: [kind, position, facing,
+## animation, speed] (RemoteAlly.apply).
+static func _ally_state(kind: String, n: Node2D, facing: float) -> Array:
+	var rig: RigSprite = n.rig
+	return [kind, n.global_position, facing, rig.oneshot_name() if rig.is_busy() else rig._loop_anim, rig._speed]
 
 
 ## Where this game's player is, for the party list: the town, a zone or a rift.
@@ -1414,7 +1446,29 @@ static func _clean_state(s: Dictionary) -> Dictionary:
 		"a": String(a).left(32) if a is String else "Idle",
 		"s": clampf(float(s.get("s", 1.0)) if s.get("s") is float or s.get("s") is int else 1.0, 0.0, 4.0),
 		"h": clampf(float(s.get("h", 1.0)) if s.get("h") is float or s.get("h") is int else 1.0, 0.0, 1.0),
-		"w": String(s.get("w", "")).left(40) if s.get("w") is String else ""}
+		"w": String(s.get("w", "")).left(40) if s.get("w") is String else "", "al": _clean_allies(s.get("al", []))}
+
+
+const ALLY_KINDS := ["h", "a0", "a1", "a2"]
+
+
+## A player's hireling and Ancients (_ally_state): at most one of each, sane values only.
+static func _clean_allies(al) -> Array:
+	var out: Array = []
+	if not al is Array:
+		return out
+	var seen := {}
+	for e in al:
+		if not e is Array or e.size() != 5 or not e[0] is String or not e[0] in ALLY_KINDS or seen.has(e[0]) \
+				or not e[1] is Vector2 or not e[1].is_finite() or not e[3] is String:
+			continue
+		seen[e[0]] = true
+		var f = e[2]
+		var sp = e[4]
+		out.append([e[0], e[1].clamp(Vector2(-100000, -100000), Vector2(100000, 100000)),
+			clampf(float(f), -1.0, 1.0) if f is float or f is int else 1.0, String(e[3]).left(32),
+			clampf(float(sp), 0.0, 4.0) if sp is float or sp is int else 1.0])
+	return out
 
 
 ## A player's name as others see it: printable characters only, at most 24.
@@ -1429,20 +1483,33 @@ static func _clean_name(n) -> String:
 
 ## Only the fields others need, of the expected types (a client's word isn't taken blindly).
 static func _clean_info(info: Dictionary) -> Dictionary:
+	var look = info.get("look", {})
+	var cls = info.get("class", "warrior")
+	var lvl = info.get("level", 1)
+	var hl = info.get("hl", {})
+	var hireling := {}
+	if hl is Dictionary and not hl.is_empty():
+		var hlook = hl.get("look", {})
+		var skin = hl.get("skin", "")
+		hireling = {"name": _clean_name(hl.get("name", "?")), "gear": _clean_gear(hl.get("gear", {})),
+			"skin": String(skin) if skin is String and skin in RemoteAlly.hireling_skins() else "",
+			"look": Appearance.sanitize(hlook if hlook is Dictionary else {})}
+	return {"name": _clean_name(info.get("name", "?")), "class": String(cls).left(24) if cls is String else "warrior",
+		"level": clampi(int(lvl), 1, 999) if lvl is int or lvl is float else 1,
+		"look": Appearance.sanitize(look if look is Dictionary else {}), "gear": _clean_gear(info.get("gear", {})),
+		"hl": hireling}
+
+
+## Worn gear as others see it: slot -> [item id, dye] (offhand: [item id, is a shield]).
+static func _clean_gear(g) -> Dictionary:
 	var gear := {}
-	var g = info.get("gear", {})
 	if g is Dictionary:
 		for slot in g:
 			if g[slot] is Array and g[slot].size() == 2 and slot is String and slot in Player.VISIBLE_SLOTS + ["offhand"] \
 					and g[slot][0] is String:
 				var second = g[slot][1]
 				gear[slot] = [String(g[slot][0]).left(48), bool(second) if slot == "offhand" else (String(second).left(24) if second is String else "")]
-	var look = info.get("look", {})
-	var cls = info.get("class", "warrior")
-	var lvl = info.get("level", 1)
-	return {"name": _clean_name(info.get("name", "?")), "class": String(cls).left(24) if cls is String else "warrior",
-		"level": clampi(int(lvl), 1, 999) if lvl is int or lvl is float else 1,
-		"look": Appearance.sanitize(look if look is Dictionary else {}), "gear": gear}
+	return gear
 
 
 # ---------- parties: what a player does ----------

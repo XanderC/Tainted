@@ -28,6 +28,8 @@ var _ring_t := 0.0
 var _ring_radius := 100.0
 var _ring_color := Color.WHITE
 var _spin_t := 0.0
+var _allies := {}  # "h" / "a0".. -> RemoteAlly: their hireling and Ancients, in your world beside them
+var _hl := {}      # their hireling's looks (Net.my_info "hl")
 
 
 func setup(id: int, info: Dictionary, state: Dictionary) -> void:
@@ -72,6 +74,12 @@ func apply_looks(info: Dictionary) -> void:
 	var cd := ClassLibrary.get_class_def(String(info.get("class", "warrior")))
 	_name.text = "%s\nLv %d %s" % [info.get("name", "?"), int(info.get("level", 1)), cd.display_name if cd != null else ""]
 	prompt = "👥 %s" % info.get("name", "?")
+	var hl: Dictionary = info.get("hl", {})
+	if hl != _hl:
+		_hl = hl
+		if is_instance_valid(_allies.get("h")):
+			_allies["h"].queue_free()  # dressed again by the next state
+		_allies.erase("h")
 
 
 ## Where they are and what they are doing now.
@@ -88,6 +96,38 @@ func apply_state(state: Dictionary) -> void:
 	elif a != _oneshot:
 		_oneshot = a  # a swing or a leap: once
 		rig.play_once(a, _speed)
+	_sync_allies(state.get("al", []))
+
+
+## Their hireling and Ancients as they are now: new ones appear, gone ones (dismissed, fallen,
+## their time up) go.
+func _sync_allies(al: Array) -> void:
+	var seen := {}
+	for e in al:
+		var k := String(e[0])
+		seen[k] = true
+		var ally = _allies.get(k)  # untyped: it may have been freed
+		if not is_instance_valid(ally):
+			if get_parent() == null:
+				continue
+			ally = RemoteAlly.new()
+			get_parent().add_child(ally)
+			ally.setup(k, _hl)
+			ally.position = e[1]
+			_allies[k] = ally
+		ally.apply(e)
+	for k in _allies.keys():
+		if not seen.has(k):
+			if is_instance_valid(_allies[k]):
+				_allies[k].queue_free()
+			_allies.erase(k)
+
+
+func _exit_tree() -> void:
+	for k in _allies:
+		if is_instance_valid(_allies[k]):
+			_allies[k].queue_free()
+	_allies.clear()
 
 
 ## A monster hit them: their game takes it (their own armour and so on applies there).
