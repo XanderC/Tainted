@@ -60,9 +60,9 @@ commit). The README's Multiplayer section describes how what's done works.
 - [ ] Game build with wss://tainted.xandflix.uk and https://auth.xandflix.uk for sign-in
 - [ ] Sign-in screen links: create an account, forgot password (Autharr's pages)
 - [ ] Per-address connection limits at Traefik / Cloudflare
-- [ ] Town traffic grows with the square of a copy's players (each one's moves to all the others, 15
-      times a second): ~10 Mbit/s up at 35 players. Before many players: send far-off players less
-      often, or a smaller town cap
+- [x] Town traffic grew with the square of a copy's players (each one's moves to all the others, 15
+      times a second; ~10 Mbit/s up at 35 players). Now a player standing still sends nothing, and
+      players further than NEAR (1600 px) get each other's moves 3 times a second, not 15
 
 ## 5. Nice to have
 

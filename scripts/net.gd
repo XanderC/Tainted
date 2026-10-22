@@ -98,6 +98,8 @@ const PROTOCOL := 11  ## games with a different protocol can't play together
 const MAX_ONLINE := 32
 const PARTY_MAX := 4
 const SEND_HZ := 15.0
+const NEAR := 1600.0  ## players this close get each other's moves every relay (SEND_HZ)...
+const FAR_EVERY := 5  ## ...the farther ones every this many (3 a second)
 const TOWN := "town"
 const MAX_EVENTS_PER_SEC := 240  ## instance events per client (monster updates, hits...)
 const AWAY_GRACE := 60.0  ## seconds a dropped party member's place is kept
@@ -170,7 +172,7 @@ var state_source: Callable = _player_state
 var _peers := {}  # server only: id -> {"info": Dictionary, "instance": String, "state": Dictionary}
 var _send_t := 0.0
 var _relay_t := 0.0
-var _dirty := {}  # server only: ids whose state changed since the last relay
+var _relay_n := 0  # server only: relays so far (far players' moves go every FAR_EVERY-th)
 var _looks_queued := false
 var _max_online := MAX_ONLINE
 var town_cap := TOWN_CAP  ## players in one copy of the town (a dedicated server's --town-cap)
@@ -483,7 +485,6 @@ func _drop() -> void:
 		peer_left.emit(id)
 	others.clear()
 	_peers.clear()
-	_dirty.clear()
 	_pending.clear()
 	_rate.clear()
 	_world_queue.clear()
@@ -994,7 +995,8 @@ func _on_peer_disconnected(id: int) -> void:
 	for t in _invites:
 		_invites[t].erase(id)
 	_peers.erase(id)
-	_dirty.erase(id)
+	for p in _peers:
+		_peers[p].get("seen", {}).erase(id)
 	_rate.erase(id)
 	_event_rate.erase(id)
 	_chat_at.erase(id)
@@ -1603,9 +1605,9 @@ func _town_copy(id: int, with := 0) -> String:
 func _on_state(id: int, state: Dictionary) -> void:
 	if _peers.has(id):
 		var s := _clean_state(state)
-		if not s.is_empty():
+		if not s.is_empty() and s != _peers[id].state:  # standing still: nothing new to pass on
 			_peers[id].state = s
-			_dirty[id] = true
+			_peers[id].ver = int(_peers[id].get("ver", 0)) + 1
 
 
 func _on_looks(id: int, info: Dictionary) -> void:
@@ -1617,28 +1619,42 @@ func _on_looks(id: int, info: Dictionary) -> void:
 		_tell_party(_peers[id].party)  # a new level shows in the party list
 
 
-## Each instance's changed states, in one message to each of its players.
+## The others' new states, in one message to each player: a player's moves go to those within NEAR
+## every relay and to the rest every FAR_EVERY-th, always the latest (each player's "seen" says which
+## version of each other's state it has). A player standing still sends nothing new (_on_state), so
+## costs nothing: the traffic grows with the players who move near each other, not with everyone.
 func _relay_states() -> void:
-	if _dirty.is_empty():
-		return
+	_relay_n += 1
+	var far_turn := _relay_n % FAR_EVERY == 0
 	var by_inst := {}
-	for id in _dirty:
-		if _peers.has(id) and _peers[id].instance != "":
-			var inst: String = _peers[id].instance
+	for id in _peers:
+		var inst: String = _peers[id].instance
+		if inst != "":
 			if not by_inst.has(inst):
-				by_inst[inst] = {}
-			by_inst[inst][id] = _peers[id].state
-	_dirty.clear()
+				by_inst[inst] = []
+			by_inst[inst].append(id)
 	var live := multiplayer.get_peers()
 	for id in _peers:
-		if id != 1 and not live.has(id):
+		if not live.has(id):
 			continue  # gone: their leaving is handled next
-		var batch: Dictionary = by_inst.get(_peers[id].instance, {})
-		if batch.is_empty() or (batch.size() == 1 and batch.has(id)):
+		var rec: Dictionary = _peers[id]
+		var members: Array = by_inst.get(rec.instance, [])
+		if members.size() < 2:
 			continue
-		var mine := batch.duplicate()
-		mine.erase(id)
-		_rpc_states.rpc_id(id, mine)
+		var seen: Dictionary = rec.get("seen", {})
+		var here = rec.state.get("p")
+		var mine := {}
+		for o in members:
+			var ver := int(_peers[o].get("ver", 0))
+			if o == id or ver <= int(seen.get(o, 0)):
+				continue
+			var there = _peers[o].state.get("p")
+			if far_turn or not (here is Vector2 and there is Vector2) or here.distance_to(there) < NEAR:
+				mine[o] = _peers[o].state
+				seen[o] = ver
+		rec["seen"] = seen
+		if not mine.is_empty():
+			_rpc_states.rpc_id(id, mine)
 
 
 # ---------- server: running it (ServerAdmin) ----------
