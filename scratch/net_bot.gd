@@ -212,6 +212,9 @@ func _run_partier() -> void:
 
 ## Walks in a circle by the town's spawn point.
 func _state() -> Dictionary:
+	if "--stand" in OS.get_cmdline_user_args():  # stands about town (as most players in a town do)
+		return {"p": Vector2(200 + absi(hash(bot_name)) % 400, 300 + absi(hash(bot_name)) % 200), "f": 1.0, "a": "Idle",
+			"s": 1.0, "h": 1.0, "w": ActDB.TOWN_NAME}
 	var p := Vector2(0, 360) + Vector2(140, 0).rotated(_t * 0.8) + Vector2(-60, -40)
 	return {"p": p, "f": -sin(_t * 0.8), "a": "Walking", "s": 1.0, "h": 0.75, "w": ActDB.TOWN_NAME}
 

@@ -62,7 +62,8 @@ commit). The README's Multiplayer section describes how what's done works.
 - [ ] Per-address connection limits at Traefik / Cloudflare
 - [x] Town traffic grew with the square of a copy's players (each one's moves to all the others, 15
       times a second; ~10 Mbit/s up at 35 players). Now a player standing still sends nothing, and
-      players further than NEAR (1600 px) get each other's moves 3 times a second, not 15
+      players further than NEAR (1600 px) get each other's moves 3 times a second, not 15. Load
+      test with 30 in town, half standing: ~0.85 MB/s out (was ~1.37 MB/s), CPU 6.4% (was ~7.7%)
 
 ## 5. Nice to have
 
