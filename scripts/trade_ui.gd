@@ -3,7 +3,8 @@ extends Node
 ## An open trade (Net.trade_changed): what you offer and what they offer side by side, your bag below
 ## to pick from (tap an item to offer it, tap again to take it back), Ready on each side (any change
 ## resets both) and Cancel. Tapping an offered item shows its card (theirs beside what you wear in
-## that slot). When it goes through (Net.trade_finished) what you got is in your stash.
+## that slot). Orbs too: − / + (and +10) by each kind you have. When it goes through
+## (Net.trade_finished) the items you got are in your stash, and the orbs with yours.
 
 const CELL := Vector2(58, 58)
 
@@ -12,6 +13,7 @@ var _win: PanelContainer
 var _tip: ItemTip
 var _state := {}
 var _offer: Array = []  # the ids you offer
+var _orbs := {}  # the orbs you offer: id -> how many
 
 
 func _ready() -> void:
@@ -21,9 +23,11 @@ func _ready() -> void:
 	_tip = ItemTip.new()
 	_tip.z_index = 60
 	Net.trade_changed.connect(_on_state)
-	Net.trade_finished.connect(func(items: Array):
+	Net.trade_finished.connect(func(items: Array, orbs: Dictionary):
+		var n: int = orbs.values().reduce(func(s, v): return s + int(v), 0)
 		if Net.party_ui != null:
-			Net.party_ui.say("Trade done: %d item%s put in your stash." % [items.size(), "" if items.size() == 1 else "s"]))
+			Net.party_ui.say("Trade done: %d item%s put in your stash%s." % [items.size(), "" if items.size() == 1 else "s",
+				", and %d orb%s" % [n, "" if n == 1 else "s"] if n > 0 else ""]))
 
 
 func _on_state(state: Dictionary) -> void:
@@ -33,6 +37,7 @@ func _on_state(state: Dictionary) -> void:
 		_close()
 		return
 	_offer = state.get("mine", []).map(func(d): return String(d.get("uid", "")))
+	_orbs = state.get("mine_orbs", {}).duplicate()
 	_build()
 
 
@@ -64,8 +69,9 @@ func _build() -> void:
 	var sides := HBoxContainer.new()
 	sides.add_theme_constant_override("separation", 16)
 	v.add_child(sides)
-	_side(sides, "YOU OFFER", _state.get("mine", []), bool(_state.get("ready_me", false)), false)
-	_side(sides, "%s OFFERS" % String(_state.get("name", "")).to_upper(), _state.get("theirs", []), bool(_state.get("ready_them", false)), true)
+	_side(sides, "YOU OFFER", _state.get("mine", []), _state.get("mine_orbs", {}), bool(_state.get("ready_me", false)), false)
+	_side(sides, "%s OFFERS" % String(_state.get("name", "")).to_upper(), _state.get("theirs", []), _state.get("theirs_orbs", {}),
+		bool(_state.get("ready_them", false)), true)
 
 	# Your bag: tap to offer / take back
 	var bag := UIKit.section(v, "YOUR BAG  (tap to offer, up to %d)" % Net.TRADE_MAX_ITEMS)
@@ -89,6 +95,8 @@ func _build() -> void:
 			Net.trade_offer(_offer))
 		grid.add_child(cell)
 
+	_orb_picker(v)
+
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 12)
 	v.add_child(row)
@@ -105,7 +113,46 @@ func _build() -> void:
 		12, UIKit.TEXT_DIM, true))
 
 
-func _side(parent: Control, title: String, offer: Array, ready: bool, theirs: bool) -> void:
+## Your orbs, each kind you have: how many you offer of it, with − / + / +10.
+func _orb_picker(parent: Control) -> void:
+	var have := CraftingDB.ORBS.keys().filter(func(id): return GameState.orb_count(id) > 0)
+	if have.is_empty():
+		return
+	var sec := UIKit.section(parent, "YOUR ORBS")
+	var grid := GridContainer.new()
+	grid.columns = 3
+	grid.add_theme_constant_override("h_separation", 18)
+	grid.add_theme_constant_override("v_separation", 4)
+	if have.size() > 9:  # more than three rows: they scroll, so the window still fits a phone
+		var sc := ScrollContainer.new()
+		sc.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+		sc.custom_minimum_size = Vector2(0, 122)
+		sec.add_child(sc)
+		sc.add_child(grid)
+	else:
+		sec.add_child(grid)
+	for id in have:
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 4)
+		grid.add_child(row)
+		var o: Dictionary = CraftingDB.ORBS[id]
+		var n := int(_orbs.get(id, 0))
+		var l := UIKit.label("%s  %d / %d" % [o.short, n, GameState.orb_count(id)], 14, o.color if n > 0 else UIKit.TEXT_DIM)
+		l.custom_minimum_size = Vector2(130, 0)
+		row.add_child(l)
+		for step in [-1, 1, 10]:
+			if step == 10 and GameState.orb_count(id) < 10:
+				continue
+			var b := UIKit.button({-1: "−", 1: "+", 10: "+10"}[step], Color(0.12, 0.12, 0.14), Color(0.45, 0.45, 0.50), Vector2(40 if step != 10 else 50, 34), 15)
+			b.pressed.connect(func():
+				_orbs[id] = clampi(int(_orbs.get(id, 0)) + step, 0, GameState.orb_count(id))
+				if int(_orbs[id]) == 0:
+					_orbs.erase(id)
+				Net.trade_orbs(_orbs))
+			row.add_child(b)
+
+
+func _side(parent: Control, title: String, offer: Array, orbs: Dictionary, ready: bool, theirs: bool) -> void:
 	var sec := UIKit.section(parent, title + ("   ✔ READY" if ready else ""))
 	sec.get_parent().size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var grid := GridContainer.new()
@@ -123,3 +170,9 @@ func _side(parent: Control, title: String, offer: Array, ready: bool, theirs: bo
 				var deltas := UIKit.equip_deltas(p, it) if mine != null else {}
 				_tip.show_card(it, _win.get_viewport().get_mouse_position(), {}, Callable(), mine, deltas))
 		grid.add_child(cell)
+	var parts: Array = []
+	for id in orbs:
+		if CraftingDB.ORBS.has(id):
+			parts.append("%d %s" % [int(orbs[id]), CraftingDB.ORBS[id].short])
+	sec.add_child(UIKit.label("Orbs: " + (", ".join(parts) if not parts.is_empty() else "none"), 14,
+		Color(0.95, 0.85, 0.55) if not parts.is_empty() else UIKit.TEXT_DIM, true))

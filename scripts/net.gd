@@ -89,12 +89,12 @@ signal inspected(id: int, data: Dictionary)  ## a player's worn gear and stats (
 signal friends_changed  ## `friends` changed
 signal friend_asked(from_id: int, from_name: String)  ## someone wants to be your friend (answer_friend)
 signal trade_asked(from_id: int, from_name: String)  ## someone wants to trade (answer_trade)
-signal trade_changed(state: Dictionary)  ## a trade opened or changed: {"with", "name", "mine", "theirs", "ready_me", "ready_them"}; {} closed
-signal trade_finished(received: Array)  ## the trade went through: what you got (now in your stash)
+signal trade_changed(state: Dictionary)  ## a trade opened or changed: {"with", "name", "mine", "theirs", "mine_orbs", "theirs_orbs", "ready_me", "ready_them"}; {} closed
+signal trade_finished(received: Array, orbs: Dictionary)  ## the trade went through: the items you got (now in your stash) and orbs
 signal signed_in_changed  ## signed in or out of Autharr (`signed_in_as`), or a sign-in failed (`sign_in_error`)
 
 const PORT := 24601
-const PROTOCOL := 10  ## games with a different protocol can't play together
+const PROTOCOL := 11  ## games with a different protocol can't play together
 const MAX_ONLINE := 32
 const PARTY_MAX := 4
 const SEND_HZ := 15.0
@@ -732,6 +732,12 @@ func trade_offer(uids: Array) -> void:
 	_to_server("_on_trade_offer", "_rpc_trade_offer", [uids.slice(0, TRADE_MAX_ITEMS)])
 
 
+## The orbs you offer: {orb id: how many}. The server holds it to what you have.
+func trade_orbs(orbs: Dictionary) -> void:
+	GameState.save()
+	_to_server("_on_trade_orbs", "_rpc_trade_orbs", [orbs])
+
+
 func trade_ready(on: bool) -> void:
 	_to_server("_on_trade_ready", "_rpc_trade_ready", [on])
 
@@ -1257,7 +1263,8 @@ func _on_trade_answer(target: int, from: int, accept: bool) -> void:
 		return
 	var tid := _next_trade
 	_next_trade += 1
-	_trades[tid] = {"p": [from, target], "offer": {from: [], target: []}, "ready": {from: false, target: false}}
+	_trades[tid] = {"p": [from, target], "offer": {from: [], target: []}, "orbs": {from: {}, target: {}},
+		"ready": {from: false, target: false}}
 	_trade_of[from] = tid
 	_trade_of[target] = tid
 	_tell_trade(tid)
@@ -1268,6 +1275,35 @@ func _on_trade_offer(id: int, uids: Array) -> void:
 		return
 	var t: Dictionary = _trades[_trade_of[id]]
 	t.offer[id] = _bag_items(id, uids.map(func(u): return String(u)))
+	for p in t.p:
+		t.ready[p] = false  # anything changed: both look again
+	_tell_trade(_trade_of[id])
+
+
+## The orbs `id` has, as its saved account has them.
+func _saved_orbs(id: int) -> Dictionary:
+	var o = _store.files(String(_peers[id].account)).get("account", {}).get("shared", {}).get("orbs", {})
+	return o if o is Dictionary else {}
+
+
+## An orb offer held to what `id` really has (saved): {orb id: n > 0}, known orbs only.
+func _clean_orbs(id: int, orbs) -> Dictionary:
+	var have := _saved_orbs(id)
+	var out := {}
+	if orbs is Dictionary:
+		for k in orbs:
+			if k is String and CraftingDB.ORBS.has(k) and (orbs[k] is int or orbs[k] is float):
+				var n := mini(int(orbs[k]), int(have.get(k, 0)))
+				if n > 0:
+					out[k] = n
+	return out
+
+
+func _on_trade_orbs(id: int, orbs) -> void:
+	if not _trade_of.has(id):
+		return
+	var t: Dictionary = _trades[_trade_of[id]]
+	t.orbs[id] = _clean_orbs(id, orbs)
 	for p in t.p:
 		t.ready[p] = false  # anything changed: both look again
 	_tell_trade(_trade_of[id])
@@ -1307,7 +1343,7 @@ func _tell_trade(tid: int) -> void:
 	for p in t.p:
 		var o: int = t.p[1] if p == t.p[0] else t.p[0]
 		_send(p, "_rpc_trade_state", [{"with": o, "name": String(_peers[o].info.name), "mine": t.offer[p],
-			"theirs": t.offer[o], "ready_me": t.ready[p], "ready_them": t.ready[o]}])
+			"theirs": t.offer[o], "mine_orbs": t.orbs[p], "theirs_orbs": t.orbs[o], "ready_me": t.ready[p], "ready_them": t.ready[o]}])
 
 
 ## Both are ready: check the offers against the saved bags once more, then swap them in the saves and
@@ -1320,6 +1356,9 @@ func _complete_trade(tid: int) -> void:
 		var uids: Array = t.offer[p].map(func(d): return String(d.uid))
 		if _bag_items(p, uids).size() != uids.size():
 			_end_trade(p, "The trade was called off: an item is no longer in %s's bag." % _peers[p].info.name)
+			return
+		if _clean_orbs(p, t.orbs[p]) != t.orbs[p]:
+			_end_trade(p, "The trade was called off: %s doesn't have those orbs any more." % _peers[p].info.name)
 			return
 	for pair in [[a, b], [b, a]]:
 		var giver: int = pair[0]
@@ -1350,13 +1389,30 @@ func _complete_trade(tid: int) -> void:
 		for u in uids:
 			tsoc.get("gone", {}).erase(u)
 		_store.set_social(tacc, tsoc)
+	# Orbs: out of each giver's saved account, into the taker's (their games do the same: _rpc_trade_done)
+	for pair in [[a, b], [b, a]]:
+		var orbs: Dictionary = t.orbs[pair[0]]
+		if orbs.is_empty():
+			continue
+		for side in [[pair[0], -1], [pair[1], 1]]:
+			var account := String(_peers[side[0]].account)
+			var acc: Dictionary = _store.files(account).get("account", {}).duplicate(true)
+			var shared: Dictionary = acc.get("shared", {})
+			var have: Dictionary = shared.get("orbs", {})
+			for k in orbs:
+				have[k] = maxi(int(have.get(k, 0)) + side[1] * int(orbs[k]), 0)
+			shared["orbs"] = have
+			acc["shared"] = shared
+			_store.put(account, "account", acc)
 	for p in t.p:
 		var o: int = b if p == a else a
 		_trade_of.erase(p)
-		_send(p, "_rpc_trade_done", [t.offer[p].map(func(d): return String(d.uid)), t.offer[o]])
+		_send(p, "_rpc_trade_done", [t.offer[p].map(func(d): return String(d.uid)), t.offer[o], t.orbs[p], t.orbs[o]])
 		_send(p, "_rpc_trade_state", [{}])
 	_trades.erase(tid)
-	log_line("Trade: %s gave %d item(s) to %s and got %d" % [_peers[a].info.name, t.offer[a].size(), _peers[b].info.name, t.offer[b].size()])
+	var orbs_of := func(p): return t.orbs[p].values().reduce(func(s, n): return s + int(n), 0)
+	log_line("Trade: %s gave %d item(s) and %d orb(s) to %s and got %d and %d" % [_peers[a].info.name, t.offer[a].size(),
+		orbs_of.call(a), _peers[b].info.name, t.offer[b].size(), orbs_of.call(b)])
 
 
 ## Whether `who` may see `id` (to inspect them): in the same instance, or in the same party.
@@ -1949,6 +2005,13 @@ func _rpc_trade_offer(uids: Array) -> void:
 
 
 @rpc("any_peer", "call_remote", "reliable")
+func _rpc_trade_orbs(orbs: Dictionary) -> void:
+	var id := multiplayer.get_remote_sender_id()
+	if is_server() and _within_rate(id):
+		_on_trade_orbs(id, orbs)
+
+
+@rpc("any_peer", "call_remote", "reliable")
 func _rpc_trade_ready(on: bool) -> void:
 	var id := multiplayer.get_remote_sender_id()
 	if is_server() and _within_rate(id):
@@ -2146,9 +2209,14 @@ func _rpc_trade_state(state: Dictionary) -> void:
 	trade_changed.emit(state)
 
 
-## The trade went through: what you gave leaves your bag, what you got goes to your stash.
+## The trade went through: what you gave leaves your bag, what you got goes to your stash; the orbs
+## you gave go, the ones you got come.
 @rpc("authority", "call_remote", "reliable")
-func _rpc_trade_done(gave: Array, got: Array) -> void:
+func _rpc_trade_done(gave: Array, got: Array, orbs_gave: Dictionary, orbs_got: Dictionary) -> void:
+	for pair in [[orbs_gave, -1], [orbs_got, 1]]:
+		for k in pair[0]:
+			if k is String and CraftingDB.ORBS.has(k):
+				GameState.add_orb(k, pair[1] * int(pair[0][k]))
 	var p = GameState.player
 	if is_instance_valid(p):
 		for it in p.inventory.duplicate():
@@ -2162,7 +2230,7 @@ func _rpc_trade_done(gave: Array, got: Array) -> void:
 			items.append(it)
 	GameState.store_items(items)
 	GameState.save()
-	trade_finished.emit(items)
+	trade_finished.emit(items, orbs_got)
 
 
 @rpc("authority", "call_remote", "reliable")
