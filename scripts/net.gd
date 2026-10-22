@@ -140,8 +140,9 @@ var party := {}
 var coop := {}
 ## Party members' instances (from the party vitals): where "go to" takes you (go_to).
 var member_where := {}
-## Going to party member `go_to_peer`: NetPresence puts you beside them when they appear (until
-## go_to_until, msec).
+## Going to party member (or friend) `go_to_peer`: NetPresence puts you beside them when they appear
+## (until go_to_until, msec). `town_with`: the town NetPresence enters next is that friend's copy.
+var town_with := 0
 var go_to_peer := 0
 var go_to_until := 0
 ## The server keeps your characters (its welcome said so): GameState saves to it (save_file).
@@ -276,6 +277,26 @@ func is_leader() -> bool:
 ## Whether `id` is in your party.
 func is_member(id: int) -> bool:
 	return in_party() and party.members.any(func(m): return int(m.id) == id)
+
+
+## Go to friend `id` in town (Friends: Go to): into their copy of the town if it has room, beside
+## them. False if they aren't in town.
+func go_to_friend(id: int) -> bool:
+	var f: Array = friends.filter(func(x): return int(x.get("id", 0)) == id and bool(x.get("in_town", false)))
+	var p = GameState.player
+	if f.is_empty() or not is_instance_valid(p) or p.dead:
+		return false
+	go_to_peer = id
+	go_to_until = Time.get_ticks_msec() + 20000
+	if others.has(id):
+		return true  # here already: NetPresence walks you over
+	var scene := get_tree().current_scene
+	if scene != null and scene.scene_file_path.ends_with("town.tscn"):
+		enter("%s@%d" % [TOWN, id])  # another copy of the town: theirs
+	else:
+		town_with = id
+		ActDB.travel(get_tree(), ActDB.TOWN, "waypoint")
+	return true
 
 
 ## Where party member `id` is that you could go: "town", "zone" (their story zone), "rift" (the
@@ -1045,8 +1066,10 @@ func _on_enter(id: int, inst: String, state: Dictionary) -> void:
 	if pid != 0 and _peers[id].party != pid:
 		_send(id, "_rpc_notice", ["That belongs to another party."])
 		return
-	if inst == TOWN:
-		inst = _town_copy(id)
+	if inst.begins_with(TOWN + "@"):
+		inst = _town_copy(id, int(inst.get_slice("@", 1)))  # a friend's copy of the town, if it has room
+	elif inst == TOWN or inst.begins_with(TOWN + "~"):
+		inst = _town_copy(id)  # (a game never picks a copy itself)
 	var rec: Dictionary = _peers[id]
 	var old: String = rec.instance
 	if old == inst:
@@ -1276,8 +1299,9 @@ func _push_friends(id: int) -> void:
 		var name := String(_peers[pid].info.name) if on else String(fr[acc].get("name", "?"))
 		if on and name != "?" and name != String(fr[acc].get("name", "")):
 			_befriend(String(_peers[id].account), acc, name)  # they play another character now
+		var inst := String(_peers[pid].instance) if on else ""
 		list.append({"account": acc, "name": name, "online": on, "id": pid if on else 0,
-			"where": String(_peers[pid].state.get("w", "")) if on else ""})
+			"where": String(_peers[pid].state.get("w", "")) if on else "", "in_town": inst == TOWN or inst.begins_with(TOWN + "~")})
 	list.sort_custom(func(x, y): return x.online and not y.online or (x.online == y.online and String(x.name) < String(y.name)))
 	var muted: Array = []
 	var ig: Dictionary = _store.social(String(_peers[id].account)).get("ignore", {})
@@ -1552,12 +1576,15 @@ func _on_delete_file(id: int, vpath: String) -> void:
 
 ## Which copy of the town `id` goes into: one a party member is in if it has room, else the first
 ## with room, else a new one.
-func _town_copy(id: int) -> String:
+func _town_copy(id: int, with := 0) -> String:
 	var counts := {}
 	for p in _peers:
 		var i: String = _peers[p].instance
 		if p != id and (i == TOWN or i.begins_with(TOWN + "~")):
 			counts[i] = int(counts.get(i, 0)) + 1
+	if with != 0 and _peers.has(with) and counts.has(String(_peers[with].instance)) \
+			and int(counts[_peers[with].instance]) < town_cap:
+		return String(_peers[with].instance)
 	var pid: int = _peers[id].party
 	if pid != 0 and _parties.has(pid):
 		for m in _parties[pid].members:

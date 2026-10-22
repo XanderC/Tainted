@@ -42,6 +42,9 @@ func _ready() -> void:
 	_toast.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	layer.add_child(_toast)
 	_refresh_line()
+	if instance == Net.TOWN and Net.town_with != 0:
+		instance = "%s@%d" % [Net.TOWN, Net.town_with]  # going to a friend: their copy of the town
+		Net.town_with = 0
 	Net.enter.call_deferred(instance)  # once the player is in the scene, so it arrives where it stands
 
 

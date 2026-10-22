@@ -400,6 +400,14 @@ func _show_friends() -> void:
 				_close_friends()
 				Net.chat_ui.whisper_to(fid, fname))
 			row.add_child(wb)
+		if f.online and bool(f.get("in_town", false)):
+			var go := UIKit.button("Go to", Color(0.10, 0.20, 0.26), Color(0.50, 0.85, 0.95), Vector2(70, 38), 13)
+			go.tooltip_text = "Into their copy of the town, beside them"
+			go.pressed.connect(func():
+				_close_friends()
+				if not Net.go_to_friend(fid):
+					say("You can't go there now."))
+			row.add_child(go)
 		if f.online and not Net.is_member(fid) and (not Net.in_party() or Net.is_leader()):
 			var inv := UIKit.button("Invite", Color(0.12, 0.26, 0.40), Color(0.50, 0.80, 1.0), Vector2(84, 38), 13)
 			inv.pressed.connect(func(): Net.invite(fid))

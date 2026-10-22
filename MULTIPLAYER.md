@@ -69,4 +69,5 @@ commit). The README's Multiplayer section describes how what's done works.
 - [x] Currency (orbs) in trades: − / + / +10 by each kind, held by the server to what you have
 - [x] Whispers (a player's card, a friend's row; "To <name>" in chat, replies to the last), chat
       history you can scroll (100 lines), muting a player's chat (kept with your account)
-- [ ] Join a friend where they are (their copy of the town)
+- [x] Join a friend where they are: Friends > Go to, into their copy of the town (if it has room),
+      beside them (their rift or zone is their party's: invite them, or be invited)
