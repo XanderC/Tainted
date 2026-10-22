@@ -461,6 +461,13 @@ func show_card(id: int) -> void:
 	var member := Net.is_member(id)
 	if member:
 		v.add_child(UIKit.label("👑 Leads your party" if int(Net.party.leader) == id else "In your party", 15, UIKit.GOLD))
+		var place := Net.member_place(id)
+		if place != "":
+			var text := {"here": "🧭  Go to them", "town": "🧭  Go to them (town)", "zone": "🧭  Go to them (%s)" % ActDB.zone_name(String(Net.member_where[id]).get_slice(":", 2)),
+				"rift": "🧭  Go to them (the rift)"}
+			_card_button(v, text[place], Color(0.10, 0.20, 0.26), Color(0.50, 0.85, 0.95), func():
+				if not Net.go_to(id):
+					say("You can't go there now."))
 		if Net.is_leader():
 			_card_button(v, "👑  Make leader", Color(0.30, 0.26, 0.10), UIKit.GOLD, func(): Net.promote(id))
 			_card_button(v, "Remove from party", Color(0.22, 0.10, 0.10), Color(0.70, 0.35, 0.30), func(): Net.kick(id))

@@ -140,6 +140,12 @@ var party := {}
 ## The party instance this game is joining or in: {"inst", "kind", "level", "by", "by_name"}, else {}.
 ## Read by the scene it loads (a rift: Coop).
 var coop := {}
+## Party members' instances (from the party vitals): where "go to" takes you (go_to).
+var member_where := {}
+## Going to party member `go_to_peer`: NetPresence puts you beside them when they appear (until
+## go_to_until, msec).
+var go_to_peer := 0
+var go_to_until := 0
 ## The server keeps your characters (its welcome said so): GameState saves to it (save_file).
 var accounts := false
 var auth_url := String(ProjectSettings.get_setting("tainted/net/auth_url", AUTH_URL_DEFAULT))
@@ -261,6 +267,43 @@ func is_leader() -> bool:
 ## Whether `id` is in your party.
 func is_member(id: int) -> bool:
 	return in_party() and party.members.any(func(m): return int(m.id) == id)
+
+
+## Where party member `id` is that you could go: "town", "zone" (their story zone), "rift" (the
+## party's open rift), "here" (your instance), or "" (choosing a character, the shipwreck...).
+func member_place(id: int) -> String:
+	var inst := String(member_where.get(id, ""))
+	if not is_member(id) or inst == "":
+		return ""
+	if inst == instance:
+		return "here"
+	if inst == TOWN or inst.begins_with(TOWN + "~"):
+		return "town"
+	if inst.begins_with("zone:") and ActDB.ZONES.has(inst.get_slice(":", 2)):
+		return "zone"
+	if inst.begins_with("rift:") and String(party.get("portal", {}).get("inst", "")) == inst:
+		return "rift"
+	return ""
+
+
+## Go where party member `id` is (member_place): their town, story zone or the party's rift, arriving
+## beside them; in your own instance, straight to them. False if there's nowhere to go.
+func go_to(id: int) -> bool:
+	var p = GameState.player
+	var place := member_place(id)
+	if place == "" or not is_instance_valid(p) or p.dead:
+		return false
+	go_to_peer = id
+	go_to_until = Time.get_ticks_msec() + 20000
+	var inst := String(member_where[id])
+	match place:
+		"town":
+			ActDB.travel(get_tree(), ActDB.TOWN, "waypoint")
+		"zone":
+			ActDB.travel(get_tree(), inst.get_slice(":", 2), "start")
+		"rift":
+			join_portal(party.portal)
+	return true
 
 
 ## Whether this game hosts its instance (runs the monsters for the party there).
@@ -1811,7 +1854,7 @@ func _relay_vitals() -> void:
 		var batch := {}
 		for m in _parties[pid].members:
 			var s: Dictionary = _peers[m].state
-			batch[m] = {"h": s.get("h", 1.0), "w": s.get("w", "")}
+			batch[m] = {"h": s.get("h", 1.0), "w": s.get("w", ""), "i": _peers[m].instance}
 		for m in _parties[pid].members:
 			_send(m, "_rpc_vitals", [batch])
 
@@ -2158,6 +2201,9 @@ func _rpc_notice(text: String) -> void:
 
 @rpc("authority", "call_remote", "unreliable_ordered")
 func _rpc_vitals(batch: Dictionary) -> void:
+	for id in batch:
+		if batch[id] is Dictionary:
+			member_where[int(id)] = String(batch[id].get("i", ""))
 	party_vitals.emit(batch)
 
 

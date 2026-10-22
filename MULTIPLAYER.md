@@ -27,7 +27,8 @@ commit). The README's Multiplayer section describes how what's done works.
       going back to town; a party's rift fails only when everyone is down
 - [x] Rift level and unlocks with a party: the opener's level (no higher than they have reached); a
       clear in time unlocks each member's next level; the Rift Gate lists everyone's highest
-- [ ] Markers pointing to party members off screen, and "go to" a party member (waypoint / portal)
+- [x] Markers pointing to party members off screen, and "go to" a party member (their town, story
+      zone or the party's rift, arriving beside them)
 
 ## 2. Test with real devices
 

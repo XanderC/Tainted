@@ -25,6 +25,8 @@ extends Node
 ## Levels: --levels: the leader has reached rift 3, the follower rift 1. The leader asks for a level 7
 ## party rift and gets 3 (no higher than it has reached); the Rift Gate lists both; a clear in time
 ## unlocks 4 for the leader and only 2 for the follower.
+## Go to: --goto: in town the follower has an arrow to the leader; the leader goes into the Dune
+## Wastes; the follower's "go to" takes it there, beside the leader.
 
 var role := "leader"
 var bot_name := "Bot"
@@ -75,6 +77,10 @@ var _phase := 0
 var _phase_t := 0.0
 var _hurt_while_host_down := 0
 var _levels := false
+var _goto := false
+var _went := false
+var _arrow_seen := false
+var _guest_left := false
 
 
 var runner := false  # the copy that runs, at the root (the scene itself is replaced on travel)
@@ -98,6 +104,7 @@ func _ready() -> void:
 		elif a == "--allies": _allies = true
 		elif a == "--revive": _revive = true
 		elif a == "--levels": _levels = true
+		elif a == "--goto": _goto = true
 	GameState.char_name = bot_name
 	GameState.appearance = Appearance.random_look()
 	GameState.give_starter_skills()
@@ -148,6 +155,8 @@ func _ready() -> void:
 	while Net.mode == Net.Mode.CONNECTING:
 		await get_tree().process_frame
 	Net.enter(Net.TOWN)
+	if _goto and role == "follower":
+		get_tree().change_scene_to_file("res://scenes/town.tscn")  # the real town: its arrows, its "go to"
 	if role == "leader":
 		while Net.others.is_empty():
 			await get_tree().create_timer(0.5).timeout
@@ -155,6 +164,9 @@ func _ready() -> void:
 		while Net.party.get("members", []).size() < 2:
 			await get_tree().create_timer(0.3).timeout
 		if _zone:
+			ActDB.travel(get_tree(), "dune_wastes", "start")
+		elif _goto:
+			await get_tree().create_timer(3.0).timeout  # the follower sees it in town first
 			ActDB.travel(get_tree(), "dune_wastes", "start")
 		elif _levels:
 			await get_tree().create_timer(1.0).timeout  # the party list with both members' highest
@@ -171,6 +183,15 @@ func _process(delta: float) -> void:
 		return
 	_t += delta
 	var scene := get_tree().current_scene
+	if _goto and role == "follower" and scene != null and scene.scene_file_path.ends_with("town.tscn") and Net.in_party():
+		var lead := int(Net.party.leader)
+		for np in scene.find_children("*", "NetPresence", true, false):
+			if np._arrows.has(lead):
+				_arrow_seen = true
+		if not _went and Net.member_place(lead) == "zone":
+			_check(_arrow_seen, "an arrow pointed to the party member in town")
+			_went = Net.go_to(lead)
+			_check(_went, "Go to them: the member's zone")
 	var main = scene if scene != null and (scene.scene_file_path.ends_with("main.tscn") or scene.scene_file_path.ends_with("zone.tscn")) else null
 	if main != null and main.maze != null:
 		if not _in_rift:
@@ -207,6 +228,9 @@ func _process(delta: float) -> void:
 			return
 		if _revive:
 			_revive_step(main, delta)
+			return
+		if _goto:
+			_goto_step(main)
 			return
 		if _takeover and _was_guest and Net.is_instance_host():
 			if _host_since < 0.0:
@@ -353,6 +377,39 @@ func _finish_takeover(main) -> void:
 	_check(not enemies.is_empty() and enemies.all(func(e): return not e.remote), "the copies are real monsters now (%d)" % enemies.size())
 	_check(not main.run.remote, "the run runs in its game now")
 	print("takeover: %d checks, %d failed" % [_checks, _failed])
+	Net.leave()
+	get_tree().quit(1 if _failed > 0 else 0)
+
+
+## Go to: the leader waits in the zone; the follower, there by "go to", checks it stands beside it.
+func _goto_step(main) -> void:
+	main.player.hp = main.player.stats.get_stat("max_life")
+	var others := get_tree().get_nodes_in_group("remote_players")
+	if role == "leader":
+		if not others.is_empty():
+			_guest_seen = true
+		elif _guest_seen:
+			_guest_left = true
+		if _guest_left or _t > secs:
+			set_process(false)
+			_check(_guest_seen, "the follower came to it")
+			print("goto leader: %d checks, %d failed" % [_checks, _failed])
+			Net.leave()
+			get_tree().quit(1 if _failed > 0 else 0)
+		return
+	if others.is_empty() or _rift_t < 1.0:
+		if _rift_t > 25.0:
+			set_process(false)
+			_check(false, "it arrives beside the leader (never saw it)")
+			print("goto follower: %d checks, %d failed" % [_checks, _failed])
+			get_tree().quit(1)
+		return
+	var d: float = main.player.global_position.distance_to(others[0]._target)
+	set_process(false)
+	_check(main.get("zone_id") == "dune_wastes", "it is in the leader's zone (%s)" % main.get("zone_id"))
+	_check(d < 120.0, "it arrives beside the leader (%d away)" % int(d))
+	print("goto follower: %d checks, %d failed" % [_checks, _failed])
+	await get_tree().create_timer(1.0).timeout
 	Net.leave()
 	get_tree().quit(1 if _failed > 0 else 0)
 

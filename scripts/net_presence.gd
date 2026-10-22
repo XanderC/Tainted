@@ -3,12 +3,16 @@ extends Node
 ## Puts the other players of an instance (Net) into a scene: add it to a scene with `instance`
 ## set (Net.TOWN in town), and while online it enters that instance, shows each player there as a
 ## RemotePlayer in its parent (the y-sorted world), and leaves the instance when the scene goes.
-## A small line at the top of the screen says you're online and who is about.
+## A small line at the top of the screen says you're online and who is about. Party members off
+## screen get an arrow at the edge pointing to them, and going to one (Net.go_to) puts you beside
+## them once they appear here.
 
 var instance := Net.TOWN
 var _remotes := {}  # peer id -> RemotePlayer
 var _line: Label
 var _toast: Label
+var _layer: CanvasLayer
+var _arrows := {}  # peer id -> PortalArrow: party members, pointed at while off screen
 
 
 func _ready() -> void:
@@ -20,6 +24,7 @@ func _ready() -> void:
 	var layer := CanvasLayer.new()
 	layer.layer = 5
 	add_child(layer)
+	_layer = layer
 	_line = UIKit.label("", 14, Color(0.60, 0.85, 1.0))
 	_line.add_theme_color_override("font_outline_color", Color.BLACK)
 	_line.add_theme_constant_override("outline_size", 5)
@@ -38,6 +43,48 @@ func _ready() -> void:
 	layer.add_child(_toast)
 	_refresh_line()
 	Net.enter.call_deferred(instance)  # once the player is in the scene, so it arrives where it stands
+
+
+func _process(_delta: float) -> void:
+	var members: Array = Net.party.get("members", []).map(func(m): return int(m.id)) if Net.in_party() else []
+	for id in _remotes:
+		var want: bool = members.has(id) and is_instance_valid(GameState.player)
+		if want and not _arrows.has(id):
+			var a := PortalArrow.new()
+			a.player = GameState.player
+			a.target = _remotes[id]
+			a.label_text = _remotes[id]._name.text.get_slice("\n", 0)
+			a.color = RemotePlayer.NAME_COLOR
+			_layer.add_child(a)
+			_arrows[id] = a
+		elif not want and _arrows.has(id):
+			_arrows[id].queue_free()
+			_arrows.erase(id)
+	for id in _arrows.keys():
+		if not _remotes.has(id):
+			_arrows[id].queue_free()
+			_arrows.erase(id)
+	_arrive_beside()
+
+
+## Going to a party member (Net.go_to): once they're here and so is the ground (a rift's maze comes
+## from its host), stand beside them.
+func _arrive_beside() -> void:
+	var id := Net.go_to_peer
+	if id == 0:
+		return
+	if Time.get_ticks_msec() > Net.go_to_until:
+		Net.go_to_peer = 0
+		return
+	var world := get_parent()
+	var p = GameState.player
+	if not _remotes.has(id) or not is_instance_valid(p) or not p.is_inside_tree() or ("maze" in world and world.maze == null):
+		return
+	if "run" in world and world.run is DungeonRun and world.get("_travelling"):
+		return
+	Net.go_to_peer = 0
+	p.global_position = _remotes[id]._target + Vector2(30, 0)
+	p.velocity = Vector2.ZERO
 
 
 func _exit_tree() -> void:
