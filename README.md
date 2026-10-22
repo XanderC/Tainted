@@ -243,8 +243,8 @@ to party and Remove. Friends can inspect each other from anywhere.
 - A server started with `--auth=<Autharr URL>` (the container's `TAINTED_AUTH`) turns away anyone not
   signed in, checks each sign-in against Autharr's `/connect/userinfo`, and keys the account by the
   Autharr user (`a<id>`). Disabling an account in Autharr keeps that player out.
-- Autharr needs the `tainted-game` client: Autharr's `tainted-sign-in` branch registers it. Until that's
-  deployed, the server runs without `--auth` (device accounts, LAN only).
+- Autharr has the `tainted-game` client (registered by Autharr itself, `EnsureTaintedAsync`), and the
+  Tainted World requires signing in (`TAINTED_AUTH=http://autharr:5180`, over the `arr` network).
 - **What it does and doesn't stop.** Players can't edit their characters, since the saves are the
   server's, and trades will be done by the server. A modified game can still cheat, because each game
   rolls its own loot (stopping that means running the game itself on the server).
@@ -291,7 +291,7 @@ un_server.ps1` or
    Today any name is accepted and characters come from the player's own save.
 
 **Stages:** 1. shared town (done, LAN). 2. parties (done). 3. party rifts and zones (done). 4. staying connected (done). 5. online characters, chat, inspect, friends, trading and Autharr sign-in
-(done; sign-in switches on once Autharr is updated).
+(done).
 3. zones and rifts together: the party leader's game runs the monsters and each player's loot is
 their own. 4. open to the world (above).
 
