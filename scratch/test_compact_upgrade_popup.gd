@@ -10,6 +10,8 @@ func _ready() -> void:
 
 	var player: Player = town.player
 	var popup_ui: UpgradePopupUI = town.upgrade_popup_ui
+	GameState.attributes = {"str": 40, "dex": 40, "ene": 40}  # whatever weapon it rolls, it can wield
+	player.refresh_attributes()
 
 	# 1. Equip a basic weapon using equip_with_overflow
 	var basic_sword := LootGenerator.roll_item(1, ItemInstance.Rarity.NORMAL, "weapon")

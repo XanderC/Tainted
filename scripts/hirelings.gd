@@ -150,7 +150,7 @@ static func build_stats() -> StatBlock:
 	var base := HirelingDB.stats_at(type_id(), level())
 	for k in base:
 		st.set_base(String(k), float(base[k]))
-	Attributes.apply(st, GameState.hireling.get("attributes", {}), "attributes")
+	Attributes.apply(st, GameState.hireling.get("attributes", {}), "attributes", true)
 	for slot in GameState.hireling_gear:
 		var it: ItemInstance = GameState.hireling_gear[slot]
 		if gear_active(it):
@@ -244,7 +244,7 @@ static func flask_block_reason(item: ItemInstance) -> String:
 	if item == null or not item.is_flask():
 		return "Only flasks go there"
 	if String(item.flask_effect().kind) == "power":
-		return "Hirelings have no Adrenaline to restore"
+		return "Hirelings have no Mana to restore"
 	return ""
 
 

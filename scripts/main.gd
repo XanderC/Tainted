@@ -511,7 +511,7 @@ func _on_item_picked(item: ItemInstance) -> void:
 func _update_hud() -> void:
 	var s := player.stats
 	hud.text = "%s\nDMG %.1f   Atk/s %.2f   Crit %d%%\nArmor %d   Move %d\nGear: %d slots filled   Bag: %d/%d cells   Chaos %d" % [
-		player.class_def.display_name,
+		GameState.build_title(),
 		s.get_stat("damage"), s.get_stat("attack_speed"), int(round(s.get_stat("crit_chance") * 100.0)),
 		int(s.get_stat("armor")), int(s.get_stat("move_speed")),
 		player.equipment.size(), player.bag_cells_used(), Player.BAG_SIZE, GameState.orb_count("chaos"),

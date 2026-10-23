@@ -428,8 +428,7 @@ static func item_card(parent: Node, item: ItemInstance, compact := false, deltas
 	if item.is_flask():
 		# What drinking it does, modifiers included, then the modifiers themselves below
 		var e := item.flask_effect()
-		var pn: String = GameState.player.class_def.power_name if is_instance_valid(GameState.player) else "Power"
-		txt += "[color=#f3e6c4]%s[/color]\n[color=#9ca3af]Cooldown %.1fs[/color]\n" % [item.flask_text(pn), float(e.cooldown)]
+		txt += "[color=#f3e6c4]%s[/color]\n[color=#9ca3af]Cooldown %.1fs[/color]\n" % [item.flask_text("Mana"), float(e.cooldown)]
 	if item.base.flask_slots > 0:
 		txt += "[color=#f3e6c4]Opens %d flask slot%s[/color]\n" % [item.base.flask_slots, "" if item.base.flask_slots == 1 else "s"]
 	if item.quality > 0:

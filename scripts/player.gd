@@ -26,10 +26,17 @@ const SWAP_COOLDOWN := 0.5
 const ATTACK_ANIMS := ["Slashing", "Run Slashing", "Slashing in The Air"]
 const HIT_DELAY := 0.12  # seconds into the swing animation when the blow lands
 
-var class_def: ClassDef
+var class_def: ClassDef  # the Adventurer (ClassLibrary): starting stats and Adrenaline's rules
 var stats := StatBlock.new()
 var hp := 100.0
-var resource := 0.0  # Adrenaline / Mana, see class_def.power_*
+## Two pools: Adrenaline (`resource`, Strength skills: built by their basic attacks and by being hit,
+## fading away; class_def.power_*) and Mana (Dexterity and Energy skills: regenerates; max_mana).
+var resource := 0.0
+var mana := 0.0
+const MANA_BASE := 40.0
+const MANA_REGEN := 0.03  ## of maximum Mana per second
+const WARD_TAKEN := 0.6  ## Arcane Ward: what's left of a hit
+var _ward_t := 0.0
 var flasks: Array = [null, null, null, null, null]  # ItemInstance or null, FLASK_SLOTS long
 var _flask_cd: Array[float] = [0.0, 0.0, 0.0, 0.0, 0.0]
 var _flask_cd_max: Array[float] = [1.0, 1.0, 1.0, 1.0, 1.0]
@@ -95,13 +102,14 @@ var _ring_color := Color.WHITE
 func _ready() -> void:
 	GameState.leveled_up.connect(_on_leveled_up)  # a burst of stars
 	if class_def == null:
-		class_def = ClassLibrary.warrior()
+		class_def = ClassLibrary.adventurer()
 	add_to_group("player")
 	for k in class_def.base_stats:
 		stats.set_base(String(k), class_def.base_stats[k])
 
 	hp = stats.get_stat("max_life")
 	resource = class_def.power_start
+	mana = MANA_BASE
 
 	var shape := CollisionShape2D.new()
 	var circle := CircleShape2D.new()
@@ -165,6 +173,8 @@ func _physics_process(delta: float) -> void:
 	hp = minf(hp + stats.get_stat("life_regen") * delta, stats.get_stat("max_life"))
 	var decay := 0.0 if passive("no_decay") > 0.0 and class_def.power_decay > 0.0 else class_def.power_decay
 	resource = clampf(resource - decay * delta, 0.0, max_resource())
+	mana = clampf(mana + mana_regen() * delta, 0.0, max_mana())
+	_ward_t = maxf(_ward_t - delta, 0.0)
 	for i in _cooldowns.size():
 		_cooldowns[i] = maxf(_cooldowns[i] - delta, 0.0)
 	_swing_t = maxf(_swing_t - delta, 0.0)
@@ -317,7 +327,7 @@ func _hit_area(origin: Vector2, dir: Vector2, hit_radius: float, arc_deg: float,
 			crit_chance += exec_bonus
 		var crit := randf() < crit_chance
 
-		var dmg := stats.get_stat("damage") * mult * (2.0 if crit else 1.0)
+		var dmg := damage_for(skill) * mult * (2.0 if crit else 1.0)
 		if e.hp / e.max_hp < 0.40:
 			dmg *= 1.0 + passive("execute")
 		e.take_damage(dmg, crit, dtype, ailment)
@@ -360,6 +370,8 @@ func use_skill(i: int) -> void:
 	var s := skills[i]
 	if s == null:  # empty action-bar slot
 		return
+	if skill_block_reason(s) != "":  # its weapon, or not enough of its attribute
+		return
 	var rank := GameState.get_skill_rank(s.id)
 	var base_cd := s.get_effective_cooldown(rank)
 	var cd := base_cd
@@ -370,12 +382,12 @@ func use_skill(i: int) -> void:
 		cost = skill_cost(s) * cd
 	elif base_cd <= 0.0:
 		cd = 1.0 / maxf(stats.get_stat("attack_speed"), 0.1)
-	if cost > resource:
+	if cost > _pool(s):
 		return
-	resource -= cost
+	_spend(s, cost)
 	_cooldowns[i] = cd
 	if s.get_on_use_gain() > 0.0:
-		gain_resource(s.get_on_use_gain())
+		_gain_for(s, s.get_on_use_gain())
 	if s.get_on_use_heal() > 0.0:
 		hp = minf(hp + stats.get_stat("max_life") * s.get_on_use_heal(), stats.get_stat("max_life"))
 
@@ -404,6 +416,341 @@ func use_skill(i: int) -> void:
 			_do_call_ancients(s)
 		SkillDef.Kind.CLEAVE:
 			_do_cleave_skill(s)
+		SkillDef.Kind.SHOT:
+			_play_shoot()
+			_shoot(s, _aim(s.max_range), false, "arrow")
+		SkillDef.Kind.POWER_SHOT:
+			_play_shoot()
+			_shoot(s, _aim(s.max_range), true, "arrow")
+		SkillDef.Kind.MULTISHOT:
+			_play_shoot()
+			var base := _aim(s.max_range).angle()
+			var spread := deg_to_rad(s.get_effective_arc() if s.get_effective_arc() < 359.0 else 40.0)
+			for k in 5:
+				_shoot(s, Vector2.from_angle(base - spread * 0.5 + spread * k / 4.0), false, "arrow")
+		SkillDef.Kind.ARROW_RAIN:
+			_play_shoot()
+			_do_arrow_rain(s)
+		SkillDef.Kind.DASH:
+			_do_dash(s)
+		SkillDef.Kind.KNIFE_FAN:
+			_do_knife_fan(s)
+		SkillDef.Kind.BOLT:
+			_play_cast()
+			_shoot(s, _aim(s.max_range), false, "orb")
+		SkillDef.Kind.NOVA:
+			_do_nova(s)
+		SkillDef.Kind.ARC:
+			_do_arc(s)
+		SkillDef.Kind.METEOR:
+			_do_meteor(s)
+		SkillDef.Kind.WARD:
+			_do_ward(s)
+		SkillDef.Kind.HOLY_NOVA:
+			_do_holy_nova(s)
+		SkillDef.Kind.SMITE:
+			_do_smite(s)
+
+
+## "" if skill `s` can be used now as far as you go: what's in your hand (a bow, or a melee weapon)
+## and whether you have enough of its attributes. Otherwise why not.
+func skill_block_reason(s: SkillDef) -> String:
+	if s == null:
+		return "No skill"
+	var wt := main_weapon_type()
+	match s.weapon:
+		"bow":
+			if wt != "bow":
+				return "Needs a bow"
+		"melee":
+			if wt == "bow":
+				return "Needs a melee weapon"
+	if s.hireling_only or s.for_hireling:
+		return ""
+	return GameState.gem_attr_block_reason(s.id)
+
+
+## The kind of weapon in your main hand ("" for none, or one that doesn't meet its requirements).
+func main_weapon_type() -> String:
+	var w: ItemInstance = equipment.get("weapon")
+	return w.base.weapon_type if w != null and gear_active(w) else ""
+
+
+# ---------- damage: attacks by Strength, spells by Energy ----------
+
+## What a hit of skill `s` starts from: your damage, scaled by Strength and attack damage for an
+## attack (and bow damage for a bow's), or by Energy and spell damage for a spell.
+func damage_for(s: SkillDef) -> float:
+	return stats.get_stat("damage") * (spell_mult() if s != null and s.is_spell else attack_mult(s))
+
+
+func attack_mult(s: SkillDef = null) -> float:
+	var m := 1.0 + Attributes.ATTACK_PER_STR * GameState.attribute_bonus("str") + passive("attack_inc")
+	if s != null and s.weapon == "bow":
+		m += passive("bow_inc")
+	return maxf(m, 0.1)
+
+
+func spell_mult() -> float:
+	return maxf(1.0 + Attributes.SPELL_PER_ENE * GameState.attribute_bonus("ene") + passive("spell_inc"), 0.1)
+
+
+## One hit of skill `s` on enemy `e` (an arrow, a bolt, a strike of lightning), `scale` of the skill's
+## damage: crits, execute, element and ailment (or `dtype` / `ailment` instead), leech. The damage dealt.
+func _hit_one(e: Enemy, s: SkillDef, scale := 1.0, dtype := -1, ailment := "-") -> float:
+	if not is_instance_valid(e) or e._dead:
+		return 0.0
+	var crit_chance := stats.get_stat("crit_chance") if passive("no_crit") <= 0.0 else 0.0
+	if s.get_execute_bonus() > 0.0 and e.hp / e.max_hp < 0.35:
+		crit_chance += s.get_execute_bonus()
+	var crit := randf() < crit_chance
+	var dmg := damage_for(s) * s.get_effective_damage_mult(GameState.get_skill_rank(s.id)) * scale * (2.0 if crit else 1.0)
+	if e.hp / e.max_hp < 0.40:
+		dmg *= 1.0 + passive("execute")
+	e.take_damage(dmg, crit, s.get_effective_damage_type() if dtype < 0 else dtype,
+		s.get_effective_ailment() if ailment == "-" else ailment)
+	var leech := s.get_effective_leech() + passive("leech")
+	if leech > 0.0:
+		hp = minf(hp + dmg * leech, stats.get_stat("max_life"))
+	return dmg
+
+
+# ---------- Dexterity and Energy skills ----------
+
+## Where to aim: the nearest enemy in `reach`, else the way you face.
+func _aim(reach: float) -> Vector2:
+	var target = _nearest_enemy(maxf(reach, 200.0))
+	if target != null:
+		facing = (target.global_position - global_position).normalized()
+		rig.set_facing(facing.x)
+	return facing
+
+
+func _play_shoot() -> void:
+	rig.play_once("Slashing" if rig.rig_dir == RigSprite.ARCHER_RIG else "Throwing", maxf(1.2, 0.5 * stats.get_stat("attack_speed")))
+
+
+func _play_cast() -> void:
+	rig.play_once("Throwing", maxf(1.2, 0.5 * stats.get_stat("attack_speed")))
+
+
+## A projectile of skill `s` along `dir`: an arrow, a bolt of fire ("orb": it bursts where it hits)
+## or a knife; the party sees it fly.
+func _shoot(s: SkillDef, dir: Vector2, pierce: bool, style: String, reach := 0.0) -> void:
+	if get_parent() == null:
+		return
+	var a := HirelingArrow.new()
+	a.global_position = global_position + Vector2(0, -26)
+	a.dir = dir
+	a.pierce = pierce
+	a.style = style
+	a.maze = _maze()
+	a.color = s.get_effective_color()
+	if style == "orb":
+		a.speed = 560.0
+	a.life = clampf((reach if reach > 0.0 else maxf(s.max_range, 400.0)) / a.speed, 0.2, 1.5)
+	a.on_hit = func(e: Enemy) -> void:
+		if not is_instance_valid(self) or not is_instance_valid(e):
+			return
+		if s.kind == SkillDef.Kind.BOLT:  # bursts: everything near where it hit
+			_sfx("fire_explosion" if s.get_effective_damage_type() == RuneDef.DamageType.FIRE else "hit_" + _element_name(s),
+				e.global_position + Vector2(0, -16), s.get_effective_radius() / 90.0)
+			_hit_area(e.global_position, Vector2.RIGHT, s.get_effective_radius(), 360.0, s)
+		else:
+			_hit_one(e, s)
+	get_parent().add_child(a)
+	Coop.player_fx(["proj", snappedf(a.global_position.x, 0.1), snappedf(a.global_position.y, 0.1), snappedf(dir.angle(), 0.001),
+		a.color.to_html(false), pierce, style, snappedf(a.speed * a.life, 1.0)])
+
+
+## "fire", "cold", "lightning" or "physical" for a skill's element (its SpellFx).
+func _element_name(s: SkillDef) -> String:
+	match s.get_effective_damage_type():
+		RuneDef.DamageType.FIRE: return "fire"
+		RuneDef.DamageType.COLD: return "cold"
+		RuneDef.DamageType.LIGHTNING: return "lightning"
+	return "physical"
+
+
+func _maze() -> MazeMap:
+	var scene := get_tree().current_scene if is_inside_tree() else null
+	var m = scene.get("maze") if scene != null else null
+	return m if m is MazeMap else null
+
+
+## Arrow Rain: three volleys where the nearest enemy stands, each hitting everything in the circle.
+func _do_arrow_rain(s: SkillDef) -> void:
+	var target = _nearest_enemy(s.max_range)
+	var at: Vector2 = target.global_position if target != null else global_position + facing * 220.0
+	var rad := s.get_effective_radius()
+	var col := s.get_effective_color()
+	Coop.player_fx(["ground", at.x, at.y, rad, col.to_html(false), 1.2])
+	for k in 3:
+		get_tree().create_timer(0.3 * k + 0.25, false).timeout.connect(func():
+			if not is_instance_valid(self) or dead or get_parent() == null:
+				return
+			var fx := Node2D.new()
+			fx.global_position = at
+			fx.z_index = 4
+			get_parent().add_child(fx)
+			fx.draw.connect(func():
+				fx.draw_circle(Vector2.ZERO, rad, Color(col.r, col.g, col.b, 0.18))
+				fx.draw_arc(Vector2.ZERO, rad, 0.0, TAU, 40, Color(col.r, col.g, col.b, 0.8), 3.0)
+				for j in 9:
+					var p := Vector2.from_angle(j * 2.4) * rad * (0.25 + 0.08 * j)
+					fx.draw_line(p + Vector2(-6, -24), p, Color(0.9, 0.85, 0.7), 2.0))
+			fx.queue_redraw()
+			var tw := fx.create_tween()
+			tw.tween_property(fx, "modulate:a", 0.0, 0.35)
+			tw.tween_callback(fx.queue_free)
+			_hit_area(at, Vector2.RIGHT, rad, 360.0, s))
+
+
+## Shadow Step: dash through the nearest enemy, cutting everything along the way.
+func _do_dash(s: SkillDef) -> void:
+	var dir := _aim(s.max_range + 80.0)
+	var dist := s.max_range
+	var target = _nearest_enemy(s.max_range + 80.0)
+	if target != null:
+		dist = minf(global_position.distance_to(target.global_position) + 70.0, s.max_range)
+	var from := global_position
+	var to := from + dir * dist
+	var m := _maze()
+	if m != null:  # stop short of a wall
+		var step := 0.0
+		while step < dist and not m.is_wall(m.world_to_cell(from + dir * (step + 20.0))):
+			step += 20.0
+		to = from + dir * step
+	rig.play_once("Sliding", 1.6)
+	_busy = true
+	velocity = Vector2.ZERO
+	_sfx("slash_lightning" if s.get_effective_damage_type() == RuneDef.DamageType.LIGHTNING else "slash_chaos", from.lerp(to, 0.5) + Vector2(0, -26),
+		dist / 160.0, dir.x < 0.0)
+	var t := create_tween()
+	t.tween_property(self, "global_position", to, 0.16).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	t.tween_callback(func():
+		_busy = false
+		var rad := s.get_effective_radius()
+		for e in get_tree().get_nodes_in_group("enemies"):
+			var p: Vector2 = e.global_position
+			var along := clampf((p - from).dot(dir), 0.0, from.distance_to(to))
+			if p.distance_to(from + dir * along) < rad + 14.0 * e.size_mult:
+				_hit_one(e, s))
+
+
+## Fan of Knives (Death Blossom: three waves): knives thrown out all round.
+func _do_knife_fan(s: SkillDef) -> void:
+	_play_cast()
+	var waves := 3 if s.cluster == "ultimate" else 1
+	for w in waves:
+		get_tree().create_timer(0.22 * w + 0.01, false).timeout.connect(func():
+			if not is_instance_valid(self) or dead:
+				return
+			for k in 10:
+				_shoot(s, Vector2.from_angle(TAU * k / 10.0 + w * 0.3), false, "knife", s.max_range))
+
+
+## Frost Nova: a burst all round you.
+func _do_nova(s: SkillDef) -> void:
+	_play_cast()
+	var rad := s.get_effective_radius()
+	_show_ring(rad, s.get_effective_color(), SWING_TIME * 2.0)
+	var fx: String = {"cold": "ice_burst", "fire": "fire_explosion", "lightning": "lightning_strike"}.get(_element_name(s), "ground_hit")
+	_sfx(fx, global_position, rad / 150.0)
+	_hit_area(global_position, facing, rad, 360.0, s)
+
+
+## Arc: lightning strikes the nearest enemies one after another (Thunderstorm: again and again).
+func _do_arc(s: SkillDef) -> void:
+	_play_cast()
+	var storm := s.cluster == "ultimate"
+	var strikes := 12 if storm else 3
+	var gap := (s.duration / strikes) if storm else 0.07
+	var picked := _nearest_enemies(s.max_range, strikes if not storm else 99)
+	for k in strikes:
+		get_tree().create_timer(gap * k + 0.01, false).timeout.connect(func():
+			if not is_instance_valid(self) or dead:
+				return
+			var e = null
+			if storm:
+				var near := _nearest_enemies(s.max_range, 4)
+				e = near.pick_random() if not near.is_empty() else null
+			elif k < picked.size():
+				e = picked[k]
+			if is_instance_valid(e) and not e._dead:
+				_sfx("lightning_strike", e.global_position + Vector2(0, -40), 0.9)
+				_hit_one(e, s))
+
+
+## The `n` nearest enemies within `reach`, nearest first.
+func _nearest_enemies(reach: float, n: int) -> Array:
+	var list := get_tree().get_nodes_in_group("enemies").filter(func(e):
+		return not e._dead and global_position.distance_to(e.global_position) <= reach)
+	list.sort_custom(func(a, b): return global_position.distance_squared_to(a.global_position) < global_position.distance_squared_to(b.global_position))
+	return list.slice(0, n)
+
+
+## Meteor: a shadow grows where the enemies are, then the meteor crashes there.
+func _do_meteor(s: SkillDef) -> void:
+	_play_cast()
+	var target = _nearest_enemy(s.max_range)
+	var at: Vector2 = target.global_position if target != null else global_position + facing * 220.0
+	var rad := s.get_effective_radius()
+	var col := s.get_effective_color()
+	Coop.player_fx(["ground", at.x, at.y, rad, col.to_html(false), 0.8])
+	var mark := Node2D.new()
+	mark.global_position = at
+	mark.z_index = -1
+	get_parent().add_child(mark)
+	mark.draw.connect(func():
+		mark.draw_circle(Vector2.ZERO, rad, Color(0, 0, 0, 0.25))
+		mark.draw_arc(Vector2.ZERO, rad, 0.0, TAU, 40, Color(col.r, col.g, col.b, 0.8), 3.0))
+	mark.scale = Vector2.ONE * 0.2
+	var tw := mark.create_tween()
+	tw.tween_property(mark, "scale", Vector2.ONE, 0.8)
+	tw.tween_callback(func():
+		mark.queue_free()
+		if not is_instance_valid(self):
+			return
+		_sfx("fire_explosion", at, rad / 80.0)
+		_hit_area(at, Vector2.RIGHT, rad, 360.0, s))
+
+
+## Arcane Ward: for a while a part of each hit is taken by the ward (take_damage).
+func _do_ward(s: SkillDef) -> void:
+	_play_cast()
+	_ward_t = s.duration
+	_sfx_on("lightning_shield", s.duration, 1.0, 42.0, true, 0.55)
+
+
+## Holy Nova: heals you and burns what's near.
+func _do_holy_nova(s: SkillDef) -> void:
+	_play_cast()
+	hp = minf(hp + stats.get_stat("max_life") * 0.15, stats.get_stat("max_life"))
+	var rad := s.get_effective_radius()
+	_show_ring(rad, s.get_effective_color(), SWING_TIME * 2.5)
+	_sfx_on("revival", 1.0, 1.2, 30.0)
+	_hit_area(global_position, facing, rad, 360.0, s)
+
+
+## Smite: a melee blow, and lightning strikes up to three of what it hit.
+func _do_smite(s: SkillDef) -> void:
+	var target = _nearest_enemy(s.get_effective_radius() + 30.0)
+	if target != null:
+		facing = (target.global_position - global_position).normalized()
+		rig.set_facing(facing.x)
+	rig.play_once("Slashing", maxf(1.0, 0.42 * stats.get_stat("attack_speed")))
+	var rad := s.get_effective_radius()
+	var arc := s.get_effective_arc()
+	var struck := get_tree().get_nodes_in_group("enemies").filter(func(e):
+		var to: Vector2 = e.global_position - global_position
+		return not e._dead and to.length() <= rad + 14.0 and (arc >= 359.0 or absf(facing.angle_to(to)) <= deg_to_rad(arc) * 0.5))
+	_show_swing(facing, arc, rad, s.get_effective_color(), SWING_TIME, s.get_effective_damage_type())
+	_hit_area(global_position, facing, rad, arc, s)
+	for e in struck.slice(0, 3):
+		if is_instance_valid(e) and not e._dead:
+			_sfx("lightning_strike", e.global_position + Vector2(0, -40), 0.8)
+			_hit_one(e, s, 0.6, RuneDef.DamageType.LIGHTNING, "shock")
 
 
 # ---------- flasks ----------
@@ -434,9 +781,9 @@ func use_flask(i: int) -> bool:
 				hp = minf(hp + total, stats.get_stat("max_life"))
 			else:
 				fx.life_rate = total / maxf(float(e.duration), 0.1)
-		"power":
+		"power":  # Mana
 			if e.instant:
-				gain_resource(float(e.amount))
+				gain_mana(float(e.amount))
 			else:
 				fx.power_rate = float(e.amount) / maxf(float(e.duration), 0.1)
 		"utility":
@@ -469,7 +816,7 @@ func _process_flasks(delta: float) -> void:
 		if float(fx.life_rate) > 0.0:
 			hp = minf(hp + float(fx.life_rate) * step, max_life)
 		if float(fx.power_rate) > 0.0:
-			gain_resource(float(fx.power_rate) * step)
+			gain_mana(float(fx.power_rate) * step)
 		fx.t = float(fx.t) - delta
 		if float(fx.t) <= 0.0:
 			stats.remove_source(fx.source)
@@ -606,7 +953,7 @@ func _apply_passives() -> void:
 	for m in mods:
 		if m[2] != 0.0:
 			stats.add_mod(m[0], m[1], m[2], "passives")
-	Attributes.apply(stats, GameState.attributes, "attributes")
+	Attributes.apply(stats, GameState.attribute_bonuses(), "attributes")
 	var new_max := stats.get_stat("max_life")
 	hp = clampf(hp + maxf(new_max - old_max, 0.0), 0.0, new_max)
 
@@ -635,16 +982,25 @@ func apply_slow(seconds: float) -> void:
 	_slow_t = maxf(_slow_t, seconds)
 
 
-## Maximum Adrenaline / Mana: the class's plus passives and Energy.
+## Maximum Adrenaline: the base plus passives.
 func max_resource() -> float:
-	return class_def.power_max + passive("power_max") \
-		+ Attributes.ENERGY_RESOURCE * float(GameState.attributes.get("ene", 0))
+	return class_def.power_max + passive("power_max")
+
+
+## Maximum Mana: a base, Energy and passives.
+func max_mana() -> float:
+	return maxf(MANA_BASE + Attributes.MANA_PER_ENE * GameState.attribute_bonus("ene") + passive("mana_max"), 0.0)
+
+
+func mana_regen() -> float:
+	return max_mana() * MANA_REGEN * maxf(1.0 + passive("mana_regen_inc"), 0.0)
 
 
 ## Attribute points were added or taken back: their bonuses, and which gear now meets its requirements.
 func refresh_attributes() -> void:
 	_sync_gear_visuals()
 	resource = minf(resource, max_resource())
+	mana = minf(mana, max_mana())
 
 
 ## What a skill costs to use: base cost x linked supports' multipliers, less passive reductions.
@@ -656,6 +1012,39 @@ func gain_resource(amount: float) -> void:
 	resource = minf(resource + amount, max_resource())
 
 
+func gain_mana(amount: float) -> void:
+	mana = minf(mana + amount, max_mana())
+
+
+## Blood Magic (a keystone): Mana skills cost life instead.
+func blood_magic() -> bool:
+	return passive("blood_magic") > 0.0
+
+
+## What skill `s` can spend: Adrenaline for a Strength skill, Mana (or with Blood Magic life, keeping
+## one) for the others.
+func _pool(s: SkillDef) -> float:
+	if not s.uses_mana():
+		return resource
+	return hp - 1.0 if blood_magic() else mana
+
+
+func _spend(s: SkillDef, amount: float) -> void:
+	if not s.uses_mana():
+		resource -= amount
+	elif blood_magic():
+		hp -= amount
+	else:
+		mana -= amount
+
+
+func _gain_for(s: SkillDef, amount: float) -> void:
+	if s.uses_mana():
+		gain_mana(amount)
+	else:
+		gain_resource(amount)
+
+
 ## True when skill i has enough resource to be used (ignores cooldown).
 func can_afford(i: int) -> bool:
 	if i < 0 or i >= skills.size():
@@ -664,8 +1053,13 @@ func can_afford(i: int) -> bool:
 	if s == null:
 		return false
 	if s.kind == SkillDef.Kind.WHIRLWIND and s.get_effective_cooldown(GameState.get_skill_rank(s.id)) <= 0.0:
-		return resource >= skill_cost(s) * 0.2
-	return resource >= skill_cost(s)
+		return _pool(s) >= skill_cost(s) * 0.2
+	return _pool(s) >= skill_cost(s)
+
+
+## True when skill i could be used if it weren't cooling down: its weapon, attributes and cost.
+func can_use(i: int) -> bool:
+	return i >= 0 and i < skills.size() and skills[i] != null and skill_block_reason(skills[i]) == "" and can_afford(i)
 
 
 func cooldown_fraction(i: int) -> float:
@@ -843,7 +1237,7 @@ func _do_call_ancients(s: SkillDef) -> void:
 	rig.pulse()
 	_show_ring(120.0, Color(0.6, 0.85, 1.0), 0.4)
 	var rank := GameState.get_skill_rank(s.id)
-	var per_hit := stats.get_stat("damage") * s.get_effective_damage_mult(rank) / 3.0
+	var per_hit := damage_for(s) * s.get_effective_damage_mult(rank) / 3.0
 	for i in ANCIENTS.size():
 		var a := AncientAlly.new()
 		a.owner_player = self
@@ -878,8 +1272,15 @@ func take_damage(amount: float) -> void:
 		return
 	var armor := stats.get_stat("armor")
 	var taken := amount * 100.0 / (100.0 + armor)
+	if _ward_t > 0.0:
+		taken *= WARD_TAKEN  # Arcane Ward
+	var shield := clampf(passive("mana_shield"), 0.0, 0.9)  # a keystone: part of each hit comes off Mana
+	if shield > 0.0 and mana > 0.0:
+		var off := minf(taken * shield, mana)
+		mana -= off
+		taken -= off
 	hp -= taken
-	# Getting hit builds the class resource (Warrior: Adrenaline)
+	# Getting hit builds Adrenaline
 	var gain := class_def.power_per_life_lost * taken / maxf(stats.get_stat("max_life"), 1.0)
 	if _hit_power_cd <= 0.0 and class_def.power_on_hit > 0.0:
 		gain += class_def.power_on_hit
@@ -1047,15 +1448,12 @@ func equip(item: ItemInstance) -> void:
 
 # ---------- equipping rules: class weapon types, one/two-handed, dual wield ----------
 
-## "" when this class can use the item, otherwise the reason it can't.
+## "" when you can use the item, otherwise the reason you can't (any weapon, if you meet its needs).
 func equip_block_reason(item: ItemInstance) -> String:
 	if item == null:
 		return "Nothing to equip"
 	if not item.identified:
 		return "Identify it first"
-	var wt := item.base.weapon_type
-	if wt != "" and not class_def.weapon_types.has(wt):
-		return "%ss cannot use %ss" % [class_def.display_name, ItemBase.TYPE_NAMES.get(wt, wt).to_lower()]
 	# A saved character's gear goes back on as it was; any that falls short just gives nothing
 	if not GameState.is_restoring():
 		return Attributes.block_reason(item.base, GameState.attribute_totals())
@@ -1431,9 +1829,30 @@ func _sync_gear_visuals() -> void:
 		_apply_passives()
 	if rig == null:
 		return
+	_match_rig()
 	dress_rig(rig, equipment)
 	if GameState.player == self:
 		Net.update_looks()  # others online see the new gear
+
+
+## A bow in hand: drawn on the archer rig (drawing and loosing arrows); otherwise the sword rig. The
+## rig is swapped for one of the right kind, wearing your looks.
+func _match_rig() -> void:
+	var w: ItemInstance = equipment.get("weapon")
+	var want := RigSprite.rig_for_weapon(w.base.id if w != null else "")
+	if rig.rig_dir == want:
+		return
+	var r := RigSprite.new()
+	r.base_scale = rig.base_scale
+	r.weapon_from_gear = true
+	r.rig_dir = want
+	var at := rig.get_index()
+	remove_child(rig)
+	rig.queue_free()
+	add_child(r)
+	move_child(r, at)
+	Appearance.apply(r, GameState.appearance)
+	rig = r
 
 
 ## Whether worn (or wearable) gear meets its attribute requirements, so its stats count.

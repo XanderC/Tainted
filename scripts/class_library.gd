@@ -1,13 +1,14 @@
 class_name ClassLibrary
 extends RefCounted
-## All playable classes. Add a new static func here (and its id to CLASS_IDS) to add a class.
+## There are no classes: every character is an Adventurer, the same at the start; attributes, the
+## passive tree, skill gems and gear make the build (Attributes.build_title names it). The
+## Adventurer is the base: starting stats, any weapon, and Adrenaline's rules (Mana's are Player's).
 
-const CLASS_IDS := ["warrior"]
+const CLASS_IDS := ["adventurer"]
 
 
-static func get_class_def(id: String) -> ClassDef:
-	match id:
-		_: return warrior()
+static func get_class_def(_id := "") -> ClassDef:
+	return adventurer()
 
 
 static func _skill(id: String, title: String, kind: SkillDef.Kind, cd: float, mult: float,
@@ -27,27 +28,26 @@ static func _skill(id: String, title: String, kind: SkillDef.Kind, cd: float, mu
 	return s
 
 
-## Tanky melee bruiser: high life and armor, area attacks, self-buff.
-static func warrior() -> ClassDef:
+## Everyone: any weapon (if its attribute requirements are met), one-handers in either hand.
+static func adventurer() -> ClassDef:
 	var c := ClassDef.new()
-	c.id = "warrior"
-	c.display_name = "Warrior"
-	c.description = "A tough melee fighter who wades into packs with swords, axes and maces. " + \
-		"Fights with Adrenaline, built by landing hits and taking them."
-	c.color = Color(0.35, 0.5, 0.95)
+	c.id = "adventurer"
+	c.display_name = "Adventurer"
+	c.description = "Everyone starts the same. Where you put your attribute and passive points, which " + \
+		"skill gems you socket and what you wield make you a warrior, an archer, a sorcerer, or anything in between."
+	c.color = Color(0.85, 0.75, 0.5)
 	c.base_stats = {
-		"max_life": 160.0,
+		"max_life": 140.0,
 		"damage": 12.0,
 		"attack_speed": 1.1,
 		"move_speed": 220.0,
-		"armor": 20.0,
+		"armor": 15.0,
 		"crit_chance": 0.05,
 		"life_regen": 1.5,
 	}
-	# Swords, axes and maces: one-handed + shield, two one-handers, or one two-hander
-	c.weapon_types = ["sword", "axe", "mace", "spear", "shield"]
+	c.weapon_types = ["sword", "axe", "mace", "spear", "dagger", "staff", "bow", "shield"]
 	c.dual_wield = true
-	# Adrenaline: starts empty, built by generator attacks, slowly drains away
+	# Adrenaline (Strength skills): starts empty, built by their basic attacks, slowly drains away
 	c.power_name = "Adrenaline"
 	c.power_color = Color(1.0, 0.55, 0.1)
 	c.power_max = 100.0

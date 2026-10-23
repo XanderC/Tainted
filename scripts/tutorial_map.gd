@@ -14,7 +14,7 @@ const SCENE := "res://scenes/tutorial.tscn"
 const TOWN_SCENE := "res://scenes/town.tscn"
 enum Stage { ALTAR, SOCKET, FIGHT, EQUIP, PORTAL }
 ## The first skill gems on offer at the altar (all usable at level 1).
-const STARTER_GEMS := ["cleave", "frenzy", "sundering_strike"]
+const STARTER_GEMS := ["cleave", "frenzy", "firebolt"]  # one of each colour: Strength, Dexterity, Energy
 const PORTAL_REACH := 70.0
 
 const HINTS := {
@@ -23,7 +23,7 @@ const HINTS := {
 	Stage.SOCKET: "[b]Socket your skill gem.[/b]\nTap [color=#ffd54a]🎒 BAG[/color] (top right), open the " +
 		"[color=#ffd54a]Skill Gems[/color] tab, and drag your gem onto the [color=#ffd54a]⚔ main attack[/color] slot in the Skills panel. Then close the bag.",
 	Stage.FIGHT: "[b]A Husk blocks the way![/b]\nYour gem is in your [color=#ffd54a]⚔ main attack[/color] slot. Walk up to it and tap the big " +
-		"[color=#ffd54a]attack button[/color] (bottom right; Space or click on a computer). Hits build [color=#fb923c]Adrenaline[/color] for stronger skills later. " +
+		"[color=#ffd54a]attack button[/color] (bottom right; Space or click on a computer). Red gems build [color=#fb923c]Adrenaline[/color] as they hit; green and blue ones use [color=#60a5fa]Mana[/color]. " +
 		"(You change skill gems at the [color=#ffd54a]stash[/color] in town.)",
 	Stage.EQUIP: "[b]It dropped a Magic weapon![/b]\nTap its name on the ground to pick it up, then equip it in place of your Rusty Sword: " +
 		"open your [color=#ffd54a]🎒 BAG[/color] and drag it onto the Main Hand slot.",
@@ -226,7 +226,7 @@ func _spawn_monster() -> void:
 	_monster = e
 
 
-## The Husk's drop: a Magic one-handed weapon this class can use, better than the starting sword.
+## The Husk's drop: a Magic one-handed weapon, better than the starting sword.
 func _drop_reward(pos: Vector2) -> void:
 	var item: ItemInstance = null
 	for i in 40:

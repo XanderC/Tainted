@@ -1,8 +1,9 @@
 class_name SkillTreeCanvas
 extends Control
-## Draws a class's passive tree (PassiveTree graph) and lets you pan (drag), zoom (mouse wheel,
-## pinch, or the zoom buttons) and tap nodes (node_selected). Allocated nodes and the links between
-## them are gold; nodes you can take next are outlined green.
+## Draws the passive tree (PassiveTree graph) and lets you pan (drag), zoom (mouse wheel, pinch, or
+## the zoom buttons) and tap nodes (node_selected). Allocated nodes and the links between them are
+## gold; nodes you can take next are outlined green. The rest are tinted by the attribute they lean
+## to (Strength red, Dexterity green, Vitality pink, Energy blue), and each branch is named.
 
 signal node_selected(node_id: String)
 
@@ -99,10 +100,41 @@ func _node_at(screen_pos: Vector2) -> String:
 	return best
 
 
+## The attribute a node leans to: the one it gives the most of, or by what it does; "" for none.
+static func node_attribute(n: Dictionary) -> String:
+	var best := ""
+	var most := 0
+	for k in Attributes.KEYS:
+		if int(n.stats.get(k, 0)) > most:
+			most = int(n.stats.get(k, 0))
+			best = k
+	if best != "":
+		return best
+	for k in n.stats:
+		match String(k):
+			"attack_inc", "power_max", "execute", "rampage", "no_decay", "no_crit":
+				return "str"
+			"crit", "attack_speed_inc", "move_inc", "bow_inc":
+				return "dex"
+			"life_flat", "life_inc", "armor_inc", "regen", "thorns", "blood_magic":
+				return "vit"
+			"spell_inc", "mana_max", "mana_regen_inc", "cost_red", "mana_shield", "gem_level":
+				return "ene"
+	return ""
+
+
 func _draw() -> void:
 	draw_rect(Rect2(Vector2.ZERO, size), Color(0.06, 0.04, 0.06))
 	var tree := PassiveTree.get_tree(class_id)
 	var nodes: Dictionary = tree.nodes
+	# the branches' names, out past their keystones
+	var font0 := ThemeDB.fallback_font
+	for b in PassiveTree.BRANCHES:
+		var at := _to_screen(Vector2(b.dir) * 760.0)
+		var fs0 := int(clampf(20.0 * zoom, 11.0, 24.0))
+		var txt := String(Attributes.NAMES[b.key]).to_upper()
+		draw_string_outline(font0, at + Vector2(-120, 0), txt, HORIZONTAL_ALIGNMENT_CENTER, 240, fs0, 5, Color.BLACK)
+		draw_string(font0, at + Vector2(-120, 0), txt, HORIZONTAL_ALIGNMENT_CENTER, 240, fs0, Attributes.COLORS[b.key].lightened(0.1))
 	# links
 	for id in nodes:
 		var n: Dictionary = nodes[id]
@@ -123,8 +155,10 @@ func _draw() -> void:
 		var r: float = RADIUS[n.kind] * zoom
 		var on := GameState.is_node_allocated(id)
 		var reach := not on and GameState.node_block_reason(id) in ["", "No passive points"]
-		var border := GOLD if on else (REACH if reach else DARK)
-		var fill := Color(0.35, 0.24, 0.08) if on else Color(0.10, 0.09, 0.12)
+		var lean := node_attribute(n)
+		var tint: Color = Attributes.COLORS[lean].darkened(0.45) if lean != "" else DARK
+		var border := GOLD if on else (REACH if reach else tint)
+		var fill := Color(0.35, 0.24, 0.08) if on else (Color(0.10, 0.09, 0.12).lerp(tint, 0.25) if lean != "" else Color(0.10, 0.09, 0.12))
 		if n.kind == "start":
 			fill = Color(0.30, 0.10, 0.08)
 		draw_circle(c, r, fill)
@@ -140,7 +174,7 @@ func _draw() -> void:
 		# names of the big nodes
 		if n.kind != "small" and zoom >= 0.5:
 			var fs := int(clampf(13.0 * zoom, 10.0, 16.0))
-			var label: String = "⚔ WARRIOR" if n.kind == "start" else n.name
+			var label: String = "✦ START" if n.kind == "start" else n.name
 			draw_string_outline(font, c + Vector2(-90, r + 16.0), label, HORIZONTAL_ALIGNMENT_CENTER, 180, fs, 4, Color.BLACK)
 			draw_string(font, c + Vector2(-90, r + 16.0), label, HORIZONTAL_ALIGNMENT_CENTER, 180, fs,
 				GOLD if on else Color(0.85, 0.80, 0.72))

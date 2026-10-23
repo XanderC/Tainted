@@ -94,7 +94,7 @@ signal trade_finished(received: Array, orbs: Dictionary)  ## the trade went thro
 signal signed_in_changed  ## signed in or out of Autharr (`signed_in_as`), or a sign-in failed (`sign_in_error`)
 
 const PORT := 24601
-const PROTOCOL := 12  ## games with a different protocol can't play together
+const PROTOCOL := 13  ## games with a different protocol can't play together
 const MAX_ONLINE := 32
 const PARTY_MAX := 4
 const SEND_HZ := 15.0
@@ -617,7 +617,7 @@ func my_info() -> Dictionary:
 	var account := {"kind": "autharr", "token": _access_token} if _access_token != "" else {"kind": "device", "key": device_key()}
 	if bot_key != "":
 		account = {"kind": "bot", "key": bot_key}
-	return {"name": GameState.char_name, "class": GameState.char_class, "level": GameState.level,
+	return {"name": GameState.char_name, "class": GameState.build_title(), "level": GameState.level,
 		"look": GameState.appearance, "gear": gear, "token": _token, "account": account, "hl": _hireling_info(),
 		"rift": GameState.rift_unlocked}
 
@@ -805,7 +805,7 @@ func _inspect_data() -> Dictionary:
 			eq[slot] = p.equipment[slot].to_dict()
 		for k in ["damage", "attack_speed", "crit_chance", "armor", "max_life", "move_speed"]:
 			stats[k] = p.stats.get_stat(k)
-	return {"name": GameState.char_name, "class": GameState.char_class, "level": GameState.level,
+	return {"name": GameState.char_name, "class": GameState.build_title(), "level": GameState.level,
 		"equipment": eq, "stats": stats}
 
 

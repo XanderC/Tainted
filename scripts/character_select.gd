@@ -4,7 +4,7 @@ extends Control
 ## does it by itself; else email and password) and joins the Tainted World, which sends this
 ## account's characters (Net.account_ready). Then: your characters on the left, the picked one
 ## standing on the right with Play and Delete; "Create New Character" swaps the right side for the
-## creation form (pick a class and looks, enter a name). Each character has its own save; the stash
+## creation form (pick looks, enter a name: there are no classes, everyone starts the same). Each character has its own save; the stash
 ## is shared. If the server can't be reached, or a game lost it for good, it says so: Try again.
 
 const SCENE := "res://scenes/character_select.tscn"
@@ -12,7 +12,7 @@ const TOWN_SCENE := "res://scenes/town.tscn"
 
 var _selected := ""      # character id shown on the right
 var _creating := false
-var _new_class := "warrior"
+var _new_class := "adventurer"
 var _look := Appearance.default_look()  # the new character's looks, picked on the creation form
 var _new_name := ""  # kept while the form is rebuilt
 var _look_box: GridContainer  # the looks options, rebuilt when one changes
@@ -205,11 +205,10 @@ func _build_list() -> void:
 		v.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		v.alignment = BoxContainer.ALIGNMENT_CENTER
 		m.add_child(v)
-		var cls := ClassLibrary.get_class_def(String(c["class"]))
 		var n := UIKit.label(String(c.name), 22, Color(1.0, 0.92, 0.65) if on else Color(0.92, 0.88, 0.80))
 		n.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		v.add_child(n)
-		var sub := UIKit.label("Level %d %s" % [int(c.level), cls.display_name], 15, UIKit.TEXT_DIM)
+		var sub := UIKit.label("Level %d %s" % [int(c.level), String(c.get("class", "Adventurer"))], 15, UIKit.TEXT_DIM)
 		sub.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		v.add_child(sub)
 
@@ -230,11 +229,9 @@ func _build_info() -> void:
 	var c := GameState.character_info(_selected)
 	if c.is_empty():
 		return
-	var cls := ClassLibrary.get_class_def(String(c["class"]))
 	_right.add_child(_spacer())
 	_right.add_child(UIKit.label(String(c.name), 34, Color(1.0, 0.90, 0.60)))
-	_right.add_child(UIKit.label("Level %d %s" % [int(c.level), cls.display_name], 20, cls.color.lightened(0.35)))
-	_right.add_child(UIKit.label(cls.description, 15, UIKit.TEXT_DIM, true))
+	_right.add_child(UIKit.label("Level %d %s" % [int(c.level), String(c.get("class", "Adventurer"))], 20, Color(0.95, 0.85, 0.6)))
 	_right.add_child(_spacer())
 
 	var play := UIKit.button("▶  PLAY", Color(0.14, 0.38, 0.18), Color(0.40, 1.0, 0.55), Vector2(0, 72), 26)
@@ -389,19 +386,7 @@ func _build_create() -> void:
 	var title := UIKit.label("CREATE A CHARACTER", 24, Color(1.0, 0.90, 0.60))
 	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	top.add_child(title)
-	for id in ClassLibrary.CLASS_IDS:
-		var cls := ClassLibrary.get_class_def(id)
-		var on: bool = id == _new_class
-		var b := UIKit.button(cls.display_name, Color(0.24, 0.16, 0.09) if on else Color(0.11, 0.10, 0.13),
-			Color(0.95, 0.80, 0.40) if on else Color(0.32, 0.26, 0.20), Vector2(130, 44), 17)
-		b.tooltip_text = cls.description
-		b.pressed.connect(func():
-			_new_class = id
-			_refresh()
-		)
-		top.add_child(b)
-	var cls := ClassLibrary.get_class_def(_new_class)
-	_right.add_child(UIKit.label(cls.description, 14, UIKit.TEXT_DIM, true))
+	_right.add_child(UIKit.label(ClassLibrary.adventurer().description, 14, UIKit.TEXT_DIM, true))
 
 	# Looks: gender, face, hair and its colour, facial hair and its colour, skin, outfit
 	# Two columns on a wide screen; on a narrower one a single column that scrolls

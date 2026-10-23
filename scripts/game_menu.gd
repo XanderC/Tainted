@@ -441,7 +441,10 @@ func _add_attributes() -> void:
 	rule.color = Color(0.45, 0.36, 0.24, 0.6)
 	rule.custom_minimum_size = Vector2(0, 1)
 	_stats_rows.add_child(rule)
-	var base := Attributes.base_for(player.class_def.id)
+	var base := Attributes.START
+	var build := UIKit.label("Build: %s" % GameState.build_title(), 15, Color(0.95, 0.85, 0.55))
+	build.tooltip_text = "Where your attribute points (the passive tree's included) go names your build: one well ahead of the rest, or two together."
+	_stats_rows.add_child(build)
 	for k in Attributes.KEYS:
 		var line := HBoxContainer.new()
 		line.add_theme_constant_override("separation", 8)
@@ -451,11 +454,11 @@ func _add_attributes() -> void:
 		col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		line.add_child(col)
 		col.add_child(UIKit.label(Attributes.NAMES[k], 16, Attributes.COLORS[k]))
-		col.add_child(UIKit.label(Attributes.bonus_text(k, player.class_def.power_name), 12, UIKit.TEXT_DIM, true))
+		col.add_child(UIKit.label(Attributes.bonus_text(k), 12, UIKit.TEXT_DIM, true))
 		var total := GameState.attribute_total(k)
 		var added := int(GameState.attributes.get(k, 0))
 		var val := UIKit.label("%d" % total, 18, Color(0.95, 0.90, 0.77))
-		val.tooltip_text = "%d base + %d added" % [int(base.get(k, 0)), added]
+		val.tooltip_text = "%d base + %d added + %d from the passive tree" % [int(base.get(k, 0)), added, int(GameState.passive_value(k))]
 		val.custom_minimum_size = Vector2(44, 0)
 		val.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 		line.add_child(val)
@@ -486,7 +489,8 @@ func _refresh_stats() -> void:
 	var cd := player.class_def
 	var rows := [
 		["OFFENSIVE", ""],
-		["Damage", "%.1f" % s.get_stat("damage")],
+		["Attack Damage", "%.1f" % (s.get_stat("damage") * player.attack_mult())],
+		["Spell Damage", "%.1f" % (s.get_stat("damage") * player.spell_mult())],
 		["Attack Speed", "%.2f / s" % s.get_stat("attack_speed")],
 		["Critical Strike Chance", "%.1f%%" % (s.get_stat("crit_chance") * 100.0)],
 		["Critical Strike Damage", "100%"],
@@ -497,9 +501,11 @@ func _refresh_stats() -> void:
 		["Damage Reduction from Armor", "%.1f%%" % (100.0 - 10000.0 / (100.0 + s.get_stat("armor")))],
 		["UTILITY", ""],
 		["Movement Speed", "%d" % int(s.get_stat("move_speed"))],
-		["Maximum %s" % cd.power_name, "%d" % int(player.max_resource())],
-		["%s Decay" % cd.power_name, "%.1f / s" % cd.power_decay],
-		["%s When Hit" % cd.power_name, "+%d, +%d per 10%% life lost" % [int(cd.power_on_hit), int(cd.power_per_life_lost * 0.1)]],
+		["Maximum Adrenaline", "%d" % int(player.max_resource())],
+		["Adrenaline Decay", "%.1f / s" % cd.power_decay],
+		["Adrenaline When Hit", "+%d, +%d per 10%% life lost" % [int(cd.power_on_hit), int(cd.power_per_life_lost * 0.1)]],
+		["Maximum Mana", "%d" % int(player.max_mana())],
+		["Mana Regeneration", "%.1f / s" % player.mana_regen()],
 		["PROGRESS", ""],
 		["Level", "%d" % GameState.level],
 		["Experience", "%d / %d" % [int(GameState.xp), int(GameState.xp_to_next(GameState.level))]],

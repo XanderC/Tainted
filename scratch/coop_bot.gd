@@ -113,6 +113,11 @@ func _ready() -> void:
 	GameState.char_name = bot_name
 	GameState.appearance = Appearance.random_look()
 	GameState.give_starter_skills()
+	# The old Warrior skills (their swings, spins and rings are what the host looks for on its copy),
+	# and the Strength they need
+	for i in 4:
+		GameState.skill_slots[i].skill = ["cleave", "whirlwind", "leap_slam", "battle_cry"][i]
+	GameState.attributes = {"str": 45}
 	if _levels:
 		GameState.rift_unlocked = 3 if role == "leader" else 1
 		GameState.rift_level = GameState.rift_unlocked

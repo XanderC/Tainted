@@ -24,13 +24,14 @@ for the phone's shape).
 | `scripts/stat_block.gd` | Flat / Increased / More stat maths (PoE style) |
 | `scripts/affix_def.gd`, `item_base.gd`, `item_instance.gd` | Data model for items and rolled affixes |
 | `scripts/loot_generator.gd` | Autoload: item + affix database, weighted drop rolls |
-| `scripts/class_library.gd`, `class_def.gd`, `skill_def.gd` | Class definitions. The Warrior lives in `ClassLibrary.warrior()`; add classes the same way |
+| `scripts/class_library.gd`, `class_def.gd`, `skill_def.gd` | The Adventurer everyone starts as (there are no classes: `ClassLibrary.adventurer()`), and skill definitions |
 | `scripts/player.gd`, `enemy.gd` | Movement, skills, damage, armor, equip, stun |
 | `scripts/skill_button.gd` | Right-thumb skill buttons with cooldown sweep |
 | `scripts/item_tip.gd` | Item card tooltip for touch, with the worn item's card beside it to compare |
 
 ### Character creation
-Create New Character lets you pick a class, then how the character looks, shown live on the figure:
+Create New Character lets you pick how the character looks (there are no classes: everyone starts the
+same, see **Builds without classes**), shown live on the figure:
 gender, face, hairstyle (or bald) and hair colour, facial hair and its colour (men), skin tone and a
 starter outfit, or 🎲 Random. Any hairstyle and beard go with any colour, and the eyebrows follow the
 hair colour. The looks are saved with the character and shown on the select screen.
@@ -114,7 +115,7 @@ builds them:
   the tooltip frame, slots, the square close button and the equipment slot silhouettes. `UIKit`
   (`mmo()`, `window_box`, `stone_box`, `tab_box`, `tooltip_box`, `inset_box`) is the one place they are used.
 - `assets/ui/hud`: the action bar laid out as the pack's (`HudBars`, `FlaskBar`): the life and power globes
-  (red, and grey tinted by the class's power colour) on the bottom edge, the square flask slots between
+  (red; the right one split, Adrenaline orange on its left and Mana blue on its right) on the bottom edge, the square flask slots between
   them with their keys, the experience line along the top of the row with a tag over its end, and the
   curls at the globes' feet. Also the round skill buttons, the joystick, and `HudArt.HOLES`, where each
   round frame's opening is (the HUD places them by their opening).
@@ -143,10 +144,11 @@ worn: not weapons or jewellery.
 
 ### Attributes and gear requirements
 Diablo II style (`scripts/attributes.gd`): **Strength**, **Dexterity**, **Vitality** and **Energy**.
-Your class gives a base in each (Warrior 25 / 15 / 20 / 10) and every level brings 5 points to add,
-on the stats screen (📜 Stats in the inventory says how many are waiting). A point of Strength gives
-+1% damage, Dexterity +0.5% attack speed and +0.1% critical chance, Vitality +4 life, Energy +1
-maximum Adrenaline. Points can be taken back for free in town.
+Everyone starts with 15 in each and every level brings 5 points to add, on the stats screen (📜 Stats
+in the inventory says how many are waiting); the passive tree gives more. A point of Strength gives
++1% attack damage, Dexterity +0.5% attack speed and +0.1% critical chance, Vitality +4 life and a
+little regeneration, Energy +1% spell damage and +2 maximum Mana. Points can be taken back for free
+in town.
 Gear needs enough of them, from its kind and drop level (`Attributes.requirements`): heavy weapons
 and armour Strength, daggers and bows Dexterity, staves Energy; rings, amulets, belts, flasks and
 light armour nothing. The item card lists the requirements, red where you fall short, and you can't
@@ -493,11 +495,33 @@ the Jeweler. Each rune gives one stat in a weapon and another in armour or jewel
   sold with it.
 - Test: `godot --headless --path . res://scratch/test_runewords.tscn`.
 
-### Warrior
-Tanky melee: 160 life, 20 armor, life regen. **Cleave** auto-attacks in a wide arc. Skill buttons (or keys 1-3 on desktop):
-1. **Whirl**: 360° spin for 180% damage, 4s cooldown
-2. **Leap**: jump toward the nearest enemy, slam for 250% and stun for 1.2s, 7s cooldown
-3. **Cry**: 6s buff, 25% more damage and +40 armor, 15s cooldown
+### Builds without classes
+There are no classes. Every character starts as the same Adventurer (140 life, 15 of each attribute,
+any weapon it meets the requirements of) and becomes what its points, gems and gear make it:
+- **Attributes** (above) and the **passive tree** (`scripts/passive_tree.gd`): one tree for everyone,
+  four branches from the middle, Strength up (attack damage, Adrenaline), Dexterity right (speed,
+  crits, bows), Vitality down (life, armour) and Energy left (spells, Mana). Many small nodes give
+  attribute points. Where two branches meet their connectors give both, and out past the ring each
+  diagonal has a hybrid cluster with its own keystone: the Assassin's (Strength and Dexterity), the
+  Warden's (Dexterity and Vitality), the Druid's (Vitality and Energy) and the Paladin's (Energy and
+  Strength). Keystones include Resolute Technique, Endless Rage, Eagle Eye, Blood Magic (Mana
+  skills cost life), Eldritch Battery (30% of damage comes off Mana first) and Archmage.
+- **Skill gems by colour** (`scripts/skill_tree.gd`): red Strength gems (melee; Adrenaline, built by
+  their basic attacks and by being hit), green Dexterity gems (bows, daggers, speed: Quick Shot,
+  Power Shot, Multishot, Arrow Rain, Frenzy, Blade Vortex, Fan of Knives, Shadow Step, Death
+  Blossom; Mana) and blue Energy gems (spells: Firebolt, Frost Nova, Arc, Arcane Ward, Holy Nova,
+  Meteor, Thunderstorm; Mana), and two-colour ones (Viper Strike, Smite). A gem needs its
+  attribute (more for deeper clusters, `SkillTree.GEM_ATTR_REQ`); bow skills need a bow and melee
+  skills a melee weapon. Basic Mana skills cost nothing. Mana regenerates (3% a second).
+- **The build's title** (`Attributes.build_title`) comes from where the points went: one attribute
+  well ahead is a Warrior, Ranger, Guardian or Sorcerer, two together a hybrid (Assassin, Paladin,
+  Juggernaut, Spellblade, Warden, Druid). Others see it on your name, in the party list and when
+  inspecting you; your characters list shows it.
+- A bow in hand draws your character on the archer rig, drawing and loosing arrows.
+- Characters from before classes went are retired when the account loads (`GameState.CHAR_VERSION`);
+  the stash and the shared pools stay.
+- Test: `godot --headless --path . res://scratch/test_classless.tscn`; `res://scratch/capture_classless.tscn`
+  for screenshots (needs a window).
 | `scripts/virtual_joystick.gd` | Floating touch joystick |
 | `scripts/loot_pickup.gd` | Ground items with rarity-coloured labels |
 | `scripts/main.gd` | Arena, spawning, HUD |
@@ -511,7 +535,6 @@ Everything is drawn with shapes for now. Art goes in `assets/` (see `assets/READ
 4. Plug in a phone with USB debugging and use the one-click deploy button.
 
 ## Next steps
-1. Skill upgrades / passive tree for the Warrior
 2. Inventory and equipment screen with drag/tap-to-equip
 3. Procedural dungeon floors (TileMapLayer)
 4. Save/load via `ResourceSaver` to `user://`

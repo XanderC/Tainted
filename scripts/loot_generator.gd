@@ -244,11 +244,11 @@ func _build_bases() -> void:
 		{"kind": "life", "amount": 0.45, "duration": 3.0, "cooldown": 9.0, "tier": 2})
 	_flask("large_life_flask", "Large Life Flask", life, 15,
 		{"kind": "life", "amount": 0.60, "duration": 3.5, "cooldown": 10.0, "tier": 3})
-	_flask("small_power_flask", "Small Power Flask", power, 25,
+	_flask("small_power_flask", "Small Mana Flask", power, 25,
 		{"kind": "power", "amount": 40.0, "duration": 3.0, "cooldown": 8.0, "tier": 1})
-	_flask("medium_power_flask", "Medium Power Flask", power, 18,
+	_flask("medium_power_flask", "Medium Mana Flask", power, 18,
 		{"kind": "power", "amount": 70.0, "duration": 3.0, "cooldown": 9.0, "tier": 2})
-	_flask("large_power_flask", "Large Power Flask", power, 10,
+	_flask("large_power_flask", "Large Mana Flask", power, 10,
 		{"kind": "power", "amount": 100.0, "duration": 3.5, "cooldown": 10.0, "tier": 3})
 	_flask("granite_flask", "Granite Flask", Color(0.62, 0.60, 0.58), 10,
 		{"kind": "utility", "stat": "armor", "mod": StatBlock.ModType.FLAT, "amount": 50.0,

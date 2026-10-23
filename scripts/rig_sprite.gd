@@ -133,6 +133,16 @@ func _ready() -> void:
 	_start(_loop_anim, 1.0)
 
 
+const SWORD_RIG := "res://assets/rigs/zombie"
+
+
+## The rig a player character holding weapon `weapon_id` is drawn on: the archer rig with a bow (its
+## own bow, shooting animations), else the sword rig.
+static func rig_for_weapon(weapon_id: String) -> String:
+	var b: ItemBase = LootGenerator.base_by_id(weapon_id) if weapon_id != "" else null
+	return ARCHER_RIG if b != null and b.weapon_type == "bow" else SWORD_RIG
+
+
 ## Whether skin `id` is an archer (drawn on the archer rig).
 static func is_archer_skin(id: String) -> bool:
 	return id != "" and ResourceLoader.exists(SKIN_ROOT + id + "/Bow.png")

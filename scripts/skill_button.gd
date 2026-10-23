@@ -80,14 +80,15 @@ func _draw() -> void:
 		return  # an empty slot: just its frame, so the layout stays readable
 	var frac := player.cooldown_fraction(index)
 	var col := s.get_effective_color()
-	if not player.can_afford(index):
-		col = col.darkened(0.6)  # not enough Adrenaline / Mana
+	var blocked := player.skill_block_reason(s) != ""  # its weapon isn't in hand, or not enough of its attribute
+	if not player.can_use(index):
+		col = col.darkened(0.6)  # that, or not enough Adrenaline / Mana
 
 	# The skill's painted icon filling the button (or a coloured disc without one), dimmed while it
 	# can't be used, with the cooldown sweeping over it
 	var inner_r := r - 3.0
 	var tex := SkillIcons.texture(s.id)
-	var usable := frac <= 0.0 and player.can_afford(index)
+	var usable := frac <= 0.0 and player.can_use(index)
 	if tex != null:
 		var shade := Color.WHITE if usable else Color(0.45, 0.45, 0.48)
 		if _is_down:
@@ -125,8 +126,11 @@ func _draw() -> void:
 	elif s.resource_cost > 0.0:
 		cost_txt = "%d" % int(round(player.skill_cost(s)))
 	if cost_txt != "":
-		var pc := player.class_def.power_color.lightened(0.3) if player.can_afford(index) else Color(1.0, 0.45, 0.4)
+		var pool_col := HudBars.MANA_COLOR if s.uses_mana() else HudBars.ADRENALINE_COLOR
+		var pc := pool_col.lightened(0.35) if player.can_afford(index) else Color(1.0, 0.45, 0.4)
 		HudArt.label(self, Vector2(0, c.y + r * 0.82), cost_txt, 15 if index == 0 else 13, pc, button_size)
+	if blocked:  # a lock over it
+		HudArt.label(self, Vector2(0, c.y - 10.0), "🔒", 20 if index == 0 else 16, Color(1, 1, 1, 0.9), button_size)
 
 	# The slot number (keys 1-5) at the top left; the main attack needs none
 	if index > 0:

@@ -250,13 +250,21 @@ func _add_details(d: VBoxContainer, at: Vector2) -> void:
 		if lvl < SkillTree.GEM_MAX_LEVEL:
 			info += "  •  XP %d / %d" % [int(GameState.gem_xp.get(id, 0.0)), int(GameState.gem_xp_to_next(lvl))]
 		d.add_child(UIKit.label(info, 13, Color(0.38, 0.65, 0.98)))
+		var need := SkillTree.gem_attr_req(id)
+		var parts: Array[String] = []
+		for k in need:
+			var short := GameState.attribute_total(k) < int(need[k])
+			parts.append("[color=#%s]%d %s[/color]" % ["f87171" if short else "d8cdb8", int(need[k]), Attributes.NAMES[k]])
+		d.add_child(UIKit.rich("[color=#%s]● %s gem[/color]  [color=#9a8f7e]Requires[/color] %s" % [sk.gem_color().to_html(false),
+			"/".join(PackedStringArray(sk.attributes.map(func(a): return String(Attributes.GEM_COLOR_NAMES.get(a, a)).capitalize()))),
+			", ".join(PackedStringArray(parts))], 13))
 		var why := GameState.skill_gem_block_reason(id)
 		if why != "":
 			d.add_child(UIKit.label("🔒 " + why, 13, Color(1.0, 0.45, 0.45)))
 		d.add_child(UIKit.rich(sk.get_rank_description(GameState.get_skill_rank(id)), 14))
 		if sk.resource_cost > 0.0:
-			d.add_child(UIKit.rich("[color=#fb923c]With its supports this costs %d %s (base %d).[/color]" % [
-				int(round(player.skill_cost(sk))), player.class_def.power_name, int(sk.resource_cost)], 13))
+			d.add_child(UIKit.rich("[color=#%s]With its supports this costs %d %s (base %d).[/color]" % [
+				"60a5fa" if sk.uses_mana() else "fb923c", int(round(player.skill_cost(sk))), sk.resource_name(), int(sk.resource_cost)], 13))
 		d.add_child(UIKit.label("Socketed skill gems level up from the experience you earn.", 12, UIKit.TEXT_DIM, true))
 		_add_gemcutter(d, id, false, lvl, at)
 	else:

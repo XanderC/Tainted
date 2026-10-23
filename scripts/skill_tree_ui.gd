@@ -1,6 +1,6 @@
 class_name SkillTreeUI
 extends CanvasLayer
-## The class's passive tree (Path of Exile style, one tree per class, see PassiveTree). Spend the
+## The passive tree (Path of Exile style: one for everyone, branching by attribute, see PassiveTree). Spend the
 ## points you earn from levelling on nodes linked to ones you already have; refund
 ## any node that isn't holding others up (an Orb of Regret each), or Respec the whole tree for
 ## free in town (tap twice to confirm). Active skills are skill gems (inventory Skills tab).
@@ -102,8 +102,7 @@ func _build_ui() -> void:
 	header.custom_minimum_size = Vector2(0, UIKit.HEADER_ROW_H)
 	outer.add_child(header)
 	outer.add_child(UIKit.header_gap())
-	var cls_name := player.class_def.display_name if player != null and player.class_def != null else "Warrior"
-	header.add_child(UIKit.label("✦ %s PASSIVE TREE" % cls_name.to_upper(), 22, Color(0.95, 0.85, 0.55)))
+	header.add_child(UIKit.label("✦ PASSIVE TREE", 22, Color(0.95, 0.85, 0.55)))
 	_points_label = UIKit.label("", 19, Color(1.0, 0.85, 0.30))
 	_points_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	header.add_child(_points_label)
@@ -207,7 +206,7 @@ func _render_inspector() -> void:
 	if n.is_empty():
 		_detail_vbox.add_child(UIKit.rich("[color=#8a7f6e]Drag to move around the tree, pinch or use ＋ / － to zoom.\n\n" +
 			"Tap a node to see it. You can take any node linked to one you already have (1 point each), " +
-			"starting from the Warrior in the middle.\n\n" +
+			"starting from the middle. Each branch leans to an attribute: Strength up, Dexterity right, Vitality down, Energy left; where two meet, their hybrids (an Assassin between Strength and Dexterity, a Paladin between Energy and Strength...).\n\n" +
 			"[color=#d6c08a]Small[/color] nodes give a little, [color=#d6c08a]notables[/color] (bigger rings) a lot, and " +
 			"[color=#d6c08a]keystones[/color] (double rings, at the end of each branch) change how you play, with a drawback.[/color]", 15))
 		return

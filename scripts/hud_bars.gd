@@ -1,7 +1,7 @@
 class_name HudBars
 extends Control
 ## The action bar at the bottom centre, laid out as the UI pack's: the life globe (left) and the
-## Adrenaline/Mana globe (right) sitting on the bottom edge, the row of square flask slots between
+## resource globe (right: its left half Adrenaline, its right half Mana) sitting on the bottom edge, the row of square flask slots between
 ## them (drawn by FlaskBar, on the bar's plate: HudBars.draw_plate) that runs from globe to globe,
 ## the experience line along the top of the row with a tag over its end, and a curl at the foot of each globe.
 ## Add to a CanvasLayer and set `player`; it fills the screen but ignores input.
@@ -14,6 +14,8 @@ const ORB_R := 68.0  # a globe's radius (its fill)
 const ORB_DROP := 0.25  # how much of a globe hangs below the screen's edge (of its radius)
 const XP_H := 7.0
 const CURL_S := 0.55  # the curls' scale
+const ADRENALINE_COLOR := Color(1.0, 0.55, 0.1)
+const MANA_COLOR := Color(0.25, 0.50, 1.0)
 
 var player: Player
 
@@ -48,10 +50,9 @@ func _draw() -> void:
 	if player == null:
 		return
 	var max_hp := player.stats.get_stat("max_life")
-	var cd := player.class_def
 	_orb(orb_centre(size, false), false, player.hp / maxf(max_hp, 1.0), Color.WHITE, "%d" % int(player.hp))
-	_orb(orb_centre(size, true), true, player.resource / maxf(player.max_resource(), 1.0), cd.power_color,
-		"%d" % int(player.resource))
+	_split_orb(orb_centre(size, true), player.resource / maxf(player.max_resource(), 1.0),
+		player.mana / maxf(player.max_mana(), 1.0), "%d" % int(player.resource), "%d" % int(player.mana))
 	_curls()
 	_xp()
 
@@ -104,6 +105,28 @@ func _xp() -> void:
 	draw_texture_rect(arrow, Rect2(Vector2(ax - 6.0, tag.end.y - 1.0), Vector2(12, 7)), false, Color(0.20, 0.21, 0.21))
 	draw_string(f, Vector2(tag.position.x, tag.position.y + 14.5), text, HORIZONTAL_ALIGNMENT_CENTER, tw, 12,
 		Color(0.92, 0.90, 0.84))
+
+
+## The resource globe: Adrenaline fills its left half (to `fa`), Mana its right (to `fm`), each
+## with its value, and a thin line between them, Diablo III's two-resource globe.
+func _split_orb(c: Vector2, fa: float, fm: float, ta: String, tm: String) -> void:
+	var r := HudArt.frame(self, "globe_bg", c, ORB_R / float(HudArt.HOLES["globe_bg"][1]))
+	var d := r * 2.0
+	HudArt.disc(self, "globe_fill_empty", c, d)
+	var fill := HudArt.tex("globe_fill_grey")
+	var fw := fill.get_width()
+	var fh := fill.get_height()
+	for half in 2:
+		var frac := clampf(fa if half == 0 else fm, 0.0, 1.0)
+		if frac <= 0.0:
+			continue
+		var src_h := fh * frac
+		var dst_h := d * frac
+		draw_texture_rect_region(fill, Rect2(c.x - d * 0.5 + half * r, c.y + d * 0.5 - dst_h, r, dst_h),
+			Rect2(half * fw * 0.5, fh - src_h, fw * 0.5, src_h), ADRENALINE_COLOR if half == 0 else MANA_COLOR)
+	draw_line(c + Vector2(0, -r * 0.92), c + Vector2(0, r * 0.92), Color(0.08, 0.06, 0.04, 0.85), 2.0)
+	HudArt.label(self, Vector2(c.x - r, c.y + 2.0), ta, 17, Color(1.0, 0.85, 0.65), r)
+	HudArt.label(self, Vector2(c.x, c.y + 2.0), tm, 17, Color(0.80, 0.88, 1.0), r)
 
 
 ## One globe: its gold-rimmed frame, the empty glass sphere, and the fill rising to `frac`. Life is

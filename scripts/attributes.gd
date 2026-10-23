@@ -1,10 +1,13 @@
 class_name Attributes
 extends RefCounted
-## Diablo II style attributes: Strength, Dexterity, Vitality and Energy. A character has a base in
-## each from its class and gets POINTS_PER_LEVEL to add every level. What a point adds is BONUS;
-## the base itself adds nothing (it is what gear requirements are measured against from level 1).
-## Gear needs enough of some (requirements(), from its kind and drop level): worn gear whose
-## requirements aren't met gives none of its stats until they are.
+## Diablo II style attributes: Strength, Dexterity, Vitality and Energy. There are no classes: every
+## character starts with START in each and gets POINTS_PER_LEVEL to add every level; the passive
+## tree gives more (its "+10 Strength" nodes, GameState.attribute_bonus). Where they go makes the
+## build. What a point adds is BONUS (and, read by Player, Strength's attack damage and Energy's
+## spell damage and Mana); the start itself adds nothing (it is what gear and gem requirements are
+## measured against from level 1). Gear needs enough of some (requirements(), from its kind and drop
+## level): worn gear whose requirements aren't met gives none of its stats until they are. Skill
+## gems need their colour's attribute (SkillTree.gem_attr_req).
 
 const KEYS := ["str", "dex", "vit", "ene"]
 const NAMES := {"str": "Strength", "dex": "Dexterity", "vit": "Vitality", "ene": "Energy"}
@@ -15,38 +18,44 @@ const COLORS := {
 }
 const POINTS_PER_LEVEL := 5
 
-## Where each class starts. Hirelings have their own (HirelingDB).
-const CLASS_BASE := {
-	"warrior": {"str": 25, "dex": 15, "vit": 20, "ene": 10},
-}
+## Where everyone starts. Hirelings have their own (HirelingDB).
+const START := {"str": 15, "dex": 15, "vit": 15, "ene": 15}
+## Skill gems' colours by attribute (Vitality has no gems of its own).
+const GEM_COLORS := {"str": Color(0.92, 0.32, 0.28), "dex": Color(0.35, 0.85, 0.40), "ene": Color(0.38, 0.58, 1.0)}
+const GEM_COLOR_NAMES := {"str": "red", "dex": "green", "ene": "blue"}
 
-## What each added point gives: [stat, StatBlock.ModType, value]. Energy's resource is read by
-## Player.max_resource() (the class resource isn't a StatBlock stat).
+## What each point above the start gives: [stat, StatBlock.ModType, value]. Strength's attack damage
+## and Energy's spell damage and Mana aren't StatBlock stats: Player reads them (attack_mult,
+## spell_mult, max_mana) from ATTACK_PER_STR, SPELL_PER_ENE and MANA_PER_ENE.
 const BONUS := {
-	"str": [["damage", StatBlock.ModType.INCREASED, 0.01]],
+	"str": [],
 	"dex": [["attack_speed", StatBlock.ModType.INCREASED, 0.005], ["crit_chance", StatBlock.ModType.FLAT, 0.001]],
-	"vit": [["max_life", StatBlock.ModType.FLAT, 4.0]],
+	"vit": [["max_life", StatBlock.ModType.FLAT, 4.0], ["life_regen", StatBlock.ModType.FLAT, 0.05]],
 	"ene": [],
 }
-const ENERGY_RESOURCE := 1.0  ## max Adrenaline / Mana per point of Energy
+const ATTACK_PER_STR := 0.01  ## attack damage per point of Strength
+const SPELL_PER_ENE := 0.01  ## spell damage per point of Energy
+const MANA_PER_ENE := 2.0  ## maximum Mana per point of Energy
 
 
-static func base_for(class_id: String) -> Dictionary:
-	return CLASS_BASE.get(class_id, CLASS_BASE["warrior"])
+## Kept for older callers: everyone starts the same.
+static func base_for(_class_id := "") -> Dictionary:
+	return START
 
 
 ## One line per attribute for the stats screen: what a point of it adds.
-static func bonus_text(key: String, power_name := "Adrenaline") -> String:
+static func bonus_text(key: String, _power_name := "") -> String:
 	match key:
-		"str": return "+1% Damage per point"
-		"dex": return "+0.5% Attack Speed and +0.1% Critical Chance per point"
-		"vit": return "+4 Maximum Life per point"
-		"ene": return "+%d Maximum %s per point" % [int(ENERGY_RESOURCE), power_name]
+		"str": return "+1% Attack Damage per point. Red skill gems need it"
+		"dex": return "+0.5% Attack Speed and +0.1% Critical Chance per point. Green skill gems need it"
+		"vit": return "+4 Maximum Life and +0.05 Life per second per point"
+		"ene": return "+1%% Spell Damage and +%d Maximum Mana per point. Blue skill gems need it" % int(MANA_PER_ENE)
 	return ""
 
 
-## Adds what `added` points ({key: n}) give to `stats`, as modifiers from `source`.
-static func apply(stats: StatBlock, added: Dictionary, source: Variant) -> void:
+## Adds what `added` points ({key: n}) give to `stats`, as modifiers from `source`. A hireling
+## (`str_damage`), with no attacks and spells apart, takes Strength's as plain damage.
+static func apply(stats: StatBlock, added: Dictionary, source: Variant, str_damage := false) -> void:
 	stats.remove_source(source)
 	for k in KEYS:
 		var n := int(added.get(k, 0))
@@ -54,6 +63,34 @@ static func apply(stats: StatBlock, added: Dictionary, source: Variant) -> void:
 			continue
 		for b in BONUS[k]:
 			stats.add_mod(String(b[0]), int(b[1]), float(b[2]) * n, source)
+		if k == "str" and str_damage:
+			stats.add_mod("damage", StatBlock.ModType.INCREASED, ATTACK_PER_STR * n, source)
+
+
+## What a build is called from where its points went (`bonus`: {key: points above the start, the
+## tree's included}): one attribute well ahead is Warrior, Ranger, Guardian or Sorcerer; two close
+## together a hybrid (Strength and Dexterity an Assassin, Strength and Energy a Paladin...). Too few
+## points to tell: Adventurer.
+static func build_title(bonus: Dictionary) -> String:
+	var keys := KEYS.duplicate()
+	keys.sort_custom(func(a, b): return int(bonus.get(a, 0)) > int(bonus.get(b, 0)))
+	var first := int(bonus.get(keys[0], 0))
+	var second := int(bonus.get(keys[1], 0))
+	if first < 10:
+		return "Adventurer"
+	if second < first * 0.6:
+		return PURE_TITLES[keys[0]]
+	var pair := [keys[0], keys[1]]
+	pair.sort()
+	return PAIR_TITLES.get("%s+%s" % pair, "Adventurer")
+
+
+const PURE_TITLES := {"str": "Warrior", "dex": "Ranger", "vit": "Guardian", "ene": "Sorcerer"}
+## Pairs, in alphabetical order of their keys
+const PAIR_TITLES := {
+	"dex+str": "Assassin", "ene+str": "Paladin", "str+vit": "Juggernaut",
+	"dex+ene": "Spellblade", "dex+vit": "Warden", "ene+vit": "Druid",
+}
 
 
 # ---------- gear requirements ----------

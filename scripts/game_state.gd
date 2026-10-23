@@ -17,11 +17,14 @@ const CHAR_DIR := "user://characters"
 const MAX_CHARACTERS := 8
 const NAME_MAX_LEN := 16
 
-var characters: Array = []  # [{"id", "name", "class", "level"}], in creation order
+var characters: Array = []  # [{"id", "name", "class" (its build's title), "level", "v"}], in creation order
+## Characters from before there were no classes (no "v", or a lower one) are retired: there's no
+## carrying a Warrior over into the classless game. The account's stash and pools stay.
+const CHAR_VERSION := 3
 var last_character := ""    # id of the character played last (preselected on the select screen)
 var char_id := ""           # character being played; "" before one is picked
 var char_name := ""
-var char_class := "warrior"
+var char_class := "adventurer"  # everyone (ClassLibrary); the build's title is build_title()
 var appearance := {}  # how the character looks (Appearance); kept in the account's character list
 ## Tutorial progress of the character being played (TutorialMap.Stage); TUTORIAL_DONE once finished.
 const TUTORIAL_DONE := 99
@@ -176,24 +179,26 @@ const STARTER_RUNES := {
 }
 
 
-## The usual starting skill setup, for a new character who skips the tutorial: the starting
-## skills socketed, and a Frenzy gem in the shared stash unless one is owned already -- loose or
-## socketed. (Handing one out whenever the stash had none put a second Frenzy there for every
-## character load once the gems became shared, beside the one in the slot.)
+## The usual starting skill setup, for a new character who skips the tutorial: a basic gem of each
+## colour socketed (Cleave, Frenzy, Firebolt: all usable at level 1), and a Quick Shot gem in the
+## shared stash unless one is owned already -- loose or socketed -- for trying a bow.
 func give_starter_skills() -> void:
-	var owned := skill_gem_count("frenzy") > 0 or slot_of("frenzy") >= 0  # before the slots change
+	var owned := skill_gem_count("quick_shot") > 0 or slot_of("quick_shot") >= 0  # before the slots change
 	_starter_slots()
 	if not owned:
-		skill_gems["frenzy"] = 1
+		skill_gems["quick_shot"] = 1
 	_on_skills_modified()
 
 
 ## The starting skills in this character's slots. Touches nothing shared.
 func _starter_slots() -> void:
 	skill_slots = _empty_slots()
-	for i in 4:
-		skill_slots[i].skill = ["cleave", "whirlwind", "leap_slam", "battle_cry"][i]
+	for i in STARTER_SKILLS.size():
+		skill_slots[i].skill = STARTER_SKILLS[i]
 	skill_slots[0].supports = ["rune_frost"]
+
+
+const STARTER_SKILLS := ["cleave", "frenzy", "firebolt"]
 
 
 ## Item level used by crafting recipes; grows as you clear dungeons.
@@ -572,9 +577,26 @@ func add_xp(amount: float) -> void:
 
 # ---------- attributes (Attributes) ----------
 
-## The class's base in an attribute plus the points added to it.
+## The start in an attribute plus the points added to it and those the passive tree gives.
 func attribute_total(key: String) -> int:
-	return int(Attributes.base_for(char_class).get(key, 0)) + int(attributes.get(key, 0))
+	return int(Attributes.START.get(key, 0)) + attribute_bonus(key)
+
+
+## Points above the start: added by you, and given by the passive tree's attribute nodes.
+func attribute_bonus(key: String) -> int:
+	return int(attributes.get(key, 0)) + int(passive_value(key))
+
+
+func attribute_bonuses() -> Dictionary:
+	var out := {}
+	for k in Attributes.KEYS:
+		out[k] = attribute_bonus(k)
+	return out
+
+
+## What the build is called (Warrior, Assassin, Paladin...: Attributes.build_title).
+func build_title() -> String:
+	return Attributes.build_title(attribute_bonuses())
 
 
 func attribute_totals() -> Dictionary:
@@ -613,6 +635,7 @@ func _on_attributes_modified() -> void:
 		player.refresh_attributes()
 	skills_changed.emit()
 	_changed()
+	Net.update_looks()  # the build's title may have changed
 
 
 ## Attribute points are exactly Attributes.POINTS_PER_LEVEL per level gained. A save from before
@@ -915,6 +938,15 @@ func skill_gem_block_reason(skill_id: String) -> String:
 	var need := SkillTree.gem_level_req(skill_id)
 	if level < need:
 		return "Requires character level %d" % need
+	return gem_attr_block_reason(skill_id)
+
+
+## "" if you have enough of the gem's attributes (SkillTree.gem_attr_req), else what's missing.
+func gem_attr_block_reason(skill_id: String) -> String:
+	var req := SkillTree.gem_attr_req(skill_id)
+	for k in req:
+		if attribute_total(k) < int(req[k]):
+			return "Requires %d %s (you have %d)" % [int(req[k]), Attributes.NAMES[k], attribute_total(k)]
 	return ""
 
 
@@ -1116,8 +1148,10 @@ func _fix_slots() -> void:
 func _on_skills_modified() -> void:
 	if is_instance_valid(player):
 		player.sync_skills_from_state()
+		player.refresh_attributes()  # the tree's attribute nodes: gear and gems may meet their needs now
 	skills_changed.emit()
 	_changed()
+	Net.update_looks()  # the build's title may have changed
 
 
 # ---------- Player hookup and saving ----------
@@ -1240,6 +1274,8 @@ func save() -> void:
 	for c in characters:
 		if c.id == char_id:
 			c.level = level
+			c["class"] = build_title()
+			c["v"] = CHAR_VERSION
 	_save_account()
 
 
@@ -1351,12 +1387,23 @@ func _load_account() -> void:
 		_save_account()
 		return
 	characters.clear()
+	var retired := 0
 	for c in acc.get("characters", []):
-		if _file_exists(_char_path(String(c.get("id", "")))):
+		var path := _char_path(String(c.get("id", "")))
+		if int(c.get("v", 0)) < CHAR_VERSION:  # from before classes went: retired (see CHAR_VERSION)
+			if _file_exists(path):
+				_delete_file(path)
+			retired += 1
+			continue
+		if _file_exists(path):
 			characters.append({"id": String(c.id), "name": String(c.get("name", "Hero")),
-				"class": String(c.get("class", "warrior")), "level": int(c.get("level", 1)),
-				"appearance": Appearance.sanitize(c.get("appearance", {}))})
+				"class": String(c.get("class", "Adventurer")), "level": int(c.get("level", 1)),
+				"appearance": Appearance.sanitize(c.get("appearance", {})), "v": CHAR_VERSION})
 	last_character = String(acc.get("last", ""))
+	if character_info(last_character).is_empty():
+		last_character = ""
+	if retired > 0:
+		_save_account()
 	_load_stash(acc.get("stash", []), acc.get("stash_overflow", []))
 	_load_shared(acc)
 
@@ -1438,20 +1485,12 @@ func _materials_to_shards(mats: Dictionary) -> void:
 		add_shards(String(conv[0]), int(mats[id]) * int(conv[1]))
 
 
-## The save from before characters existed becomes the first character; its stash becomes the
-## account's shared stash.
+## The save from before characters existed: its stash becomes the account's shared stash.
 func _migrate_single_save() -> void:
 	var old := _read_json(SAVE_PATH)
 	if old.is_empty():
 		return
-	var id := _new_char_id()
-	_load_stash(old.get("stash", []))
-	old.erase("stash")
-	old["name"] = "Wanderer"
-	old["class"] = "warrior"
-	_write_json(_char_path(id), old)
-	characters = [{"id": id, "name": "Wanderer", "class": "warrior", "level": int(old.get("level", 1))}]
-	last_character = id
+	_load_stash(old.get("stash", []))  # its stash is kept; the character, from before classes went, isn't
 	_save_account()
 	DirAccess.rename_absolute(ProjectSettings.globalize_path(SAVE_PATH), ProjectSettings.globalize_path(SAVE_PATH + ".bak"))
 
@@ -1493,9 +1532,10 @@ func create_character(new_name: String, class_id: String, look := {}) -> String:
 	tutorial_stage = 0
 	char_id = _new_char_id()
 	char_name = new_name.strip_edges()
-	char_class = class_id
+	char_class = class_id if class_id != "" else "adventurer"
 	appearance = Appearance.sanitize(look)
-	characters.append({"id": char_id, "name": char_name, "class": char_class, "level": 1, "appearance": appearance})
+	characters.append({"id": char_id, "name": char_name, "class": "Adventurer", "level": 1, "appearance": appearance,
+		"v": CHAR_VERSION})
 	last_character = char_id
 	save()
 	return char_id
@@ -1511,7 +1551,7 @@ func select_character(id: String) -> bool:
 	_apply_save(data)
 	char_id = id
 	char_name = String(info.name)
-	char_class = String(info.get("class", "warrior"))
+	char_class = "adventurer"
 	appearance = Appearance.sanitize(info.get("appearance", {}))
 	last_character = id
 	_save_account()

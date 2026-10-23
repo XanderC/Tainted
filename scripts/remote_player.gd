@@ -65,15 +65,27 @@ func setup(id: int, info: Dictionary, state: Dictionary) -> void:
 
 ## Their looks, gear, name and level.
 func apply_looks(info: Dictionary) -> void:
-	Appearance.apply(rig, info.get("look", {}))
 	var gear: Dictionary = info.get("gear", {})
+	var w = gear.get("weapon")
+	var want := RigSprite.rig_for_weapon(String(w[0]) if w is Array else "")
+	if rig.rig_dir != want:  # a bow in hand: the archer rig (as their own game draws them)
+		var r := RigSprite.new()
+		r.base_scale = rig.base_scale
+		r.weapon_from_gear = true
+		r.rig_dir = want
+		var at := rig.get_index()
+		remove_child(rig)
+		rig.queue_free()
+		add_child(r)
+		move_child(r, at)
+		rig = r
+	Appearance.apply(rig, info.get("look", {}))
 	for slot in Player.VISIBLE_SLOTS:
 		var g = gear.get(slot)
 		rig.set_gear(slot, String(g[0]) if g is Array else "", String(g[1]) if g is Array and slot in DyeDB.SLOTS else "")
 	var off = gear.get("offhand")
 	rig.set_offhand(String(off[0]) if off is Array else "", off is Array and bool(off[1]))
-	var cd := ClassLibrary.get_class_def(String(info.get("class", "warrior")))
-	_name.text = "%s\nLv %d %s" % [info.get("name", "?"), int(info.get("level", 1)), cd.display_name if cd != null else ""]
+	_name.text = "%s\nLv %d %s" % [info.get("name", "?"), int(info.get("level", 1)), String(info.get("class", ""))]
 	prompt = "👥 %s" % info.get("name", "?")
 	var hl: Dictionary = info.get("hl", {})
 	if hl != _hl:
@@ -174,6 +186,18 @@ func show_fx(d: Array) -> void:
 			if SpellFx.TUNE.has(String(d[1])):
 				SpellFx.attach(self, String(d[1]), clampf(float(d[2]), 0.0, 30.0), clampf(float(d[3]), 0.1, 4.0),
 					clampf(float(d[4]), 0.0, 200.0), bool(d[5]), clampf(float(d[6]), 0.0, 1.0))
+		["proj", 8]:  # an arrow, bolt or knife they loosed (Player._shoot): it only shows here
+			if get_parent() != null:
+				var a := HirelingArrow.new()
+				a.global_position = Vector2(float(d[1]), float(d[2]))
+				a.dir = Vector2.from_angle(float(d[3]))
+				a.color = Color.from_string(String(d[4]), Color.WHITE)
+				a.pierce = bool(d[5])
+				a.style = String(d[6]) if String(d[6]) in ["arrow", "orb", "knife"] else "arrow"
+				if a.style == "orb":
+					a.speed = 560.0
+				a.life = clampf(float(d[7]) / a.speed, 0.05, 1.5)
+				get_parent().add_child(a)
 		["ground", 6], ["banner", 6]:
 			_ground(String(d[0]) == "banner", Vector2(float(d[1]), float(d[2])), clampf(float(d[3]), 0.0, 600.0),
 				Color.from_string(String(d[4]), Color.WHITE), clampf(float(d[5]), 0.0, 30.0))

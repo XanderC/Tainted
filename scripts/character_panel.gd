@@ -295,7 +295,7 @@ func _flask_cell(i: int) -> DragSlot:
 	else:
 		cell.payload = {"kind": "item", "from": "flask", "idx": i, "item": it}
 		cell.clicked.connect(menu.select.bind(it))
-		cell.tooltip_text = "%s\n%s\n%s" % [it.display_name, it.flask_text(player.class_def.power_name),
+		cell.tooltip_text = "%s\n%s\n%s" % [it.display_name, it.flask_text("Mana"),
 			"Drink with %s" % key if open else "Locked: your belt doesn't open this slot"]
 		if not open:
 			cell.modulate = Color(1, 1, 1, 0.45)

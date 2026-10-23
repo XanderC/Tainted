@@ -47,8 +47,7 @@ func show_data(_id: int, data: Dictionary) -> void:
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 10)
 	_win.add_child(v)
-	var cd := ClassLibrary.get_class_def(String(data.get("class", "warrior")))
-	var head := UIKit.window_header(v, "%s  •  Level %d %s" % [String(data.get("name", "?")), int(data.get("level", 1)), cd.display_name],
+	var head := UIKit.window_header(v, "%s  •  Level %d %s" % [String(data.get("name", "?")), int(data.get("level", 1)), String(data.get("class", "Adventurer"))],
 		RemotePlayer.NAME_COLOR, close, 20)
 	(head.get_node("Title") as Label).add_theme_font_override("font", UIKit.body_font(700))  # Cinzel's 1 reads as I
 

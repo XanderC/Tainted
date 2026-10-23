@@ -76,8 +76,9 @@ func _wares() -> Array[Dictionary]:
 				"price": r.price, "color": Color(0.95, 0.85, 0.45), "icon": IconFactory.recipe_icon(id)})
 	for sk in SkillTree.active_skills():
 		list.append({"type": "skillgem", "id": sk.id, "name": "Skill Gem: " + sk.display_name,
-			"desc": "%s (needs level %d)" % [sk.description, SkillTree.gem_level_req(sk.id)],
-			"price": SkillTree.gem_price(sk.id), "color": sk.color, "icon": IconFactory.gem_icon("skill:" + sk.id, sk.color, 3)})
+			"desc": "%s (needs level %d, %s; %s)" % [sk.description, SkillTree.gem_level_req(sk.id), _gem_need_text(sk.id),
+				"costs nothing" if sk.resource_cost <= 0.0 and sk.resource_gain <= 0.0 else sk.resource_name()],
+			"price": SkillTree.gem_price(sk.id), "color": sk.gem_color(), "icon": IconFactory.gem_icon("skill:" + sk.id, sk.color, 3)})
 	list.append({"type": "scroll", "id": "town_portal", "name": "Scroll of Town Portal",
 		"desc": "Read it (🌀 at the top of the screen, or G) in a zone or a rift: a portal to town opens where you stand, and going back through it you come out there again. Your party can use it too. You carry %d (at most %d)." % [GameState.tp_scrolls, GameState.MAX_SCROLLS],
 		"price": GameState.SCROLL_PRICE, "color": TownPortals.MINE, "icon": IconFactory.scroll_icon()})
@@ -88,7 +89,7 @@ func _wares() -> Array[Dictionary]:
 		var f := ItemInstance.new()
 		f.base = b
 		list.append({"type": "flask", "id": b.id, "name": b.display_name,
-			"desc": "%s, cooldown %.0fs. Never runs out." % [f.flask_text(player.class_def.power_name), float(b.flask.cooldown)],
+			"desc": "%s, cooldown %.0fs. Never runs out." % [f.flask_text("Mana"), float(b.flask.cooldown)],
 			"price": FLASK_PRICES[int(b.flask.get("tier", 1)) - 1] if b.flask.kind != "utility" else FLASK_PRICES[0],
 			"color": b.color, "icon": b.icon})
 	# Currency exchange: better orbs for cheaper ones
@@ -100,6 +101,15 @@ func _wares() -> Array[Dictionary]:
 		list.append({"type": "orb", "id": id, "name": o.name, "desc": o.desc,
 			"price": price, "color": o.color, "icon": CraftingDB.orb_icon(id)})
 	return list
+
+
+## "18 Dexterity", "18 Strength and 13 Energy": what a skill gem needs.
+static func _gem_need_text(skill_id: String) -> String:
+	var req := SkillTree.gem_attr_req(skill_id)
+	var parts: Array[String] = []
+	for k in req:
+		parts.append("%d %s" % [int(req[k]), Attributes.NAMES[k]])
+	return " and ".join(PackedStringArray(parts))
 
 
 func _ware_cell(w: Dictionary) -> DragSlot:

@@ -2,6 +2,9 @@ class_name SkillDef
 extends Resource
 ## An active skill. Linked support gems (RuneDef) mutate its damage type, geometry and utility;
 ## a support's level scales its effects and adds a little damage.
+## Its gem's colour is its attribute (`attributes`, the first the main one): red Strength skills
+## build and spend Adrenaline, green Dexterity and blue Energy skills spend Mana. Using it needs
+## enough of each (SkillTree.gem_attr_req), and some need a weapon (`weapon`: a bow, or a melee one).
 
 enum Kind {
 	# Juggernaut
@@ -19,12 +22,27 @@ enum Kind {
 	BLADE_VORTEX,
 	BATTLE_STANDARD,
 	CALL_ANCIENTS,
-	# Hireling archers (HirelingDB): arrows rather than swings
+	# Bows (a player's Dexterity skills, and hireling archers): arrows rather than swings
 	SHOT,
 	POWER_SHOT,
 	MULTISHOT,
 	ARROW_RAIN,
+	# Dexterity
+	DASH,         ## dash through to a target, cutting everything along the way
+	KNIFE_FAN,    ## knives thrown out all round
+	# Energy: spells
+	BOLT,         ## a bolt that bursts where it hits
+	NOVA,         ## a burst all round you
+	ARC,          ## lightning striking the nearest enemies in turn
+	METEOR,       ## a delayed blast where the enemies are
+	WARD,         ## a ward taking part of the damage you take
+	HOLY_NOVA,    ## heals you and burns what's near
+	# Hybrids
+	SMITE,        ## a melee blow and a bolt of lightning on what it hits (Strength and Energy)
 }
+
+## What it needs in hand: "bow", "melee" (anything but a bow), or "" (any, or none: spells).
+const WEAPON_NAMES := {"bow": "a bow", "melee": "a melee weapon"}
 
 @export var id: String = ""
 @export var display_name: String = ""
@@ -40,6 +58,15 @@ enum Kind {
 @export var duration: float = 0.0
 @export var max_range: float = 0.0
 @export var color: Color = Color.WHITE
+## Its gem's attributes ("str", "dex", "ene"), the main one first: Strength skills use Adrenaline,
+## the others Mana.
+@export var attributes: Array[String] = ["str"]
+@export var weapon: String = ""
+## A spell: scaled by Energy and spell damage rather than Strength and attack damage.
+@export var is_spell: bool = false
+## Its own element and ailment before any support changes them (spells: fire, cold, lightning).
+@export var base_damage_type: RuneDef.DamageType = RuneDef.DamageType.PHYSICAL
+@export var base_ailment: String = ""
 ## Resource spent per use (per tick for channelled skills like Whirlwind).
 @export var resource_cost: float = 0.0
 ## Resource generated per use that hits something (+ a little per extra enemy hit).
@@ -60,7 +87,27 @@ var for_hireling := false
 func duplicate_skill() -> SkillDef:
 	var s: SkillDef = duplicate()
 	s.socketed_runes = socketed_runes.duplicate()
+	s.attributes = attributes.duplicate()
 	return s
+
+
+## The main attribute: its gem's colour.
+func main_attribute() -> String:
+	return attributes[0] if not attributes.is_empty() else "str"
+
+
+## Spends (or builds) Mana rather than Adrenaline.
+func uses_mana() -> bool:
+	return main_attribute() != "str"
+
+
+func resource_name() -> String:
+	return "Mana" if uses_mana() else "Adrenaline"
+
+
+## The gem's colour: red, green or blue by its main attribute.
+func gem_color() -> Color:
+	return Attributes.GEM_COLORS.get(main_attribute(), Color.WHITE)
 
 
 func get_rank_description(rank: int) -> String:
@@ -69,11 +116,16 @@ func get_rank_description(rank: int) -> String:
 
 	var txt := description + "\n"
 	if not is_passive:
+		var rcol := "60a5fa" if uses_mana() else "fb923c"
 		if resource_gain > 0.0:
-			txt += "\n[color=#e2d9c8]• Generates: [color=#fb923c]%d[/color] Adrenaline per hit[/color]" % int(round(get_effective_gain()))
+			txt += "\n[color=#e2d9c8]• Generates: [color=#%s]%d[/color] %s per hit[/color]" % [rcol, int(round(get_effective_gain())), resource_name()]
 		elif resource_cost > 0.0:
-			txt += "\n[color=#e2d9c8]• Cost: [color=#fb923c]%d[/color] Adrenaline%s[/color]" % [
-				int(round(get_effective_cost())), " per second" if kind == Kind.WHIRLWIND and cooldown <= 0.0 else ""]
+			txt += "\n[color=#e2d9c8]• Cost: [color=#%s]%d[/color] %s%s[/color]" % [rcol,
+				int(round(get_effective_cost())), resource_name(), " per second" if kind == Kind.WHIRLWIND and cooldown <= 0.0 else ""]
+		else:
+			txt += "\n[color=#e2d9c8]• Costs nothing[/color]"
+		if weapon != "":
+			txt += "\n[color=#e2d9c8]• Needs %s[/color]" % WEAPON_NAMES.get(weapon, weapon)
 		var dmg_pct := int(round(get_effective_damage_mult(rank) * 100.0))
 		var cd := get_effective_cooldown(rank)
 		txt += "\n[color=#e2d9c8]• Damage: [color=#ffd700]%d%%[/color] base damage[/color]" % dmg_pct
@@ -181,7 +233,7 @@ func get_effective_damage_type() -> RuneDef.DamageType:
 	for r in get_runes():
 		if r.category == RuneDef.Category.TRANSMUTATION:
 			return r.damage_type
-	return RuneDef.DamageType.PHYSICAL
+	return base_damage_type
 
 
 func get_effective_color() -> Color:
@@ -230,7 +282,7 @@ func get_effective_ailment() -> String:
 	for r in get_runes():
 		if not r.ailment.is_empty():
 			return r.ailment
-	return ""
+	return base_ailment
 
 
 func get_effective_leech() -> float:
