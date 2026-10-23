@@ -24,16 +24,18 @@ const START := {"str": 15, "dex": 15, "vit": 15, "ene": 15}
 const GEM_COLORS := {"str": Color(0.92, 0.32, 0.28), "dex": Color(0.35, 0.85, 0.40), "ene": Color(0.38, 0.58, 1.0)}
 const GEM_COLOR_NAMES := {"str": "red", "dex": "green", "ene": "blue"}
 
-## What each point above the start gives: [stat, StatBlock.ModType, value]. Strength's attack damage
-## and Energy's spell damage and Mana aren't StatBlock stats: Player reads them (attack_mult,
-## spell_mult, max_mana) from ATTACK_PER_STR, SPELL_PER_ENE and MANA_PER_ENE.
+## What each point above the start gives: [stat, StatBlock.ModType, value]. Attack damage (Strength
+## for red attacks, Dexterity for green ones) and Energy's spell damage and Mana aren't StatBlock
+## stats: Player reads them (attack_mult, spell_mult, max_mana) from ATTACK_PER_STR, SPELL_PER_ENE
+## and MANA_PER_ENE.
 const BONUS := {
 	"str": [],
 	"dex": [["attack_speed", StatBlock.ModType.INCREASED, 0.005], ["crit_chance", StatBlock.ModType.FLAT, 0.001]],
-	"vit": [["max_life", StatBlock.ModType.FLAT, 4.0], ["life_regen", StatBlock.ModType.FLAT, 0.05]],
+	"vit": [["max_life", StatBlock.ModType.FLAT, 4.0], ["life_regen", StatBlock.ModType.FLAT, 0.05],
+		["armor", StatBlock.ModType.FLAT, 1.0], ["res_all", StatBlock.ModType.FLAT, 0.002]],
 	"ene": [],
 }
-const ATTACK_PER_STR := 0.01  ## attack damage per point of Strength
+const ATTACK_PER_STR := 0.01  ## attack damage per point of Strength (red attacks), or of Dexterity (green ones)
 const SPELL_PER_ENE := 0.01  ## spell damage per point of Energy
 const MANA_PER_ENE := 2.0  ## maximum Mana per point of Energy
 
@@ -46,9 +48,9 @@ static func base_for(_class_id := "") -> Dictionary:
 ## One line per attribute for the stats screen: what a point of it adds.
 static func bonus_text(key: String, _power_name := "") -> String:
 	match key:
-		"str": return "+1% Attack Damage per point. Red skill gems need it"
-		"dex": return "+0.5% Attack Speed and +0.1% Critical Chance per point. Green skill gems need it"
-		"vit": return "+4 Maximum Life and +0.05 Life per second per point"
+		"str": return "+1% damage with red (Strength) attacks per point. Red skill gems need it"
+		"dex": return "+1% damage with green (Dexterity) attacks, +0.5% Attack Speed and +0.1% Critical Chance per point. Green skill gems need it"
+		"vit": return "+4 Maximum Life, +0.05 Life per second, +1 Armor and +0.2% to all Resistances per point"
 		"ene": return "+1%% Spell Damage and +%d Maximum Mana per point. Blue skill gems need it" % int(MANA_PER_ENE)
 	return ""
 

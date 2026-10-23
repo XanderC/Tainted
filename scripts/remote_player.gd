@@ -146,9 +146,10 @@ func _exit_tree() -> void:
 
 
 ## A monster hit them: their game takes it (their own armour and so on applies there).
-func take_damage(amount: float, _crit := false, _dtype = 0, _ailment := "") -> void:
+## A monster in your game hit them (their game takes it, with their resistances: Coop "hurt").
+func take_damage(amount: float, dtype := 0) -> void:
 	if not dead:
-		Coop.hurt_player(peer_id, amount)
+		Coop.hurt_player(peer_id, amount, dtype)
 
 
 func apply_slow(seconds: float) -> void:

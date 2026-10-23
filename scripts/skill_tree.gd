@@ -146,7 +146,7 @@ static func init_skills() -> void:
 	_make("frenzy", "Frenzy", "basic", "⚔️", SkillDef.Kind.FRENZY, 0.0, 0.95, 95.0, 115.0, Color(1.0, 0.65, 0.2),
 		"Rapid strikes. Each hit grants stacking Frenzy (+10% Attack Speed, +5% Move Speed, up to 5 stacks).",
 		false, {"attrs": DEX, "weapon": "melee"})
-	_make("quick_shot", "Quick Shot", "basic", "🏹", SkillDef.Kind.SHOT, 0.0, 1.0, 0.0, 0.0, Color(0.85, 0.80, 0.55),
+	_make("quick_shot", "Quick Shot", "basic", "🏹", SkillDef.Kind.SHOT, 0.0, 1.15, 0.0, 0.0, Color(0.85, 0.80, 0.55),
 		"Loose an arrow at the nearest enemy (or where you face).",
 		false, {"attrs": DEX, "weapon": "bow", "max_range": 520.0})
 	_make("power_shot", "Power Shot", "core", "➶", SkillDef.Kind.POWER_SHOT, 1.5, 2.4, 0.0, 0.0, Color(1.0, 0.7, 0.3),
@@ -175,7 +175,7 @@ static func init_skills() -> void:
 		false, {"attrs": DEX, "cost": 40.0, "max_range": 380.0, "ailment": "poison", "dtype": CHAOS, "custom_text": "3 waves of 10 knives"})
 
 	# ================ ENERGY (blue: spells, Mana) ================
-	_make("firebolt", "Firebolt", "basic", "🔥", SkillDef.Kind.BOLT, 0.0, 1.25, 55.0, 0.0, Color(1.0, 0.5, 0.2),
+	_make("firebolt", "Firebolt", "basic", "🔥", SkillDef.Kind.BOLT, 0.0, 1.05, 55.0, 0.0, Color(1.0, 0.5, 0.2),
 		"Hurl a bolt of fire that bursts where it hits, burning what's near.",
 		false, {"attrs": ENE, "spell": true, "dtype": FIRE, "ailment": "burn", "max_range": 520.0})
 	_make("frost_nova", "Frost Nova", "core", "❄", SkillDef.Kind.NOVA, 3.0, 1.5, 170.0, 360.0, Color(0.55, 0.85, 1.0),

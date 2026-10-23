@@ -45,6 +45,8 @@ signal minion_spawned(m: Enemy)
 ## to the host (Coop.forward_*), which sends back its life and its death (remote_die).
 var net_id := 0
 var remote := false
+## What its hits are (MonsterKinds "element"): a player's resistance to it takes part off.
+var element := RuneDef.DamageType.PHYSICAL
 var _net_pos := Vector2.ZERO
 var _net_anim := ""
 var _net_flags := 0
@@ -194,7 +196,7 @@ func _physics_process(delta: float) -> void:
 			return
 
 	if to_player.length() < 46.0 * size_mult and _touch_cd <= 0.0:
-		_foe.take_damage(touch_damage)
+		_foe.take_damage(touch_damage, element)
 		if has_affix("vampiric"):
 			_heal(max_hp * 0.04)
 		if _foe.thorns() > 0.0:
@@ -235,6 +237,7 @@ func _loose_arrow() -> void:
 	a.global_position = global_position + Vector2(0, -26 * size_mult)
 	a.dir = (_foe.global_position + Vector2(0, -14) - a.global_position).normalized()
 	a.damage = touch_damage
+	a.element = element
 	a.target = _foe
 	a.maze = maze
 	get_parent().add_child(a)
@@ -430,7 +433,7 @@ func take_damage(amount: float, crit: bool = false,
 		var near := _players_near(global_position, 160.0)
 		if not near.is_empty():
 			var struck = near.pick_random()
-			struck.take_damage(touch_damage * 0.5)
+			struck.take_damage(touch_damage * 0.5, RuneDef.DamageType.LIGHTNING)
 			_flash_ring(global_position, 160.0, Color(1.0, 0.95, 0.4))
 			_sfx("lightning_strike", struck.global_position + Vector2(0, -40), 0.9)
 
@@ -469,7 +472,7 @@ func _do_slam() -> void:
 	# The slam hits you, your hireling and the party alike
 	for who in [target, Hirelings.node] + get_tree().get_nodes_in_group("remote_players"):
 		if _alive(who) and who.global_position.distance_to(global_position) < SLAM_RADIUS:
-			who.take_damage(touch_damage * 2.0)
+			who.take_damage(touch_damage * 2.0, element)
 	_sfx("ground_hit", global_position, SLAM_RADIUS / 140.0)
 	var ring := Node2D.new()
 	get_parent().add_child(ring)
@@ -642,6 +645,7 @@ func make_elite(new_tier: int, new_affixes: Array[String]) -> void:
 func set_kind(id: String) -> void:
 	var k: Dictionary = MonsterKinds.KINDS.get(id, MonsterKinds.KINDS["zombie"])
 	kind = id
+	element = MonsterKinds.element_of(k)
 	display_name = String(k["name"])
 	skin = MonsterKinds.skin_for(id)
 	ranged = bool(k.get("ranged", false))
@@ -720,7 +724,7 @@ func _tick_affixes(delta: float, dist: float) -> void:
 		hp = minf(hp + max_hp * 0.02 * delta, max_hp)
 	if has_affix("molten"):
 		for p in _players_near(global_position, MOLTEN_RADIUS):  # its burning ground, whoever stands in it
-			p.take_damage(touch_damage * 0.6 * delta)
+			p.take_damage(touch_damage * 0.6 * delta, RuneDef.DamageType.FIRE)
 	if has_affix("shielding") and _ready_ability("shielding", 9.0, delta):
 		_shield_t = 2.5
 		_sfx_on("immunity", 2.5, size_mult, 36.0 * size_mult)  # it can't be hurt a while: the party sees it too
@@ -759,7 +763,7 @@ func _frost_orb(at: Vector2, hurt := true) -> void:
 	t.tween_callback(func():
 		if hurt:
 			for p in Enemy.players_near(tree, you, orb.global_position, FROST_ORB_RADIUS):
-				p.take_damage(dmg)
+				p.take_damage(dmg, RuneDef.DamageType.COLD)
 				p.apply_slow(2.0)
 		SpellFx.spawn(orb.get_parent(), "ice_burst", orb.global_position, FROST_ORB_RADIUS / 100.0)
 		orb.queue_free())
@@ -785,7 +789,7 @@ func _molten_explosion() -> void:
 	t.tween_callback(func():
 		for p in players:
 			if is_instance_valid(p) and not p.dead and p.global_position.distance_to(at) < 130.0:
-				p.take_damage(dmg)
+				p.take_damage(dmg, RuneDef.DamageType.FIRE)
 		SpellFx.spawn(host, "fire_explosion", at + Vector2(0, -40), 1.15)
 		warn.queue_free())
 

@@ -149,7 +149,18 @@ in the inventory says how many are waiting); the passive tree, Legendary powers 
 (gear's own attributes count for gems and damage, but not towards other gear's requirements). A
 point of Strength gives +1% damage to red (Strength) attacks, Dexterity +1% to green (Dexterity)
 attacks, +0.5% attack speed and +0.1% critical chance, Vitality +4 life and a little regeneration,
-Energy +1% spell damage and +2 maximum Mana. Points can be taken back for free in town.
+Energy +1% spell damage and +2 maximum Mana, Vitality +4 life, +0.05 life a second, +1 armour and
++0.2% to all resistances. Points can be taken back for free in town.
+
+### Resistances
+Monsters can hit with an element: Orc Shamans lightning, Devils fire, Ghost Knights and Skeleton
+Hunters cold, Mummies and Dark Elves poison (chaos), several bosses too, and the elite affixes
+(burning ground and death blasts fire, frost orbs cold, sparks lightning). Armour takes part of any
+hit off; your resistance to its element part of an elemental one (`Player.resistance`, at most 75%,
+shown on the stats screen). Resistances come from Vitality, gear (each element, and all
+resistances), the Vitality side of the passive tree and Legendaries (Aegis of the Elements,
+Stoneblood Girdle). In a party the host's monsters' hits reach you by element, so your own
+resistances apply.
 Gear needs enough of them, from its kind and drop level (`Attributes.requirements`): heavy weapons
 and armour Strength, daggers and bows Dexterity, staves Energy; rings, amulets, belts, flasks and
 light armour nothing. The item card lists the requirements, red where you fall short, and you can't
@@ -517,7 +528,7 @@ any weapon it meets the requirements of) and becomes what its points, gems and g
   second plus 3% of the most you have. Supports work on the new skills too: Echo looses arrows,
   knives and lightning again at half damage, Nova turns Multishot into a ring of eight.
 - **Main attributes** (Diablo III's primary stat, `LootGenerator.fill_attributes`): besides its
-  modifiers every Magic item has one of +Strength, +Dexterity or +Energy, and every Rare, Legendary
+  modifiers every Magic item has one of +Strength, +Dexterity, +Vitality or +Energy, and every Rare, Legendary
   and Set item two different ones (a Legendary's own lean first; otherwise more often than not your
   build's strongest). Normal items and flasks have none. The item card shows them first, in their
   colours. Orbs keep it so: Augmentation and Exalted add modifiers, never main attributes (they

@@ -310,6 +310,12 @@ func _build_affixes() -> void:
 	_affix("bow_inc", "{v}% Increased Bow Damage", "bow_inc", F, 0.10, 0.30, true)
 	affixes[-1].slots = ["weapon", "gloves", "amulet", "ring"]
 	affixes[-1].weapon_types = ["bow"]
+	# Resistances (armour and jewellery; Vitality gives some too)
+	for r in [["res_fire", "Fire"], ["res_cold", "Cold"], ["res_lightning", "Lightning"], ["res_chaos", "Poison"]]:
+		_affix(r[0], "+{v}%% %s Resistance" % r[1], r[0], F, 0.06, 0.20, true)
+		affixes[-1].slots = ["helmet", "chest", "gloves", "boots", "belt", "ring", "amulet", "offhand"]
+	_affix("res_all", "+{v}% to all Resistances", "res_all", F, 0.04, 0.12, true, 8, 40)
+	affixes[-1].slots = ["helmet", "chest", "shield", "ring", "amulet", "offhand"]
 	_affix("attack_inc", "{v}% Increased Attack Damage", "attack_inc", F, 0.06, 0.18, true)
 	affixes[-1].slots = ["weapon", "gloves", "amulet", "ring"]
 	affixes[-1].weapon_types = ["sword", "axe", "mace", "spear", "dagger", "bow"]
@@ -382,10 +388,10 @@ func roll_item(ilvl: int = 1, forced_rarity: int = -1, slot: String = "") -> Ite
 
 # ---------- main attributes (Diablo III's primary stat) ----------
 
-## Every Magic item has one of these on top of its other modifiers, every Rare, Legendary and Set
+## Every Magic item has one of these (Strength, Dexterity, Vitality, Energy) on top of its other modifiers, every Rare, Legendary and Set
 ## item two different ones (ATTRIBUTES_BY_RARITY); Normal items and flasks none. They're never
 ## among the random modifiers (add_random_affix), so crafting can't stack them.
-const MAIN_ATTRIBUTE_AFFIXES := {"str": "attr_str", "dex": "attr_dex", "ene": "attr_ene"}
+const MAIN_ATTRIBUTE_AFFIXES := {"str": "attr_str", "dex": "attr_dex", "vit": "attr_vit", "ene": "attr_ene"}
 const ATTRIBUTES_BY_RARITY := {ItemInstance.Rarity.MAGIC: 1, ItemInstance.Rarity.RARE: 2,
 	ItemInstance.Rarity.LEGENDARY: 2, ItemInstance.Rarity.SET: 2}
 ## How often the first one is your build's strongest (or a Legendary's own lean) rather than any.
@@ -430,7 +436,7 @@ func fill_attributes(item: ItemInstance, lean := "") -> void:
 		item.affixes.insert(have.size() + i, added[i])
 
 
-## The strongest of your Strength, Dexterity and Energy ("" before you've put points anywhere).
+## The strongest of your main attributes ("" before you've put points anywhere).
 static func _build_lean() -> String:
 	var best := ""
 	var most := 0

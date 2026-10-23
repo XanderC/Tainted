@@ -94,7 +94,7 @@ signal trade_finished(received: Array, orbs: Dictionary)  ## the trade went thro
 signal signed_in_changed  ## signed in or out of Autharr (`signed_in_as`), or a sign-in failed (`sign_in_error`)
 
 const PORT := 24601
-const PROTOCOL := 13  ## games with a different protocol can't play together
+const PROTOCOL := 14  ## games with a different protocol can't play together
 const MAX_ONLINE := 32
 const PARTY_MAX := 4
 const SEND_HZ := 15.0

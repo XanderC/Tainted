@@ -577,14 +577,19 @@ func add_xp(amount: float) -> void:
 
 # ---------- attributes (Attributes) ----------
 
-## The start in an attribute plus the points added to it and those the passive tree gives.
-func attribute_total(key: String) -> int:
-	return int(Attributes.START.get(key, 0)) + attribute_bonus(key)
+## The start in an attribute plus the points added to it, those the passive tree gives and (`gear`)
+## those your gear gives.
+func attribute_total(key: String, gear := true) -> int:
+	return int(Attributes.START.get(key, 0)) + attribute_bonus(key, gear)
 
 
-## Points above the start: added by you, and given by the passive tree's attribute nodes.
-func attribute_bonus(key: String) -> int:
-	return int(attributes.get(key, 0)) + int(passive_value(key))
+## Points above the start: added by you, given by the passive tree's attribute nodes and Legendary
+## powers, and (`gear`) by your gear's "+10 Strength" modifiers.
+func attribute_bonus(key: String, gear := true) -> int:
+	var n := int(attributes.get(key, 0)) + int(passive_value(key))
+	if gear and is_instance_valid(player):
+		n += int(player.stats.get_stat(key))
+	return n
 
 
 func attribute_bonuses() -> Dictionary:
@@ -599,10 +604,12 @@ func build_title() -> String:
 	return Attributes.build_title(attribute_bonuses())
 
 
+## What gear requirements are measured against: everything but your gear's own attributes (so items
+## never hold each other up, and taking one off never drops others).
 func attribute_totals() -> Dictionary:
 	var out := {}
 	for k in Attributes.KEYS:
-		out[k] = attribute_total(k)
+		out[k] = attribute_total(k, false)
 	return out
 
 

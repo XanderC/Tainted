@@ -148,11 +148,17 @@ func _ready() -> void:
 	Net.event.connect(func(_from, kind, data):
 		_events[kind] = int(_events.get(kind, 0)) + 1
 		if kind == "hurt":
-			_hurt_total += float(data)
+			var amount := 0.0
+			if data is Dictionary:
+				for k in data:
+					amount += float(data[k])
+			else:
+				amount = float(data)
+			_hurt_total += amount
 			if _revive and _phase == 3:
 				_hurt_while_host_down += 1
 			if _killed_at >= 0.0:
-				_hurt_after_death += float(data)
+				_hurt_after_death += amount
 		elif kind == "fx" and data is Array and data.size() == 2:
 			var what := String(data[0])
 			if what == "ring" and is_equal_approx(float(data[1].get("r", 0.0)), 160.0):

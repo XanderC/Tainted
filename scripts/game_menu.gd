@@ -458,7 +458,8 @@ func _add_attributes() -> void:
 		var total := GameState.attribute_total(k)
 		var added := int(GameState.attributes.get(k, 0))
 		var val := UIKit.label("%d" % total, 18, Color(0.95, 0.90, 0.77))
-		val.tooltip_text = "%d base + %d added + %d from the passive tree" % [int(base.get(k, 0)), added, int(GameState.passive_value(k))]
+		val.tooltip_text = "%d base + %d added + %d from the passive tree and Legendary powers + %d from gear (gear's doesn't count towards other gear's requirements)" % [
+			int(base.get(k, 0)), added, int(GameState.passive_value(k)), int(player.stats.get_stat(k))]
 		val.custom_minimum_size = Vector2(44, 0)
 		val.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 		line.add_child(val)
@@ -499,6 +500,10 @@ func _refresh_stats() -> void:
 		["Life Regeneration", "%.1f / s" % s.get_stat("life_regen")],
 		["Armor", "%d" % int(s.get_stat("armor"))],
 		["Damage Reduction from Armor", "%.1f%%" % (100.0 - 10000.0 / (100.0 + s.get_stat("armor")))],
+		["Fire Resistance", "%d%%" % int(round(player.resistance(RuneDef.DamageType.FIRE) * 100.0))],
+		["Cold Resistance", "%d%%" % int(round(player.resistance(RuneDef.DamageType.COLD) * 100.0))],
+		["Lightning Resistance", "%d%%" % int(round(player.resistance(RuneDef.DamageType.LIGHTNING) * 100.0))],
+		["Poison Resistance", "%d%%" % int(round(player.resistance(RuneDef.DamageType.CHAOS) * 100.0))],
 		["UTILITY", ""],
 		["Movement Speed", "%d" % int(s.get_stat("move_speed"))],
 		["Maximum Adrenaline", "%d" % int(player.max_resource())],

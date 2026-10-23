@@ -3,7 +3,7 @@ extends RefCounted
 ## The passive tree (Path of Exile style), one for everyone: there are no classes. From the start in
 ## the middle four branches lead off, one per attribute: Strength up (attack damage, Adrenaline),
 ## Dexterity right (speed, crits, bows), Vitality down (life, armour) and Energy left (spells,
-## Mana). Between neighbours the paths cross: their connectors give both attributes, and out past
+## Mana, and Vitality resistances to fire, cold, lightning and poison). Between neighbours the paths cross: their connectors give both attributes, and out past
 ## the ring each diagonal has a hybrid cluster with its own keystone: Strength and Dexterity the
 ## Assassin's (up right), Dexterity and Vitality the Warden's, Vitality and Energy the Druid's, and
 ## Energy and Strength the Paladin's (up left).
@@ -15,7 +15,8 @@ extends RefCounted
 ## Node stats use the keys read by Player / GameState.passive_value(): str, dex, vit, ene (attribute
 ## points), attack_inc, spell_inc, bow_inc, damage_inc, crit, attack_speed_inc, move_inc, life_flat,
 ## life_inc, armor_inc, regen, leech, thorns, execute, rampage, cost_red, power_max (Adrenaline),
-## mana_max, mana_regen_inc, gem_level, no_crit, no_decay, mana_shield, blood_magic.
+## mana_max, mana_regen_inc, gem_level, no_crit, no_decay, mana_shield, blood_magic, res_all,
+## res_fire, res_cold, res_lightning, res_chaos (resistances: Player.resistance).
 ##
 ## Each node: {"id", "name", "kind", "pos": Vector2, "stats": {}, "links": [ids]}
 
@@ -65,6 +66,11 @@ static func stat_text(stats: Dictionary) -> String:
 			"no_decay": parts.append("Adrenaline no longer fades")
 			"mana_shield": parts.append("%d%% of damage taken comes off your Mana first" % int(round(v * 100.0)))
 			"blood_magic": parts.append("Mana skills cost Life instead of Mana")
+			"res_all": parts.append("%s to all Resistances" % pct.call(v))
+			"res_fire": parts.append("%s Fire Resistance" % pct.call(v))
+			"res_cold": parts.append("%s Cold Resistance" % pct.call(v))
+			"res_lightning": parts.append("%s Lightning Resistance" % pct.call(v))
+			"res_chaos": parts.append("%s Poison Resistance" % pct.call(v))
 			_:  # per-skill item powers (UniqueItems): "skill_dmg:whirlwind" etc.
 				var sk := SkillTree.get_skill(String(k).get_slice(":", 1)) if String(k).contains(":") else null
 				var sname := sk.display_name if sk != null else String(k).get_slice(":", 1).capitalize()
@@ -104,10 +110,10 @@ const BRANCHES := [
 		"wheel_notable": ["Killing Instinct", {"crit": 0.04, "attack_inc": 0.06}]},
 	{"key": "vit", "dir": Vector2(0, 1), "perp": Vector2(-1, 0),
 		"path": [["Vitality", {"vit": 8}], ["Toughness", {"life_flat": 10.0}], ["Vitality", {"vit": 8}], ["Plating", {"armor_inc": 0.06}]],
-		"notable": ["Juggernaut's Hide", {"armor_inc": 0.20, "life_inc": 0.06}],
-		"tail": [["Vitality", {"vit": 10}], ["Fortitude", {"life_inc": 0.03}]],
+		"notable": ["Juggernaut's Hide", {"armor_inc": 0.20, "life_inc": 0.06, "res_all": 0.05}],
+		"tail": [["Vitality", {"vit": 10}], ["Warding", {"res_all": 0.04}]],
 		"keystone": ["Blood Magic", {"blood_magic": 1.0, "life_inc": 0.20}],
-		"wheel": [["Mending", {"regen": 1.0}], ["Spikes", {"thorns": 8.0}], ["Mending", {"regen": 1.0}]],
+		"wheel": [["Mending", {"regen": 1.0}], ["Spikes", {"thorns": 8.0}], ["Flame Ward", {"res_fire": 0.08, "res_cold": 0.08}]],
 		"wheel_notable": ["Retaliation", {"thorns": 30.0, "armor_inc": 0.08}]},
 	{"key": "ene", "dir": Vector2(-1, 0), "perp": Vector2(0, -1),
 		"path": [["Energy", {"ene": 8}], ["Sorcery", {"spell_inc": 0.06}], ["Energy", {"ene": 8}], ["Clarity", {"mana_regen_inc": 0.10}]],
@@ -182,7 +188,7 @@ static func _build() -> Dictionary:
 # left (Energy), up (Strength).
 const _THEMES := [
 	[["Swiftness", {"attack_speed_inc": 0.025}], ["Dexterity", {"dex": 6}]],
-	[["Vitality", {"vit": 6}], ["Bulwark", {"armor_inc": 0.05}]],
+	[["Vitality", {"vit": 6}], ["Warding", {"res_all": 0.02}]],
 	[["Energy", {"ene": 6}], ["Sorcery", {"spell_inc": 0.04}]],
 	[["Strength", {"str": 6}], ["Brawn", {"attack_inc": 0.04}]],
 ]
@@ -196,8 +202,8 @@ const _CLUSTERS := [
 	[["Survivalist", {"move_inc": 0.06, "regen": 1.5}], ["Hunter's Hide", {"life_inc": 0.06, "bow_inc": 0.08}],
 		["Warden's Vigil", {"life_inc": 0.12, "regen": 3.0, "move_inc": 0.08, "attack_inc": -0.10}]],
 	# down: Vitality
-	[["Iron Skin", {"armor_inc": 0.18, "life_flat": 15.0}], ["Barbed Plate", {"thorns": 25.0, "armor_inc": 0.08}],
-		["Unbreakable", {"armor_inc": 0.60, "life_inc": 0.10, "move_inc": -0.10}]],
+	[["Iron Skin", {"armor_inc": 0.18, "life_flat": 15.0}], ["Elemental Bulwark", {"res_all": 0.08, "armor_inc": 0.06}],
+		["Unbreakable", {"armor_inc": 0.60, "life_inc": 0.10, "res_all": 0.05, "move_inc": -0.10}]],
 	# down left: Vitality and Energy, the Druid
 	[["Spirit Bond", {"mana_max": 20.0, "life_flat": 20.0}], ["Wellspring of Life", {"mana_regen_inc": 0.20, "regen": 1.5}],
 		["Nature's Balance", {"life_inc": 0.10, "mana_max": 40.0, "spell_inc": 0.10, "attack_inc": -0.15}]],
@@ -216,7 +222,7 @@ const _CLUSTERS := [
 ]
 # Short spurs off the ring, 22.5 degrees either side of each branch, ending in a notable.
 const _SPURS := [
-	["Hamstring", {"move_inc": 0.06, "attack_speed_inc": 0.04}], ["Stone Skin", {"armor_inc": 0.15, "regen": 1.0}],
+	["Hamstring", {"move_inc": 0.06, "attack_speed_inc": 0.04}], ["Stone Skin", {"armor_inc": 0.15, "regen": 1.0, "res_lightning": 0.10, "res_chaos": 0.10}],
 	["Spirit Ward", {"life_flat": 15.0, "mana_max": 15.0}], ["Mana Tide", {"mana_max": 20.0, "mana_regen_inc": 0.10}],
 	["Battle Mage", {"spell_inc": 0.06, "armor_inc": 0.06}], ["Overpower", {"attack_inc": 0.10, "armor_inc": 0.05}],
 	["Vampiric Strikes", {"leech": 0.02, "attack_inc": 0.05}], ["Deadly Precision", {"crit": 0.05}],

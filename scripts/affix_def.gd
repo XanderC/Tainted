@@ -20,6 +20,9 @@ extends Resource
 @export var slots: Array[String] = []
 ## Flasks: the kinds it suits ("life", "power", "utility"); empty means all.
 @export var flask_kinds: Array[String] = []
+## Weapons only of these kinds get it (a bow's "Increased Bow Damage"); empty means any. Gear that
+## isn't a weapon isn't limited by it.
+@export var weapon_types: Array[String] = []
 @export var prefix := true
 ## The word it adds to a Magic flask's name: "Ample" (prefix) or "of Haste" (suffix).
 @export var word := ""
@@ -29,4 +32,6 @@ extends Resource
 func fits(b: ItemBase) -> bool:
 	if b.slot == "flask":
 		return slots.has("flask") and (flask_kinds.is_empty() or flask_kinds.has(String(b.flask.get("kind", ""))))
+	if not weapon_types.is_empty() and b.slot == "weapon" and not weapon_types.has(b.weapon_type):
+		return false
 	return slots.is_empty() or slots.has(b.slot)

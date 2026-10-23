@@ -33,8 +33,9 @@ var hp := 100.0
 ## fading away; class_def.power_*) and Mana (Dexterity and Energy skills: regenerates; max_mana).
 var resource := 0.0
 var mana := 0.0
-const MANA_BASE := 40.0
-const MANA_REGEN := 0.03  ## of maximum Mana per second
+const MANA_BASE := 60.0
+const MANA_REGEN := 0.03  ## of maximum Mana per second...
+const MANA_REGEN_FLAT := 2.0  ## ...and this much
 const WARD_TAKEN := 0.6  ## Arcane Ward: what's left of a hit
 var _ward_t := 0.0
 var flasks: Array = [null, null, null, null, null]  # ItemInstance or null, FLASK_SLOTS long
@@ -390,7 +391,23 @@ func use_skill(i: int) -> void:
 		_gain_for(s, s.get_on_use_gain())
 	if s.get_on_use_heal() > 0.0:
 		hp = minf(hp + stats.get_stat("max_life") * s.get_on_use_heal(), stats.get_stat("max_life"))
+	_cast(s)
+	# Echo: an area hit echoes by itself (_hit_area); arrows, knives and lightning do it again, weaker
+	if s.has_echo() and s.kind in ECHO_RECAST:
+		get_tree().create_timer(0.24, false).timeout.connect(func():
+			if is_instance_valid(self) and not dead:
+				_echo_cast = true
+				_cast(s)
+				_echo_cast = false)
 
+
+## Skills an Echo support casts again (at half damage), rather than their hits echoing.
+const ECHO_RECAST := [SkillDef.Kind.SHOT, SkillDef.Kind.POWER_SHOT, SkillDef.Kind.MULTISHOT, SkillDef.Kind.KNIFE_FAN, SkillDef.Kind.ARC]
+var _echo_cast := false  # casting an Echo's repeat: its hits at half damage
+
+
+## What skill `s` does when used.
+func _cast(s: SkillDef) -> void:
 	match s.kind:
 		SkillDef.Kind.WHIRLWIND:
 			_do_whirlwind(s)
@@ -425,9 +442,13 @@ func use_skill(i: int) -> void:
 		SkillDef.Kind.MULTISHOT:
 			_play_shoot()
 			var base := _aim(s.max_range).angle()
-			var spread := deg_to_rad(s.get_effective_arc() if s.get_effective_arc() < 359.0 else 40.0)
-			for k in 5:
-				_shoot(s, Vector2.from_angle(base - spread * 0.5 + spread * k / 4.0), false, "arrow")
+			if s.get_effective_arc() >= 359.0:  # a support makes it all round: a ring of eight
+				for k in 8:
+					_shoot(s, Vector2.from_angle(base + TAU * k / 8.0), false, "arrow")
+			else:
+				var spread := deg_to_rad(s.get_effective_arc())
+				for k in 5:
+					_shoot(s, Vector2.from_angle(base - spread * 0.5 + spread * k / 4.0), false, "arrow")
 		SkillDef.Kind.ARROW_RAIN:
 			_play_shoot()
 			_do_arrow_rain(s)
@@ -478,33 +499,35 @@ func main_weapon_type() -> String:
 
 # ---------- damage: attacks by Strength, spells by Energy ----------
 
-## What a hit of skill `s` starts from: your damage, scaled by Strength and attack damage for an
-## attack (and bow damage for a bow's), or by Energy and spell damage for a spell.
+## What a hit of skill `s` starts from: your damage, scaled for an attack by its gem's attribute
+## (Strength for red ones, Dexterity for green) and attack damage (and bow damage for a bow's), or for
+## a spell by Energy and spell damage. Passives, Legendary powers and gear modifiers all count.
 func damage_for(s: SkillDef) -> float:
 	return stats.get_stat("damage") * (spell_mult() if s != null and s.is_spell else attack_mult(s))
 
 
 func attack_mult(s: SkillDef = null) -> float:
-	var m := 1.0 + Attributes.ATTACK_PER_STR * GameState.attribute_bonus("str") + passive("attack_inc")
+	var attr := "dex" if s != null and s.main_attribute() == "dex" else "str"
+	var m := 1.0 + Attributes.ATTACK_PER_STR * GameState.attribute_bonus(attr) + passive("attack_inc") + stats.get_stat("attack_inc")
 	if s != null and s.weapon == "bow":
-		m += passive("bow_inc")
+		m += passive("bow_inc") + stats.get_stat("bow_inc")
 	return maxf(m, 0.1)
 
 
 func spell_mult() -> float:
-	return maxf(1.0 + Attributes.SPELL_PER_ENE * GameState.attribute_bonus("ene") + passive("spell_inc"), 0.1)
+	return maxf(1.0 + Attributes.SPELL_PER_ENE * GameState.attribute_bonus("ene") + passive("spell_inc") + stats.get_stat("spell_inc"), 0.1)
 
 
 ## One hit of skill `s` on enemy `e` (an arrow, a bolt, a strike of lightning), `scale` of the skill's
-## damage: crits, execute, element and ailment (or `dtype` / `ailment` instead), leech. The damage dealt.
-func _hit_one(e: Enemy, s: SkillDef, scale := 1.0, dtype := -1, ailment := "-") -> float:
+## damage (`part` of it): crits, execute, element and ailment (or `dtype` / `ailment` instead), leech. The damage dealt.
+func _hit_one(e: Enemy, s: SkillDef, part := 1.0, dtype := -1, ailment := "-") -> float:
 	if not is_instance_valid(e) or e._dead:
 		return 0.0
 	var crit_chance := stats.get_stat("crit_chance") if passive("no_crit") <= 0.0 else 0.0
 	if s.get_execute_bonus() > 0.0 and e.hp / e.max_hp < 0.35:
 		crit_chance += s.get_execute_bonus()
 	var crit := randf() < crit_chance
-	var dmg := damage_for(s) * s.get_effective_damage_mult(GameState.get_skill_rank(s.id)) * scale * (2.0 if crit else 1.0)
+	var dmg := damage_for(s) * s.get_effective_damage_mult(GameState.get_skill_rank(s.id)) * part * (2.0 if crit else 1.0)
 	if e.hp / e.max_hp < 0.40:
 		dmg *= 1.0 + passive("execute")
 	e.take_damage(dmg, crit, s.get_effective_damage_type() if dtype < 0 else dtype,
@@ -549,15 +572,16 @@ func _shoot(s: SkillDef, dir: Vector2, pierce: bool, style: String, reach := 0.0
 	if style == "orb":
 		a.speed = 560.0
 	a.life = clampf((reach if reach > 0.0 else maxf(s.max_range, 400.0)) / a.speed, 0.2, 1.5)
+	var echo := _echo_cast
 	a.on_hit = func(e: Enemy) -> void:
 		if not is_instance_valid(self) or not is_instance_valid(e):
 			return
 		if s.kind == SkillDef.Kind.BOLT:  # bursts: everything near where it hit
 			_sfx("fire_explosion" if s.get_effective_damage_type() == RuneDef.DamageType.FIRE else "hit_" + _element_name(s),
 				e.global_position + Vector2(0, -16), s.get_effective_radius() / 90.0)
-			_hit_area(e.global_position, Vector2.RIGHT, s.get_effective_radius(), 360.0, s)
+			_hit_area(e.global_position, Vector2.RIGHT, s.get_effective_radius(), 360.0, s, 0.0, echo)
 		else:
-			_hit_one(e, s)
+			_hit_one(e, s, 0.5 if echo else 1.0)
 	get_parent().add_child(a)
 	Coop.player_fx(["proj", snappedf(a.global_position.x, 0.1), snappedf(a.global_position.y, 0.1), snappedf(dir.angle(), 0.001),
 		a.color.to_html(false), pierce, style, snappedf(a.speed * a.life, 1.0)])
@@ -642,12 +666,15 @@ func _do_dash(s: SkillDef) -> void:
 func _do_knife_fan(s: SkillDef) -> void:
 	_play_cast()
 	var waves := 3 if s.cluster == "ultimate" else 1
+	var echo := _echo_cast
 	for w in waves:
 		get_tree().create_timer(0.22 * w + 0.01, false).timeout.connect(func():
 			if not is_instance_valid(self) or dead:
 				return
+			_echo_cast = echo
 			for k in 10:
-				_shoot(s, Vector2.from_angle(TAU * k / 10.0 + w * 0.3), false, "knife", s.max_range))
+				_shoot(s, Vector2.from_angle(TAU * k / 10.0 + w * 0.3), false, "knife", s.max_range)
+			_echo_cast = false)
 
 
 ## Frost Nova: a burst all round you.
@@ -667,6 +694,7 @@ func _do_arc(s: SkillDef) -> void:
 	var strikes := 12 if storm else 3
 	var gap := (s.duration / strikes) if storm else 0.07
 	var picked := _nearest_enemies(s.max_range, strikes if not storm else 99)
+	var part := 0.5 if _echo_cast else 1.0
 	for k in strikes:
 		get_tree().create_timer(gap * k + 0.01, false).timeout.connect(func():
 			if not is_instance_valid(self) or dead:
@@ -679,7 +707,7 @@ func _do_arc(s: SkillDef) -> void:
 				e = picked[k]
 			if is_instance_valid(e) and not e._dead:
 				_sfx("lightning_strike", e.global_position + Vector2(0, -40), 0.9)
-				_hit_one(e, s))
+				_hit_one(e, s, part))
 
 
 ## The `n` nearest enemies within `reach`, nearest first.
@@ -958,6 +986,22 @@ func _apply_passives() -> void:
 	hp = clampf(hp + maxf(new_max - old_max, 0.0), 0.0, new_max)
 
 
+## Your resistance to an element (RuneDef.DamageType): its own and all resistances from gear (and
+## Vitality: Attributes.BONUS), the passive tree and Legendary powers, at most MAX_RESIST.
+func resistance(dtype: int) -> float:
+	var key: String = RESIST_KEYS.get(dtype, "")
+	if key == "":
+		return 0.0
+	var r := stats.get_stat(key) + stats.get_stat("res_all") + passive(key) + passive("res_all")
+	return clampf(r, -1.0, MAX_RESIST)
+
+
+const MAX_RESIST := 0.75
+const RESIST_KEYS := {RuneDef.DamageType.FIRE: "res_fire", RuneDef.DamageType.COLD: "res_cold",
+	RuneDef.DamageType.LIGHTNING: "res_lightning", RuneDef.DamageType.CHAOS: "res_chaos"}
+var _element_spark := 0
+
+
 ## Retaliation: damage reflected to an enemy that hits you.
 func thorns() -> float:
 	return passive("thorns")
@@ -987,13 +1031,13 @@ func max_resource() -> float:
 	return class_def.power_max + passive("power_max")
 
 
-## Maximum Mana: a base, Energy and passives.
+## Maximum Mana: a base, Energy, passives and gear.
 func max_mana() -> float:
-	return maxf(MANA_BASE + Attributes.MANA_PER_ENE * GameState.attribute_bonus("ene") + passive("mana_max"), 0.0)
+	return maxf(MANA_BASE + Attributes.MANA_PER_ENE * GameState.attribute_bonus("ene") + passive("mana_max") + stats.get_stat("mana_max"), 0.0)
 
 
 func mana_regen() -> float:
-	return max_mana() * MANA_REGEN * maxf(1.0 + passive("mana_regen_inc"), 0.0)
+	return (MANA_REGEN_FLAT + max_mana() * MANA_REGEN) * maxf(1.0 + passive("mana_regen_inc") + stats.get_stat("mana_regen_inc"), 0.0)
 
 
 ## Attribute points were added or taken back: their bonuses, and which gear now meets its requirements.
@@ -1267,11 +1311,18 @@ func _do_cleave_skill(s: SkillDef) -> void:
 
 # ---------- Health & Items ----------
 
-func take_damage(amount: float) -> void:
+## A monster's hit: armour takes part of any hit off, your resistance to its element (`dtype`) part of
+## an elemental one.
+func take_damage(amount: float, dtype := 0) -> void:
 	if dead:
 		return
 	var armor := stats.get_stat("armor")
 	var taken := amount * 100.0 / (100.0 + armor)
+	if dtype != RuneDef.DamageType.PHYSICAL:
+		taken *= 1.0 - resistance(dtype)
+		if Time.get_ticks_msec() - _element_spark > 250 and get_parent() != null:  # what hit you, in its colour
+			_element_spark = Time.get_ticks_msec()
+			SpellFx.spawn(get_parent(), SpellFx.HITS[clampi(dtype, 0, SpellFx.HITS.size() - 1)], global_position + Vector2(0, -30), 0.8)
 	if _ward_t > 0.0:
 		taken *= WARD_TAKEN  # Arcane Ward
 	var shield := clampf(passive("mana_shield"), 0.0, 0.9)  # a keystone: part of each hit comes off Mana

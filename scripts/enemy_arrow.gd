@@ -10,6 +10,7 @@ const LIFE := 1.4
 var texture: Texture2D
 var dir := Vector2.RIGHT
 var damage := 8.0
+var element := RuneDef.DamageType.PHYSICAL  ## its archer's
 var target: Node2D  ## a Player or a Hireling: anything with `dead` and take_damage()
 var maze: MazeMap = null
 
@@ -41,5 +42,5 @@ func _physics_process(delta: float) -> void:
 		return
 	if is_instance_valid(target) and not target.dead \
 			and global_position.distance_to(target.global_position + Vector2(0, -14)) < HIT_RADIUS:
-		target.take_damage(damage)
+		target.take_damage(damage, element)
 		queue_free()

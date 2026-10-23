@@ -35,7 +35,7 @@ var _spawns: Array = []
 var _deaths: Array = []
 var _gone: Array = []
 var _hits: Array = []
-var _hurt := {}  # host: damage to other players, gathered and sent every HURT_EVERY (peer -> amount)
+var _hurt := {}  # host: damage to other players, gathered and sent every HURT_EVERY (peer -> {element: amount})
 var _hurt_t := 0.0
 var _snap_t := 0.0
 var _run_t := 0.0
@@ -81,10 +81,13 @@ static func forward_status(id: int, what: String, seconds: float) -> void:
 		Net.send_event(-1, "status", [id, what, seconds])
 
 
-## The host's monster hit another player: their game takes it (gathered, sent every HURT_EVERY).
-static func hurt_player(peer: int, amount: float) -> void:
+## The host's monster hit another player: their game takes it, by element (their resistances
+## apply there), gathered and sent every HURT_EVERY.
+static func hurt_player(peer: int, amount: float, dtype := 0) -> void:
 	if active():
-		current._hurt[peer] = float(current._hurt.get(peer, 0.0)) + amount
+		var by: Dictionary = current._hurt.get(peer, {})
+		by[dtype] = float(by.get(dtype, 0.0)) + amount
+		current._hurt[peer] = by
 
 
 static func slow_player(peer: int, seconds: float) -> void:
@@ -317,9 +320,13 @@ func _on_event(from: int, kind: String, data: Variant) -> void:
 				for rp in get_tree().get_nodes_in_group("remote_players"):
 					if rp.peer_id == from:
 						rp.show_fx(data)
-		"hurt":
+		"hurt":  # {element: amount} (a plain amount: physical)
 			if is_instance_valid(main.player) and not main.player.dead:
-				main.player.take_damage(clampf(float(data), 0.0, 1e7))
+				if data is Dictionary:
+					for k in data:
+						main.player.take_damage(clampf(float(data[k]), 0.0, 1e7), clampi(int(k), 0, RuneDef.DamageType.CHAOS))
+				else:
+					main.player.take_damage(clampf(float(data), 0.0, 1e7))
 		"slow":
 			if is_instance_valid(main.player):
 				main.player.apply_slow(clampf(float(data), 0.0, 10.0))

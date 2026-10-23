@@ -189,6 +189,60 @@ func _playing() -> void:
 	shop.free()
 	await _gear_and_supports(p)
 	_main_attributes(p)
+	_resistances(p)
+
+
+## Vitality: a main stat for life, defence and resistances; monsters with an element; resistances
+## from Vitality, gear and the tree, capped.
+func _resistances(p: Player) -> void:
+	var vit_seen := false
+	for i in 80:
+		var m := LootGenerator.roll_item(10, ItemInstance.Rarity.MAGIC, "boots")
+		if m.affixes.any(func(a): return String(a.id) == "attr_vit"):
+			vit_seen = true
+	check(vit_seen, "Vitality is a main attribute on blue items too")
+	for s in p.equipment.keys():
+		p.unequip(s)
+	GameState.attributes = {}
+	p.refresh_attributes()
+	var armor0 := p.stats.get_stat("armor")
+	check(absf(p.resistance(RuneDef.DamageType.FIRE)) < 0.001, "no resistances to start with")
+	GameState.attributes = {"vit": 50}
+	p.refresh_attributes()
+	check(absf(p.resistance(RuneDef.DamageType.COLD) - 0.10) < 0.001 and absf(p.stats.get_stat("armor") - armor0 - 50.0) < 0.01,
+		"50 Vitality: +10%% to all resistances and +50 Armor (%.2f)" % p.resistance(RuneDef.DamageType.COLD))
+	p.hp = p.stats.get_stat("max_life")
+	var full := p.hp
+	p.take_damage(100.0)
+	var phys := full - p.hp
+	p.hp = full
+	p.take_damage(100.0, RuneDef.DamageType.FIRE)
+	check(absf((full - p.hp) - phys * 0.9) < 0.5, "a fire hit takes 10%% less with 10%% fire resistance (%.1f vs %.1f)" % [full - p.hp, phys])
+	var boots := _item("worn_boots")
+	boots.affixes.append(LootGenerator.make_entry(LootGenerator.find_affix("res_fire"), 0.3))
+	p.bag.add(boots)
+	p.equip_to(boots, "boots")
+	check(absf(p.resistance(RuneDef.DamageType.FIRE) - 0.4) < 0.001 and absf(p.resistance(RuneDef.DamageType.LIGHTNING) - 0.1) < 0.001,
+		"boots of +30% fire resistance: 40% fire, still 10% lightning")
+	p.item_powers["res_all"] = 2.0
+	check(absf(p.resistance(RuneDef.DamageType.CHAOS) - Player.MAX_RESIST) < 0.001, "resistances stop at 75%")
+	p.item_powers.erase("res_all")
+	p.unequip("boots")
+	var devil := Enemy.new()
+	devil.set_kind("devil")
+	var shaman := Enemy.new()
+	shaman.set_kind("orc_shaman")
+	var zombie := Enemy.new()
+	zombie.set_kind("zombie")
+	check(devil.element == RuneDef.DamageType.FIRE and shaman.element == RuneDef.DamageType.LIGHTNING
+		and zombie.element == RuneDef.DamageType.PHYSICAL, "Devils hit with fire, Orc Shamans with lightning, Zombies plainly")
+	devil.free()
+	shaman.free()
+	zombie.free()
+	check(PassiveTree.get_tree().nodes.vit_t1.stats.has("res_all") and "Resistances" in PassiveTree.stat_text(PassiveTree.get_tree().nodes.vit_t1.stats),
+		"the Vitality branch has resistance nodes (%s)" % PassiveTree.stat_text(PassiveTree.get_tree().nodes.vit_t1.stats))
+	GameState.attributes = {}
+	p.refresh_attributes()
 
 
 ## Diablo III's primary stat: every Magic item has one main attribute (Strength, Dexterity or

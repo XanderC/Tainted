@@ -132,6 +132,7 @@ func _talic(foe: Enemy, dist: float, _delta: float) -> void:
 	rig.play_loop("Slashing in The Air", 1.6)
 	if _cd <= 0.0:
 		_cd = WW_TICK
+		SpellFx.attach(self, "typhoon", WW_TICK + 0.1, WW_RADIUS / 125.0, 10.0, false, 0.5)
 		_hit_circle(WW_RADIUS, damage * WW_DAMAGE)
 
 
@@ -150,6 +151,7 @@ func _korlic(foe: Enemy, dist: float) -> void:
 		_frenzy = mini(_frenzy + 1, FRENZY_MAX)
 		_frenzy_t = 2.0
 		rig.play_once("Slashing", 1.4 + 0.25 * _frenzy)
+		SpellFx.slash(self, _facing, 150.0, 115.0, Color(0.75, 0.92, 1.0), 0.22)
 		_hit_arc(115.0, 150.0, damage)
 	elif not rig.is_busy():
 		rig.play_loop("Idle")
@@ -171,6 +173,7 @@ func _madawc(foe: Enemy, dist: float) -> void:
 	if _cd <= 0.0:
 		_cd = HEAVY_CD
 		rig.play_once("Slashing", 1.1)
+		SpellFx.slash(self, _facing, 130.0, 120.0, Color(0.75, 0.92, 1.0), 0.26)
 		_hit_arc(120.0, 130.0, damage * 1.2)
 	elif not rig.is_busy():
 		rig.play_loop("Idle")
@@ -191,6 +194,8 @@ func _leap(to: Vector2) -> void:
 	t.parallel().tween_property(rig, "position:y", 0.0, 0.2).set_ease(Tween.EASE_IN).set_delay(0.2)
 	t.tween_callback(func():
 		_leaping = false
+		if get_parent() != null:
+			SpellFx.spawn(get_parent(), "ground_hit", global_position, LEAP_RADIUS / 140.0)
 		_hit_circle(LEAP_RADIUS, damage * LEAP_DAMAGE)
 		_quake_t = 0.3
 		_quake_dir = Vector2.ZERO)
@@ -198,6 +203,8 @@ func _leap(to: Vector2) -> void:
 
 func _upheaval() -> void:
 	_quake_t = 0.45
+	if get_parent() != null:
+		SpellFx.spawn(get_parent(), "earth_fissure", global_position + _quake_dir * UPHEAVAL_RADIUS * 0.5, UPHEAVAL_RADIUS / 200.0)
 	var half := deg_to_rad(UPHEAVAL_ARC) * 0.5
 	for e in get_tree().get_nodes_in_group("enemies"):
 		var to: Vector2 = e.global_position - global_position

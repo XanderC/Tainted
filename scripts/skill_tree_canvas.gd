@@ -116,7 +116,8 @@ static func node_attribute(n: Dictionary) -> String:
 				return "str"
 			"crit", "attack_speed_inc", "move_inc", "bow_inc":
 				return "dex"
-			"life_flat", "life_inc", "armor_inc", "regen", "thorns", "blood_magic":
+			"life_flat", "life_inc", "armor_inc", "regen", "thorns", "blood_magic", "res_all", "res_fire", "res_cold", \
+					"res_lightning", "res_chaos":
 				return "vit"
 			"spell_inc", "mana_max", "mana_regen_inc", "cost_red", "mana_shield", "gem_level":
 				return "ene"

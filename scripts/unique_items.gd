@@ -66,6 +66,10 @@ const LEGENDARIES := {
 	# ---- Vitality, and the hybrids ----
 	"heart_of_the_mountain": {"name": "Heart of the Mountain", "base": "chain_mail", "attr": "vit",
 		"power": {"vit": [15.0, 25.0], "life_inc": [0.06, 0.10]}, "flavor": "Stone does not tire."},
+	"aegis_of_the_elements": {"name": "Aegis of the Elements", "base": "tower_shield", "attr": "vit",
+		"power": {"res_all": [0.10, 0.20], "vit": [10.0, 15.0]}, "flavor": "Fire, frost and storm break on it alike."},
+	"stoneblood_girdle": {"name": "Stoneblood Girdle", "base": "heavy_belt", "attr": "vit",
+		"power": {"life_flat": [40.0, 70.0], "res_chaos": [0.20, 0.35]}, "flavor": "Nothing poisons a mountain."},
 	"lightbringer": {"name": "Lightbringer", "base": "iron_mace", "attr": "ene",
 		"power": {"skill_dmg:smite": [0.6, 1.0], "skill_dmg:holy_nova": [0.5, 0.8]}, "flavor": "Faith, given weight."},
 	"wardens_grips": {"name": "Warden's Grips", "base": "leather_gloves", "attr": "dex",

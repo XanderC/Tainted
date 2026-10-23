@@ -120,6 +120,7 @@ func _summon_boss() -> void:
 	b.size_mult = 2.0
 	b.display_name = boss_name
 	b.skin = String(MonsterKinds.BOSSES[boss_kind]["skin"])
+	b.element = MonsterKinds.element_of(MonsterKinds.BOSSES[boss_kind])
 	b.max_hp = BOSS_HP * hp_mult(level) * Coop.hp_scale()
 	b.speed = BOSS_SPEED * speed_mult(level)
 	b.touch_damage = BOSS_DAMAGE * damage_mult(level)

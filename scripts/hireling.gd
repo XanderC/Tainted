@@ -111,7 +111,7 @@ func _dress() -> void:
 
 # ---------- combat stats ----------
 
-func take_damage(amount: float) -> void:
+func take_damage(amount: float, _dtype := 0) -> void:
 	if dead:
 		return
 	hp -= amount * 100.0 / (100.0 + stats.get_stat("armor"))
@@ -283,6 +283,8 @@ func _try_skill(i: int, foe: Enemy, dist: float) -> bool:
 				return false
 			rig.play_once("Slashing", 1.1)
 			_ring_fx(rad, s.get_effective_color(), 3.0)
+			_spell("ground_hit", global_position, rad / 140.0)
+			_spell("earth_fissure", global_position, rad / 160.0)
 			_hit_area(global_position, _facing, rad, 360.0, s, s.stun if s.stun > 0.0 else 0.8)
 		SkillDef.Kind.SHIELD_SLAM, SkillDef.Kind.SUNDERING_STRIKE, SkillDef.Kind.CLEAVE, SkillDef.Kind.FRENZY:
 			if dist > rad * MELEE_REACH:
@@ -403,6 +405,7 @@ func _whirl(delta: float, foe: Enemy) -> void:
 		_whirl_tick = WHIRL_TICK
 		var rad := _whirl_skill.get_effective_radius()
 		_ring_fx(rad, _whirl_skill.get_effective_color(), 1.0)
+		SpellFx.attach(self, "typhoon", WHIRL_TICK + 0.1, rad / 125.0, 10.0, false, 0.55)
 		_hit_area(global_position, _facing, rad, 360.0, _whirl_skill, 0.0, 0.5)
 
 
@@ -422,6 +425,7 @@ func _leap(s: SkillDef, to: Vector2) -> void:
 			return
 		rig.play_once("Slashing", 1.3)
 		_ring_fx(s.get_effective_radius(), s.get_effective_color(), 2.0)
+		_spell("ground_hit", global_position, s.get_effective_radius() / 140.0)
 		_hit_area(global_position, _facing, s.get_effective_radius(), 360.0, s, s.stun))
 
 
@@ -429,6 +433,8 @@ func _leap(s: SkillDef, to: Vector2) -> void:
 func _shout(s: SkillDef) -> void:
 	rig.pulse()
 	_ring_fx(maxf(s.radius, 160.0), s.get_effective_color(), 3.0)
+	SpellFx.attach(self, "earth_shield" if s.id in ["iron_skin", "ignore_pain", "colossus"] else "strength_buff",
+		0.8, 1.0, 30.0, false, 0.9)
 	match s.id:
 		"iron_skin", "ignore_pain", "colossus":
 			_add_buff("iron_skin", s.duration)
@@ -579,6 +585,12 @@ func _face(at: Vector2) -> void:
 
 
 # ---------- drawing ----------
+
+## A spell effect where it happens (SpellFx), beside the hireling.
+func _spell(id: String, at: Vector2, size := 1.0) -> void:
+	if get_parent() != null:
+		SpellFx.spawn(get_parent(), id, at, size)
+
 
 func _ring_fx(radius: float, col: Color, length := 1.0) -> void:
 	_ring = {"radius": radius, "color": col}
