@@ -111,6 +111,146 @@
   "cx": 50.5,
   "cy": 56.8
  },
+ "slash_cold": {
+  "frames": 10,
+  "w": 187,
+  "h": 200,
+  "cx": 46.4,
+  "cy": 128.5
+ },
+ "slash_lightning": {
+  "frames": 10,
+  "w": 183,
+  "h": 200,
+  "cx": 73.2,
+  "cy": 96.6
+ },
+ "slash_chaos": {
+  "frames": 10,
+  "w": 153,
+  "h": 200,
+  "cx": 36.6,
+  "cy": 106.2
+ },
+ "slash_fire": {
+  "frames": 12,
+  "w": 200,
+  "h": 191,
+  "cx": 59.6,
+  "cy": 120.2
+ },
+ "strength_buff": {
+  "frames": 12,
+  "w": 151,
+  "h": 200,
+  "cx": 75.3,
+  "cy": 99.6
+ },
+ "life_recovery": {
+  "frames": 12,
+  "w": 137,
+  "h": 200,
+  "cx": 68.3,
+  "cy": 106.5
+ },
+ "mana_recovery": {
+  "frames": 12,
+  "w": 143,
+  "h": 200,
+  "cx": 71.7,
+  "cy": 101.7
+ },
+ "revival": {
+  "frames": 16,
+  "w": 136,
+  "h": 200,
+  "cx": 68.1,
+  "cy": 106.6
+ },
+ "immunity": {
+  "frames": 16,
+  "w": 145,
+  "h": 200,
+  "cx": 72.5,
+  "cy": 100.6
+ },
+ "debuff": {
+  "frames": 16,
+  "w": 137,
+  "h": 200,
+  "cx": 68.6,
+  "cy": 106.0
+ },
+ "blood_hit": {
+  "frames": 8,
+  "w": 96,
+  "h": 94,
+  "cx": 47.7,
+  "cy": 47.1
+ },
+ "blood_green": {
+  "frames": 8,
+  "w": 91,
+  "h": 112,
+  "cx": 27.1,
+  "cy": 75.2
+ },
+ "blood_splat": {
+  "frames": 6,
+  "w": 144,
+  "h": 140,
+  "cx": 72.0,
+  "cy": 69.5
+ },
+ "ice_burst": {
+  "frames": 9,
+  "w": 176,
+  "h": 168,
+  "cx": 87.5,
+  "cy": 83.8
+ },
+ "poison_burst": {
+  "frames": 9,
+  "w": 160,
+  "h": 155,
+  "cx": 80.0,
+  "cy": 77.4
+ },
+ "stars": {
+  "frames": 24,
+  "w": 160,
+  "h": 150,
+  "cx": 80.0,
+  "cy": 75.0
+ },
+ "ground_fire": {
+  "frames": 7,
+  "w": 176,
+  "h": 124,
+  "cx": 86.0,
+  "cy": 41.7
+ },
+ "flame_blue": {
+  "frames": 7,
+  "w": 62,
+  "h": 112,
+  "cx": 30.7,
+  "cy": 61.8
+ },
+ "flame_green": {
+  "frames": 6,
+  "w": 60,
+  "h": 112,
+  "cx": 30.2,
+  "cy": 67.1
+ },
+ "spark_loop": {
+  "frames": 4,
+  "w": 112,
+  "h": 79,
+  "cx": 55.6,
+  "cy": 41.3
+ },
  "slash": {
   "frames": 1,
   "w": 227,

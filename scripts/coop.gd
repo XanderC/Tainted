@@ -372,6 +372,10 @@ func _fx(kind: String, d) -> void:
 	if kind == "sfx" and SpellFx.TUNE.has(String(d.get("fx", ""))):  # a spell effect (Enemy._sfx)
 		SpellFx.spawn(main, String(d.fx), Vector2(float(d.x), float(d.y)), clampf(float(d.get("s", 1.0)), 0.1, 4.0))
 		return
+	if kind == "sfx_on" and is_instance_valid(who) and SpellFx.TUNE.has(String(d.get("fx", ""))):  # Enemy._sfx_on
+		SpellFx.attach(who, String(d.fx), clampf(float(d.get("secs", 1.0)), 0.0, 30.0), clampf(float(d.get("s", 1.0)), 0.1, 4.0),
+			clampf(float(d.get("lift", 0.0)), -200.0, 200.0))
+		return
 	if kind == "frost_orb" and is_instance_valid(who):
 		who._frost_orb(Vector2(float(d.x), float(d.y)), false)
 		return

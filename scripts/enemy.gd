@@ -104,6 +104,8 @@ func _ready() -> void:
 	add_child(rig)
 	rig.play_loop("Walking")
 	rig.randomize_phase()  # so a group doesn't march in lockstep
+	if has_affix("molten"):  # its burning ground, about it while it lives (each game draws its own)
+		SpellFx.attach(self, "ground_fire", 1.0e9, MOLTEN_RADIUS * 2.0 / 180.0, 0.0, false, 0.85)
 
 
 func _physics_process(delta: float) -> void:
@@ -403,6 +405,7 @@ func take_damage(amount: float, crit: bool = false,
 	match ailment:
 		"chill":
 			_chill_t = 3.5
+			SpellFx.attach(self, "flame_blue", 3.5, size_mult, 36.0 * size_mult, false, 0.85)
 			if crit and not is_boss:
 				_freeze_t = 1.2
 		"burn":
@@ -411,8 +414,12 @@ func take_damage(amount: float, crit: bool = false,
 			_burn_dps = maxf(_burn_dps, final_dmg * 0.35)
 		"shock":
 			_shock_t = 4.0
+			SpellFx.attach(self, "spark_loop", 4.0, size_mult, 30.0 * size_mult, false, 0.9)
 		"poison":
+			if _poison_t <= 0.0:
+				SpellFx.spawn(get_parent(), "poison_burst", global_position + Vector2(0, -24), size_mult * 0.7)
 			_poison_t = 3.0
+			SpellFx.attach(self, "flame_green", 3.0, size_mult, -4.0, false, 0.85)
 			_poison_dps = maxf(_poison_dps, final_dmg * 0.30)
 
 	if dtype == RuneDef.DamageType.COLD and crit and not is_boss:
@@ -435,6 +442,8 @@ func take_damage(amount: float, crit: bool = false,
 
 
 func _die() -> void:
+	if not _dead and get_parent() != null:
+		SpellFx.spawn(get_parent(), "blood_splat", global_position, size_mult)  # on the ground where it fell
 	_dead = true
 	_slam_t = 0.0
 	remove_from_group("enemies")
@@ -714,6 +723,7 @@ func _tick_affixes(delta: float, dist: float) -> void:
 			p.take_damage(touch_damage * 0.6 * delta)
 	if has_affix("shielding") and _ready_ability("shielding", 9.0, delta):
 		_shield_t = 2.5
+		_sfx_on("immunity", 2.5, size_mult, 36.0 * size_mult)  # it can't be hurt a while: the party sees it too
 	var who: Node2D = _foe if _alive(_foe) else target  # who it's after: you, your hireling, another player
 	if has_affix("teleporter") and dist > 220.0 and _alive(who) and _ready_ability("teleporter", 5.0, delta):
 		var dest := who.global_position + Vector2.from_angle(randf() * TAU) * 110.0
@@ -751,7 +761,7 @@ func _frost_orb(at: Vector2, hurt := true) -> void:
 			for p in Enemy.players_near(tree, you, orb.global_position, FROST_ORB_RADIUS):
 				p.take_damage(dmg)
 				p.apply_slow(2.0)
-		SpellFx.spawn(orb.get_parent(), "hit_cold", orb.global_position, FROST_ORB_RADIUS / 32.0)
+		SpellFx.spawn(orb.get_parent(), "ice_burst", orb.global_position, FROST_ORB_RADIUS / 100.0)
 		orb.queue_free())
 
 
@@ -813,6 +823,12 @@ func _hit_spark(dtype) -> void:
 	_spark_at = now
 	SpellFx.spawn(get_parent(), SpellFx.HITS[clampi(int(dtype), 0, SpellFx.HITS.size() - 1)],
 		global_position + Vector2(randf_range(-14.0, 14.0), -32.0 * size_mult + randf_range(-10.0, 10.0)), size_mult)
+
+
+## One kept on it a while; the party sees it on their copy (Coop.host_fx "sfx_on").
+func _sfx_on(id: String, secs: float, size := 1.0, lift := 0.0) -> void:
+	SpellFx.attach(self, id, secs, size, lift)
+	Coop.host_fx("sfx_on", {"id": net_id, "fx": id, "secs": secs, "s": size, "lift": lift})
 
 
 ## A spell effect here; the party sees it too (the host's monsters: Coop.host_fx).

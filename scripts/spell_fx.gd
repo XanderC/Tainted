@@ -13,9 +13,20 @@ const TUNE := {
 	"leaf_shield": [22, 230, false], "lightning_shield": [16, 140, false],
 	"hit_physical": [26, 64, false], "hit_fire": [24, 64, false], "hit_cold": [24, 64, false],
 	"hit_lightning": [26, 60, false], "hit_poison": [24, 70, false],
+	"slash_cold": [24, 170, false], "slash_lightning": [24, 170, false], "slash_chaos": [24, 150, false],
+	"slash_fire": [28, 170, false],
+	"strength_buff": [16, 130, false], "life_recovery": [14, 120, false], "mana_recovery": [14, 120, false],
+	"revival": [16, 120, false], "immunity": [16, 120, false], "debuff": [16, 120, false],
+	"blood_hit": [20, 60, false], "blood_green": [18, 60, false], "blood_splat": [14, 110, true],
+	"ice_burst": [18, 200, false], "poison_burst": [18, 150, false], "stars": [28, 170, false],
+	"ground_fire": [12, 180, true], "flame_blue": [12, 56, false], "flame_green": [12, 56, false],
+	"spark_loop": [14, 70, false],
 }
-## The hit spark for each RuneDef.DamageType (PHYSICAL, COLD, FIRE, LIGHTNING, CHAOS)
-const HITS := ["hit_physical", "hit_cold", "hit_fire", "hit_lightning", "hit_poison"]
+## The swing for a weapon skill whose runes make it elemental (by RuneDef.DamageType; physical: slash())
+const SWINGS := {1: "slash_cold", 2: "slash_fire", 3: "slash_lightning", 4: "slash_chaos"}
+## The hit spark for each RuneDef.DamageType (PHYSICAL, COLD, FIRE, LIGHTNING, CHAOS): blood for
+## physical, green blood for chaos
+const HITS := ["blood_hit", "hit_cold", "hit_fire", "hit_lightning", "blood_green"]
 
 static var _meta := {}
 static var _frames := {}  # id -> SpriteFrames

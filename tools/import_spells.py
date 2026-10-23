@@ -1,6 +1,7 @@
-"""Makes the spell effects (SpellFx) from the CraftPix top-down magic packs on the NAS
-(Y:/Tainted/assets/spells): each effect's frames, cropped to the area any of them uses, scaled down
-for a phone, side by side in one strip.
+"""Makes the spell effects (SpellFx) from the CraftPix effect packs on the NAS
+(Y:/Tainted/assets/spells: top-down magic, slashes, buffs, blood, explosions, flames): each
+effect's frames, cropped to the area any of them uses, scaled down for a phone, side by side in one
+strip.
 
   assets/fx/<id>.png   the frames in a row
   assets/fx/fx.json    per effect: frames, frame w / h (px), and where the original canvas's centre
@@ -26,6 +27,14 @@ FIRE_EARTH = "craftpix-net-153715-fire-and-earth-magic-sprites-for-top-down-game
 WIND_LIGHTNING = "craftpix-net-821246-top-down-wind-and-lightning-magic-effects-pack.zip"
 SHIELDS = "craftpix-net-865099-magic-shield-animation-asset-pack.zip"
 VECTOR = "craftpix-net-560683-magic-sprite-effects-vector-pack.zip"
+CARTOON_SLASH = "craftpix-net-501088-free-slash-sprite-cartoon-effects.zip"
+SLASHES = "craftpix-net-825597-free-slash-effects-sprite-pack.zip"
+BUFFS = "craftpix-net-207889-magic-buff-effects-pack-for-top-down-games.zip"
+BLOOD = "craftpix-net-538115-blood-splash-sprite-effects-asset-pack.zip"
+EXPLOSIONS = "craftpix-net-358572-explosion-vector-sprite-effects.zip"
+CARTOON_BOOM = "craftpix-net-360213-10-cartoon-explosion-effects.zip"
+CARTOON_FIRE = "craftpix-net-836879-cartoon-fire-flame-animation-sprite-set.zip"
+ANIM_BOOM = "craftpix-net-840730-free-animated-explosion-sprite-pack.zip"
 
 # id: (zip, regex for its frames' paths (group 1: the frame number), the largest side in px)
 EFFECTS = {
@@ -46,6 +55,31 @@ EFFECTS = {
     "hit_cold": (VECTOR, r"PNG/6/(\d+)\.png$", 96),
     "hit_lightning": (VECTOR, r"PNG/4/(\d+)\.png$", 112),
     "hit_poison": (VECTOR, r"PNG/9/(\d+)\.png$", 112),
+    # elemental weapon swings (a skill whose runes turn it cold, lightning, chaos or fire)
+    "slash_cold": (CARTOON_SLASH, r"PNG/1/(\d+)\.png$", 200),
+    "slash_lightning": (CARTOON_SLASH, r"PNG/3/(\d+)\.png$", 200),
+    "slash_chaos": (CARTOON_SLASH, r"PNG/8/(\d+)\.png$", 200),
+    "slash_fire": (SLASHES, r"slash/png/skash_(\d+)\.png$", 200),
+    # buffs: a ring at the feet with something rising from it
+    "strength_buff": (BUFFS, r"Strength Buff/PNG/Strength Buff_Frame_(\d+)\.png$", 200),
+    "life_recovery": (BUFFS, r"Life Recovery/PNG/Life Recovery_Frame_(\d+)\.png$", 200),
+    "mana_recovery": (BUFFS, r"Mana Recovery/PNG/Mana Recovery_Frame_(\d+)\.png$", 200),
+    "revival": (BUFFS, r"Revival/PNG/Revival_Frame_(\d+)\.png$", 200),
+    "immunity": (BUFFS, r"Immunity/PNG/Immunity_Frame_(\d+)\.png$", 200),
+    "debuff": (BUFFS, r"Debuff/PNG/Debuff_Frame_(\d+)\.png$", 200),
+    # blood
+    "blood_hit": (BLOOD, r"PNG/5/(\d+)\.png$", 96),
+    "blood_green": (BLOOD, r"PNG/10/(\d+)\.png$", 112),
+    "blood_splat": (BLOOD, r"PNG/2/(\d+)\.png$", 144),
+    # bursts
+    "ice_burst": (EXPLOSIONS, r"PNG/5/(\d+)\.png$", 176),
+    "poison_burst": (EXPLOSIONS, r"PNG/1/(\d+)\.png$", 160),
+    "stars": (CARTOON_BOOM, r"PNG/Fx02/Fx02_(\d+)\.png$", 160),  # 24 frames: kept under 4096 px wide
+    # flames and sparks that stay on something a while
+    "ground_fire": (CARTOON_FIRE, r"PNG/1/(\d+)\.png$", 176),
+    "flame_blue": (CARTOON_FIRE, r"PNG/5/(\d+)\.png$", 112),
+    "flame_green": (CARTOON_FIRE, r"PNG/7/(\d+)\.png$", 112),
+    "spark_loop": (ANIM_BOOM, r"PNG/Explosion_7/4/Explosion_3_(\d+)\.png$", 112),
 }
 
 
