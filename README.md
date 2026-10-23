@@ -42,9 +42,21 @@ turns them grey for tinting. Rerun it with the folder of zips to add styles (the
 Act 1 is being built (Diablo / Path of Exile style). Story zones are open areas (`scripts/zone.gd`,
 listed in `scripts/act_db.gd`) built from map files, with every monster pack placed (they return
 each visit), an area level, exits to other zones and town, a waypoint, NPCs, quest objects, story
-triggers and quest bosses (who stay dead once their quest is past them). The 🌀 TOWN button opens a
-town portal: back to Ashfall, and the portal there returns you to the same spot. Dying in a zone
-sends you to its waypoint.
+triggers and quest bosses (who stay dead once their quest is past them). Dying in a zone sends you to
+its waypoint.
+
+### Town portal scrolls
+Reading a **Scroll of Town Portal** (the 🌀 button at the top of the screen, or G) in a zone or a
+rift opens a portal where you stand (`scripts/town_portals.gd`). Tap its label to go to Ashfall; a
+portal back stands by the town square, and going through it you come out where you read the
+scroll, with what you left on the ground still lying there. Your own portal closes once you go back
+through it. You have one portal open at a time: reading another closes the first. A character starts
+with 3 and carries up to 40. The Merchant sells them (an Orb of Transmutation each), zone monsters
+sometimes drop them (elites more often), and bosses always leave some.
+Going back into a **rift** carries it on: the same maze, monsters (as hurt as they were), kills and
+clock (it doesn't run while you're in town). A solo rift is saved going through its portal. A rift's
+portals close when it moves on to its next maze, and a solo rift's when you leave it another way
+(falling, or the cleared rift's way home).
 
 Quests (`scripts/quest_db.gd` for the content, `scripts/quests.gd` for the rules) have steps (talk,
 reach a spot, enter a zone, touch a waypoint, kill monsters of a kind, kill a boss, use an object)
@@ -197,8 +209,14 @@ name and level, walking where they walk. Going back to character select keeps yo
 - **Story zones** work the same way, without asking. A party member entering a zone joins the party's
   copy of it (`zone:<party>:<zone>`), and the first in hosts it. A copy's death does what a monster's
   death does in each game: XP, quest kill credit and a quest boss's kill, and **loot rolled in that
-  game**, so each player gets their own drops. Exits, waypoints and town portals take each player on
-  their own; dying sends you back into the party's zone.
+  game**, so each player gets their own drops. Exits and waypoints take each player on their own;
+  dying sends you back into the party's zone.
+- **Town portals** are the party's: everyone sees each member's portal, in the rift or zone and by
+  the town square, and can use it both ways (only its owner going back closes it). The server keeps
+  them with the party, and refuses one that isn't in the party's own zone or rift. When the last
+  player leaves a party rift while a portal still leads into it, their game sends the rift as it is
+  to the server, which keeps it (and the party's way in) for whoever goes in next. That player
+  carries it on as host. If nobody has a portal into it, an empty party rift closes as before.
 - Shared too: players' skill effects (swings, rings, whirlwind, earthquake ground, standards), hirelings
   and summoned Ancients (each fights in its owner's game), and elite affixes hit every player in reach.
 - Falling in a party's rift or zone: you stay down, and a member standing beside you for 3 s revives you

@@ -133,8 +133,9 @@ func _summon_boss() -> void:
 	boss_arrived(b)
 
 
-## The boss is here: yours, or in a party rift a copy of the host's.
-func boss_arrived(b: Enemy) -> void:
+## The boss is here: yours, or in a party rift a copy of the host's (`quiet`: it was already, in a
+## rift carried on with through a town portal).
+func boss_arrived(b: Enemy, quiet := false) -> void:
 	state = State.BOSS
 	b.died.connect(_on_boss_died)
 	b.hp_changed.connect(func(h, m): _boss_bar.value = maxf(h, 0.0) / m * 100.0)
@@ -142,7 +143,8 @@ func boss_arrived(b: Enemy) -> void:
 	_boss_name.text = boss_name
 	_boss_bar.value = 100.0
 	_boss_box.visible = true
-	_show_banner("%s awakens!" % boss_name, Color(0.85, 0.6, 1.0))
+	if not quiet:
+		_show_banner("%s awakens!" % boss_name, Color(0.85, 0.6, 1.0))
 	boss_summoned.emit(b.position)
 
 
@@ -197,6 +199,7 @@ func _on_boss_died(pos: Vector2) -> void:
 		piles[["gem", gid]] = int(piles.get(["gem", gid], 0)) + 1
 	if skill_gem_drop != "":
 		piles[["skill_gem", skill_gem_drop]] = 1
+	piles[["scroll", "town_portal"]] = 2 if on_time else 1
 	var keys := piles.keys()
 	for i in keys.size():
 		var at: Vector2 = pos + Vector2.from_angle(TAU * i / keys.size()) * (140.0 + 30.0 * (i % 2))
@@ -213,6 +216,22 @@ func _on_boss_died(pos: Vector2) -> void:
 			main.spawn_currency("recipe", plan_drop, 1, pos + Vector2(60, 90))
 	_cleared(pos)
 	finished.emit(on_time)
+
+
+# ---------- a rift left through a town portal (main.gd snapshot) ----------
+
+func save_state() -> Dictionary:
+	return {"s": int(state), "k": kills, "e": elapsed, "b": boss_kind, "t": on_time}
+
+
+func load_state(d: Dictionary) -> void:
+	if d.is_empty():
+		return
+	state = clampi(int(d.get("s", 0)), 0, State.FAILED) as State
+	kills = int(d.get("k", 0))
+	elapsed = float(d.get("e", 0.0))
+	boss_kind = String(d.get("b", boss_kind)) if MonsterKinds.BOSSES.has(String(d.get("b", ""))) else boss_kind
+	on_time = bool(d.get("t", false))
 
 
 # ---------- party rifts ----------

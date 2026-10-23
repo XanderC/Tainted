@@ -6,6 +6,7 @@ extends Node2D
 ## account's currency), a page is learned. The scene shows what you got: currency_taken(text, colour)
 ## on the nearest ancestor that has it. A rift's runes and gems drop this way too.
 ## kind: "orb" | "shard" | "recipe" | "rune" (a skill rune) | "gem" (a socket gem or rune) | "skill_gem"
+##   | "scroll" (Scrolls of Town Portal: the character's own, not the stash's)
 
 var kind := "shard"
 var id := ""
@@ -43,6 +44,7 @@ func label_text() -> String:
 		"rune": return _counted(RuneDef.DB.get_rune(id).display_name)
 		"gem": return _counted(String(GemDef.info(id).get("name", id)))
 		"skill_gem": return _counted("Skill Gem: " + SkillTree.get_skill(id).display_name)
+		"scroll": return "%d Scrolls of Town Portal" % amount if amount > 1 else "Scroll of Town Portal"
 	return "%d %s Shards" % [amount, CraftingDB.ORBS.get(id, {}).get("short", "Orb")]
 
 
@@ -57,6 +59,7 @@ func color() -> Color:
 		"rune": return RuneDef.DB.get_rune(id).rarity_color()
 		"gem": return Color(GemDef.info(id).get("color", Color.WHITE))
 		"skill_gem": return SkillTree.get_skill(id).color
+		"scroll": return TownPortals.MINE
 	return CraftingDB.ORBS.get(id, {}).get("color", Color(1.0, 0.85, 0.2))
 
 
@@ -75,13 +78,15 @@ func request_pickup() -> void:
 
 
 func _take() -> void:
-	var text := collect()
+	var full := kind == "scroll" and GameState.tp_scrolls >= GameState.MAX_SCROLLS
+	var text := "You carry all the scrolls you can (%d)" % GameState.MAX_SCROLLS if full else collect()
 	var n := get_parent()
 	while n != null and not n.has_method("currency_taken"):
 		n = n.get_parent()
 	if n != null:
 		n.currency_taken(text, color().lightened(0.3))
-	queue_free()
+	if not full:
+		queue_free()
 
 
 ## Hands the contents over (into the shared stash, or a page learned). Returns a message to show.
@@ -91,6 +96,7 @@ func collect() -> String:
 		"rune": GameState.add_rune(id, amount)
 		"gem": GameState.add_gem(id, amount)
 		"skill_gem": GameState.add_skill_gem(id, amount)
+		"scroll": GameState.add_scrolls(amount)
 		"recipe":
 			if not GameState.learn_recipe(id):
 				GameState.add_shards("alchemy", 5)
@@ -119,6 +125,12 @@ func _draw() -> void:
 			draw_colored_polygon(d, c)
 			draw_polyline(d + PackedVector2Array([d[0]]), c.darkened(0.5), 2.0)
 			draw_circle(p + Vector2(-2, -4), 2.5, Color(1, 1, 1, 0.7))
+		"scroll":  # rolled parchment with a blue seal
+			draw_rect(Rect2(p + Vector2(-10, -6), Vector2(20, 12)), Color(0.93, 0.86, 0.68))
+			draw_circle(p + Vector2(-10, 0), 6, Color(0.85, 0.76, 0.56))
+			draw_circle(p + Vector2(10, 0), 6, Color(0.85, 0.76, 0.56))
+			draw_rect(Rect2(p + Vector2(-10, -6), Vector2(20, 12)), Color(0.45, 0.36, 0.22), false, 1.5)
+			draw_circle(p, 4, c)
 		"rune":  # a carved tablet
 			draw_rect(Rect2(p + Vector2(-8, -10), Vector2(16, 20)), c.darkened(0.35))
 			draw_rect(Rect2(p + Vector2(-8, -10), Vector2(16, 20)), c, false, 2.0)

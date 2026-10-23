@@ -5,8 +5,8 @@ extends Node2D
 ## Sage: identifies every item in your bag and stash, free.
 ## Rift Gate: pick a rift level, then start a run (scenes/main.tscn).
 ## The story: NPCs with quest business talk first (DialogueUI), the west road leads to the Dune
-## Wastes (Zone), a waypoint travels to zones you've found, and a town portal opened out there
-## brings you back to where you were.
+## Wastes (Zone), a waypoint travels to zones you've found, and town portals (TownPortals: yours
+## and your party's) stand by the square, back to where they were read.
 
 const DUNGEON_SCENE := "res://scenes/main.tscn"
 const SPAWN := Vector2(0, 360)
@@ -73,9 +73,13 @@ func _ready() -> void:
 		{"helmet": ["leather_cap", "teal"], "chest": ["padded_vest", "rose"]}, dyer_look)
 	_add_gate(Vector2(820, 220))
 	_add_exit(WEST_EXIT, WEST_EXIT_ZONE, "town", "→ " + ActDB.zone_name(WEST_EXIT_ZONE))
-	if GameState.town_portal.get("zone", "") != "":
-		_add_exit(PORTAL, String(GameState.town_portal["zone"]), "portal",
-			"🌀 Portal to " + ActDB.zone_name(String(GameState.town_portal["zone"])))
+	if String(GameState.town_portal.get("kind", "")) == "rift" and String(GameState.town_portal.get("inst", "")) == "" \
+			and not TownPortals.leads_back(GameState.town_portal):
+		TownPortals.close_mine()  # a solo rift's, not gone back to before it ended
+	var portals := TownPortals.new()
+	portals.place = {"kind": "town"}
+	portals.town_at = PORTAL
+	add_child(portals)
 	_add_waypoint(WAYPOINT)
 
 	var layer := CanvasLayer.new()
@@ -227,8 +231,6 @@ func _process(delta: float) -> void:
 		for e in _exits:
 			if player.global_position.distance_to(e["node"].global_position) < EXIT_REACH:
 				_leaving = true
-				if e["entry"] == "portal":
-					GameState.town_portal = {}  # a portal closes once you go back through it
 				ActDB.travel(get_tree(), e["target"], e["entry"])
 				return
 

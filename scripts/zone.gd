@@ -11,6 +11,8 @@ const EXIT_REACH := 70.0
 const WAYPOINT_REACH := 110.0
 const ITEM_DROP_CHANCE := 0.10  # a normal monster's chance to drop an item (elites always do)
 const SHARD_DROP_CHANCE := 0.18
+const SCROLL_DROP_CHANCE := 0.03  # a Scroll of Town Portal from a normal monster...
+const SCROLL_ELITE_CHANCE := 0.25  # ...and from an elite
 const UpgradePopupUIScript = preload("res://scripts/upgrade_popup_ui.gd")
 
 var zone_id := ""
@@ -37,6 +39,8 @@ var _death: Label
 var _near: Interactable = null
 var _leaving := false
 var coop: Coop = null  ## the party's zone (Net.coop kind "zone"): shared with the party
+var portals: TownPortals  ## the town portals open here, yours and your party's
+var _inst := ""  # the party's instance of this zone ("" alone)
 
 
 func _ready() -> void:
@@ -65,10 +69,16 @@ func _ready() -> void:
 	var party_zone := Net.online() and Net.in_party()
 	if party_zone:
 		Net.coop = {"inst": "zone:%d:%s" % [int(Net.party.id), zone_id], "kind": "zone"}
+		_inst = String(Net.coop.inst)
 	_place_objects(not party_zone)
 	if not party_zone:
 		_spawn_packs()
 	player.global_position = _arrival()
+	GameState.portal_arrival = {}
+	portals = TownPortals.new()
+	portals.place = portal_place()
+	add_child(portals)
+	TownPortals.restore_loot(self, portal_place())
 	if party_zone:
 		var presence := NetPresence.new()
 		presence.instance = String(Net.coop.inst)
@@ -110,8 +120,10 @@ func _arrival() -> Vector2:
 	var entry := GameState.zone_entry
 	if entry == "waypoint" and _waypoint != null:
 		return _waypoint.global_position + Vector2(0, 90)
-	if entry == "portal" and GameState.town_portal.get("zone", "") == zone_id:
-		return Vector2(float(GameState.town_portal["x"]), float(GameState.town_portal["y"]))
+	if entry == "portal":
+		var at := TownPortals.take_arrival(portal_place())
+		if at.is_finite():
+			return at
 	for e in _exits:
 		if e["target"] == entry:
 			var to_start: Vector2 = (maze.start_pos - e["node"].global_position).normalized()
@@ -352,6 +364,8 @@ func _on_monster_died(e: Enemy, at: Vector2) -> void:
 	if randf() < SHARD_DROP_CHANCE:
 		var ids := CraftingDB.ORBS.keys()
 		spawn_currency("shard", ids[randi() % mini(4, ids.size())], 1, at)
+	if randf() < (SCROLL_ELITE_CHANCE if elite else SCROLL_DROP_CHANCE):
+		spawn_currency("scroll", "town_portal", 1, at)
 
 
 func _drop_boss_loot(at: Vector2) -> void:
@@ -359,6 +373,7 @@ func _drop_boss_loot(at: Vector2) -> void:
 	_drop_item(LootGenerator.roll_item(area_level + 2, ItemInstance.Rarity.MAGIC), at + Vector2(50, 20))
 	spawn_currency("orb", "alteration", 1, at)
 	spawn_currency("orb", "transmute", 2, at)
+	spawn_currency("scroll", "town_portal", 2, at)
 
 
 func _drop_item(item: ItemInstance, at: Vector2) -> void:
@@ -454,6 +469,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		_respawn()
 	elif event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_E and _near != null:
 		_near.action.call()
+	elif event is InputEventKey and event.pressed and not event.echo and event.keycode == TownPortals.SCROLL_KEY:
+		TownPortals.read_scroll(self)
 
 
 ## Fell in a party's zone and waited (PartyDeath): back at the waypoint, as when alone.
@@ -471,9 +488,17 @@ func _leave(target: String, entry: String) -> void:
 	ActDB.travel(get_tree(), target, entry)
 
 
-## Open a town portal: back to Ashfall now, and the portal there brings you back to this spot.
-func _town_portal() -> void:
-	GameState.town_portal = {"zone": zone_id, "x": player.global_position.x, "y": player.global_position.y}
+## Where a town portal read here stands (TownPortals): this zone (the party's copy of it).
+func portal_place() -> Dictionary:
+	return {"kind": "zone", "zone": zone_id, "inst": _inst}
+
+
+## Through a town portal (yours or a party member's: TownPortals): to town, and what lies on the
+## ground here waits for you.
+func portal_to_town() -> void:
+	if _leaving:
+		return
+	TownPortals.remember_loot(self, portal_place())
 	_leave(ActDB.TOWN, "portal")
 
 
@@ -496,16 +521,7 @@ func _build_hud() -> void:
 	tracker.open_log.connect(func(): quest_log.open())
 	info.add_child(tracker)
 
-	var portal_btn := UIKit.stone_button("🌀 TOWN", Vector2(110, 56), 18)
-	portal_btn.tooltip_text = "Open a town portal: go to Ashfall Outpost and come back here through it"
-	portal_btn.pressed.connect(_town_portal)
-	layer.add_child(portal_btn)
-	portal_btn.anchor_left = 1.0
-	portal_btn.anchor_right = 1.0
-	portal_btn.offset_left = -386.0
-	portal_btn.offset_right = -276.0
-	portal_btn.offset_top = 16.0
-	portal_btn.offset_bottom = 72.0
+	TownPortals.add_button(layer, self)
 
 	_talk_btn = UIKit.stone_button("", Vector2(0, 0), 22)
 	_talk_btn.visible = false

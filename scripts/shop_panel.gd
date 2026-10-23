@@ -78,6 +78,9 @@ func _wares() -> Array[Dictionary]:
 		list.append({"type": "skillgem", "id": sk.id, "name": "Skill Gem: " + sk.display_name,
 			"desc": "%s (needs level %d)" % [sk.description, SkillTree.gem_level_req(sk.id)],
 			"price": SkillTree.gem_price(sk.id), "color": sk.color, "icon": IconFactory.gem_icon("skill:" + sk.id, sk.color, 3)})
+	list.append({"type": "scroll", "id": "town_portal", "name": "Scroll of Town Portal",
+		"desc": "Read it (🌀 at the top of the screen, or G) in a zone or a rift: a portal to town opens where you stand, and going back through it you come out there again. Your party can use it too. You carry %d (at most %d)." % [GameState.tp_scrolls, GameState.MAX_SCROLLS],
+		"price": GameState.SCROLL_PRICE, "color": TownPortals.MINE, "icon": IconFactory.scroll_icon()})
 	# Normal flasks of every base; find or craft better ones
 	for b in LootGenerator.bases:
 		if b.slot != "flask":
@@ -203,7 +206,10 @@ func _buy(w: Dictionary) -> void:
 		"orb": ok = GameState.buy_orb(w.id)
 		"flask": ok = GameState.buy_flask(w.id, w.price)
 		"skillgem": ok = GameState.buy_skill_gem(w.id)
+		"scroll": ok = GameState.buy_scroll()
 	var why := "Not enough orbs!" if not GameState.can_afford(w.price) else "No room in your bag!"
+	if w.get("type", "") == "scroll" and GameState.tp_scrolls >= GameState.MAX_SCROLLS:
+		why = "You carry all the scrolls you can (%d)." % GameState.MAX_SCROLLS
 	menu.feedback(("Bought %s!" % w.name) if ok else why)
 	menu.refresh()
 

@@ -58,6 +58,13 @@ static func recipe_icon(id: String) -> Texture2D:
 	return _cache[key]
 
 
+## A Scroll of Town Portal (the Merchant's): a page in the portal's blue.
+static func scroll_icon() -> Texture2D:
+	if not _cache.has("town_portal"):
+		_cache["town_portal"] = _render("town_portal", "scroll", Color(0.62, 0.80, 1.0))
+	return _cache["town_portal"]
+
+
 ## Round flask; bigger bottle for higher tiers.
 static func potion_icon(id: String, col: Color, tier: int) -> Texture2D:
 	var key := "potion:" + id

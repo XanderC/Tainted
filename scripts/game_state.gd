@@ -8,6 +8,8 @@ signal changed
 signal skills_changed
 signal leveled_up(level: int)
 signal quests_changed
+signal scrolls_changed  ## tp_scrolls changed
+signal town_portal_changed  ## a town portal of yours opened or closed (town_portal)
 
 const SAVE_PATH := "user://tainted_save.json"  # the single save from before characters existed
 const ACCOUNT_PATH := "user://tainted_account.json"
@@ -36,11 +38,19 @@ var known_recipes: Array[String] = []
 var runs_cleared := 0
 var rift_unlocked := 1  # highest rift level the player may enter (beat a level on time to unlock the next)
 var rift_level := 1     # level chosen at the rift gate for the next run
-## The story (Quests, ActDB): quest id -> progress; zones whose waypoint you've touched; and the
-## town portal you left open ({"zone", "x", "y"}, or {} for none)
+## The story (Quests, ActDB): quest id -> progress; zones whose waypoint you've touched
 var quests := {}
 var waypoints: Array = []
+## Town portal scrolls (TownPortals): how many you carry, the portal you have open ({} for none; its
+## fields: TownPortals) and what lay on the ground where you went through one. Arriving back through
+## one: where (portal_arrival), and a solo rift to carry on with (rift_resume, for main.gd).
+const START_SCROLLS := 3
+const MAX_SCROLLS := 40
+var tp_scrolls := START_SCROLLS
 var town_portal := {}
+var left_loot := {}
+var portal_arrival := {}
+var rift_resume := {}
 ## Where the next Zone scene loads and where in it you arrive: "start", "waypoint", "portal" (the
 ## town portal spot) or the zone you came from (arrive at the exit back to it)
 var current_zone := ""
@@ -117,7 +127,11 @@ func _new_game() -> void:
 	rift_level = 1
 	quests = {}
 	waypoints = []
+	tp_scrolls = START_SCROLLS
 	town_portal = {}
+	left_loot = {}
+	portal_arrival = {}
+	rift_resume = {}
 	_pending_inventory.clear()
 	_pending_equipment.clear()
 	_pending_alt_set.clear()
@@ -274,6 +288,27 @@ func buy_recipe(id: String) -> bool:
 	if knows_recipe(id) or not pay(CraftingDB.RECIPES[id].get("price", {})):
 		return false
 	return learn_recipe(id)
+
+
+## Town portal scrolls gained (or `n` < 0: read), up to MAX_SCROLLS. Returns how many changed hands.
+func add_scrolls(n: int) -> int:
+	var before := tp_scrolls
+	tp_scrolls = clampi(tp_scrolls + n, 0, MAX_SCROLLS)
+	if tp_scrolls != before:
+		scrolls_changed.emit()
+		_queue_save()
+	return tp_scrolls - before
+
+
+## A Scroll of Town Portal from the Merchant (False: can't afford it, or you carry all you can).
+func buy_scroll() -> bool:
+	if tp_scrolls >= MAX_SCROLLS or not pay(SCROLL_PRICE):
+		return false
+	add_scrolls(1)
+	return true
+
+
+const SCROLL_PRICE := {"transmute": 1}
 
 
 ## Currency exchange at the Merchant (see Currency.VENDOR_ORBS).
@@ -1183,6 +1218,7 @@ func save() -> void:
 		"recipes": known_recipes, "runs_cleared": runs_cleared,
 		"rift_unlocked": rift_unlocked, "rift_level": rift_level,
 		"quests": quests, "waypoints": waypoints, "town_portal": town_portal,
+		"tp_scrolls": tp_scrolls, "left_loot": left_loot,
 		"inventory": inv, "equipment": eq,
 		"alt_weapon_set": _pending_alt_set, "active_weapon_set": _pending_active_set,
 		# Skills & Runes
@@ -1522,6 +1558,13 @@ func _apply_save(data: Dictionary) -> void:
 	quests = data.get("quests", {})
 	waypoints = data.get("waypoints", [])
 	town_portal = data.get("town_portal", {})
+	if not town_portal.is_empty() and not town_portal.has("kind"):  # an older save's: {"zone", "x", "y"}
+		town_portal = {"id": 1, "kind": "zone", "zone": String(town_portal.get("zone", "")), "inst": "",
+			"x": float(town_portal.get("x", 0.0)), "y": float(town_portal.get("y", 0.0))}
+	tp_scrolls = clampi(int(data.get("tp_scrolls", START_SCROLLS)), 0, MAX_SCROLLS)
+	left_loot = data.get("left_loot", {})
+	portal_arrival = {}
+	rift_resume = {}
 	_pending_inventory = data.get("inventory", [])
 	_pending_equipment = data.get("equipment", {})
 	_pending_alt_set = data.get("alt_weapon_set", {})

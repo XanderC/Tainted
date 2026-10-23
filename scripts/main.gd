@@ -5,6 +5,9 @@ extends Node2D
 ## With a party (Net.coop, kind "rift") it's the party's rift: Coop shares it, the other players
 ## are there (NetPresence), and the instance's host loads the mazes (start_host) while the others
 ## load what it loads (remote_maze) and ask it to go through the portal (party_travel).
+## A town portal scroll (TownPortals) takes you to town and back: a solo rift is saved going through
+## its portal (snapshot) and carried on with coming back (_restore); a party's waits on the server
+## when the last one out leaves while a portal leads into it (Net.save_rift).
 
 const PACKS_PER_MAZE := 6        # how many of a maze's "m" spots get a monster pack
 const PACK_SIZE := Vector2i(3, 5)
@@ -30,6 +33,9 @@ var _arrow: PortalArrow
 var _fade: ColorRect
 var _travelling := false
 var coop: Coop = null
+var rift_key := ""  ## which rift this is (TownPortals): a party's is its instance
+var portals: TownPortals
+var _left := false
 
 
 func _ready() -> void:
@@ -76,6 +82,7 @@ func _ready() -> void:
 	portrait.position = Vector2(16, 10)
 	portrait.on_open = func(): menu.open("hireling")
 	layer.add_child(portrait)
+	TownPortals.add_button(layer, self)
 
 	hud = Label.new()
 	hud.position = Vector2(16, 80)
@@ -112,6 +119,13 @@ func _ready() -> void:
 	if party_rift:
 		run.forced_level = int(Net.coop.get("level", 1))
 		run.remote = true  # until it's known who hosts
+	var resume: Dictionary = {} if party_rift else GameState.rift_resume  # back through a portal: as you left it
+	GameState.rift_resume = {}
+	if not resume.is_empty():
+		run.forced_level = int(resume.get("level", 1))
+	rift_key = String(Net.coop.inst) if party_rift else "solo:%d" % randi()
+	portals = TownPortals.new()
+	add_child(portals)
 	add_child(run)
 	run.boss_summoned.connect(func(_pos):
 		if portal != null:
@@ -128,6 +142,8 @@ func _ready() -> void:
 		fall.main = self
 		add_child(fall)
 		_fade.color.a = 1.0  # dark until the maze is known (start_host / remote_maze)
+	elif not resume.is_empty():
+		_restore(resume)
 	else:
 		_load_maze()
 
@@ -159,6 +175,9 @@ func _process(delta: float) -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	if event is InputEventKey and event.pressed and not event.echo and event.keycode == TownPortals.SCROLL_KEY:
+		TownPortals.read_scroll(self)
+		return
 	if player.dead and coop == null and ((event is InputEventScreenTouch and event.pressed) or (event is InputEventKey and event.pressed)):
 		return_to_town()
 
@@ -169,10 +188,137 @@ func get_up() -> void:
 	player.global_position = maze.start_pos
 
 
+## Back to town (you fell alone, gave up in a party's rift, or took the cleared rift's way home).
 func return_to_town() -> void:
-	GameState.save()
-	get_tree().paused = false
-	get_tree().change_scene_to_file("res://scenes/town.tscn")
+	_leave_rift(false)
+	_go_to_town("start")
+
+
+## Through a town portal (yours or a party member's: TownPortals): to town, and the rift waits for
+## you (what lies on the ground here too).
+func portal_to_town() -> void:
+	if _left or _travelling:
+		return
+	TownPortals.remember_loot(self, portal_place())
+	_leave_rift(true)
+	_go_to_town("portal")
+
+
+func _go_to_town(entry: String) -> void:
+	_left = true
+	ActDB.travel(get_tree(), ActDB.TOWN, entry)
+
+
+## Leaving: a solo rift is saved into your portal going through it (else the portal closes: the rift
+## is gone). In a party's, the last one out saves it while anyone's portal leads into it.
+func _leave_rift(through_portal: bool) -> void:
+	if maze == null or _left:
+		return
+	var ok := run.state != DungeonRun.State.FAILED
+	if coop == null:
+		var mine: Dictionary = GameState.town_portal
+		if String(mine.get("key", "")) == rift_key:
+			if through_portal and ok:
+				mine["save"] = snapshot()
+			else:
+				TownPortals.close_mine()
+	elif ok and coop.is_host and Net.others.is_empty() and TownPortals.all().any(func(e):
+			return String(e.tp.get("key", "")) == rift_key and int(e.tp.get("maze", 0)) == mazes_visited):
+		Net.save_rift(rift_key, snapshot())
+
+
+## Where a town portal read here stands (TownPortals): this rift and maze.
+func portal_place() -> Dictionary:
+	if maze == null:
+		return {}
+	return {"kind": "rift", "key": rift_key, "maze": mazes_visited, "level": run.level,
+		"inst": String(Net.coop.get("inst", "")) if coop != null else ""}
+
+
+## The rift as it is: its maze, the run, the monsters left and the cleared rift's way home.
+func snapshot() -> Dictionary:
+	var enemies: Array = []
+	for e in get_tree().get_nodes_in_group("enemies"):
+		if e is Enemy and not e._dead and not e.remote and not e.is_queued_for_deletion():
+			enemies.append(Coop.describe(e))
+	var exit: Array = []
+	for n in get_tree().get_nodes_in_group("town_portals"):
+		if n.tp_id == 0 and not n.is_queued_for_deletion():
+			exit = [n.position.x, n.position.y]
+	return {"key": rift_key, "level": run.level, "map": maze.map_id, "n": mazes_visited, "kills": kills,
+		"packs": _pack_kind, "run": run.save_state(), "enemies": enemies, "exit": exit}
+
+
+## Carry on with a rift as it was left (snapshot).
+func _restore(r: Dictionary) -> void:
+	rift_key = String(r.get("key", rift_key))
+	kills = int(r.get("kills", 0))
+	_pack_kind = r.get("packs", {})
+	run.load_state(r.get("run", {}))
+	mazes_visited = int(r.get("n", 1)) - 1
+	_load_maze(String(r.get("map", "")), false)
+	for d in r.get("enemies", []):
+		_restore_enemy(d)
+	var exit: Array = r.get("exit", [])
+	if exit.size() == 2:
+		var tp := TownPortal.new()
+		tp.position = Vector2(float(exit[0]), float(exit[1]))
+		add_child(tp)
+	if coop != null:
+		coop.maze_loaded()
+	_maze_known()
+
+
+## A monster as it was left (Coop.describe), the real thing again.
+func _restore_enemy(d) -> void:
+	if not d is Dictionary:
+		return
+	var e := Enemy.new()
+	e.kind = String(d.get("kind", "zombie"))
+	e.skin = String(d.get("skin", ""))
+	e.display_name = String(d.get("name", ""))
+	e.tier = int(d.get("tier", 0))
+	e.affixes.assign(Array(d.get("affixes", [])).map(func(a): return String(a)))
+	e.max_hp = float(d.get("max_hp", 25.0))
+	e.speed = float(d.get("speed", 100.0))
+	e.touch_damage = float(d.get("touch", 5.0))
+	e.size_mult = float(d.get("size", 1.0))
+	e.ranged = bool(d.get("ranged", false))
+	e.is_boss = bool(d.get("boss", false))
+	e.pack = String(d.get("pack", ""))
+	e.aggro_range = float(d.get("aggro", PACK_AGGRO))
+	e.position = Vector2(float(d.get("x", 0.0)), float(d.get("y", 0.0)))
+	e.target = player
+	e.maze = maze
+	if not e.is_boss:
+		e.died.connect(_on_enemy_died.bind(e.kill_weight()))
+		e.minion_spawned.connect(func(m: Enemy): m.died.connect(_on_enemy_died.bind(1)))
+	add_child(e)
+	if e.pack != "":
+		e.add_to_group(e.pack)
+	e.hp = clampf(float(d.get("hp", e.max_hp)), 1.0, e.max_hp)
+	if e.is_boss:
+		run.boss_arrived(e, true)
+	e.hp_changed.emit(e.hp, e.max_hp)
+
+
+## Which maze this is is known (loaded, and numbered): portals into the mazes before close, the ones
+## here show, and arriving back through one you stand by it, with what you left lying about.
+func _maze_known() -> void:
+	var mine: Dictionary = GameState.town_portal
+	if String(mine.get("kind", "")) == "rift" and String(mine.get("key", "")) == rift_key \
+			and int(mine.get("maze", 0)) != mazes_visited:
+		TownPortals.close_mine()
+	if coop != null and coop.is_host:
+		Net.rift_maze(rift_key, mazes_visited)
+	var where := portal_place()
+	portals.set_place(where)
+	var at := TownPortals.take_arrival(where)
+	GameState.portal_arrival = {}
+	if at.is_finite():
+		player.global_position = at
+		_cam.reset_smoothing()
+	TownPortals.restore_loot(self, where)
 
 
 # ---------- mazes ----------
@@ -180,7 +326,11 @@ func return_to_town() -> void:
 ## This game hosts the party's rift: the first maze, as for a solo rift.
 func start_host() -> void:
 	run.remote = false
-	_load_maze()
+	var saved := Net.take_rift_save(rift_key)  # left by the last one out, with a portal still open into it
+	if saved.is_empty():
+		_load_maze()
+	else:
+		_restore(saved)
 	create_tween().tween_property(_fade, "color:a", 0.0, 0.45)
 
 
@@ -205,6 +355,7 @@ func remote_maze(d: Dictionary, instant: bool) -> void:
 		_load_maze(map, false)
 		mazes_visited = int(d.get("n", mazes_visited))
 		coop.travel_asked = false
+		_maze_known()
 	if instant:
 		load_it.call()
 		create_tween().tween_property(_fade, "color:a", 0.0, 0.45)
@@ -271,6 +422,7 @@ func _load_maze(map := "", spawn := true) -> void:
 	run.announce("%s  —  maze %d" % [maze.map_name, mazes_visited], Color(0.85, 0.7, 1.0))
 	if coop != null:
 		coop.maze_loaded()
+	_maze_known()
 
 
 ## Step through the portal: fade out, new maze, fade in.

@@ -94,7 +94,7 @@ signal trade_finished(received: Array, orbs: Dictionary)  ## the trade went thro
 signal signed_in_changed  ## signed in or out of Autharr (`signed_in_as`), or a sign-in failed (`sign_in_error`)
 
 const PORT := 24601
-const PROTOCOL := 11  ## games with a different protocol can't play together
+const PROTOCOL := 12  ## games with a different protocol can't play together
 const MAX_ONLINE := 32
 const PARTY_MAX := 4
 const SEND_HZ := 15.0
@@ -113,6 +113,7 @@ const MAX_FRIENDS := 100
 const CHAT_MAX := 200
 const CHAT_EVERY := 0.6  ## seconds between one player's chat lines
 const MAX_IGNORED := 200  ## players one account can mute
+const RIFT_SAVE_MAX := 160 * 1024  ## bytes: a party rift left with a portal into it (save_rift)
 ## Words the chat masks with stars (whole words, any case).
 const CHAT_FILTER := ["fuck", "fucking", "fucker", "shit", "cunt", "bitch", "nigger", "nigga", "faggot", "fag",
 	"retard", "whore", "slut", "dick", "pussy", "asshole", "bastard", "twat", "wanker", "spastic"]
@@ -164,6 +165,7 @@ var friends: Array = []
 ## server sends you none of their lines or whispers.
 var ignored: Array = []
 var instance_host := 0  ## who hosts your instance (role_changed)
+var rift_restore := {}  ## the party's rift as the last one out left it, for you to carry on with: {"inst", "data"}
 var party_ui: PartyUI
 var chat_ui: ChatUI  ## the chat on screen (not on a dedicated server)
 var inspect_ui: InspectUI  ## another player's gear (inspect)
@@ -1106,6 +1108,10 @@ func _on_enter(id: int, inst: String, state: Dictionary) -> void:
 		if not _instances.has(inst) or not _peers.has(int(_instances[inst].host)) \
 				or _peers[int(_instances[inst].host)].instance != inst:
 			_instances[inst] = {"host": id}
+			var saved: Dictionary = _parties[pid].get("rift_save", {}) if _parties.has(pid) else {}
+			if String(saved.get("inst", "")) == inst:  # carry on with it as it was left (save_rift)
+				_parties[pid].erase("rift_save")
+				_send(id, "_rpc_rift_save", [inst, saved.data])
 		_send(id, "_rpc_role", [int(_instances[inst].host)])
 	for other in _peers:
 		if other != id and _peers[other].instance == inst:
@@ -1873,6 +1879,51 @@ func join_portal(portal: Dictionary) -> void:
 			get_tree().change_scene_to_file.call_deferred("res://scenes/main.tscn")
 
 
+## Your town portal (TownPortals), for your party to see and use ({}: it closed).
+func share_town_portal(tp: Dictionary) -> void:
+	_to_server("_on_town_portal", "_rpc_town_portal", [tp])
+
+
+## The last one out of the party's rift while a town portal leads into it: the rift as it is
+## (main.gd snapshot), for whoever goes in next to carry on with (take_rift_save).
+func save_rift(inst: String, data: Dictionary) -> void:
+	_to_server("_on_save_rift", "_rpc_save_rift", [inst, data])
+
+
+## The party's rift moved on to maze `n` (its host says): portals into the mazes before it close.
+func rift_maze(inst: String, n: int) -> void:
+	_to_server("_on_rift_maze", "_rpc_rift_maze", [inst, n])
+
+
+## The saved party rift `inst` to carry on with, once ({} if there's none).
+func take_rift_save(inst: String) -> Dictionary:
+	if String(rift_restore.get("inst", "")) != inst:
+		return {}
+	var d: Dictionary = rift_restore.data
+	rift_restore = {}
+	return d
+
+
+## Your portal as the party has it: they got a different one, or none (a reconnect lost it), so they
+## hear it again; out of the party, a zone's is yours alone now and a rift's (the party's) is gone.
+func _check_my_portal() -> void:
+	var tp: Dictionary = GameState.town_portal
+	var inst := String(tp.get("inst", ""))
+	if inst == "":
+		return
+	if party.is_empty() or party_of_instance(inst) != int(party.get("id", 0)):
+		if String(tp.get("kind", "")) == "zone":
+			tp["inst"] = ""
+		else:
+			GameState.town_portal = {}
+		GameState.town_portal_changed.emit()
+		GameState.save()
+		return
+	var theirs = party.get("tps", {}).get(my_id(), {})
+	if not theirs is Dictionary or int(theirs.get("id", 0)) != int(tp.get("id", 0)):
+		share_town_portal(TownPortals.shared(tp))
+
+
 ## Sends an instance event: to 0 = everyone else in your instance, -1 = its host, or a player's id.
 func send_event(to: int, kind: String, data: Variant) -> void:
 	if not online() or instance == "":
@@ -1972,6 +2023,8 @@ func _on_open_instance(id: int, kind: String, level: int) -> void:
 		return
 	var pid: int = _peers[id].party
 	level = clampi(level, 1, int(_peers[id].info.get("rift", 1)))  # no higher than they have reached
+	_parties[pid].erase("rift_save")  # the party's rift before is left behind, its portals with it
+	_close_portals(pid, func(tp): return String(tp.get("kind", "")) == "rift")
 	var portal := {"inst": "%s:%d:%d" % [kind, pid, _next_inst], "kind": kind, "level": level,
 		"by": id, "by_name": String(_peers[id].info.name)}
 	_next_inst += 1
@@ -1992,7 +2045,10 @@ func _instance_left(inst: String, id: int) -> void:
 		_instances.erase(inst)
 		var pid := party_of_instance(inst)
 		if _parties.has(pid) and _parties[pid].get("portal", {}).get("inst", "") == inst:
+			if String(_parties[pid].get("rift_save", {}).get("inst", "")) == inst:
+				return  # a portal leads into it: it waits as it was left (save_rift)
 			_parties[pid].portal = {}
+			_close_portals(pid, func(tp): return String(tp.get("inst", "")) == inst)
 			_tell_party(pid)
 		return
 	if int(_instances[inst].host) == id:
@@ -2036,6 +2092,7 @@ func _remove_from_party(id: int, why: String, away := false) -> void:
 		return
 	var p: Dictionary = _parties[pid]
 	p.members.erase(id)
+	p.get("tps", {}).erase(id)
 	_peers[id].party = 0
 	log_line("Party %d: %s %s" % [pid, _peers[id].info.name, "dropped (their place kept a minute)" if away else "left"])
 	if not p.has("away"):
@@ -2100,11 +2157,115 @@ func _tell_party(pid: int, why := "") -> void:
 	for t in p.get("away", {}):
 		var a: Dictionary = p.away[t]
 		away.append({"name": a.name, "level": a.level, "class": a["class"]})
-	var data := {"id": pid, "leader": p.leader, "members": members, "away": away, "portal": p.get("portal", {})}
+	var data := {"id": pid, "leader": p.leader, "members": members, "away": away, "portal": p.get("portal", {}),
+		"tps": p.get("tps", {})}
 	for m in p.members:
 		_send(m, "_rpc_party", [data])
 		if why != "":
 			_send(m, "_rpc_notice", [why])
+
+
+## A member's town portal (share_town_portal): the party sees it, or it's refused (it isn't in the
+## party's zone or rift) and its owner told it closed.
+func _on_town_portal(id: int, tp: Dictionary) -> void:
+	var pid: int = _peers[id].party if _peers.has(id) else 0
+	if pid == 0 or not _parties.has(pid):
+		return
+	var p: Dictionary = _parties[pid]
+	if not p.has("tps"):
+		p.tps = {}
+	if tp.is_empty():
+		if p.tps.erase(id):
+			_tell_party(pid)
+		return
+	var clean := _clean_portal(pid, tp)
+	if clean.is_empty():
+		var tid = tp.get("id", 0)
+		_send(id, "_rpc_tp_closed", [int(tid) if tid is int or tid is float else 0])
+		if p.tps.erase(id):
+			_tell_party(pid)
+		return
+	clean.by = id
+	clean.by_name = String(_peers[id].info.name)
+	p.tps[id] = clean
+	_tell_party(pid)
+
+
+## Only a portal's fields, of the right types, in the party's own zone or its rift (and that rift's
+## maze, once known); {} if it isn't.
+func _clean_portal(pid: int, tp: Dictionary) -> Dictionary:
+	var kind = tp.get("kind", "")
+	var inst = tp.get("inst", "")
+	var x = tp.get("x", 0.0)
+	var y = tp.get("y", 0.0)
+	var tid = tp.get("id", 0)
+	if not kind is String or not inst is String or not (x is float or x is int) or not (y is float or y is int) \
+			or not (tid is int or tid is float):
+		return {}
+	var at := Vector2(float(x), float(y))
+	if not at.is_finite():
+		return {}
+	at = at.clamp(Vector2(-100000, -100000), Vector2(100000, 100000))
+	var out := {"id": int(tid), "kind": kind, "inst": inst, "x": at.x, "y": at.y}
+	match kind:
+		"zone":
+			var zone = tp.get("zone", "")
+			if not zone is String or not ActDB.ZONES.has(zone) or inst != "zone:%d:%s" % [pid, zone]:
+				return {}
+			out.zone = zone
+		"rift":
+			if inst == "" or inst != String(_parties[pid].get("portal", {}).get("inst", "")):
+				return {}
+			var maze = tp.get("maze", 1)
+			var level = tp.get("level", 1)
+			out.key = inst
+			out.maze = clampi(int(maze) if maze is int or maze is float else 1, 1, 100000)
+			out.level = clampi(int(level) if level is int or level is float else 1, 1, 999)
+			var known: Dictionary = _parties[pid].get("rift_maze", {})
+			if String(known.get("inst", "")) == inst and int(known.n) != int(out.maze):
+				return {}
+		_:
+			return {}
+	return out
+
+
+## Party `pid`'s portals that `which(tp)` picks close; their owners are told (the caller tells the
+## party). True if any did.
+func _close_portals(pid: int, which: Callable) -> bool:
+	var tps: Dictionary = _parties[pid].get("tps", {}) if _parties.has(pid) else {}
+	var any := false
+	for m in tps.keys():
+		if which.call(tps[m]):
+			_send(int(m), "_rpc_tp_closed", [int(tps[m].get("id", 0))])
+			tps.erase(m)
+			any = true
+	return any
+
+
+## The last one out of the party's rift left it with a portal leading in (save_rift): it waits on
+## the server for the next one in (_on_enter).
+func _on_save_rift(id: int, inst: String, data: Dictionary) -> void:
+	if not _peers.has(id) or _peers[id].instance != inst or not inst.begins_with("rift:"):
+		return
+	var pid := party_of_instance(inst)
+	if _peers[id].party != pid or not _parties.has(pid) or String(_parties[pid].get("portal", {}).get("inst", "")) != inst:
+		return
+	if var_to_bytes(data).size() > RIFT_SAVE_MAX:
+		log_line("Party %d: %s's rift was too big to keep (%d bytes)" % [pid, _peers[id].info.name, var_to_bytes(data).size()])
+		return
+	_parties[pid].rift_save = {"inst": inst, "data": data}
+
+
+## The party's rift moved on to maze `n` (its host says): portals into the mazes before close.
+func _on_rift_maze(id: int, inst: String, n: int) -> void:
+	if not _peers.has(id) or _peers[id].instance != inst or int(_instances.get(inst, {}).get("host", 0)) != id:
+		return
+	var pid := party_of_instance(inst)
+	if not _parties.has(pid):
+		return
+	_parties[pid].rift_maze = {"inst": inst, "n": n}
+	if _close_portals(pid, func(tp): return String(tp.get("inst", "")) == inst and int(tp.get("maze", 0)) != n):
+		_tell_party(pid)
 
 
 ## Each party's life and whereabouts, to its members.
@@ -2267,6 +2428,27 @@ func _rpc_open_instance(kind: String, level: int) -> void:
 	var id := multiplayer.get_remote_sender_id()
 	if is_server() and _within_rate(id):
 		_on_open_instance(id, kind, level)
+
+
+@rpc("any_peer", "call_remote", "reliable")
+func _rpc_town_portal(tp: Dictionary) -> void:
+	var id := multiplayer.get_remote_sender_id()
+	if is_server() and _within_rate(id):
+		_on_town_portal(id, tp)
+
+
+@rpc("any_peer", "call_remote", "reliable")
+func _rpc_save_rift(inst: String, data: Dictionary) -> void:
+	var id := multiplayer.get_remote_sender_id()
+	if is_server() and _within_rate(id):
+		_on_save_rift(id, inst, data)
+
+
+@rpc("any_peer", "call_remote", "reliable")
+func _rpc_rift_maze(inst: String, n: int) -> void:
+	var id := multiplayer.get_remote_sender_id()
+	if is_server() and _within_rate(id):
+		_on_rift_maze(id, inst, n)
 
 
 @rpc("any_peer", "call_remote", "reliable")
@@ -2483,7 +2665,22 @@ func _rpc_looks_of(id: int, info: Dictionary) -> void:
 @rpc("authority", "call_remote", "reliable")
 func _rpc_party(data: Dictionary) -> void:
 	party = data
+	_check_my_portal()
 	party_changed.emit()
+
+
+## Your town portal closed: the rift it led into is gone or moved on (TownPortals).
+@rpc("authority", "call_remote", "reliable")
+func _rpc_tp_closed(tp_id: int) -> void:
+	if tp_id != 0 and int(GameState.town_portal.get("id", 0)) == tp_id:
+		GameState.town_portal = {}
+		GameState.town_portal_changed.emit()
+		GameState.save()
+
+
+@rpc("authority", "call_remote", "reliable")
+func _rpc_rift_save(inst: String, data: Dictionary) -> void:
+	rift_restore = {"inst": inst, "data": data}
 
 
 @rpc("authority", "call_remote", "reliable")
