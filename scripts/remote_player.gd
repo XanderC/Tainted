@@ -154,7 +154,10 @@ func show_fx(d: Array) -> void:
 			_swing_arc = clampf(float(d[2]), 0.0, 360.0)
 			_swing_radius = clampf(float(d[3]), 0.0, 600.0)
 			_swing_color = Color.from_string(String(d[4]), Color.WHITE)
-			_swing_t = clampf(float(d[5]), 0.0, 2.0)
+			if _swing_arc < 359.0:  # a weapon swing: the art's slash (SpellFx.slash), as their game shows it
+				SpellFx.slash(self, _swing_dir, _swing_arc, _swing_radius, _swing_color, maxf(clampf(float(d[5]), 0.0, 2.0) * 1.6, 0.22))
+			else:
+				_swing_t = clampf(float(d[5]), 0.0, 2.0)
 		["ring", 4]:
 			_ring_radius = clampf(float(d[1]), 0.0, 600.0)
 			_ring_color = Color.from_string(String(d[2]), Color.WHITE)

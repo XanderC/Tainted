@@ -92,8 +92,41 @@ def main() -> None:
                        "cx": round((w0 / 2 - box[0]) * s, 1), "cy": round((h0 / 2 - box[1]) * s, 1)}
         print("%-17s %2d frames  %3dx%-3d  %6.1f KB" % (fx_id, len(frames), fw, fh,
               os.path.getsize(os.path.join(OUT, fx_id + ".png")) / 1024))
+    meta["slash"] = make_slash()
     with open(os.path.join(OUT, "fx.json"), "w") as f:
         json.dump(meta, f, indent=1)
+
+
+SLASH_SRC = os.path.join(HERE, "..", "assets", "skins", "skeleton_viking_1", "SlashFX.png")
+
+
+def make_slash() -> dict:
+    """assets/fx/slash.png: the character art's slash crescent (every skin has it, in its colours),
+    in greys keeping its three tones, so a swing tints it (Player.slash). Its outer edge is about a
+    quarter circle round the canvas's bottom-left corner: px / py there, r its radius."""
+    im = Image.open(SLASH_SRC).convert("RGBA")
+    w0, h0 = im.size
+    box = im.getbbox()
+    grey = Image.new("RGBA", im.size)
+    px = im.load()
+    gp = grey.load()
+    lums = [0.299 * px[x, y][0] + 0.587 * px[x, y][1] + 0.114 * px[x, y][2]
+            for y in range(h0) for x in range(w0) if px[x, y][3] > 0]
+    lo, hi = min(lums), max(lums)
+    for y in range(h0):
+        for x in range(w0):
+            r, g, b, a = px[x, y]
+            if a:
+                l = (0.299 * r + 0.587 * g + 0.114 * b - lo) / max(hi - lo, 1.0)
+                v = int(round(255 * (0.55 + 0.45 * l)))  # darkest tone 55% grey, lightest white
+                gp[x, y] = (v, v, v, a)
+    grey = grey.crop(box)
+    s = 256 / max(grey.size)
+    fw, fh = int(round(grey.width * s)), int(round(grey.height * s))
+    grey.resize((fw, fh), Image.LANCZOS).save(os.path.join(OUT, "slash.png"), optimize=True)
+    print("slash              1 frame   %3dx%-3d" % (fw, fh))
+    return {"frames": 1, "w": fw, "h": fh, "px": round((0 - box[0]) * s, 1), "py": round((h0 - box[1]) * s, 1),
+            "r": round(max(w0, h0) * s, 1)}
 
 
 if __name__ == "__main__":

@@ -76,6 +76,43 @@ func _process(_delta: float) -> void:
 		t.tween_callback(queue_free)
 
 
+## A weapon swing: the character art's slash crescent (assets/fx/slash.png, greys) on `target` (it
+## follows), reaching `radius`, aimed along `dir` and sweeping across the `arc` (degrees) as it fades,
+## in `col`. The crescent is a quarter circle round its canvas's bottom-left corner (fx.json px / py,
+## radius r): that corner goes at the character's chest, the quarter's middle along `dir`.
+static func slash(target: Node2D, dir: Vector2, arc: float, radius: float, col: Color, secs: float) -> void:
+	if target == null or not target.is_inside_tree():
+		return
+	_frames_of("hit_physical")  # (loads fx.json)
+	if not _meta.has("slash") or not ResourceLoader.exists("res://assets/fx/slash.png"):
+		return
+	var m: Dictionary = _meta["slash"]
+	var holder := Node2D.new()  # turns about the character
+	holder.position = Vector2(0, -26)
+	holder.z_index = 4
+	target.add_child(holder)
+	var spr := Sprite2D.new()
+	spr.texture = load("res://assets/fx/slash.png")
+	spr.centered = false
+	spr.offset = -Vector2(float(m.px), float(m.py))
+	spr.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	var left := dir.x < 0.0
+	var s := radius * 1.1 / float(m.r)
+	spr.scale = Vector2(s, -s if left else s)  # facing left: mirrored, so it sweeps the other way
+	holder.add_child(spr)
+	holder.modulate = Color(col.lightened(0.35), 0.95)
+	# Unmirrored the quarter runs from up to right (its middle at -45 deg); mirrored, from down to right
+	var mid := dir.angle() + deg_to_rad(45.0 if not left else -45.0)
+	var sweep := deg_to_rad(maxf(arc - 90.0, 40.0)) * (1.0 if not left else -1.0)
+	holder.rotation = mid - sweep * 0.5
+	holder.scale = Vector2.ONE * 0.85
+	var t := holder.create_tween().set_parallel()
+	t.tween_property(holder, "rotation", mid + sweep * 0.5, secs).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
+	t.tween_property(holder, "scale", Vector2.ONE, secs * 0.6)
+	t.tween_property(holder, "modulate:a", 0.0, secs).set_delay(secs * 0.35)
+	t.chain().tween_callback(holder.queue_free)
+
+
 static func _make(id: String, size: float) -> SpellFx:
 	if not TUNE.has(id):
 		return null

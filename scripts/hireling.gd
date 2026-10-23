@@ -382,7 +382,10 @@ func _strike(s: SkillDef, stun: float) -> void:
 	var arc := s.get_effective_arc()
 	var rad := s.get_effective_radius()
 	_swing = {"dir": _facing, "radius": rad, "arc": arc, "color": s.get_effective_color()}
-	_swing_t = 0.15
+	if arc < 359.0:
+		SpellFx.slash(self, _facing, arc, rad, s.get_effective_color(), 0.22)  # the art's slash
+	else:
+		_swing_t = 0.15
 	_hit_area(global_position, _facing, rad, arc, s, stun)
 	if s.kind == SkillDef.Kind.SUNDERING_STRIKE:
 		for e in get_tree().get_nodes_in_group("enemies"):

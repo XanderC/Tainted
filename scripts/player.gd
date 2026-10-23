@@ -1509,7 +1509,10 @@ func _show_swing(dir: Vector2, arc: float, radius: float, col: Color, t: float) 
 	_swing_arc = arc
 	_swing_radius = radius
 	_swing_color = col
-	_swing_t = t
+	if arc < 359.0:
+		SpellFx.slash(self, dir, arc, radius, col, maxf(t * 1.6, 0.22))  # the art's slash, not a cone
+	else:
+		_swing_t = t
 	Coop.player_fx(["swing", snappedf(dir.angle(), 0.01), arc, radius, col.to_html(false), t])
 
 
