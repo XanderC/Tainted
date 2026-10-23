@@ -187,6 +187,133 @@ func _playing() -> void:
 		colours[SkillTree.get_skill(w.id).main_attribute()] = true
 	check(colours.has("str") and colours.has("dex") and colours.has("ene"), "the Merchant sells red, green and blue gems (%d)" % wares.size())
 	shop.free()
+	await _gear_and_supports(p)
+	_main_attributes(p)
+
+
+## Diablo III's primary stat: every Magic item has one main attribute (Strength, Dexterity or
+## Energy) besides its modifiers, every Rare, Legendary and Set item two different ones; orbs keep it so.
+func _main_attributes(p: Player) -> void:
+	var mains := func(it: ItemInstance) -> Array:
+		return it.affixes.filter(func(a): return LootGenerator.is_main_attribute(a)).map(func(a): return String(a.id))
+	var ok := {"normal": true, "magic": true, "rare": true}
+	for i in 40:
+		var n := LootGenerator.roll_item(10, ItemInstance.Rarity.NORMAL, "chest")
+		var m := LootGenerator.roll_item(10, ItemInstance.Rarity.MAGIC, "ring")
+		var r := LootGenerator.roll_item(10, ItemInstance.Rarity.RARE, "weapon")
+		ok.normal = ok.normal and mains.call(n).is_empty()
+		ok.magic = ok.magic and mains.call(m).size() == 1 and LootGenerator.stat_affix_count(m) >= 1
+		var rm: Array = mains.call(r)
+		ok.rare = ok.rare and rm.size() == 2 and rm[0] != rm[1] and LootGenerator.stat_affix_count(r) >= 3
+	check(ok.normal, "Normal items have no main attribute")
+	check(ok.magic, "every Magic item has one main attribute besides its modifiers")
+	check(ok.rare, "every Rare item has two different ones besides its modifiers")
+	var leg := UniqueItems.make("windpiercer", 20)
+	var lm: Array = mains.call(leg)
+	check(lm.size() == 2 and lm[0] == "attr_dex", "a Legendary has two, its own lean first (%s)" % [lm])
+	var flask := LootGenerator.roll_item(10, ItemInstance.Rarity.MAGIC, "flask")
+	check(mains.call(flask).is_empty(), "flasks have none")
+	# Orbs keep it so
+	GameState.orbs = {"alteration": 5, "augment": 5, "regal": 2, "annul": 5, "chaos": 3}
+	var it := LootGenerator.roll_item(10, ItemInstance.Rarity.MAGIC, "ring")
+	while LootGenerator.stat_affix_count(it) > 1:
+		it.affixes.erase(it.affixes.filter(func(a): return not LootGenerator.is_main_attribute(a))[0])
+	p.bag.add(it)
+	Crafting.apply_orb(p, it, "augment")
+	check(mains.call(it).size() == 1 and LootGenerator.stat_affix_count(it) == 2, "Augmentation adds a modifier, never a main attribute")
+	Crafting.apply_orb(p, it, "alteration")
+	check(mains.call(it).size() == 1, "Alteration rerolls it, still with one main attribute")
+	Crafting.apply_orb(p, it, "regal")
+	check(it.rarity == ItemInstance.Rarity.RARE and mains.call(it).size() == 2, "a Regal Orb makes it Rare: two main attributes")
+	var before: Array = mains.call(it)
+	for i in 3:
+		Crafting.apply_orb(p, it, "annul")
+	check(mains.call(it) == before, "Annulment never takes a main attribute")
+	Crafting.apply_orb(p, it, "chaos")
+	check(mains.call(it).size() == 2 and LootGenerator.stat_affix_count(it) >= 3, "Chaos rerolls a Rare: two main attributes and its modifiers")
+
+
+## Gear for every build (attribute, spell, Mana and bow modifiers), Legendaries leaning to your
+## build, drops you can wield, Dexterity scaling green attacks, and supports on arrows.
+func _gear_and_supports(p: Player) -> void:
+	_hold(p, "")
+	GameState.attributes = {"str": 10, "dex": 10, "vit": 0, "ene": 10}
+	p.refresh_attributes()
+	var dex0 := GameState.attribute_total("dex")
+	var req0: int = GameState.attribute_totals().dex
+	var ring := _item("bone_ring")
+	ring.affixes.append(LootGenerator.make_entry(LootGenerator.find_affix("attr_dex"), 20.0))
+	p.bag.add(ring)
+	p.equip_to(ring, "ring")
+	check(GameState.attribute_total("dex") == dex0 + 20, "a ring of +20 Dexterity adds 20 (%d -> %d)" % [dex0, GameState.attribute_total("dex")])
+	check(int(GameState.attribute_totals().dex) == req0, "but not towards gear requirements (no items holding each other up)")
+	var spell0 := p.spell_mult()
+	var mana0 := p.max_mana()
+	var am := _item("old_amulet")
+	am.affixes.append(LootGenerator.make_entry(LootGenerator.find_affix("spell_inc"), 0.2))
+	am.affixes.append(LootGenerator.make_entry(LootGenerator.find_affix("mana_flat"), 30.0))
+	p.bag.add(am)
+	p.equip_to(am, "amulet")
+	check(absf(p.spell_mult() - spell0 - 0.2) < 0.001 and absf(p.max_mana() - mana0 - 30.0) < 0.01,
+		"an amulet of spell damage and Mana: +20% spells, +30 Mana")
+	check(LootGenerator.find_affix("bow_inc").fits(LootGenerator.base_by_id("long_bow"))
+		and not LootGenerator.find_affix("bow_inc").fits(LootGenerator.base_by_id("rusty_sword")), "bow damage rolls on bows, not swords")
+	p.unequip("ring")
+	p.unequip("amulet")
+	# Green attacks scale with Dexterity, red with Strength
+	GameState.attributes = {"str": 0, "dex": 50, "vit": 0, "ene": 0}
+	p.refresh_attributes()
+	check(absf(p.attack_mult(SkillTree.get_skill("quick_shot")) - 1.5) < 0.001 and absf(p.attack_mult(SkillTree.get_skill("cleave")) - 1.0) < 0.001,
+		"50 Dexterity: +50% to green attacks, nothing to red ones")
+	# Legendaries lean to the build
+	GameState.attributes = {"str": 0, "dex": 0, "vit": 0, "ene": 80}
+	p.refresh_attributes()
+	var ene := 0
+	for i in 40:
+		var u := UniqueItems.roll(20, false, p.class_def)
+		if u != null and UniqueItems.attr_of(u.unique_id) == "ene":
+			ene += 1
+	check(ene >= 18, "an Energy build finds mostly Energy Legendaries (%d of 40)" % ene)
+	check(CraftingDB.RECIPES.has("plan_windpiercer") or CraftingDB.RECIPES.keys().any(func(k): return String(k).contains("windpiercer")),
+		"and every new one has a plan to forge")
+	# Weapons that drop are mostly ones you can wield
+	GameState.attributes = {}
+	p.refresh_attributes()
+	var ok := 0
+	for i in 60:
+		var w := LootGenerator.roll_item(2, ItemInstance.Rarity.NORMAL, "weapon")
+		if Attributes.meets(w.base, GameState.attribute_totals()):
+			ok += 1
+	check(ok >= 45, "a fresh character's weapon drops are mostly ones it can wield (%d of 60)" % ok)
+	# Supports on arrows: Echo looses it again, Nova makes Multishot a ring
+	GameState.attributes = {"str": 80, "dex": 80, "vit": 20, "ene": 80}
+	p.refresh_attributes()
+	_hold(p, "hunting_bow")
+	var arrows := [0]
+	var count := func(n: Node):
+		if n is HirelingArrow:
+			arrows[0] += 1
+	get_tree().node_added.connect(count)
+	_use(p, "quick_shot")
+	GameState.skill_slots[1].supports = ["rune_echo"]
+	GameState._on_skills_modified()
+	arrows[0] = 0
+	p._cooldowns[1] = 0.0
+	p.use_skill(1)
+	await get_tree().create_timer(0.5).timeout
+	check(arrows[0] == 2, "with Echo, Quick Shot looses a second arrow (%d)" % arrows[0])
+	_use(p, "multishot")
+	GameState.skill_slots[1].supports = ["rune_nova"]
+	GameState._on_skills_modified()
+	arrows[0] = 0
+	p._cooldowns[1] = 0.0
+	p.mana = p.max_mana()
+	p.use_skill(1)
+	await get_tree().process_frame
+	check(arrows[0] == 8, "with Nova, Multishot is a ring of 8 arrows (%d)" % arrows[0])
+	get_tree().node_added.disconnect(count)
+	GameState.skill_slots[1].supports = []
+	GameState._on_skills_modified()
 
 
 func _use(p: Player, id: String) -> void:

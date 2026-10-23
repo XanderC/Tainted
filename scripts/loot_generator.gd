@@ -293,6 +293,26 @@ func _build_affixes() -> void:
 	_affix("move_speed", "{v}% Increased Move Speed", "move_speed", I, 0.05, 0.15, true)
 	_affix("armor_flat", "+{v} Armor", "armor", F, 5, 30)
 	_affix("crit", "+{v}% Critical Chance", "crit_chance", F, 0.02, 0.08, true)
+	# For builds: attributes (any gear), and casters' and archers' modifiers. These stats aren't
+	# StatBlock rules of their own: Player and GameState read them (attribute_bonus, spell_mult,
+	# attack_mult, max_mana, mana_regen), so they're all flat amounts (0.10 = +10%).
+	_affix("attr_str", "+{v} Strength", "str", F, 3, 12)
+	_affix("attr_dex", "+{v} Dexterity", "dex", F, 3, 12)
+	_affix("attr_vit", "+{v} Vitality", "vit", F, 3, 12)
+	_affix("attr_ene", "+{v} Energy", "ene", F, 3, 12)
+	_affix("spell_inc", "{v}% Increased Spell Damage", "spell_inc", F, 0.08, 0.25, true)
+	affixes[-1].slots = ["weapon", "offhand", "amulet", "ring", "helmet"]
+	affixes[-1].weapon_types = ["staff", "dagger", "sword", "mace"]
+	_affix("mana_flat", "+{v} Maximum Mana", "mana_max", F, 10, 40)
+	affixes[-1].slots = ["weapon", "offhand", "amulet", "ring", "helmet", "chest", "belt"]
+	_affix("mana_regen", "{v}% Increased Mana Regeneration", "mana_regen_inc", F, 0.10, 0.40, true)
+	affixes[-1].slots = ["weapon", "offhand", "amulet", "ring", "helmet", "chest", "gloves", "boots"]
+	_affix("bow_inc", "{v}% Increased Bow Damage", "bow_inc", F, 0.10, 0.30, true)
+	affixes[-1].slots = ["weapon", "gloves", "amulet", "ring"]
+	affixes[-1].weapon_types = ["bow"]
+	_affix("attack_inc", "{v}% Increased Attack Damage", "attack_inc", F, 0.06, 0.18, true)
+	affixes[-1].slots = ["weapon", "gloves", "amulet", "ring"]
+	affixes[-1].weapon_types = ["sword", "axe", "mace", "spear", "dagger", "bow"]
 
 	# Flask modifiers. Prefixes change the flask; suffixes work while it is in effect.
 	_flask_affix("fl_ample", "Ample", true, "{v}% Increased Amount Recovered", "flask_amount", 0.15, 0.35, true, ["life", "power"])
@@ -333,10 +353,12 @@ func roll_item(ilvl: int = 1, forced_rarity: int = -1, slot: String = "") -> Ite
 	if pool.is_empty():
 		pool = bases.filter(func(b): return slot == "" or b.slot == slot)
 	if smart_class != null and randf() < SMART_LOOT_CHANCE:
-		# Things you or your hireling can use (a Desert Scout's bows)
+		# Things you can wield now (anyone may use any weapon: the ones whose requirements you meet), or
+		# your hireling can use (a Desert Scout's bows)
 		var extra: Array = Hirelings.type_def().get("weapons", []) if Hirelings.has() else []
-		var usable := pool.filter(func(b): return b.weapon_type == "" or smart_class.weapon_types.has(b.weapon_type) \
-			or extra.has(b.weapon_type))
+		var have := GameState.attribute_totals()
+		var usable := pool.filter(func(b): return b.weapon_type == "" or extra.has(b.weapon_type) \
+			or (smart_class.weapon_types.has(b.weapon_type) and Attributes.meets(b, have)))
 		if not usable.is_empty():
 			pool = usable
 	item.base = _pick_base(pool)
@@ -352,9 +374,72 @@ func roll_item(ilvl: int = 1, forced_rarity: int = -1, slot: String = "") -> Ite
 			count = randi_range(3, 4) if item.is_flask() else randi_range(3, 5)
 
 	roll_affixes(item, count)
+	fill_attributes(item)
 	item.display_name = _make_name(item)
 	item.sockets = ItemInstance.roll_sockets(item.base, item.rarity)
 	return item
+
+
+# ---------- main attributes (Diablo III's primary stat) ----------
+
+## Every Magic item has one of these on top of its other modifiers, every Rare, Legendary and Set
+## item two different ones (ATTRIBUTES_BY_RARITY); Normal items and flasks none. They're never
+## among the random modifiers (add_random_affix), so crafting can't stack them.
+const MAIN_ATTRIBUTE_AFFIXES := {"str": "attr_str", "dex": "attr_dex", "ene": "attr_ene"}
+const ATTRIBUTES_BY_RARITY := {ItemInstance.Rarity.MAGIC: 1, ItemInstance.Rarity.RARE: 2,
+	ItemInstance.Rarity.LEGENDARY: 2, ItemInstance.Rarity.SET: 2}
+## How often the first one is your build's strongest (or a Legendary's own lean) rather than any.
+const SMART_ATTRIBUTE_CHANCE := 0.6
+
+
+static func is_main_attribute(entry: Dictionary) -> bool:
+	return MAIN_ATTRIBUTE_AFFIXES.values().has(String(entry.get("id", "")))
+
+
+## The item's modifiers that aren't its main attributes (what "full" counts).
+static func stat_affix_count(item: ItemInstance) -> int:
+	return item.affixes.filter(func(a): return not is_main_attribute(a)).size()
+
+
+## Gives `item` the main attributes its rarity calls for (keeping the ones it has, dropping extras,
+## adding new ones in front): after rolling it, and after an orb changes it. `lean` prefers an
+## attribute for the first ("": your build's strongest, sometimes).
+func fill_attributes(item: ItemInstance, lean := "") -> void:
+	var want := 0 if item.is_flask() else int(ATTRIBUTES_BY_RARITY.get(item.rarity, 0))
+	var have := item.affixes.filter(is_main_attribute)
+	while have.size() > want:
+		item.affixes.erase(have.pop_back())
+	if have.size() >= want:
+		return
+	var taken := have.map(func(a): return String(a.id))
+	if lean == "" and item.is_unique():
+		lean = UniqueItems.attr_of(item.unique_id)
+	if not MAIN_ATTRIBUTE_AFFIXES.has(lean):
+		lean = _build_lean() if randf() < SMART_ATTRIBUTE_CHANCE else ""
+	var added: Array = []
+	while have.size() + added.size() < want:
+		var keys := MAIN_ATTRIBUTE_AFFIXES.keys().filter(func(k): return not taken.has(MAIN_ATTRIBUTE_AFFIXES[k]))
+		if keys.is_empty():
+			break
+		var k: String = lean if keys.has(lean) else keys.pick_random()
+		lean = ""
+		var id: String = MAIN_ATTRIBUTE_AFFIXES[k]
+		taken.append(id)
+		added.append(_roll_affix(find_affix(id), item.ilvl))
+	for i in added.size():
+		item.affixes.insert(have.size() + i, added[i])
+
+
+## The strongest of your Strength, Dexterity and Energy ("" before you've put points anywhere).
+static func _build_lean() -> String:
+	var best := ""
+	var most := 0
+	for k in MAIN_ATTRIBUTE_AFFIXES:
+		var n := GameState.attribute_bonus(k)
+		if n > most:
+			most = n
+			best = k
+	return best
 
 
 # ---------- crafting helpers ----------
@@ -380,7 +465,8 @@ func add_random_affix(item: ItemInstance) -> bool:
 	var taken := item.affix_ids()
 	var room := flask_affix_room(item)
 	var candidates: Array = affixes.filter(func(a): return a.min_ilvl <= item.ilvl and not taken.has(a.id) \
-		and a.fits(item.base) and (not item.is_flask() or int(room["prefix" if a.prefix else "suffix"]) > 0))
+		and a.fits(item.base) and (not item.is_flask() or int(room["prefix" if a.prefix else "suffix"]) > 0) \
+		and not MAIN_ATTRIBUTE_AFFIXES.values().has(a.id))  # main attributes come only by rarity (fill_attributes)
 	var picked: AffixDef = _pick_weighted(candidates)
 	if picked == null:
 		return false

@@ -9,6 +9,7 @@ extends RefCounted
 ##   "skill_dmg:<skill id>"  more damage with that skill (0.5 = +50%)
 ##   "skill_cdr:<skill id>"  shorter cooldown (0.3 = -30%)
 ##   "skill_dur:<skill id>"  longer duration (0.5 = +50%)
+## Each leans to an attribute ("attr", default Strength): drops favour your build's (roll).
 
 ## id -> {name, base, power: {key: [min, max]}, flavor}
 const LEGENDARIES := {
@@ -40,6 +41,35 @@ const LEGENDARIES := {
 		"power": {"cost_red": [0.15, 0.25]}, "flavor": "Waste nothing, not even fury."},
 	"eye_of_carnage": {"name": "Eye of Carnage", "base": "old_amulet",
 		"power": {"rampage": [0.20, 0.40]}, "flavor": "It sees only what is about to burst."},
+	# ---- Dexterity: bows, daggers, speed ----
+	"windpiercer": {"name": "Windpiercer", "base": "long_bow", "attr": "dex",
+		"power": {"skill_dmg:power_shot": [0.6, 1.0], "bow_inc": [0.10, 0.20]}, "flavor": "It never misses twice."},
+	"hail_of_thorns": {"name": "Hail of Thorns", "base": "short_bow", "attr": "dex",
+		"power": {"skill_dmg:multishot": [0.5, 0.9], "skill_dmg:arrow_rain": [0.5, 0.9]}, "flavor": "One string, a hundred wounds."},
+	"shadowfang": {"name": "Shadowfang", "base": "stiletto", "attr": "dex",
+		"power": {"skill_dmg:shadow_step": [0.6, 1.0], "skill_cdr:shadow_step": [0.25, 0.40]}, "flavor": "You see it only after."},
+	"vipers_kiss": {"name": "Viper's Kiss", "base": "kris", "attr": "dex",
+		"power": {"skill_dmg:fan_of_knives": [0.6, 1.0], "skill_dmg:viper_strike": [0.5, 0.8]}, "flavor": "Sweet, then still."},
+	"hunters_cowl": {"name": "Hunter's Cowl", "base": "leather_cap", "attr": "dex",
+		"power": {"crit": [0.04, 0.07], "dex": [10.0, 20.0]}, "flavor": "Patience is a blade too."},
+	# ---- Energy: spells, Mana ----
+	"emberheart": {"name": "Emberheart", "base": "oak_staff", "attr": "ene",
+		"power": {"skill_dmg:firebolt": [0.6, 1.0], "skill_dmg:meteor": [0.4, 0.7]}, "flavor": "Still warm from the first fire."},
+	"frostbinder": {"name": "Frostbinder", "base": "quarterstaff", "attr": "ene",
+		"power": {"skill_dmg:frost_nova": [0.6, 1.0], "skill_cdr:frost_nova": [0.20, 0.35]}, "flavor": "Winter, on a leash."},
+	"stormcallers_crook": {"name": "Stormcaller's Crook", "base": "serpent_staff", "attr": "ene",
+		"power": {"skill_dmg:arc": [0.5, 0.9], "skill_cdr:thunderstorm": [0.25, 0.40]}, "flavor": "The sky owes it favours."},
+	"sages_circlet": {"name": "Sage's Circlet", "base": "leather_cap", "attr": "ene",
+		"power": {"spell_inc": [0.15, 0.25], "mana_max": [20.0, 40.0]}, "flavor": "Every thought a spell."},
+	"wellspring_band": {"name": "Wellspring Band", "base": "bone_ring", "attr": "ene",
+		"power": {"mana_regen_inc": [0.30, 0.60], "ene": [8.0, 15.0]}, "flavor": "It never runs dry."},
+	# ---- Vitality, and the hybrids ----
+	"heart_of_the_mountain": {"name": "Heart of the Mountain", "base": "chain_mail", "attr": "vit",
+		"power": {"vit": [15.0, 25.0], "life_inc": [0.06, 0.10]}, "flavor": "Stone does not tire."},
+	"lightbringer": {"name": "Lightbringer", "base": "iron_mace", "attr": "ene",
+		"power": {"skill_dmg:smite": [0.6, 1.0], "skill_dmg:holy_nova": [0.5, 0.8]}, "flavor": "Faith, given weight."},
+	"wardens_grips": {"name": "Warden's Grips", "base": "leather_gloves", "attr": "dex",
+		"power": {"dex": [8.0, 15.0], "vit": [8.0, 15.0]}, "flavor": "Steady hands, steady heart."},
 }
 
 ## set id -> {name, pieces: [item ids], bonuses: {pieces needed: {key: value}}}
@@ -50,6 +80,26 @@ const SETS := {
 			2: {"armor_inc": 0.20, "life_flat": 40.0},
 			3: {"damage_inc": 0.20, "attack_speed_inc": 0.08},
 			5: {"skill_dmg:leap_slam": 1.5, "skill_dmg:earthquake": 1.5, "skill_cdr:leap_slam": 0.4},
+		}},
+	"windrunner": {"name": "Windrunner's Garb", "attr": "dex",
+		"pieces": ["windrunner_hood", "windrunner_vest", "windrunner_boots", "windrunner_bow"],
+		"bonuses": {
+			2: {"dex": 15.0, "move_inc": 0.08},
+			3: {"bow_inc": 0.25, "crit": 0.04},
+			4: {"skill_dmg:quick_shot": 1.0, "skill_dmg:power_shot": 1.0, "skill_dmg:multishot": 1.0},
+		}},
+	"archmage": {"name": "Archmage's Vestments", "attr": "ene",
+		"pieces": ["archmage_circlet", "archmage_robe", "archmage_band", "archmage_staff"],
+		"bonuses": {
+			2: {"ene": 15.0, "mana_max": 30.0},
+			3: {"spell_inc": 0.25, "mana_regen_inc": 0.30},
+			4: {"skill_dmg:firebolt": 1.0, "skill_dmg:frost_nova": 1.0, "skill_dmg:arc": 1.0},
+		}},
+	"templars_vow": {"name": "Templar's Vow", "attr": "ene",
+		"pieces": ["templar_helm", "templar_plate", "templar_mace"],
+		"bonuses": {
+			2: {"str": 10.0, "ene": 10.0},
+			3: {"skill_dmg:smite": 1.0, "attack_inc": 0.15, "spell_inc": 0.15},
 		}},
 	"bloodsworn": {"name": "Bloodsworn Battlegear",
 		"pieces": ["bloodsworn_mask", "bloodsworn_vest", "bloodsworn_band", "bloodsworn_hatchet"],
@@ -80,14 +130,25 @@ const SET_ITEMS := {
 	"oath_of_elders": {"name": "Oath of the Elders", "base": "old_amulet", "set": "ancestors_oath"},
 	"ancestral_shield": {"name": "Shield of the Forefathers", "base": "wooden_shield", "set": "ancestors_oath"},
 	"ancestral_boots": {"name": "Treads of the Forefathers", "base": "worn_boots", "set": "ancestors_oath"},
+	"windrunner_hood": {"name": "Windrunner's Hood", "base": "leather_cap", "set": "windrunner"},
+	"windrunner_vest": {"name": "Windrunner's Vest", "base": "padded_vest", "set": "windrunner"},
+	"windrunner_boots": {"name": "Windrunner's Boots", "base": "worn_boots", "set": "windrunner"},
+	"windrunner_bow": {"name": "Windrunner's Bow", "base": "recurve_bow", "set": "windrunner"},
+	"archmage_circlet": {"name": "Archmage's Circlet", "base": "leather_cap", "set": "archmage"},
+	"archmage_robe": {"name": "Archmage's Robe", "base": "padded_vest", "set": "archmage"},
+	"archmage_band": {"name": "Archmage's Band", "base": "bone_ring", "set": "archmage"},
+	"archmage_staff": {"name": "Archmage's Staff", "base": "serpent_staff", "set": "archmage"},
+	"templar_helm": {"name": "Templar's Helm", "base": "iron_helm", "set": "templars_vow"},
+	"templar_plate": {"name": "Templar's Plate", "base": "chain_mail", "set": "templars_vow"},
+	"templar_mace": {"name": "Templar's Mace", "base": "iron_mace", "set": "templars_vow"},
 }
 
 const LEGENDARY_AFFIXES := [3, 4]
 const SET_AFFIXES := [2, 3]
 
 
-## A random Legendary (or Set item when `set_item`), preferring ones the class can use.
-## Returns null if nothing fits.
+## A random Legendary (or Set item when `set_item`); more often than not (BUILD_CHANCE) one that
+## leans to your build's strongest attribute. Returns null if nothing fits.
 static func roll(ilvl: int, set_item: bool, cls: ClassDef = null) -> ItemInstance:
 	var table: Dictionary = SET_ITEMS if set_item else LEGENDARIES
 	var ids: Array = table.keys()
@@ -95,7 +156,35 @@ static func roll(ilvl: int, set_item: bool, cls: ClassDef = null) -> ItemInstanc
 		var usable := ids.filter(func(id): return _usable(String(table[id].base), cls))
 		if not usable.is_empty():
 			ids = usable
+	var lean := _build_attribute()
+	if lean != "" and randf() < BUILD_CHANCE:
+		var mine := ids.filter(func(id): return attr_of(String(id)) == lean)
+		if not mine.is_empty():
+			ids = mine
 	return make(String(ids.pick_random()), ilvl) if not ids.is_empty() else null
+
+
+const BUILD_CHANCE := 0.6
+
+
+## The attribute a Legendary or Set piece leans to.
+static func attr_of(uid: String) -> String:
+	if LEGENDARIES.has(uid):
+		return String(LEGENDARIES[uid].get("attr", "str"))
+	var s := set_of(uid)
+	return String(SETS[s].get("attr", "str")) if s != "" else "str"
+
+
+## Your build's strongest attribute ("" before you've put points anywhere).
+static func _build_attribute() -> String:
+	var best := ""
+	var most := 0
+	for k in Attributes.KEYS:
+		var n := GameState.attribute_bonus(k)
+		if n > most:
+			most = n
+			best = k
+	return best
 
 
 static func _usable(base_id: String, cls: ClassDef) -> bool:
@@ -120,6 +209,7 @@ static func make(uid: String, ilvl: int) -> ItemInstance:
 	it.rarity = ItemInstance.Rarity.LEGENDARY if legendary else ItemInstance.Rarity.SET
 	var n: Array = LEGENDARY_AFFIXES if legendary else SET_AFFIXES
 	LootGenerator.roll_affixes(it, randi_range(int(n[0]), int(n[1])))
+	LootGenerator.fill_attributes(it, attr_of(uid))  # two main attributes, its own lean first
 	it.implicit_roll = ItemInstance.roll_implicit()
 	if legendary:
 		reroll_powers(it)

@@ -31,7 +31,7 @@ static func orb_block_reason(item: ItemInstance, orb: String) -> String:
 		return "Legendary and Set items can't be altered"
 	if item.is_runeword():
 		return "Runeword items can't be altered"
-	var n := item.affixes.size()
+	var n := LootGenerator.stat_affix_count(item)  # (its main attributes don't take a place)
 	# A flask has room for one prefix and one suffix when Magic, two of each when Rare
 	var flask_full := false
 	if item.is_flask():
@@ -57,7 +57,7 @@ static func orb_block_reason(item: ItemInstance, orb: String) -> String:
 		"divine":
 			if item.affixes.is_empty() and item.powers.is_empty(): return "Item has no affixes"
 		"annul":
-			if item.affixes.is_empty(): return "Item has no affixes"
+			if n == 0: return "Item has no affixes it can lose (its main attributes stay)"
 		"scour":
 			if item.rarity == R.NORMAL: return "Already Normal"
 		"blessed":
@@ -98,7 +98,10 @@ static func apply_orb(player: Player, item: ItemInstance, orb: String) -> Dictio
 		player.add_to_bag(copy)
 		return {"ok": true, "msg": "Mirrored %s!" % item.display_name}
 	var result := {"msg": ""}
-	player.modify_item(item, func(): result.msg = _do_orb(item, orb))
+	player.modify_item(item, func():
+		result.msg = _do_orb(item, orb)
+		if orb != "identify":
+			LootGenerator.fill_attributes(item))  # a Magic item one main attribute, a Rare two
 	return {"ok": true, "msg": result.msg if result.msg != "" else "%s used" % CraftingDB.ORBS[orb].short}
 
 
@@ -140,7 +143,7 @@ static func _do_orb(item: ItemInstance, orb: String) -> String:
 			item.affixes.clear()
 			item.display_name = item.base.display_name
 		"annul":
-			var gone: Dictionary = item.affixes.pick_random()
+			var gone: Dictionary = item.affixes.filter(func(a): return not LootGenerator.is_main_attribute(a)).pick_random()
 			item.affixes.erase(gone)
 			return "Annulled: %s" % gone.text
 		"blessed":

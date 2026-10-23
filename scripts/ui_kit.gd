@@ -439,7 +439,12 @@ static func item_card(parent: Node, item: ItemInstance, compact := false, deltas
 			stat_arrow(item.base.implicit_stat, deltas)]
 	if not item.identified:
 		txt += "[color=#e04848][b]Unidentified[/b][/color]\n[color=#8a7f6e]Its modifiers are hidden. Use a Scroll of Identify, or the Sage in town identifies everything for free.[/color]\n"
-	for a in (item.affixes if item.identified else []):
+	# Main attributes first, in their own colours (Diablo III's primary stat), then the other modifiers
+	var shown: Array = item.affixes if item.identified else []
+	for a in shown.filter(func(x): return LootGenerator.is_main_attribute(x)):
+		txt += "[color=#%s][b]%s[/b][/color]%s\n" % [Attributes.COLORS.get(String(a.stat), Color.WHITE).lightened(0.2).to_html(false),
+			a.text, stat_arrow(a.stat, deltas)]
+	for a in shown.filter(func(x): return not LootGenerator.is_main_attribute(x)):
 		txt += "[color=#7ba6ff]• %s[/color]%s\n" % [a.text, stat_arrow(a.stat, deltas)]
 	if item.is_unique() and item.identified:
 		var worn: Array = GameState.player.equipment.values() if is_instance_valid(GameState.player) else []

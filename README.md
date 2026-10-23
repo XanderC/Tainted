@@ -145,10 +145,11 @@ worn: not weapons or jewellery.
 ### Attributes and gear requirements
 Diablo II style (`scripts/attributes.gd`): **Strength**, **Dexterity**, **Vitality** and **Energy**.
 Everyone starts with 15 in each and every level brings 5 points to add, on the stats screen (📜 Stats
-in the inventory says how many are waiting); the passive tree gives more. A point of Strength gives
-+1% attack damage, Dexterity +0.5% attack speed and +0.1% critical chance, Vitality +4 life and a
-little regeneration, Energy +1% spell damage and +2 maximum Mana. Points can be taken back for free
-in town.
+in the inventory says how many are waiting); the passive tree, Legendary powers and gear give more
+(gear's own attributes count for gems and damage, but not towards other gear's requirements). A
+point of Strength gives +1% damage to red (Strength) attacks, Dexterity +1% to green (Dexterity)
+attacks, +0.5% attack speed and +0.1% critical chance, Vitality +4 life and a little regeneration,
+Energy +1% spell damage and +2 maximum Mana. Points can be taken back for free in town.
 Gear needs enough of them, from its kind and drop level (`Attributes.requirements`): heavy weapons
 and armour Strength, daggers and bows Dexterity, staves Energy; rings, amulets, belts, flasks and
 light armour nothing. The item card lists the requirements, red where you fall short, and you can't
@@ -512,7 +513,22 @@ any weapon it meets the requirements of) and becomes what its points, gems and g
   Blossom; Mana) and blue Energy gems (spells: Firebolt, Frost Nova, Arc, Arcane Ward, Holy Nova,
   Meteor, Thunderstorm; Mana), and two-colour ones (Viper Strike, Smite). A gem needs its
   attribute (more for deeper clusters, `SkillTree.GEM_ATTR_REQ`); bow skills need a bow and melee
-  skills a melee weapon. Basic Mana skills cost nothing. Mana regenerates (3% a second).
+  skills a melee weapon. Basic Mana skills cost nothing. Mana (60, +2 per Energy) regenerates 2 a
+  second plus 3% of the most you have. Supports work on the new skills too: Echo looses arrows,
+  knives and lightning again at half damage, Nova turns Multishot into a ring of eight.
+- **Main attributes** (Diablo III's primary stat, `LootGenerator.fill_attributes`): besides its
+  modifiers every Magic item has one of +Strength, +Dexterity or +Energy, and every Rare, Legendary
+  and Set item two different ones (a Legendary's own lean first; otherwise more often than not your
+  build's strongest). Normal items and flasks have none. The item card shows them first, in their
+  colours. Orbs keep it so: Augmentation and Exalted add modifiers, never main attributes (they
+  don't take a modifier's place), Annulment never removes one, and rerolls give the right number.
+- **Gear for every build**: modifiers for each attribute (any gear), spell damage, Mana and Mana
+  regeneration (caster gear), bow damage (bows) and attack damage. Legendaries and Sets for
+  Dexterity (Windpiercer, Hail of Thorns, Shadowfang, Viper's Kiss, Hunter's Cowl, Windrunner's
+  Garb), Energy (Emberheart, Frostbinder, Stormcaller's Crook, Sage's Circlet, Wellspring Band,
+  Archmage's Vestments), Vitality (Heart of the Mountain) and the hybrids (Lightbringer, Warden's
+  Grips, Templar's Vow); more than half the Legendaries and Set pieces that drop lean to your
+  build's strongest attribute. Weapon drops favour ones you can wield now.
 - **The build's title** (`Attributes.build_title`) comes from where the points went: one attribute
   well ahead is a Warrior, Ranger, Guardian or Sorcerer, two together a hybrid (Assassin, Paladin,
   Juggernaut, Spellblade, Warden, Druid). Others see it on your name, in the party list and when
