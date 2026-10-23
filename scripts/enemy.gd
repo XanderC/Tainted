@@ -380,6 +380,7 @@ func take_damage(amount: float, crit: bool = false,
 			_spawn_text("Immune", Color(0.85, 0.85, 1.0))
 		else:
 			_spawn_number(amount * _resist(dtype), crit, dtype)
+			_hit_spark(dtype)
 		return
 	wake()
 	if _shield_t > 0.0:
@@ -396,6 +397,7 @@ func take_damage(amount: float, crit: bool = false,
 	hp -= final_dmg
 	hp_changed.emit(hp, max_hp)
 	_spawn_number(final_dmg, crit, dtype)
+	_hit_spark(dtype)
 
 	# Ailment logic
 	match ailment:
@@ -405,6 +407,7 @@ func take_damage(amount: float, crit: bool = false,
 				_freeze_t = 1.2
 		"burn":
 			_burn_t = 3.0
+			SpellFx.attach(self, "flame", 3.0, 0.55 * size_mult, -6.0, false, 0.85)
 			_burn_dps = maxf(_burn_dps, final_dmg * 0.35)
 		"shock":
 			_shock_t = 4.0
@@ -419,8 +422,10 @@ func take_damage(amount: float, crit: bool = false,
 	if has_affix("electrified") and randf() < 0.3:
 		var near := _players_near(global_position, 160.0)
 		if not near.is_empty():
-			near.pick_random().take_damage(touch_damage * 0.5)
+			var struck = near.pick_random()
+			struck.take_damage(touch_damage * 0.5)
 			_flash_ring(global_position, 160.0, Color(1.0, 0.95, 0.4))
+			_sfx("lightning_strike", struck.global_position + Vector2(0, -40), 0.9)
 
 	queue_redraw()
 	if hp <= 0.0:
@@ -456,6 +461,7 @@ func _do_slam() -> void:
 	for who in [target, Hirelings.node] + get_tree().get_nodes_in_group("remote_players"):
 		if _alive(who) and who.global_position.distance_to(global_position) < SLAM_RADIUS:
 			who.take_damage(touch_damage * 2.0)
+	_sfx("ground_hit", global_position, SLAM_RADIUS / 140.0)
 	var ring := Node2D.new()
 	get_parent().add_child(ring)
 	ring.global_position = global_position
@@ -745,6 +751,7 @@ func _frost_orb(at: Vector2, hurt := true) -> void:
 			for p in Enemy.players_near(tree, you, orb.global_position, FROST_ORB_RADIUS):
 				p.take_damage(dmg)
 				p.apply_slow(2.0)
+		SpellFx.spawn(orb.get_parent(), "hit_cold", orb.global_position, FROST_ORB_RADIUS / 32.0)
 		orb.queue_free())
 
 
@@ -769,6 +776,7 @@ func _molten_explosion() -> void:
 		for p in players:
 			if is_instance_valid(p) and not p.dead and p.global_position.distance_to(at) < 130.0:
 				p.take_damage(dmg)
+		SpellFx.spawn(host, "fire_explosion", at + Vector2(0, -40), 1.15)
 		warn.queue_free())
 
 
@@ -795,6 +803,25 @@ func _summon_minions() -> void:
 		m.wake()
 		_minions.append(m)
 	_flash_ring(global_position, 80.0, Color(0.6, 0.85, 0.4))
+
+
+## A hit's spark by its damage type (SpellFx.HITS), on it: not more often than every 90 ms.
+func _hit_spark(dtype) -> void:
+	var now := Time.get_ticks_msec()
+	if now - _spark_at < 90 or get_parent() == null:
+		return
+	_spark_at = now
+	SpellFx.spawn(get_parent(), SpellFx.HITS[clampi(int(dtype), 0, SpellFx.HITS.size() - 1)],
+		global_position + Vector2(randf_range(-14.0, 14.0), -32.0 * size_mult + randf_range(-10.0, 10.0)), size_mult)
+
+
+## A spell effect here; the party sees it too (the host's monsters: Coop.host_fx).
+func _sfx(id: String, at: Vector2, size := 1.0) -> void:
+	SpellFx.spawn(get_parent(), id, at, size)
+	Coop.host_fx("sfx", {"id": net_id, "fx": id, "x": at.x, "y": at.y, "s": size})
+
+
+var _spark_at := 0
 
 
 func _flash_ring(at: Vector2, radius: float, col: Color) -> void:

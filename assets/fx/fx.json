@@ -1,0 +1,114 @@
+{
+ "earth_fissure": {
+  "frames": 8,
+  "w": 256,
+  "h": 106,
+  "cx": 127.6,
+  "cy": 49.9
+ },
+ "earth_spike": {
+  "frames": 12,
+  "w": 224,
+  "h": 168,
+  "cx": 109.0,
+  "cy": 87.3
+ },
+ "ground_hit": {
+  "frames": 8,
+  "w": 256,
+  "h": 149,
+  "cx": 129.6,
+  "cy": 72.7
+ },
+ "fire_explosion": {
+  "frames": 12,
+  "w": 224,
+  "h": 215,
+  "cx": 107.7,
+  "cy": 103.2
+ },
+ "flame": {
+  "frames": 12,
+  "w": 133,
+  "h": 160,
+  "cx": 67.0,
+  "cy": 74.8
+ },
+ "lightning_strike": {
+  "frames": 12,
+  "w": 171,
+  "h": 224,
+  "cx": 86.5,
+  "cy": 116.2
+ },
+ "typhoon": {
+  "frames": 12,
+  "w": 243,
+  "h": 256,
+  "cx": 134.7,
+  "cy": 123.4
+ },
+ "earth_shield": {
+  "frames": 8,
+  "w": 192,
+  "h": 166,
+  "cx": 96.3,
+  "cy": 71.4
+ },
+ "fire_shield": {
+  "frames": 8,
+  "w": 192,
+  "h": 170,
+  "cx": 96.4,
+  "cy": 76.5
+ },
+ "leaf_shield": {
+  "frames": 16,
+  "w": 186,
+  "h": 224,
+  "cx": 91.9,
+  "cy": 109.6
+ },
+ "lightning_shield": {
+  "frames": 12,
+  "w": 192,
+  "h": 167,
+  "cx": 95.7,
+  "cy": 71.9
+ },
+ "hit_physical": {
+  "frames": 7,
+  "w": 96,
+  "h": 70,
+  "cx": 51.6,
+  "cy": 36.7
+ },
+ "hit_fire": {
+  "frames": 12,
+  "w": 75,
+  "h": 112,
+  "cx": 29.6,
+  "cy": 66.4
+ },
+ "hit_cold": {
+  "frames": 10,
+  "w": 96,
+  "h": 89,
+  "cx": 47.7,
+  "cy": 44.0
+ },
+ "hit_lightning": {
+  "frames": 12,
+  "w": 52,
+  "h": 112,
+  "cx": 25.6,
+  "cy": 54.6
+ },
+ "hit_poison": {
+  "frames": 11,
+  "w": 112,
+  "h": 110,
+  "cx": 50.5,
+  "cy": 56.8
+ }
+}

@@ -703,6 +703,7 @@ func _do_leap_slam(s: SkillDef) -> void:
 	t.tween_callback(func():
 		_busy = false
 		_show_ring(s.get_effective_radius(), s.get_effective_color(), SWING_TIME * 2.0)
+		_sfx("ground_hit", global_position, s.get_effective_radius() / 140.0)
 		rig.play_once("Slashing", 1.3)
 		_hit_area(global_position, facing, s.get_effective_radius(), 360.0, s, s.stun)
 	)
@@ -718,6 +719,7 @@ func _do_battle_cry(s: SkillDef) -> void:
 	_buff_t = s.duration
 	rig.pulse()
 	_show_ring(180.0, s.get_effective_color(), 0.4)
+	_sfx_on("fire_shield", 0.8, 1.1, 42.0, true, 0.6)
 
 
 func _do_shield_slam(s: SkillDef) -> void:
@@ -739,6 +741,8 @@ func _do_earthquake(s: SkillDef) -> void:
 	rig.play_once("Slashing", 1.1)
 	_show_ring(s.get_effective_radius(), s.get_effective_color(), SWING_TIME * 3.0)
 	_hit_area(global_position, facing, s.get_effective_radius(), 360.0, s, 0.8)
+	_sfx("ground_hit", global_position, s.get_effective_radius() / 140.0)
+	_sfx("earth_fissure", global_position, s.get_effective_radius() / 160.0)
 
 	# Lingering fractured ground zone
 	var zone := Node2D.new()
@@ -767,6 +771,7 @@ func _do_iron_skin(s: SkillDef) -> void:
 	_iron_skin_t = s.duration
 	rig.pulse()
 	_show_ring(80.0, s.get_effective_color(), 0.3)
+	_sfx_on("earth_shield", s.duration, 1.0, 42.0, true, 0.5)
 
 
 func _do_frenzy(s: SkillDef) -> void:
@@ -785,12 +790,14 @@ func _do_sundering_strike(s: SkillDef) -> void:
 	rig.play_once("Slashing", 1.3)
 	_show_swing(facing, s.get_effective_arc(), s.get_effective_radius(), s.get_effective_color(), SWING_TIME * 1.5)
 	_hit_area(global_position, facing, s.get_effective_radius(), s.get_effective_arc(), s, 0.5)
+	_sfx("earth_spike", global_position + facing * s.get_effective_radius() * 0.8, s.get_effective_radius() / 85.0, facing.x < 0.0)
 
 
 func _do_blade_vortex(s: SkillDef) -> void:
 	rig.play_once("Slashing in The Air", 1.4)
 	# Whirlwind axes outward
 	_show_ring(s.get_effective_radius(), s.get_effective_color(), SWING_TIME * 2.0)
+	_sfx("leaf_shield", global_position + Vector2(0, -30), s.get_effective_radius() / 115.0)
 	_hit_area(global_position, facing, s.get_effective_radius(), 360.0, s)
 
 
@@ -804,6 +811,7 @@ func _do_battle_standard(s: SkillDef) -> void:
 	get_parent().add_child(banner)
 	var b_rad := s.get_effective_radius()
 	var b_col := s.get_effective_color()
+	_sfx("ground_hit", banner.global_position, b_rad / 180.0)
 	Coop.player_fx(["banner", banner.global_position.x, banner.global_position.y, b_rad, b_col.to_html(false), s.duration])
 	banner.draw.connect(func():
 		banner.draw_circle(Vector2.ZERO, 16.0, b_col)
@@ -841,6 +849,7 @@ func _do_call_ancients(s: SkillDef) -> void:
 		a.follow_offset = Vector2.from_angle(TAU * i / 3.0 + 0.5) * 80.0
 		a.position = global_position + a.follow_offset
 		get_parent().add_child(a)
+		_sfx("lightning_strike", a.position + Vector2(0, -40))
 
 
 func _do_cleave_skill(s: SkillDef) -> void:
@@ -1511,6 +1520,18 @@ func _show_ring(radius: float, col: Color, t: float) -> void:
 	Coop.player_fx(["ring", radius, col.to_html(false), t])
 
 
+## A spell effect where it happens (SpellFx), seen by the party too (Coop.player_fx "sfx").
+func _sfx(id: String, at: Vector2, size := 1.0, flip := false) -> void:
+	SpellFx.spawn(get_parent(), id, at, size, flip)
+	Coop.player_fx(["sfx", id, snappedf(at.x, 0.1), snappedf(at.y, 0.1), size, flip])
+
+
+## One kept on you a while (a shield: SpellFx.attach), seen by the party too ("sfx_on").
+func _sfx_on(id: String, secs: float, size := 1.0, lift := 0.0, hold := false, alpha := 1.0) -> void:
+	SpellFx.attach(self, id, secs, size, lift, hold, alpha)
+	Coop.player_fx(["sfx_on", id, secs, size, lift, hold, alpha])
+
+
 var _spin_sent := 0  # msec: whirlwind hits many times a second; the others hear of it 4 times a second
 
 
@@ -1519,6 +1540,7 @@ func _show_spin(radius: float, col: Color) -> void:
 	_ring_t = 0.28
 	_ring_radius = radius
 	_ring_color = col
+	SpellFx.attach(self, "typhoon", 0.35, radius / 125.0, 10.0, false, 0.55)  # (the party: "spin")
 	if Time.get_ticks_msec() - _spin_sent > 250:
 		_spin_sent = Time.get_ticks_msec()
 		Coop.player_fx(["spin", radius, col.to_html(false), 0.4])

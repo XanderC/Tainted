@@ -163,6 +163,14 @@ func show_fx(d: Array) -> void:
 			_ring_radius = clampf(float(d[1]), 0.0, 600.0)
 			_ring_color = Color.from_string(String(d[2]), Color.WHITE)
 			_spin_t = clampf(float(d[3]), 0.0, 1.0)
+			SpellFx.attach(self, "typhoon", _spin_t + 0.1, _ring_radius / 125.0, 10.0, false, 0.55)
+		["sfx", 6]:  # a spell effect where it happened (Player._sfx)
+			if SpellFx.TUNE.has(String(d[1])) and get_parent() != null:
+				SpellFx.spawn(get_parent(), String(d[1]), Vector2(float(d[2]), float(d[3])), clampf(float(d[4]), 0.1, 4.0), bool(d[5]))
+		["sfx_on", 7]:  # one kept on them a while (Player._sfx_on)
+			if SpellFx.TUNE.has(String(d[1])):
+				SpellFx.attach(self, String(d[1]), clampf(float(d[2]), 0.0, 30.0), clampf(float(d[3]), 0.1, 4.0),
+					clampf(float(d[4]), 0.0, 200.0), bool(d[5]), clampf(float(d[6]), 0.0, 1.0))
 		["ground", 6], ["banner", 6]:
 			_ground(String(d[0]) == "banner", Vector2(float(d[1]), float(d[2])), clampf(float(d[3]), 0.0, 600.0),
 				Color.from_string(String(d[4]), Color.WHITE), clampf(float(d[5]), 0.0, 30.0))
