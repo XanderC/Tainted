@@ -16,6 +16,11 @@ $exe = Join-Path $PSScriptRoot "builds\windows\Tainted.exe"
 $started = Get-Date
 $build = [long](Get-Date -Format "yyyyMMddHHmm")
 [IO.File]::WriteAllText((Join-Path $PSScriptRoot "build.json"), "{`n`t`"build`": $build`n}`n")
+# The changelog's newest entry (build 0, until published) is this release's
+$log = Join-Path $PSScriptRoot "changelog.json"
+$text = [IO.File]::ReadAllText($log)
+$stamped = [regex]::new('"build": 0,').Replace($text, "`"build`": $build,", 1)
+if ($stamped -ne $text) { [IO.File]::WriteAllText($log, $stamped) }
 & (Join-Path $PSScriptRoot "build_windows.ps1") 2>&1 | Out-Null
 # The APK holds the game as one pack (Updater: GAME_PACK), exported first (as a .pck: Godot won't
 # export to another name)

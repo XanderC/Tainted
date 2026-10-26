@@ -1,6 +1,7 @@
 # Releases an update: players' games download it from the Tainted World by themselves (Updater) the
 # next time they connect, and restart into it; no reinstalling.
-#   1. stamps a new build number (build.json)
+#   1. stamps a new build number (build.json, and the newest entry of changelog.json: write what
+#      changed there first, with "build": 0; players see it after the update)
 #   2. exports a patch for Windows and for Android: just the files changed since the last full release
 #      (builds\base, made by publish_builds.ps1), into builds\update with update.json (build, base,
 #      each patch's size and SHA-256)
@@ -18,6 +19,11 @@ $baseBuild = [long]((Get-Content $baseJson -Raw | ConvertFrom-Json).build)
 
 $build = [long](Get-Date -Format "yyyyMMddHHmm")
 [IO.File]::WriteAllText((Join-Path $PSScriptRoot "build.json"), "{`n`t`"build`": $build`n}`n")
+# The changelog's newest entry (build 0, until published) is this update's
+$log = Join-Path $PSScriptRoot "changelog.json"
+$text = [IO.File]::ReadAllText($log)
+$stamped = [regex]::new('"build": 0,').Replace($text, "`"build`": $build,", 1)
+if ($stamped -ne $text) { [IO.File]::WriteAllText($log, $stamped) }
 Remove-Item -Recurse -Force $update -ErrorAction SilentlyContinue
 New-Item -ItemType Directory -Force $update | Out-Null
 

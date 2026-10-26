@@ -92,11 +92,17 @@ func _build() -> void:
 	title.add_theme_constant_override("outline_size", 8)
 	outer.add_child(title)
 	# Which build this is (an update, Updater, shows here once it has loaded), bottom right
-	var build := UIKit.label("Build %d%s" % [Updater.build, "  (updated)" if Updater.patched else ""] if Updater.build > 0 else "Development build",
-		11, UIKit.TEXT_DIM)
-	build.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	# (tap it: what's new)
+	var build := Button.new()
+	build.text = "Build %d%s  -  what's new" % [Updater.build, "  (updated)" if Updater.patched else ""] if Updater.build > 0 else "Development build  -  what's new"
+	build.flat = true
+	build.focus_mode = Control.FOCUS_NONE
+	build.add_theme_font_size_override("font_size", 12)
+	build.add_theme_color_override("font_color", UIKit.TEXT_DIM)
+	build.pressed.connect(func(): Changelog.show(self))
 	add_child(build)
 	build.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT, Control.PRESET_MODE_MINSIZE, 6)
+	Changelog.show_if_new.call_deferred(self)
 
 	var cols := HBoxContainer.new()
 	cols.add_theme_constant_override("separation", 14)

@@ -1,0 +1,23 @@
+[
+	{
+		"build": 202610261724,
+		"title": "Shoulders slot",
+		"notes": [
+			"The shoulders slot on the character panel is now as big as the gloves and boots slots."
+		]
+	},
+	{
+		"build": 202610261635,
+		"title": "Self-updating game",
+		"notes": [
+			"The game now updates itself: new versions download when you connect, and the game restarts into them. No more installing the APK each time.",
+			"The phone version starts much faster.",
+			"Shoulders slot and 12 shoulder pieces, shown on your character.",
+			"One-handed crossbows with their own shooting animation.",
+			"Two-handed weapons, spears and daggers have their own animations.",
+			"Change how your armour and weapons look at the Dyer, using looks you have picked up. Unique items have their own looks.",
+			"The Gambler, Lucky Mott, sells unidentified items and restocks every so often.",
+			"Skill gems are chosen from dropdowns; drag gems onto items to socket them; drag an item to the empty screen to drop it."
+		]
+	}
+]
