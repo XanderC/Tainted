@@ -456,14 +456,11 @@ static func item_card(parent: Node, item: ItemInstance, compact := false, deltas
 		var worn: Array = GameState.player.equipment.values() if is_instance_valid(GameState.player) else []
 		txt += UniqueItems.card_bbcode(item, worn)
 	txt += Runewords.card_bbcode(item)
-	for i in item.sockets:
-		if i < item.gems.size():
-			var g := item.socket_info(item.gems[i])
-			var rune_name := "%s: " % g.get("short", "") if g.get("rune", false) else ""
-			txt += "[color=#%s]◆ %s%s[/color]%s\n" % [Color(g.get("color", Color.WHITE)).to_html(false),
-				rune_name, g.get("text", "?"), stat_arrow(g.get("stat", ""), deltas)]
-		else:
-			txt += "[color=#666677]◇ Empty Socket[/color]\n"
+	if item.sockets > 0:
+		parent.add_child(rich(txt))
+		txt = ""
+		for i in item.sockets:  # each socket with its gem's picture, like Diablo III
+			parent.add_child(_socket_row(item, i, deltas))
 	if item.affixes.is_empty() and item.base.implicit_stat == "" and item.sockets == 0:
 		txt += "[color=#555555]No magical properties[/color]\n"
 	if DyeDB.dyed(item):
@@ -474,7 +471,39 @@ static func item_card(parent: Node, item: ItemInstance, compact := false, deltas
 		txt += "[color=#e04848][b]Corrupted[/b][/color]\n"
 	if item.mirrored:
 		txt += "[color=#a8e6ff][b]Mirrored[/b][/color]\n"
-	parent.add_child(rich(txt))
+	if txt != "":
+		parent.add_child(rich(txt))
+
+
+## A card's socket row: the gem in its frame (a ring if empty) and what it gives.
+static func _socket_row(item: ItemInstance, i: int, deltas := {}) -> HBoxContainer:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 8)
+	var has := i < item.gems.size()
+	var g := item.socket_info(item.gems[i]) if has else {}
+	var col: Color = Color(g.get("color", Color.WHITE)) if has else Color(0.40, 0.40, 0.48)
+	var frame := PanelContainer.new()
+	frame.custom_minimum_size = Vector2(34, 34)
+	frame.add_theme_stylebox_override("panel", box(Color(0.04, 0.04, 0.06), col.darkened(0.15) if has else col, 2, 17))
+	row.add_child(frame)
+	var pic := TextureRect.new()
+	pic.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	pic.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	pic.custom_minimum_size = Vector2(26, 26)
+	if has:
+		pic.texture = GemDef.icon(String(item.gems[i]))
+	frame.add_child(pic)
+	var text: RichTextLabel
+	if has:
+		var rune_name := "%s: " % g.get("short", "") if g.get("rune", false) else ""
+		text = rich("[color=#%s]%s%s[/color]%s" % [col.lightened(0.15).to_html(false), rune_name, g.get("text", "?"),
+			stat_arrow(g.get("stat", ""), deltas)], 15)
+	else:
+		text = rich("[color=#666677]Empty Socket[/color]", 15)
+	text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	text.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	row.add_child(text)
+	return row
 
 
 ## "▲ +5 Damage" style list of what equipping `item` changes.
