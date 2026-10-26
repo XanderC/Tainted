@@ -20,8 +20,21 @@ func _ready() -> void:
 	p.bag.add(it)
 	p.inventory_changed.emit()
 	menu.open()
+	var two := LootGenerator.roll_item(10, ItemInstance.Rarity.MAGIC, "")
+	two.base = LootGenerator.base_by_id("broad_sword")
+	two.sockets = 3
+	two.gems = ["topaz_5", "emerald_8"]
+	p.bag.add(two)
+	var worn := LootGenerator.roll_item(10, ItemInstance.Rarity.RARE, "")
+	worn.base = LootGenerator.base_by_id("iron_helm")
+	worn.sockets = 3
+	worn.gems = ["amethyst_6"]
+	p.bag.add(worn)
+	p.equip_to(worn, "helmet")
+	p.inventory_changed.emit()
+	menu.refresh()
 	Input.warp_mouse(Vector2(1000, 330))
-	menu.select(it)
+	await get_tree().process_frame
 	for i in 10:
 		await get_tree().process_frame
 	await get_tree().create_timer(0.5).timeout

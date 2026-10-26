@@ -366,6 +366,8 @@ static func item_cell(item: ItemInstance, selected: bool, size := Vector2(60, 60
 		cell.setup(item.base.icon, col, item.base.color.darkened(0.72), 0, item.display_name)  # tapping shows its card (GameMenu.show_item_tip)
 		if item.dye != "":
 			cell.set_dye(item.dye, item.base.icon)
+		if item.sockets > 0:
+			cell.set_sockets(item.gems, item.sockets)  # its gems on its icon, like its card
 	else:
 		cell.setup(null, EMPTY_BORDER)
 	return cell

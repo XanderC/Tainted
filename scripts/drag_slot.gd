@@ -32,6 +32,9 @@ var _rim: Panel  # the coloured outline over the icon: rarity, selection, drop f
 var _icon_tex: Texture2D = null
 var _dye := ""
 var _dye_tex: Texture2D = null
+var _sockets: Control  # the item's sockets drawn along the bottom of its icon (set_sockets)
+var _socket_gems: Array = []
+var _socket_count := 0
 
 
 func _init(slot_size := Vector2(60, 60)) -> void:
@@ -88,6 +91,52 @@ func set_placeholder(tex: Texture2D) -> void:
 	_icon.visible = true
 	_icon.modulate = Color(1, 1, 1, 0.8)
 	_caption.visible = false
+
+
+## Shows an item's sockets along the bottom of its icon: each gem or rune in its socket, then the
+## empty ones as dark rings. `gems` are gem ids (GemDef), `total` how many sockets it has.
+func set_sockets(gems: Array, total: int) -> void:
+	_socket_gems = gems
+	_socket_count = total
+	if _sockets == null:
+		_sockets = Control.new()
+		_sockets.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_sockets.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		_sockets.resized.connect(_layout_sockets)
+		add_child(_sockets)
+	_layout_sockets()
+
+
+func _layout_sockets() -> void:
+	for c in _sockets.get_children():
+		c.queue_free()
+	var n := _socket_count
+	var w := _sockets.size.x
+	if n <= 0 or w <= 0.0:
+		return
+	var d := clampf(minf(w * 0.26, (w - 8.0) / n), 10.0, 26.0)  # one socket's diameter
+	var x := (w - (d * n + 2.0 * (n - 1))) * 0.5
+	var y := _sockets.size.y - d - 4.0
+	for i in n:
+		var has := i < _socket_gems.size()
+		var id := String(_socket_gems[i]) if has else ""
+		var col := Color(GemDef.info(id).get("color", Color.WHITE)).darkened(0.1) if has else Color(0.50, 0.50, 0.58, 0.8)
+		var ring := Panel.new()
+		ring.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		ring.position = Vector2(x, y)
+		ring.size = Vector2(d, d)
+		ring.add_theme_stylebox_override("panel", UIKit.box(Color(0.03, 0.03, 0.05, 0.85), col, 1, int(d)))
+		_sockets.add_child(ring)
+		if has:
+			var pic := TextureRect.new()
+			pic.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			pic.texture = GemDef.icon(id)
+			pic.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+			pic.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+			pic.position = Vector2(d * 0.1, d * 0.1)
+			pic.size = Vector2(d * 0.8, d * 0.8)
+			ring.add_child(pic)
+		x += d + 2.0
 
 
 ## Draw the icon in a dye (DyeDB id): the item's art recoloured, as it looks worn.
