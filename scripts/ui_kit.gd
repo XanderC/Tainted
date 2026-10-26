@@ -15,6 +15,8 @@ const STAT_LABELS := {
 const SLOT_NAMES := {
 	"helmet": "Helmet",
 	"shoulders": "Shoulders",
+	"wrists": "Wrists",
+	"legs": "Legs",
 	"chest": "Body Armor",
 	"weapon": "Main Hand",
 	"offhand": "Off Hand",
@@ -30,6 +32,8 @@ const SLOT_NAMES := {
 const SLOT_ICONS := {
 	"helmet": "⛑",
 	"shoulders": "🪖",
+	"wrists": "🔗",
+	"legs": "👖",
 	"chest": "🛡",
 	"weapon": "⚔",
 	"offhand": "🛡",

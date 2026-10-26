@@ -1,5 +1,13 @@
 [
 	{
+		"build": 0,
+		"title": "Wrists and legs",
+		"notes": [
+			"Two new equipment slots, Wrists and Legs, with 16 new pieces: bracers, shorts, kilts and guards.",
+			"They drop like the rest of your gear and can be socketed, but they don't show on your character."
+		]
+	},
+	{
 		"build": 202610261724,
 		"title": "Shoulders slot",
 		"notes": [

@@ -139,7 +139,7 @@ static func requirements(base: ItemBase) -> Dictionary:
 				var v := int(round(float(r[i * 2]) + float(r[i * 2 + 1]) * dl))
 				if v > 0:
 					out[["str", "dex", "ene"][i]] = v
-	elif base.slot in ["helmet", "shoulders", "chest", "gloves", "boots"] and base.implicit_stat == "armor" \
+	elif base.slot in ["helmet", "shoulders", "chest", "wrists", "gloves", "legs", "boots"] and base.implicit_stat == "armor" \
 			and base.implicit_value >= ARMOUR_REQ_FROM:
 		out["str"] = int(round(base.implicit_value * ARMOUR_REQ_PER))
 	_req_cache[base.id] = out

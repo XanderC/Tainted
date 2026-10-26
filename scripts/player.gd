@@ -11,7 +11,7 @@ const SWING_TIME := 0.15
 const BAG_COLS := 12  # like Path of Exile: 12 x 5
 const BAG_ROWS := 5
 const BAG_SIZE := BAG_COLS * BAG_ROWS  # cells
-const SLOTS := ["weapon", "offhand", "helmet", "shoulders", "chest", "gloves", "boots", "ring", "ring2", "amulet", "belt"]  # two ring slots
+const SLOTS := ["weapon", "offhand", "helmet", "shoulders", "chest", "wrists", "gloves", "legs", "boots", "ring", "ring2", "amulet", "belt"]  # two ring slots
 ## Flask slots, Path of Exile style: the belt opens some of them (ItemBase.flask_slots); without
 ## one there is NO_BELT_FLASKS. Flasks in slots beyond that stay put but can't be drunk.
 const FLASK_SLOTS := 5
@@ -1755,7 +1755,7 @@ func is_better_in_slot(item: ItemInstance) -> bool:
 		"weapon", "offhand":
 			if d_dmg > 0.0 or (d_dmg == 0.0 and d_as > 0.0):
 				return true
-		"chest", "helmet", "shoulders", "gloves", "boots":
+		"chest", "helmet", "shoulders", "wrists", "gloves", "legs", "boots":
 			if (d_armor > 0.0 and d_life >= 0.0) or (d_life > 0.0 and d_armor >= 0.0):
 				return true
 

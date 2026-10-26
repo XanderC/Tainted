@@ -207,6 +207,29 @@ const SHOULDER_BASES := [
 	["frost_spaulders", "Frost Spaulders", 45, 22, Color(0.55, 0.80, 0.95)],
 	["void_spaulders", "Void Spaulders", 50, 25, Color(0.45, 0.25, 0.55)],
 ]
+## Wrist pieces (bracers, Diablo 3 style) and leg pieces (shorts and guards): [id, name, drop level,
+## armour, colour]. They are not drawn on the character, so a bag icon is all they have
+## (tools/import_wrist_legs.py).
+const WRIST_BASES := [
+	["bandaged_wraps", "Bandaged Wraps", 1, 2, Color(0.82, 0.76, 0.62)],
+	["laced_bracers", "Laced Bracers", 3, 3, Color(0.50, 0.33, 0.20)],
+	["furred_bracers", "Furred Bracers", 8, 5, Color(0.62, 0.48, 0.32)],
+	["leaf_bracers", "Leaf Bracers", 12, 6, Color(0.40, 0.55, 0.25)],
+	["banded_bracers", "Banded Bracers", 18, 9, Color(0.35, 0.35, 0.38)],
+	["spiked_bracers", "Spiked Bracers", 26, 12, Color(0.50, 0.54, 0.58)],
+	["gilded_bracers", "Gilded Bracers", 34, 14, Color(0.95, 0.78, 0.28)],
+	["frost_bracers", "Frost Bracers", 42, 17, Color(0.55, 0.80, 0.95)],
+]
+const LEG_BASES := [
+	["ragged_shorts", "Ragged Shorts", 1, 3, Color(0.55, 0.40, 0.25)],
+	["leaf_kilt", "Leaf Kilt", 5, 4, Color(0.40, 0.55, 0.25)],
+	["furred_kilt", "Furred Kilt", 10, 6, Color(0.62, 0.48, 0.32)],
+	["bonebound_shorts", "Bonebound Shorts", 16, 9, Color(0.25, 0.24, 0.24)],
+	["iron_guards", "Iron Guards", 22, 12, Color(0.55, 0.58, 0.62)],
+	["shadow_guards", "Shadow Guards", 30, 15, Color(0.35, 0.28, 0.42)],
+	["gilded_trunks", "Gilded Trunks", 38, 18, Color(0.25, 0.40, 0.75)],
+	["frost_kilt", "Frost Kilt", 46, 22, Color(0.55, 0.80, 0.95)],
+]
 ## [id, name, drop level, armour, colour]. Better ones need more Strength (Attributes).
 const HELMET_BASES := [
 	["linen_wrap", "Linen Wrap", 1, 3, Color(0.75, 0.55, 0.25)],
@@ -255,7 +278,8 @@ func _build_bases() -> void:
 		bases[-1].drop_level = h[2]
 	# Body armour, gloves and boots in tiers: the character packs' own clothes (tools/import_armour.py),
 	# worn on the character and as the bag icon
-	for table in [["chest", CHEST_BASES], ["gloves", GLOVE_BASES], ["boots", BOOT_BASES], ["shoulders", SHOULDER_BASES]]:
+	for table in [["chest", CHEST_BASES], ["gloves", GLOVE_BASES], ["boots", BOOT_BASES], ["shoulders", SHOULDER_BASES],
+			["wrists", WRIST_BASES], ["legs", LEG_BASES]]:
 		for a in table[1]:
 			_base(a[0], a[1], table[0], a[4], "armor", a[3])
 			bases[-1].drop_level = a[2]
@@ -341,14 +365,14 @@ func _build_affixes() -> void:
 	_affix("mana_flat", "+{v} Maximum Mana", "mana_max", F, 10, 40)
 	affixes[-1].slots = ["weapon", "offhand", "amulet", "ring", "helmet", "chest", "belt"]
 	_affix("mana_regen", "{v}% Increased Mana Regeneration", "mana_regen_inc", F, 0.10, 0.40, true)
-	affixes[-1].slots = ["weapon", "offhand", "amulet", "ring", "helmet", "shoulders", "chest", "gloves", "boots"]
+	affixes[-1].slots = ["weapon", "offhand", "amulet", "ring", "helmet", "shoulders", "chest", "wrists", "gloves", "legs", "boots"]
 	_affix("bow_inc", "{v}% Increased Ranged Damage", "bow_inc", F, 0.10, 0.30, true)
 	affixes[-1].slots = ["weapon", "gloves", "amulet", "ring"]
 	affixes[-1].weapon_types = ["bow", "crossbow"]
 	# Resistances (armour and jewellery; Vitality gives some too)
 	for r in [["res_fire", "Fire"], ["res_cold", "Cold"], ["res_lightning", "Lightning"], ["res_chaos", "Poison"]]:
 		_affix(r[0], "+{v}%% %s Resistance" % r[1], r[0], F, 0.06, 0.20, true)
-		affixes[-1].slots = ["helmet", "shoulders", "chest", "gloves", "boots", "belt", "ring", "amulet", "offhand"]
+		affixes[-1].slots = ["helmet", "shoulders", "chest", "wrists", "gloves", "legs", "boots", "belt", "ring", "amulet", "offhand"]
 	_affix("res_all", "+{v}% to all Resistances", "res_all", F, 0.04, 0.12, true, 8, 40)
 	affixes[-1].slots = ["helmet", "chest", "shield", "ring", "amulet", "offhand"]
 	_affix("attack_inc", "{v}% Increased Attack Damage", "attack_inc", F, 0.06, 0.18, true)

@@ -11,7 +11,7 @@ const REFRESH_SECS := 20 * 60
 ## What a piece really is: [rarity, chance], the rest Magic
 const ODDS := [[ItemInstance.Rarity.LEGENDARY, 0.03], [ItemInstance.Rarity.SET, 0.02], [ItemInstance.Rarity.RARE, 0.25]]
 ## Kinds of gear on the stall, each as often as its weight
-const SLOT_WEIGHTS := {"weapon": 4, "offhand": 1, "helmet": 2, "shoulders": 2, "chest": 2, "gloves": 2, "boots": 2,
+const SLOT_WEIGHTS := {"weapon": 4, "offhand": 1, "helmet": 2, "shoulders": 2, "chest": 2, "wrists": 2, "gloves": 2, "legs": 2, "boots": 2,
 	"ring": 2, "amulet": 1, "belt": 1}
 ## [up to item level, price], the first that fits
 const PRICES := [[14, {"alteration": 2}], [29, {"alteration": 5}], [44, {"alchemy": 1}], [999, {"chaos": 1}]]

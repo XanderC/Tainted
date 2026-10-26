@@ -4,7 +4,7 @@ extends Resource
 
 @export var id: String = ""
 @export var display_name: String = ""
-@export_enum("weapon", "offhand", "helmet", "shoulders", "chest", "gloves", "boots", "ring", "amulet", "belt", "flask") var slot: String = "weapon"
+@export_enum("weapon", "offhand", "helmet", "shoulders", "chest", "wrists", "gloves", "legs", "boots", "ring", "amulet", "belt", "flask") var slot: String = "weapon"
 ## Weapons and shields: "sword", "axe", "mace", "spear", "dagger", "staff", "bow", "shield". "" for armour.
 ## Each class lists the types it may use (ClassDef.weapon_types).
 @export var weapon_type: String = ""
@@ -54,7 +54,7 @@ const TWO_HANDED_SIZES := {
 }
 const SLOT_SIZES := {
 	"helmet": Vector2i(2, 2), "shoulders": Vector2i(2, 2), "chest": Vector2i(2, 3), "gloves": Vector2i(2, 2),
-	"boots": Vector2i(2, 2), "ring": Vector2i(1, 1), "amulet": Vector2i(1, 1),
+	"wrists": Vector2i(2, 2), "legs": Vector2i(2, 2), "boots": Vector2i(2, 2), "ring": Vector2i(1, 1), "amulet": Vector2i(1, 1),
 	"belt": Vector2i(2, 1), "flask": Vector2i(1, 2),
 	"weapon": Vector2i(1, 3), "offhand": Vector2i(2, 2),
 }
@@ -75,14 +75,14 @@ func bag_size() -> Vector2i:
 ## Most sockets an item of this base can have. Big items take more, Diablo / Path of Exile style:
 ## two-handed weapons (staves and bows included) and body armour up to 6, so they can hold the
 ## longest runewords; one-handed swords, axes and maces and shields 4; daggers and helmets 3;
-## gloves and boots 2; rings and amulets 1; belts and flasks none.
+## gloves, boots, shoulders and legs 2; wrists, rings and amulets 1; belts and flasks none.
 func max_sockets() -> int:
 	match slot:
 		"belt", "flask":
 			return 0
-		"ring", "amulet":
+		"ring", "amulet", "wrists":
 			return 1
-		"gloves", "boots", "shoulders":
+		"gloves", "boots", "shoulders", "legs":
 			return 2
 		"helmet":
 			return 3

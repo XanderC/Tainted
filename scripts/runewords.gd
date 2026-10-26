@@ -103,7 +103,7 @@ static func fits(rw: Dictionary, b: ItemBase) -> bool:
 			"shield":
 				if b.weapon_type == "shield": return true
 			"armour":
-				if b.slot in ["helmet", "shoulders", "chest", "gloves", "boots"] or b.weapon_type == "shield": return true
+				if b.slot in ["helmet", "shoulders", "chest", "wrists", "gloves", "legs", "boots"] or b.weapon_type == "shield": return true
 			"helmet", "chest", "gloves", "boots":
 				if b.slot == String(t): return true
 			_:

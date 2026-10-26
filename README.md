@@ -134,6 +134,12 @@ armour, 45 pairs of gloves and 147 pairs of boots in `assets/gear/<slot>/<id>/`,
 `assets/gear/<slot>/catalog.json`, ready for new items (a line in `CHEST_BASES`, `GLOVE_BASES` or
 `BOOT_BASES` with the id).
 
+**Wrists** (bracers) and **Legs** (shorts, kilts, guards) are slots like Diablo 3's: 8 tiers each
+(`LootGenerator.WRIST_BASES`, `LEG_BASES`), in the bag as 2 x 2, with 1 and 2 sockets. They are armour like gloves
+and boots (Strength to wear the better ones) but are not drawn on the character, so a piece is just
+its bag icon, cut from the concept sheets by `tools/import_wrist_legs.py`. They sit under the shoulders
+and the amulet on the paperdoll, level with the gloves and boots. Test: `scratch/test_wrist_legs.gd`.
+
 **Shoulders** are their own slot (beside the helmet on the paperdoll): 12 tiers, Strapped Pauldrons
 to Void Spaulders (`LootGenerator.SHOULDER_BASES`), worn over the top of both arms on every rig. A
 shoulder piece is pinned to each shoulder at its own size and follows the arm only a little

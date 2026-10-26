@@ -9,7 +9,7 @@ func _ready() -> void:
 	await get_tree().process_frame
 	await get_tree().process_frame
 	var p: Player = town.player
-	for id in ["leather_jerkin", "iron_gauntlets"]:
+	for id in ["leather_jerkin", "iron_gauntlets", "gilded_bracers", "frost_kilt", "strapped_pauldrons"]:
 		var it := LootGenerator.roll_item(12, ItemInstance.Rarity.MAGIC, "")
 		it.base = LootGenerator.base_by_id(id)
 		it.display_name = it.base.display_name
