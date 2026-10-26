@@ -56,11 +56,18 @@ commit). The README's Multiplayer section describes how what's done works.
 
 ## 4. Going public (needs your go-ahead when ready)
 
-- [ ] Traefik route tainted.xandflix.uk and the Cloudflare hostname and allowlist rule
-- [ ] Game build with wss://tainted.xandflix.uk and https://auth.xandflix.uk for sign-in
+- [x] Traefik route tainted.xandflix.uk (estate fde3101, 26 Oct 2026) and the Cloudflare hostname.
+      The allowlist and threat-score rules are updated in the estate's apply-cloudflare-rules scripts
+      but not yet applied to the zone (needs a Cloudflare API token)
+- [x] Game build with wss://tainted.xandflix.uk (tried first, then the home network's address) and
+      https://auth.xandflix.uk for sign-in; published 26 Oct 2026
+- [x] Updates without reinstalling (publish_update.ps1, Updater): patches fetched from the server.
+      Needs one full release (publish_builds.ps1) installed by everyone first
+- [ ] Public downloads of the full release: the "update your game" message points at the NAS, which
+      only the house reaches (needed now only for a first install and for full releases)
 - [x] Sign-in screen links: create an account, forgot password (Autharr's pages at auth.xandflix.uk,
       already public; project setting tainted/net/account_url)
-- [ ] Per-address connection limits at Traefik / Cloudflare
+- [x] Per-address connection limits at Traefik: 6 WebSockets per Cloudflare client IP (tainted-connections)
 - [x] Town traffic grew with the square of a copy's players (each one's moves to all the others, 15
       times a second; ~10 Mbit/s up at 35 players). Now a player standing still sends nothing, and
       players further than NEAR (1600 px) get each other's moves 3 times a second, not 15. Load

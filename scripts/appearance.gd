@@ -129,7 +129,7 @@ static func apply(rig: RigSprite, look: Dictionary) -> void:
 	for k in parts.keys():
 		if parts[k] == null:
 			parts.erase(k)
-	rig.set_part_overrides(parts)
+	rig.set_part_overrides(parts, true)  # drawn for the sword rig's canvases
 	var skin: Color = SKIN_TONES[look["skin"]]
 	rig.set_object_tints({"Head": skin, "Left Hand": skin, "Right Hand": skin})
 	var hair_col: Color = HAIR_COLORS[look["hair_color"]]

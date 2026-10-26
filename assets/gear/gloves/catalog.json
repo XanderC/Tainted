@@ -1,0 +1,245 @@
+{
+	"archer_guy_gloves": {
+		"name": "Archer Guy Gloves",
+		"source": "archer-barbarian/Archer Guy",
+		"item": false
+	},
+	"assassin_guy_gloves": {
+		"name": "Assassin Guy Gloves",
+		"source": "ninja/Assassin Guy",
+		"item": false
+	},
+	"black_ninja_gloves": {
+		"name": "Black Ninja Gloves",
+		"source": "ninja/Black Ninja",
+		"item": false
+	},
+	"dark_elves_3_gloves": {
+		"name": "Dark Elves 3 Gloves",
+		"source": "dark-elves/Dark_Elves_3",
+		"item": false
+	},
+	"dark_oracle_2_gloves": {
+		"name": "Dark Oracle 2 Gloves",
+		"source": "free-chibi-dark/Dark_Oracle_2",
+		"item": false
+	},
+	"death_gauntlets": {
+		"name": "Death Gauntlets",
+		"source": "chibi-blood/Blood_Demon_1",
+		"item": true
+	},
+	"demons_of_darkness_1_gloves": {
+		"name": "Demons Of Darkness 1 Gloves",
+		"source": "demon-of/Demons_of_Darkness_1",
+		"item": false
+	},
+	"desert_nomad_3_gloves": {
+		"name": "Desert Nomad 3 Gloves",
+		"source": "desert/Desert_Nomad_3",
+		"item": false
+	},
+	"frontier_defender_spartan_knight_gloves": {
+		"name": "Frontier Defender Spartan Knight Gloves",
+		"source": "spartan/Frontier Defender Spartan Knight",
+		"item": false
+	},
+	"frost_gauntlets": {
+		"name": "Frost Gauntlets",
+		"source": "ghost-knight-chibi/Ghost_Knight_1",
+		"item": true
+	},
+	"frost_knight_1_gloves": {
+		"name": "Frost Knight 1 Gloves",
+		"source": "frost/Frost_Knight_1",
+		"item": false
+	},
+	"ghost_knight_3_gloves": {
+		"name": "Ghost Knight 3 Gloves",
+		"source": "chibi-ghost/Ghost_Knight_3",
+		"item": false
+	},
+	"ghoul_hunter_1_gloves": {
+		"name": "Ghoul Hunter 1 Gloves",
+		"source": "ghoul-hunter/Ghoul_Hunter_1",
+		"item": false
+	},
+	"ghoul_hunter_2_gloves": {
+		"name": "Ghoul Hunter 2 Gloves",
+		"source": "ghoul-hunter/Ghoul_Hunter_2",
+		"item": false
+	},
+	"ghoul_hunter_3_gloves": {
+		"name": "Ghoul Hunter 3 Gloves",
+		"source": "ghoul-hunter/Ghoul_Hunter_3",
+		"item": false
+	},
+	"gnome_1_gloves": {
+		"name": "Gnome 1 Gloves",
+		"source": "gnome/Gnome_1",
+		"item": false
+	},
+	"gnome_2_gloves": {
+		"name": "Gnome 2 Gloves",
+		"source": "gnome/Gnome_2",
+		"item": false
+	},
+	"heavy_gloves": {
+		"name": "Heavy Gloves",
+		"source": "medieval-warrior/Medieval Commander",
+		"item": true
+	},
+	"iron_gauntlets": {
+		"name": "Iron Gauntlets",
+		"source": "chibi-mercenaries/Mercenaries_1",
+		"item": true
+	},
+	"knight_1_gloves": {
+		"name": "Knight 1 Gloves",
+		"source": "knight-chibi-character-sprites/Knight_1",
+		"item": false
+	},
+	"knight_2_gloves": {
+		"name": "Knight 2 Gloves",
+		"source": "knight-chibi-character-sprites/Knight_2",
+		"item": false
+	},
+	"knight_3_gloves": {
+		"name": "Knight 3 Gloves",
+		"source": "knight-chibi-character-sprites/Knight_3",
+		"item": false
+	},
+	"leather_gloves": {
+		"name": "Leather Gloves",
+		"source": "free-forest/Forest_Ranger_3",
+		"item": true
+	},
+	"lich_gloves": {
+		"name": "Lich Gloves",
+		"source": "ghoul-lich/Lich",
+		"item": false
+	},
+	"linen_wraps": {
+		"name": "Linen Wraps",
+		"source": "ghoul-lich/Mummy",
+		"item": true
+	},
+	"medieval_thug_gloves": {
+		"name": "Medieval Thug Gloves",
+		"source": "4-chibi-character/Medieval Thug",
+		"item": false
+	},
+	"mercenaries_2_gloves": {
+		"name": "Mercenaries 2 Gloves",
+		"source": "chibi-mercenaries/Mercenaries_2",
+		"item": false
+	},
+	"mercenaries_3_gloves": {
+		"name": "Mercenaries 3 Gloves",
+		"source": "chibi-mercenaries/Mercenaries_3",
+		"item": false
+	},
+	"minotaur_3_gloves": {
+		"name": "Minotaur 3 Gloves",
+		"source": "free-minotaur/Minotaur_3",
+		"item": false
+	},
+	"paladin_3_gloves": {
+		"name": "Paladin 3 Gloves",
+		"source": "paladin/Paladin_3",
+		"item": false
+	},
+	"pumpkin_head_guy_gloves": {
+		"name": "Pumpkin Head Guy Gloves",
+		"source": "halloween/Pumpkin Head Guy",
+		"item": false
+	},
+	"pyromancer_2_gloves": {
+		"name": "Pyromancer 2 Gloves",
+		"source": "pyromancer/Pyromancer_2",
+		"item": false
+	},
+	"samurai_2_gloves": {
+		"name": "Samurai 2 Gloves",
+		"source": "samurai/Samurai_2",
+		"item": false
+	},
+	"skeleton_crusader_1_gloves": {
+		"name": "Skeleton Crusader 1 Gloves",
+		"source": "free-chibi-skeleton-crusader/Skeleton_Crusader_1",
+		"item": false
+	},
+	"skeleton_death_knight_2_gloves": {
+		"name": "Skeleton Death Knight 2 Gloves",
+		"source": "chibi-skeleton-death/Skeleton_Death_Knight_2",
+		"item": false
+	},
+	"skeleton_death_knight_3_gloves": {
+		"name": "Skeleton Death Knight 3 Gloves",
+		"source": "chibi-skeleton-death/Skeleton_Death_Knight_3",
+		"item": false
+	},
+	"skeleton_necromancer_1_gloves": {
+		"name": "Skeleton Necromancer 1 Gloves",
+		"source": "chibi-skeleton-necromancer/Skeleton_Necromancer_1",
+		"item": false
+	},
+	"u_hasteful_grips": {
+		"name": "Hasteful Grips",
+		"source": "gloves/assassin_guy_gloves",
+		"unique": "hasteful_grips",
+		"item": false
+	},
+	"u_wardens_grips": {
+		"name": "Warden's Grips",
+		"source": "gloves/knight_2_gloves",
+		"unique": "wardens_grips",
+		"item": false
+	},
+	"u_warlord_grips": {
+		"name": "Warlord's Grips",
+		"source": "gloves/skeleton_death_knight_2_gloves",
+		"unique": "warlord_grips",
+		"item": false
+	},
+	"valkyrie_1_gloves": {
+		"name": "Valkyrie 1 Gloves",
+		"source": "free-chibi-valkyrie/Valkyrie_1",
+		"item": false
+	},
+	"vampire_hunter_2_gloves": {
+		"name": "Vampire Hunter 2 Gloves",
+		"source": "chibi-vampire/Vampire_Hunter_2",
+		"item": false
+	},
+	"vampire_hunter_3_gloves": {
+		"name": "Vampire Hunter 3 Gloves",
+		"source": "chibi-vampire/Vampire_Hunter_3",
+		"item": false
+	},
+	"very_heavy_armored_frontier_defender_gloves": {
+		"name": "Very Heavy Armored Frontier Defender Gloves",
+		"source": "medieval-king/Very Heavy Armored Frontier Defender",
+		"item": false
+	},
+	"viking_2_gloves": {
+		"name": "Viking 2 Gloves",
+		"source": "viking-chibi/Viking_2",
+		"item": false
+	},
+	"white_armored_knight_gloves": {
+		"name": "White Armored Knight Gloves",
+		"source": "armored/White Armored Knight",
+		"item": false
+	},
+	"white_ninja_gloves": {
+		"name": "White Ninja Gloves",
+		"source": "ninja/White Ninja",
+		"item": false
+	},
+	"witch_1_gloves": {
+		"name": "Witch 1 Gloves",
+		"source": "witch-chibi/Witch_1",
+		"item": false
+	}
+}

@@ -1,0 +1,761 @@
+{
+	"amazon_warrior_3_boots": {
+		"name": "Amazon Warrior 3 Boots",
+		"source": "amazon/Amazon_Warrior_3",
+		"item": false
+	},
+	"archer_1_boots": {
+		"name": "Archer 1 Boots",
+		"source": "archer-chibi-2d/Archer_1",
+		"item": false
+	},
+	"archer_2_boots": {
+		"name": "Archer 2 Boots",
+		"source": "archer-chibi-2d/Archer_2",
+		"item": false
+	},
+	"archer_3_boots": {
+		"name": "Archer 3 Boots",
+		"source": "archer-chibi-2d/Archer_3",
+		"item": false
+	},
+	"archer_guy_boots": {
+		"name": "Archer Guy Boots",
+		"source": "archer-barbarian/Archer Guy",
+		"item": false
+	},
+	"assassin_guy_boots": {
+		"name": "Assassin Guy Boots",
+		"source": "ninja/Assassin Guy",
+		"item": false
+	},
+	"black_wizard_boots": {
+		"name": "Black Wizard Boots",
+		"source": "fantasy/Black Wizard",
+		"item": false
+	},
+	"blood_demon_2_boots": {
+		"name": "Blood Demon 2 Boots",
+		"source": "chibi-blood/Blood_Demon_2",
+		"item": false
+	},
+	"chain_boots": {
+		"name": "Chain Boots",
+		"source": "free-chibi-skeleton-crusader/Skeleton_Crusader_2",
+		"item": true
+	},
+	"chibi_prisoner_guy_boots": {
+		"name": "Chibi Prisoner Guy Boots",
+		"source": "4-chibi-character/Chibi Prisoner Guy",
+		"item": false
+	},
+	"citizen_1_boots": {
+		"name": "Citizen 1 Boots",
+		"source": "citizen/Citizen_1",
+		"item": false
+	},
+	"citizen_2_boots": {
+		"name": "Citizen 2 Boots",
+		"source": "citizen/Citizen_2",
+		"item": false
+	},
+	"citizen_3_boots": {
+		"name": "Citizen 3 Boots",
+		"source": "citizen/Citizen_3",
+		"item": false
+	},
+	"citizen_women_1_boots": {
+		"name": "Citizen Women 1 Boots",
+		"source": "women/Citizen-Women_1",
+		"item": false
+	},
+	"citizen_women_2_boots": {
+		"name": "Citizen Women 2 Boots",
+		"source": "women/Citizen-Women_2",
+		"item": false
+	},
+	"citizen_women_3_boots": {
+		"name": "Citizen Women 3 Boots",
+		"source": "women/Citizen-Women_3",
+		"item": false
+	},
+	"cursed_alchemist_1_boots": {
+		"name": "Cursed Alchemist 1 Boots",
+		"source": "chibi-cursed/Cursed_Alchemist_1",
+		"item": false
+	},
+	"cursed_alchemist_2_boots": {
+		"name": "Cursed Alchemist 2 Boots",
+		"source": "chibi-cursed/Cursed_Alchemist_2",
+		"item": false
+	},
+	"dark_elves_2_boots": {
+		"name": "Dark Elves 2 Boots",
+		"source": "dark-elves/Dark_Elves_2",
+		"item": false
+	},
+	"dark_elves_3_boots": {
+		"name": "Dark Elves 3 Boots",
+		"source": "dark-elves/Dark_Elves_3",
+		"item": false
+	},
+	"dark_oracle_1_boots": {
+		"name": "Dark Oracle 1 Boots",
+		"source": "free-chibi-dark/Dark_Oracle_1",
+		"item": false
+	},
+	"death_greaves": {
+		"name": "Death Greaves",
+		"source": "death-knight-skeleton/Death_Knight",
+		"item": true
+	},
+	"demons_of_darkness_1_boots": {
+		"name": "Demons Of Darkness 1 Boots",
+		"source": "demon-of/Demons_of_Darkness_1",
+		"item": false
+	},
+	"desert_nomad_1_boots": {
+		"name": "Desert Nomad 1 Boots",
+		"source": "desert/Desert_Nomad_1",
+		"item": false
+	},
+	"desert_nomad_2_boots": {
+		"name": "Desert Nomad 2 Boots",
+		"source": "desert/Desert_Nomad_2",
+		"item": false
+	},
+	"desert_nomad_3_boots": {
+		"name": "Desert Nomad 3 Boots",
+		"source": "desert/Desert_Nomad_3",
+		"item": false
+	},
+	"devil_boots": {
+		"name": "Devil Boots",
+		"source": "devil/Devil",
+		"item": false
+	},
+	"elementals_2_boots": {
+		"name": "Elementals 2 Boots",
+		"source": "elemental-chibi/Elementals_2",
+		"item": false
+	},
+	"elementals_3_boots": {
+		"name": "Elementals 3 Boots",
+		"source": "elemental-chibi/Elementals_3",
+		"item": false
+	},
+	"elf_archer_1_boots": {
+		"name": "Elf Archer 1 Boots",
+		"source": "elf-archer/Archer_1",
+		"item": false
+	},
+	"elf_archer_2_boots": {
+		"name": "Elf Archer 2 Boots",
+		"source": "elf-archer/Archer_2",
+		"item": false
+	},
+	"elf_archer_3_boots": {
+		"name": "Elf Archer 3 Boots",
+		"source": "elf-archer/Archer_3",
+		"item": false
+	},
+	"fallen_angels_2_boots": {
+		"name": "Fallen Angels 2 Boots",
+		"source": "free-fallen/Fallen_Angels_2",
+		"item": false
+	},
+	"fallen_angels_3_boots": {
+		"name": "Fallen Angels 3 Boots",
+		"source": "free-fallen/Fallen_Angels_3",
+		"item": false
+	},
+	"forest_ranger_1_boots": {
+		"name": "Forest Ranger 1 Boots",
+		"source": "free-forest/Forest_Ranger_1",
+		"item": false
+	},
+	"forest_ranger_2_boots": {
+		"name": "Forest Ranger 2 Boots",
+		"source": "free-forest/Forest_Ranger_2",
+		"item": false
+	},
+	"frost_greaves": {
+		"name": "Frost Greaves",
+		"source": "ghost-knight-chibi/Ghost_Knight_1",
+		"item": true
+	},
+	"frost_knight_1_boots": {
+		"name": "Frost Knight 1 Boots",
+		"source": "frost/Frost_Knight_1",
+		"item": false
+	},
+	"frost_knight_3_boots": {
+		"name": "Frost Knight 3 Boots",
+		"source": "frost/Frost_Knight_3",
+		"item": false
+	},
+	"ghost_knight_2_boots": {
+		"name": "Ghost Knight 2 Boots",
+		"source": "chibi-ghost/Ghost_Knight_2",
+		"item": false
+	},
+	"ghost_knight_3_boots": {
+		"name": "Ghost Knight 3 Boots",
+		"source": "ghost-knight-chibi/Ghost_Knight_3",
+		"item": false
+	},
+	"ghoul_boots": {
+		"name": "Ghoul Boots",
+		"source": "ghoul-lich/Ghoul",
+		"item": false
+	},
+	"ghoul_hunter_1_boots": {
+		"name": "Ghoul Hunter 1 Boots",
+		"source": "ghoul-hunter/Ghoul_Hunter_1",
+		"item": false
+	},
+	"ghoul_hunter_2_boots": {
+		"name": "Ghoul Hunter 2 Boots",
+		"source": "ghoul-hunter/Ghoul_Hunter_2",
+		"item": false
+	},
+	"ghoul_hunter_3_boots": {
+		"name": "Ghoul Hunter 3 Boots",
+		"source": "ghoul-hunter/Ghoul_Hunter_3",
+		"item": false
+	},
+	"girl_knight_1_boots": {
+		"name": "Girl Knight 1 Boots",
+		"source": "girl-knight/Girl_Knight_1",
+		"item": false
+	},
+	"girl_knight_2_boots": {
+		"name": "Girl Knight 2 Boots",
+		"source": "girl-knight/Girl_Knight_2",
+		"item": false
+	},
+	"girl_knight_3_boots": {
+		"name": "Girl Knight 3 Boots",
+		"source": "girl-knight/Girl_Knight_3",
+		"item": false
+	},
+	"gnome_1_boots": {
+		"name": "Gnome 1 Boots",
+		"source": "gnome/Gnome_1",
+		"item": false
+	},
+	"gnome_2_boots": {
+		"name": "Gnome 2 Boots",
+		"source": "gnome/Gnome_2",
+		"item": false
+	},
+	"gnome_3_boots": {
+		"name": "Gnome 3 Boots",
+		"source": "gnome/Gnome_3",
+		"item": false
+	},
+	"goblin_3_boots": {
+		"name": "Goblin 3 Boots",
+		"source": "goblin-chibi-character/Goblin_3",
+		"item": false
+	},
+	"greek_warrior_boots": {
+		"name": "Greek Warrior Boots",
+		"source": "spartan/Greek Warrior",
+		"item": false
+	},
+	"hell_knight_boots": {
+		"name": "Hell Knight Boots",
+		"source": "devil/Hell_Knight",
+		"item": false
+	},
+	"human_magician_1_boots": {
+		"name": "Human Magician 1 Boots",
+		"source": "human/Human Magician_1",
+		"item": false
+	},
+	"human_magician_2_boots": {
+		"name": "Human Magician 2 Boots",
+		"source": "human/Human Magician_2",
+		"item": false
+	},
+	"human_magician_3_boots": {
+		"name": "Human Magician 3 Boots",
+		"source": "human/Human Magician_3",
+		"item": false
+	},
+	"knight_1_boots": {
+		"name": "Knight 1 Boots",
+		"source": "knight-chibi-character-sprites/Knight_1",
+		"item": false
+	},
+	"knight_2_boots": {
+		"name": "Knight 2 Boots",
+		"source": "knight-chibi-character-sprites/Knight_2",
+		"item": false
+	},
+	"knight_3_boots": {
+		"name": "Knight 3 Boots",
+		"source": "knight-chibi-character-sprites/Knight_3",
+		"item": false
+	},
+	"leather_boots": {
+		"name": "Leather Boots",
+		"source": "free-forest/Forest_Ranger_3",
+		"item": true
+	},
+	"lich_boots": {
+		"name": "Lich Boots",
+		"source": "ghoul-lich/Lich",
+		"item": false
+	},
+	"magician_1_boots": {
+		"name": "Magician 1 Boots",
+		"source": "magician-chibi-2d/Magician_1",
+		"item": false
+	},
+	"magician_2_boots": {
+		"name": "Magician 2 Boots",
+		"source": "magician-chibi-2d/Magician_2",
+		"item": false
+	},
+	"magician_3_boots": {
+		"name": "Magician 3 Boots",
+		"source": "magician-chibi-2d/Magician_3",
+		"item": false
+	},
+	"magician_demon_1_boots": {
+		"name": "Magician Demon 1 Boots",
+		"source": "magician-demon/Magician_1",
+		"item": false
+	},
+	"magician_demon_3_boots": {
+		"name": "Magician Demon 3 Boots",
+		"source": "magician-demon/Magician_3",
+		"item": false
+	},
+	"magician_girl_2_boots": {
+		"name": "Magician Girl 2 Boots",
+		"source": "magician-girl/Magician_Girl_2",
+		"item": false
+	},
+	"magician_undead_1_boots": {
+		"name": "Magician Undead 1 Boots",
+		"source": "magician-undead/Magician_1",
+		"item": false
+	},
+	"magician_undead_2_boots": {
+		"name": "Magician Undead 2 Boots",
+		"source": "magician-undead/Magician_2",
+		"item": false
+	},
+	"magician_undead_3_boots": {
+		"name": "Magician Undead 3 Boots",
+		"source": "magician-undead/Magician_3",
+		"item": false
+	},
+	"medieval_king_boots": {
+		"name": "Medieval King Boots",
+		"source": "medieval-king/Medieval King",
+		"item": false
+	},
+	"medieval_knight_boots": {
+		"name": "Medieval Knight Boots",
+		"source": "armored/Medieval Knight",
+		"item": false
+	},
+	"medieval_mage_boots": {
+		"name": "Medieval Mage Boots",
+		"source": "archer-barbarian/Medieval Mage",
+		"item": false
+	},
+	"medieval_thug_boots": {
+		"name": "Medieval Thug Boots",
+		"source": "4-chibi-character/Medieval Thug",
+		"item": false
+	},
+	"medieval_warrior_girl_boots": {
+		"name": "Medieval Warrior Girl Boots",
+		"source": "medieval-warrior/Medieval Warrior Girl",
+		"item": false
+	},
+	"medusa_1_boots": {
+		"name": "Medusa 1 Boots",
+		"source": "medusa/Medusa_1",
+		"item": false
+	},
+	"mercenaries_2_boots": {
+		"name": "Mercenaries 2 Boots",
+		"source": "chibi-mercenaries/Mercenaries_2",
+		"item": false
+	},
+	"mimic_1_boots": {
+		"name": "Mimic 1 Boots",
+		"source": "mimic/Mimic_1",
+		"item": false
+	},
+	"minotaur_3_boots": {
+		"name": "Minotaur 3 Boots",
+		"source": "free-minotaur/Minotaur_3",
+		"item": false
+	},
+	"monk_guy_boots": {
+		"name": "Monk Guy Boots",
+		"source": "monk-evil/Monk Guy",
+		"item": false
+	},
+	"necromancer_of_the_shadow_1_boots": {
+		"name": "Necromancer Of The Shadow 1 Boots",
+		"source": "free-chibi-necromancer/Necromancer_of_the_Shadow_1",
+		"item": false
+	},
+	"necromancer_of_the_shadow_2_boots": {
+		"name": "Necromancer Of The Shadow 2 Boots",
+		"source": "free-chibi-necromancer/Necromancer_of_the_Shadow_2",
+		"item": false
+	},
+	"old_hero_1_boots": {
+		"name": "Old Hero 1 Boots",
+		"source": "old-hero/Old_hero_1",
+		"item": false
+	},
+	"old_hero_2_boots": {
+		"name": "Old Hero 2 Boots",
+		"source": "old-hero/Old_hero_2",
+		"item": false
+	},
+	"old_hero_3_boots": {
+		"name": "Old Hero 3 Boots",
+		"source": "old-hero/Old_hero_3",
+		"item": false
+	},
+	"persian_and_arab_warriors_1_boots": {
+		"name": "Persian And Arab Warriors 1 Boots",
+		"source": "persian/Persian_and_Arab_Warriors_1",
+		"item": false
+	},
+	"persian_and_arab_warriors_2_boots": {
+		"name": "Persian And Arab Warriors 2 Boots",
+		"source": "persian/Persian_and_Arab_Warriors_2",
+		"item": false
+	},
+	"persian_and_arab_warriors_3_boots": {
+		"name": "Persian And Arab Warriors 3 Boots",
+		"source": "persian/Persian_and_Arab_Warriors_3",
+		"item": false
+	},
+	"plated_boots": {
+		"name": "Plated Boots",
+		"source": "chibi-mercenaries/Mercenaries_1",
+		"item": true
+	},
+	"pumpkin_head_guy_boots": {
+		"name": "Pumpkin Head Guy Boots",
+		"source": "halloween/Pumpkin Head Guy",
+		"item": false
+	},
+	"pyromancer_1_boots": {
+		"name": "Pyromancer 1 Boots",
+		"source": "pyromancer/Pyromancer_1",
+		"item": false
+	},
+	"pyromancer_2_boots": {
+		"name": "Pyromancer 2 Boots",
+		"source": "pyromancer/Pyromancer_2",
+		"item": false
+	},
+	"pyromancer_3_boots": {
+		"name": "Pyromancer 3 Boots",
+		"source": "pyromancer/Pyromancer_3",
+		"item": false
+	},
+	"reaper_man_1_boots": {
+		"name": "Reaper Man 1 Boots",
+		"source": "free-reaper/Reaper_Man_1",
+		"item": false
+	},
+	"reaper_man_2_boots": {
+		"name": "Reaper Man 2 Boots",
+		"source": "free-reaper/Reaper_Man_2",
+		"item": false
+	},
+	"reaper_man_3_boots": {
+		"name": "Reaper Man 3 Boots",
+		"source": "free-reaper/Reaper_Man_3",
+		"item": false
+	},
+	"riding_boots": {
+		"name": "Riding Boots",
+		"source": "medieval-king/Medieval Sergeant",
+		"item": true
+	},
+	"samurai_1_boots": {
+		"name": "Samurai 1 Boots",
+		"source": "samurai/Samurai_1",
+		"item": false
+	},
+	"samurai_2_boots": {
+		"name": "Samurai 2 Boots",
+		"source": "samurai/Samurai_2",
+		"item": false
+	},
+	"samurai_3_boots": {
+		"name": "Samurai 3 Boots",
+		"source": "samurai/Samurai_3",
+		"item": false
+	},
+	"seer_1_boots": {
+		"name": "Seer 1 Boots",
+		"source": "free-seer/Seer_1",
+		"item": false
+	},
+	"seer_2_boots": {
+		"name": "Seer 2 Boots",
+		"source": "free-seer/Seer_2",
+		"item": false
+	},
+	"seer_3_boots": {
+		"name": "Seer 3 Boots",
+		"source": "free-seer/Seer_3",
+		"item": false
+	},
+	"shaman_2_boots": {
+		"name": "Shaman 2 Boots",
+		"source": "shaman-chibi-character/Shaman_2",
+		"item": false
+	},
+	"shaman_3_boots": {
+		"name": "Shaman 3 Boots",
+		"source": "shaman-chibi-character/Shaman_3",
+		"item": false
+	},
+	"shaman_of_thunder_2_boots": {
+		"name": "Shaman Of Thunder 2 Boots",
+		"source": "chibi-shaman/Shaman_of_Thunder_2",
+		"item": false
+	},
+	"shaman_of_thunder_3_boots": {
+		"name": "Shaman Of Thunder 3 Boots",
+		"source": "chibi-shaman/Shaman_of_Thunder_3",
+		"item": false
+	},
+	"shamans_3_boots": {
+		"name": "Shamans 3 Boots",
+		"source": "orc-shaman/Shamans_3",
+		"item": false
+	},
+	"skeleton_boots": {
+		"name": "Skeleton Boots",
+		"source": "death-knight-skeleton/Skeleton",
+		"item": false
+	},
+	"skeleton_crusader_1_boots": {
+		"name": "Skeleton Crusader 1 Boots",
+		"source": "free-chibi-skeleton-crusader/Skeleton_Crusader_1",
+		"item": false
+	},
+	"skeleton_crusader_3_boots": {
+		"name": "Skeleton Crusader 3 Boots",
+		"source": "free-chibi-skeleton-crusader/Skeleton_Crusader_3",
+		"item": false
+	},
+	"skeleton_death_knight_2_boots": {
+		"name": "Skeleton Death Knight 2 Boots",
+		"source": "chibi-skeleton-death/Skeleton_Death_Knight_2",
+		"item": false
+	},
+	"skeleton_death_knight_3_boots": {
+		"name": "Skeleton Death Knight 3 Boots",
+		"source": "chibi-skeleton-death/Skeleton_Death_Knight_3",
+		"item": false
+	},
+	"skeleton_hunter_2_boots": {
+		"name": "Skeleton Hunter 2 Boots",
+		"source": "chibi-skeleton-hunter/Skeleton_Hunter_2",
+		"item": false
+	},
+	"skeleton_hunter_3_boots": {
+		"name": "Skeleton Hunter 3 Boots",
+		"source": "chibi-skeleton-hunter/Skeleton_Hunter_3",
+		"item": false
+	},
+	"skeleton_necromancer_1_boots": {
+		"name": "Skeleton Necromancer 1 Boots",
+		"source": "chibi-skeleton-necromancer/Skeleton_Necromancer_1",
+		"item": false
+	},
+	"skeleton_pirate_captain_1_boots": {
+		"name": "Skeleton Pirate Captain 1 Boots",
+		"source": "chibi-skeleton-pirate/Skeleton_Pirate_Captain_1",
+		"item": false
+	},
+	"skeleton_pirate_captain_3_boots": {
+		"name": "Skeleton Pirate Captain 3 Boots",
+		"source": "chibi-skeleton-pirate/Skeleton_Pirate_Captain_3",
+		"item": false
+	},
+	"spiritual_monk_1_boots": {
+		"name": "Spiritual Monk 1 Boots",
+		"source": "chibi-spiritual/Spiritual_Monk_1",
+		"item": false
+	},
+	"spiritual_monk_2_boots": {
+		"name": "Spiritual Monk 2 Boots",
+		"source": "chibi-spiritual/Spiritual_Monk_2",
+		"item": false
+	},
+	"spiritual_monk_3_boots": {
+		"name": "Spiritual Monk 3 Boots",
+		"source": "chibi-spiritual/Spiritual_Monk_3",
+		"item": false
+	},
+	"time_keeper_1_boots": {
+		"name": "Time Keeper 1 Boots",
+		"source": "chibi-time/Time_Keeper_1",
+		"item": false
+	},
+	"time_keeper_2_boots": {
+		"name": "Time Keeper 2 Boots",
+		"source": "chibi-time/Time_Keeper_2",
+		"item": false
+	},
+	"time_keeper_3_boots": {
+		"name": "Time Keeper 3 Boots",
+		"source": "chibi-time/Time_Keeper_3",
+		"item": false
+	},
+	"u_ancestral_boots": {
+		"name": "Treads of the Forefathers",
+		"source": "boots/old_hero_1_boots",
+		"unique": "ancestral_boots",
+		"item": false
+	},
+	"u_warlord_treads": {
+		"name": "Warlord's Treads",
+		"source": "boots/skeleton_death_knight_2_boots",
+		"unique": "warlord_treads",
+		"item": false
+	},
+	"u_windrunner_boots": {
+		"name": "Windrunner's Boots",
+		"source": "boots/forest_ranger_1_boots",
+		"unique": "windrunner_boots",
+		"item": false
+	},
+	"u_windstriders": {
+		"name": "Windstriders",
+		"source": "boots/white_ninja_boots",
+		"unique": "windstriders",
+		"item": false
+	},
+	"valkyrie_1_boots": {
+		"name": "Valkyrie 1 Boots",
+		"source": "free-chibi-valkyrie/Valkyrie_1",
+		"item": false
+	},
+	"valkyrie_2_boots": {
+		"name": "Valkyrie 2 Boots",
+		"source": "free-chibi-valkyrie/Valkyrie_2",
+		"item": false
+	},
+	"valkyrie_3_boots": {
+		"name": "Valkyrie 3 Boots",
+		"source": "free-chibi-valkyrie/Valkyrie_3",
+		"item": false
+	},
+	"vampire_1_boots": {
+		"name": "Vampire 1 Boots",
+		"source": "vampire-chibi/Vampire_1",
+		"item": false
+	},
+	"vampire_2_boots": {
+		"name": "Vampire 2 Boots",
+		"source": "vampire-chibi/Vampire_2",
+		"item": false
+	},
+	"vampire_3_boots": {
+		"name": "Vampire 3 Boots",
+		"source": "vampire-chibi/Vampire_3",
+		"item": false
+	},
+	"vampire_boots": {
+		"name": "Vampire Boots",
+		"source": "halloween/Vampire",
+		"item": false
+	},
+	"vampire_hunter_1_boots": {
+		"name": "Vampire Hunter 1 Boots",
+		"source": "chibi-vampire/Vampire_Hunter_1",
+		"item": false
+	},
+	"vampire_hunter_3_boots": {
+		"name": "Vampire Hunter 3 Boots",
+		"source": "chibi-vampire/Vampire_Hunter_3",
+		"item": false
+	},
+	"viking_1_boots": {
+		"name": "Viking 1 Boots",
+		"source": "viking-chibi/Viking_1",
+		"item": false
+	},
+	"viking_2_boots": {
+		"name": "Viking 2 Boots",
+		"source": "viking-chibi/Viking_2",
+		"item": false
+	},
+	"viking_3_boots": {
+		"name": "Viking 3 Boots",
+		"source": "viking-chibi/Viking_3",
+		"item": false
+	},
+	"white_armored_knight_boots": {
+		"name": "White Armored Knight Boots",
+		"source": "armored/White Armored Knight",
+		"item": false
+	},
+	"white_ninja_boots": {
+		"name": "White Ninja Boots",
+		"source": "ninja/White Ninja",
+		"item": false
+	},
+	"winter_witch_1_boots": {
+		"name": "Winter Witch 1 Boots",
+		"source": "chibi-winter/Winter_Witch_1",
+		"item": false
+	},
+	"winter_witch_2_boots": {
+		"name": "Winter Witch 2 Boots",
+		"source": "chibi-winter/Winter_Witch_2",
+		"item": false
+	},
+	"winter_witch_3_boots": {
+		"name": "Winter Witch 3 Boots",
+		"source": "chibi-winter/Winter_Witch_3",
+		"item": false
+	},
+	"witch_1_boots": {
+		"name": "Witch 1 Boots",
+		"source": "witch-chibi/Witch_1",
+		"item": false
+	},
+	"witch_2_boots": {
+		"name": "Witch 2 Boots",
+		"source": "witch-chibi/Witch_2",
+		"item": false
+	},
+	"witch_3_boots": {
+		"name": "Witch 3 Boots",
+		"source": "witch-chibi/Witch_3",
+		"item": false
+	},
+	"worn_boots": {
+		"name": "Worn Boots",
+		"source": "free-zombie/Zombie_Villager_1",
+		"item": true
+	},
+	"zombie_villager_3_boots": {
+		"name": "Zombie Villager 3 Boots",
+		"source": "free-zombie/Zombie_Villager_3",
+		"item": false
+	}
+}

@@ -25,6 +25,8 @@ RUN apt-get update \
  && useradd --create-home --uid 1000 tainted
 COPY --from=godot /usr/local/bin/godot /usr/local/bin/godot
 COPY tainted.pck /game/tainted.pck
+# The update games fetch from the server (Updater; publish_update.ps1): patches and update.json
+COPY update/ /game/update/
 # The start script (a docker stop becomes a proper shutdown: everyone told, every account written)
 # and the admin command (docker exec tainted tainted-admin status / kick / ban / ...)
 COPY entrypoint.sh /usr/local/bin/tainted-server

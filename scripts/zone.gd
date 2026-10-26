@@ -239,7 +239,7 @@ func _add_quest_object(o: Dictionary) -> void:
 	it.prompt = String(o.get("prompt", "Use"))
 	add_child(it)
 	var sprite := String(o.get("sprite", ""))
-	var tex: Texture2D = load(MazeMap.DIR + sprite + ".png") if sprite != "" else null
+	var tex := MapTheme.load_sprite(maze.theme, sprite)
 	if tex == null:
 		# No art: a small iron-banded chest
 		var chest := Node2D.new()

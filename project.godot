@@ -6,9 +6,11 @@ config_version=5
 config/name="Tainted"
 run/main_scene="res://scenes/character_select.tscn"
 config/features=PackedStringArray("4.3", "GL Compatibility")
+config/icon="res://assets/icon/icon.png"
 
 [autoload]
 
+Updater="*res://scripts/updater.gd"
 LootGenerator="*res://scripts/loot_generator.gd"
 GameState="*res://scripts/game_state.gd"
 Net="*res://scripts/net.gd"
@@ -24,8 +26,8 @@ window/handheld/orientation=0
 [tainted]
 
 net/world_name="Tainted World"
-net/world_addresses=PackedStringArray("ws://192.168.86.18:24601")
-net/auth_url="http://192.168.86.18:5180"
+net/world_addresses=PackedStringArray("wss://tainted.xandflix.uk", "ws://192.168.86.18:24601")
+net/auth_url="https://auth.xandflix.uk"
 
 [gui]
 

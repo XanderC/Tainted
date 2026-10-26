@@ -93,7 +93,7 @@ func _zone() -> void:
 	var town = _scene()
 	check(town.scene_file_path.ends_with("town.tscn"), "through it: in town")
 	ps = _portals()
-	check(ps.size() == 1 and "Portal: The Dune Wastes" in ps[0]._plate.text and ps[0].global_position.distance_to(town.PORTAL) < 1.0,
+	check(ps.size() == 1 and "Portal: The Ashwood" in ps[0]._plate.text and ps[0].global_position.distance_to(town.PORTAL) < 1.0,
 		"a portal back stands by the square (%s)" % (ps[0]._plate.text if ps.size() > 0 else "none"))
 	if ps.is_empty():
 		return

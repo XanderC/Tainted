@@ -9,7 +9,7 @@ const TOWN_NAME := "Ashfall Outpost"
 
 ## id: name, act, map (MapData id), area_level
 const ZONES := {
-	"dune_wastes": {"name": "The Dune Wastes", "act": 1, "map": "dune_wastes", "area_level": 2},
+	"dune_wastes": {"name": "The Ashwood", "act": 1, "map": "dune_wastes", "area_level": 2},
 }
 
 

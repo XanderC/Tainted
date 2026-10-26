@@ -1,0 +1,223 @@
+{
+	"buckler": {
+		"name": "Buckler",
+		"group": "shield",
+		"item": true
+	},
+	"gilded_aegis": {
+		"name": "Gilded Aegis",
+		"group": "shield",
+		"item": true
+	},
+	"heater_shield": {
+		"name": "Heater Shield",
+		"group": "shield",
+		"item": true
+	},
+	"kite_shield": {
+		"name": "Kite Shield",
+		"group": "shield",
+		"item": true
+	},
+	"shield_1_2": {
+		"name": "Plain Shield I",
+		"group": "shield",
+		"item": false
+	},
+	"shield_1_3": {
+		"name": "Fine Shield I",
+		"group": "shield",
+		"item": false
+	},
+	"shield_1_4": {
+		"name": "Ornate Shield I",
+		"group": "shield",
+		"item": false
+	},
+	"shield_1_5": {
+		"name": "Masterwork Shield I",
+		"group": "shield",
+		"item": false
+	},
+	"shield_2_1": {
+		"name": "Crude Shield II",
+		"group": "shield",
+		"item": false
+	},
+	"shield_2_2": {
+		"name": "Plain Shield II",
+		"group": "shield",
+		"item": false
+	},
+	"shield_2_3": {
+		"name": "Fine Shield II",
+		"group": "shield",
+		"item": false
+	},
+	"shield_2_5": {
+		"name": "Masterwork Shield II",
+		"group": "shield",
+		"item": false
+	},
+	"shield_3_1": {
+		"name": "Crude Shield III",
+		"group": "shield",
+		"item": false
+	},
+	"shield_3_3": {
+		"name": "Fine Shield III",
+		"group": "shield",
+		"item": false
+	},
+	"shield_3_4": {
+		"name": "Ornate Shield III",
+		"group": "shield",
+		"item": false
+	},
+	"shield_3_5": {
+		"name": "Masterwork Shield III",
+		"group": "shield",
+		"item": false
+	},
+	"shield_4_1": {
+		"name": "Crude Shield IV",
+		"group": "shield",
+		"item": false
+	},
+	"shield_4_2": {
+		"name": "Plain Shield IV",
+		"group": "shield",
+		"item": false
+	},
+	"shield_4_3": {
+		"name": "Fine Shield IV",
+		"group": "shield",
+		"item": false
+	},
+	"shield_4_4": {
+		"name": "Ornate Shield IV",
+		"group": "shield",
+		"item": false
+	},
+	"shield_4_5": {
+		"name": "Masterwork Shield IV",
+		"group": "shield",
+		"item": false
+	},
+	"shield_5_1": {
+		"name": "Crude Shield V",
+		"group": "shield",
+		"item": false
+	},
+	"shield_5_2": {
+		"name": "Plain Shield V",
+		"group": "shield",
+		"item": false
+	},
+	"shield_5_3": {
+		"name": "Fine Shield V",
+		"group": "shield",
+		"item": false
+	},
+	"shield_5_5": {
+		"name": "Masterwork Shield V",
+		"group": "shield",
+		"item": false
+	},
+	"shield_6_1": {
+		"name": "Crude Shield VI",
+		"group": "shield",
+		"item": false
+	},
+	"shield_6_2": {
+		"name": "Plain Shield VI",
+		"group": "shield",
+		"item": false
+	},
+	"shield_6_4": {
+		"name": "Ornate Shield VI",
+		"group": "shield",
+		"item": false
+	},
+	"shield_6_5": {
+		"name": "Masterwork Shield VI",
+		"group": "shield",
+		"item": false
+	},
+	"shield_7_1": {
+		"name": "Crude Shield VII",
+		"group": "shield",
+		"item": false
+	},
+	"shield_7_2": {
+		"name": "Plain Shield VII",
+		"group": "shield",
+		"item": false
+	},
+	"shield_7_3": {
+		"name": "Fine Shield VII",
+		"group": "shield",
+		"item": false
+	},
+	"shield_7_4": {
+		"name": "Ornate Shield VII",
+		"group": "shield",
+		"item": false
+	},
+	"shield_8_1": {
+		"name": "Crude Shield VIII",
+		"group": "shield",
+		"item": false
+	},
+	"shield_8_2": {
+		"name": "Plain Shield VIII",
+		"group": "shield",
+		"item": false
+	},
+	"shield_8_4": {
+		"name": "Ornate Shield VIII",
+		"group": "shield",
+		"item": false
+	},
+	"shield_8_5": {
+		"name": "Masterwork Shield VIII",
+		"group": "shield",
+		"item": false
+	},
+	"spiked_shield": {
+		"name": "Spiked Round Shield",
+		"group": "shield",
+		"item": true
+	},
+	"tower_shield": {
+		"name": "Tower Shield",
+		"group": "shield",
+		"item": true
+	},
+	"u_aegis_of_the_elements": {
+		"group": "shield",
+		"name": "Aegis of the Elements",
+		"source": "offhand/shield_7_4",
+		"unique": "aegis_of_the_elements",
+		"item": false
+	},
+	"u_ancestral_shield": {
+		"group": "shield",
+		"name": "Shield of the Forefathers",
+		"source": "offhand/shield_1_5",
+		"unique": "ancestral_shield",
+		"item": false
+	},
+	"u_bulwark_of_the_unbroken": {
+		"group": "shield",
+		"name": "Bulwark of the Unbroken",
+		"source": "offhand/shield_6_5",
+		"unique": "bulwark_of_the_unbroken",
+		"item": false
+	},
+	"wooden_shield": {
+		"name": "Wooden Shield",
+		"group": "shield",
+		"item": true
+	}
+}

@@ -11,7 +11,9 @@ extends Node
 ##
 ## It talks over WebSockets (ws:// on the LAN, wss:// through a TLS proxy such as Traefik behind a
 ## Cloudflare Tunnel), so a public server needs no forwarded port. The Tainted World's addresses are
-## project settings (tainted/net/world_addresses), tried in order: the home network's first.
+## project settings (tainted/net/world_addresses), tried in order: the public one first (it works from
+## home too, and the home network's address can take a long time to fail from anywhere else), then
+## the home network's.
 ##
 ## Each game runs its own copy of the scene (town NPCs, vendors and your character are local); the
 ## server passes on who is where, and keeps the characters (AccountStore). A game that loses the server
@@ -124,10 +126,10 @@ const KEEPALIVE := 20.0  ## a client says something at least this often (proxies
 const MAX_MSGS_PER_SEC := 40  ## per client; more are dropped
 ## The Tainted World, unless project settings say otherwise.
 const WORLD_NAME_DEFAULT := "Tainted World"
-const WORLD_ADDRESSES_DEFAULT := ["ws://192.168.86.18:24601"]
-const AUTH_URL_DEFAULT := "http://192.168.86.18:5180"  ## Autharr, for the sign-in (project setting tainted/net/auth_url)
-## Autharr's own pages, in the browser (creating an account, a forgotten password): public, unlike the
-## sign-in address above while the game is on the home network (project setting tainted/net/account_url)
+const WORLD_ADDRESSES_DEFAULT := ["wss://tainted.xandflix.uk", "ws://192.168.86.18:24601"]
+const AUTH_URL_DEFAULT := "https://auth.xandflix.uk"  ## Autharr, for the sign-in (project setting tainted/net/auth_url)
+## Autharr's own pages, in the browser (creating an account, a forgotten password)
+## (project setting tainted/net/account_url)
 const ACCOUNT_URL_DEFAULT := "https://auth.xandflix.uk"
 const AUTH_CLIENT := "tainted-game"
 const AUTH_FILE := "user://autharr.dat"
@@ -225,6 +227,7 @@ var update_where := ""
 
 
 func _ready() -> void:
+	Updater.note("Net ready")
 	process_mode = Node.PROCESS_MODE_ALWAYS  # keep talking while a menu pauses the game
 	_token = Crypto.new().generate_random_bytes(12).hex_encode()
 	multiplayer.peer_connected.connect(_on_peer_connected)
@@ -252,6 +255,8 @@ func _ready() -> void:
 				admin_dir = a.trim_prefix("--admin=")
 			elif a.begins_with("--update="):
 				update_where = a.trim_prefix("--update=")
+			elif a.begins_with("--update-dir="):
+				Updater.serve_from(a.trim_prefix("--update-dir="))
 		start_server(name_arg)
 		get_tree().change_scene_to_file.call_deferred("res://scenes/server.tscn")
 	else:
@@ -373,7 +378,11 @@ static func world_name() -> String:
 	return String(ProjectSettings.get_setting("tainted/net/world_name", WORLD_NAME_DEFAULT))
 
 
+## (A --world=<address> on the command line is used instead: testing against a local server.)
 static func world_addresses() -> Array:
+	for a in OS.get_cmdline_user_args():
+		if a.begins_with("--world="):
+			return [a.trim_prefix("--world=")]
 	return Array(ProjectSettings.get_setting("tainted/net/world_addresses", WORLD_ADDRESSES_DEFAULT))
 
 
@@ -534,7 +543,17 @@ func _set_status(m: Mode, text: String) -> void:
 
 
 func _on_connected() -> void:
+	if not Updater.begin_check():  # it says hello once it knows there's no update to fetch
+		send_hello()
+
+
+func send_hello() -> void:
 	_rpc_hello.rpc_id(1, PROTOCOL, my_info())
+
+
+## The Updater's status line for the player (downloading, restarting; `offline`: it gave up).
+func update_status(text: String, offline := false) -> void:
+	_set_status(Mode.OFFLINE if offline else Mode.CONNECTING, text)
 
 
 func _on_connection_failed() -> void:
@@ -610,16 +629,25 @@ func my_info() -> Dictionary:
 		for slot in Player.VISIBLE_SLOTS:
 			var it: ItemInstance = p.equipment.get(slot)
 			if it != null:
-				gear[slot] = [it.base.id, it.dye if slot in DyeDB.SLOTS else ""]
+				gear[slot] = _seen_gear(it, slot)
 		var off: ItemInstance = p.equipment.get("offhand")
 		if off != null:
-			gear["offhand"] = [off.base.id, off.base.weapon_type == "shield"]
+			gear["offhand"] = [Wardrobe.look_of(off), off.base.weapon_type == "shield"]
 	var account := {"kind": "autharr", "token": _access_token} if _access_token != "" else {"kind": "device", "key": device_key()}
 	if bot_key != "":
 		account = {"kind": "bot", "key": bot_key}
 	return {"name": GameState.char_name, "class": GameState.build_title(), "level": GameState.level,
 		"look": GameState.appearance, "gear": gear, "token": _token, "account": account, "hl": _hireling_info(),
 		"rift": GameState.rift_unlocked}
+
+
+## A worn piece as others see it: [art id, dye]. It is sent in the look it has (Wardrobe), so the
+## id is the art to draw (assets/gear/<folder>/<id>), not always the item's base. A weapon has no dye:
+## its second is how it is held (RigSprite.weapon_style: "2h", "spear", "dagger"; rig_for_seen).
+static func _seen_gear(it: ItemInstance, slot: String) -> Array:
+	if slot == "weapon":
+		return [Wardrobe.look_of(it), RigSprite.weapon_style(it.base)]
+	return [Wardrobe.look_of(it), it.dye if slot in DyeDB.SLOTS else ""]
 
 
 ## Your hireling's looks, for the others' copy of it (RemoteAlly); {} with none.
@@ -632,9 +660,9 @@ func _hireling_info() -> Dictionary:
 		if it == null:
 			continue
 		if slot == "offhand":
-			gear[slot] = [it.base.id, it.base.weapon_type == "shield"]
+			gear[slot] = [Wardrobe.look_of(it), it.base.weapon_type == "shield"]
 		elif slot in Player.VISIBLE_SLOTS:
-			gear[slot] = [it.base.id, it.dye if slot in DyeDB.SLOTS else ""]
+			gear[slot] = _seen_gear(it, slot)
 	return {"name": String(GameState.hireling.get("name", "")), "skin": String(GameState.hireling.get("skin", "")),
 		"look": GameState.hireling.get("look", {}), "gear": gear}
 
@@ -965,6 +993,12 @@ func _process(delta: float) -> void:
 func _on_peer_connected(id: int) -> void:
 	if is_server():
 		_pending[id] = Time.get_ticks_msec()  # recorded once it says hello
+
+
+## Server: a connection fetching an update (Updater) hasn't said hello yet: keep it a while longer.
+func hold_for_update(id: int) -> void:
+	if not _peers.has(id):
+		_pending[id] = Time.get_ticks_msec()
 
 
 ## Drops connections that never said hello.
@@ -1824,7 +1858,8 @@ static func _clean_info(info: Dictionary) -> Dictionary:
 		"hl": hireling, "rift": clampi(int(rift), 1, 999) if rift is int or rift is float else 1}
 
 
-## Worn gear as others see it: slot -> [item id, dye] (offhand: [item id, is a shield]).
+## Worn gear as others see it: slot -> [art id, dye] (weapon: [art id, its style]; offhand: [art id,
+## is a shield]).
 static func _clean_gear(g) -> Dictionary:
 	var gear := {}
 	if g is Dictionary:

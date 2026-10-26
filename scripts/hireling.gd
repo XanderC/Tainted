@@ -102,11 +102,20 @@ func _dress() -> void:
 	if rig == null:
 		return
 	if rig.skin == "":
+		var w: ItemInstance = GameState.hireling_gear.get("weapon")
+		var want := RigSprite.rig_for_weapon(w.base.id if w != null else "")
+		if rig.rig_dir != want:  # a bow, a spear, a dagger, a weapon in both hands: its rig
+			rig = RigSprite.swap_rig(rig, want)
+			Appearance.apply(rig, GameState.hireling.get("look", Appearance.default_look()))
+			rig.play_loop("Idle")
 		Player.dress_rig(rig, GameState.hireling_gear)
 		return
 	var bow: ItemInstance = GameState.hireling_gear.get("weapon")
-	var art := "res://assets/gear/weapon/%s/Bow.png" % (bow.base.id if bow != null else "")
-	rig.set_part_overrides({"Bow": load(art)} if bow != null and ResourceLoader.exists(art) else {})
+	var art := "res://assets/gear/weapon/%s/Bow.png" % Wardrobe.look_of(bow)  # in the look it has
+	var parts := RigSprite.skin_parts(rig.skin).duplicate()  # its own look, holding the bow
+	if bow != null and ResourceLoader.exists(art):
+		parts["Bow"] = load(art)
+	rig.set_part_overrides(parts)
 
 
 # ---------- combat stats ----------

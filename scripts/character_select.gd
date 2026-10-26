@@ -29,6 +29,7 @@ var _stage: Control
 
 
 func _ready() -> void:
+	Updater.note("start screen")
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	get_tree().paused = false
 	if Net.dedicated_requested():
@@ -90,6 +91,12 @@ func _build() -> void:
 	title.add_theme_color_override("font_outline_color", Color(0.25, 0.05, 0.05))
 	title.add_theme_constant_override("outline_size", 8)
 	outer.add_child(title)
+	# Which build this is (an update, Updater, shows here once it has loaded), bottom right
+	var build := UIKit.label("Build %d%s" % [Updater.build, "  (updated)" if Updater.patched else ""] if Updater.build > 0 else "Development build",
+		11, UIKit.TEXT_DIM)
+	build.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(build)
+	build.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT, Control.PRESET_MODE_MINSIZE, 6)
 
 	var cols := HBoxContainer.new()
 	cols.add_theme_constant_override("separation", 14)

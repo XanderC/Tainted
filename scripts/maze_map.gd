@@ -1,23 +1,17 @@
 class_name MazeMap
 extends Node2D
-## One map built from a JSON map file (MapData, made with the map editor): desert floor, rock walls
-## with collision, placed props (plus random trees and stones when "auto_decorate" is on), and an
-## AStarGrid2D so monsters can find their way to the player.
+## One map built from a JSON map file (MapData, made with the map editor), in the look of its theme
+## (MapTheme): the theme's floor, raised walls with collision (WallTiles), placed props (plus random
+## trees and stones when "auto_decorate" is on), and an AStarGrid2D so monsters can find their way to
+## the player.
 ## Cell (x, y) covers world rect [x*CELL, y*CELL] .. +CELL.
 
 const CELL := 128.0
-const DIR := "res://assets/tiles/desert/"
-const WALL_PROPS := ["tree_1", "tree_2", "tree_3", "tree_5", "tree_6", "tree_9", "tree_10",
-	"tree_12", "stones_5", "stones_6", "stones_4", "greenery_1", "greenery_4"]
-const FLOOR_PROPS := ["greenery_2", "greenery_6", "greenery_7", "greenery_10", "stones_1", "stones_7", "stones_9"]
-const WALL_COLOR := Color(0.36, 0.24, 0.15)
-const WALL_EDGE := Color(0.22, 0.14, 0.09)
-const PLATEAU_TINT := Color(0.86, 0.76, 0.66)
-## Big props for the middle of wide wall areas (plateau tops), with their scale.
-const PLATEAU_PROPS := [["stones_10", 0.3], ["stones_11", 0.3], ["stones_12", 0.3], ["tree_8", 0.5], ["tree_9", 0.5], ["tree_7", 0.5]]
 
 var map_id := ""
 var map_name := ""
+var theme := MapTheme.DEFAULT
+var dir := MapTheme.dir(MapTheme.DEFAULT)  # the theme's pictures
 var data := {}      # the whole map file (objects include NPCs and story triggers for scenes to use)
 var cols := 0
 var rows := 0
@@ -38,6 +32,8 @@ func setup(id: String) -> void:
 	map_id = id
 	data = MapData.load_map(id)
 	map_name = String(data.get("name", id))
+	theme = String(data.get("theme", MapTheme.DEFAULT))
+	dir = MapTheme.dir(theme)
 	_grid.assign(data.get("grid", ["#"]))
 	rows = _grid.size()
 	cols = _grid[0].length()
@@ -72,6 +68,7 @@ func _ready() -> void:
 	y_sort_enabled = true
 	texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 	_add_ground()
+	_add_walls()
 	_add_wall_collision()
 	if data.get("auto_decorate", true):
 		_decorate()
@@ -79,7 +76,6 @@ func _ready() -> void:
 		_placed_tile(o)
 	for o in MapData.objects_of(data, "prop"):
 		_placed_prop(o)
-	queue_redraw()
 
 
 # ---------- queries ----------
@@ -135,7 +131,7 @@ func random_floor_near(around: Vector2, min_d: float, max_d: float) -> Vector2:
 
 func _add_ground() -> void:
 	var g := Sprite2D.new()
-	g.texture = load(DIR + "bg.png")
+	g.texture = load(dir + "bg.png")
 	g.texture_repeat = CanvasItem.TEXTURE_REPEAT_ENABLED
 	g.region_enabled = true
 	g.centered = false
@@ -167,6 +163,10 @@ func _add_wall_collision() -> void:
 
 
 func _decorate() -> void:
+	var t := MapTheme.data(theme)
+	var wall_props: Array = t.wall_props
+	var floor_props: Array = t.floor_props
+	var plateau_props: Array = t.plateau_props
 	for y in rows:
 		for x in cols:
 			var c := Vector2i(x, y)
@@ -178,20 +178,20 @@ func _decorate() -> void:
 					continue
 				var faces_floor := not is_wall(c + Vector2i(1, 0)) \
 					or not is_wall(c + Vector2i(-1, 0)) or not is_wall(c + Vector2i(0, -1))
-				if not faces_floor and _interior(c) and _rng.randf() < 0.12:
-					var pp: Array = PLATEAU_PROPS[_rng.randi() % PLATEAU_PROPS.size()]
+				if not faces_floor and _interior(c) and _rng.randf() < float(t.plateau_chance):
+					var pp: Array = plateau_props[_rng.randi() % plateau_props.size()]
 					_prop(pp[0], base + Vector2(0.5 * CELL, -0.2 * CELL), pp[1])
-				elif faces_floor and _rng.randf() < 0.45:
-					_prop(WALL_PROPS[_rng.randi() % WALL_PROPS.size()],
-						base + Vector2(_rng.randf_range(0.25, 0.75) * CELL, -_rng.randf_range(0.1, 0.4) * CELL))
+				elif faces_floor and _rng.randf() < float(t.wall_chance):
+					var wp: Array = wall_props[_rng.randi() % wall_props.size()]
+					_prop(wp[0], base + Vector2(_rng.randf_range(0.25, 0.75) * CELL, -_rng.randf_range(0.1, 0.4) * CELL), wp[1])
 			elif _grid[y][x] == "." and _rng.randf() < 0.08:
-				_prop(FLOOR_PROPS[_rng.randi() % FLOOR_PROPS.size()],
-					base + Vector2(_rng.randf_range(0.2, 0.8) * CELL, -_rng.randf_range(0.2, 0.6) * CELL), 0.45)
+				var fp: Array = floor_props[_rng.randi() % floor_props.size()]
+				_prop(fp[0], base + Vector2(_rng.randf_range(0.2, 0.8) * CELL, -_rng.randf_range(0.2, 0.6) * CELL), fp[1])
 
 
 ## A flat ground piece (plateau, cliff, stairs, road) painted in the editor: under walls and characters.
 func _placed_tile(o: Dictionary) -> void:
-	var tex: Texture2D = load(DIR + String(o.get("sprite", "")) + ".png")
+	var tex := MapTheme.load_sprite(theme, String(o.get("sprite", "")))
 	if tex == null:
 		return
 	var s := Sprite2D.new()
@@ -206,7 +206,7 @@ func _placed_tile(o: Dictionary) -> void:
 
 ## A prop placed in the editor (exact spot and scale; "solid" ones block movement).
 func _placed_prop(o: Dictionary) -> void:
-	var tex: Texture2D = load(DIR + String(o.get("sprite", "")) + ".png")
+	var tex := MapTheme.load_sprite(theme, String(o.get("sprite", "")))
 	if tex == null:
 		return
 	var s := Sprite2D.new()
@@ -238,7 +238,7 @@ func _interior(c: Vector2i) -> bool:
 
 
 func _prop(name_: String, pos: Vector2, sc := 0.5) -> void:
-	var tex: Texture2D = load(DIR + name_ + ".png")
+	var tex := MapTheme.load_sprite(theme, name_)
 	if tex == null:
 		return
 	var s := Sprite2D.new()
@@ -250,29 +250,31 @@ func _prop(name_: String, pos: Vector2, sc := 0.5) -> void:
 	add_child(s)
 
 
-## Walls: raised desert plateaus with rock cliffs facing the floor (WallTiles picks each piece).
-## The plateau tops are tinted a little darker so they read as out of bounds.
-func _draw() -> void:
+## Walls: raised plateaus with rock cliffs facing the floor, drawn a quarter cell at a time (WallTiles
+## picks each quarter's piece). A tile layer at half scale: its 128 px tiles are the pieces' quarters.
+func _add_walls() -> void:
+	var layer := TileMapLayer.new()
+	layer.tile_set = TileSet.new()
+	layer.tile_set.tile_size = Vector2i(128, 128)
+	layer.scale = Vector2(0.5, 0.5)
+	layer.z_index = -40  # over the ground and painted tiles, under everything standing
+	add_child(layer)
+	var sources := {}  # piece -> atlas source id
 	var wall := func(c: Vector2i) -> bool: return is_wall(c)
 	for y in rows:
 		for x in cols:
 			if _grid[y][x] != "#":
 				continue
-			var c := Vector2i(x, y)
-			var tile := WallTiles.pick(wall, c)
-			var tex := _wall_tex(tile)
-			var r := Rect2(x * CELL, y * CELL, CELL, CELL)
-			if tex == null:
-				draw_rect(r, WALL_COLOR)
-				continue
-			var cliff := tile in ["land_12", "land_17", "land_14"]
-			draw_texture_rect(tex, r, false, Color.WHITE if cliff else PLATEAU_TINT)
-
-
-var _wall_cache := {}
-
-
-func _wall_tex(name_: String) -> Texture2D:
-	if not _wall_cache.has(name_):
-		_wall_cache[name_] = load(DIR + name_ + ".png")
-	return _wall_cache[name_]
+			var pieces := WallTiles.pick(wall, Vector2i(x, y))
+			for q in 4:
+				var piece := pieces[q]
+				if not sources.has(piece):
+					var src := TileSetAtlasSource.new()
+					src.texture = load(dir + "walls/" + piece + ".png")
+					src.texture_region_size = Vector2i(128, 128)
+					for ty in 2:
+						for tx in 2:
+							src.create_tile(Vector2i(tx, ty))
+					sources[piece] = layer.tile_set.add_source(src)
+				var quarter := Vector2i(q % 2, q >> 1)
+				layer.set_cell(Vector2i(x * 2, y * 2) + quarter, sources[piece], quarter)

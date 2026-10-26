@@ -4,7 +4,7 @@ extends Resource
 
 @export var id: String = ""
 @export var display_name: String = ""
-@export_enum("weapon", "offhand", "helmet", "chest", "gloves", "boots", "ring", "amulet", "belt", "flask") var slot: String = "weapon"
+@export_enum("weapon", "offhand", "helmet", "shoulders", "chest", "gloves", "boots", "ring", "amulet", "belt", "flask") var slot: String = "weapon"
 ## Weapons and shields: "sword", "axe", "mace", "spear", "dagger", "staff", "bow", "shield". "" for armour.
 ## Each class lists the types it may use (ClassDef.weapon_types).
 @export var weapon_type: String = ""
@@ -37,7 +37,7 @@ extends Resource
 
 const TYPE_NAMES := {
 	"sword": "Sword", "axe": "Axe", "mace": "Mace", "dagger": "Dagger",
-	"staff": "Staff", "bow": "Bow", "shield": "Shield", "spear": "Spear",
+	"staff": "Staff", "bow": "Bow", "crossbow": "Crossbow", "shield": "Shield", "spear": "Spear",
 }
 
 
@@ -46,14 +46,14 @@ const TYPE_NAMES := {
 const WEAPON_SIZES := {
 	"dagger": Vector2i(1, 2),
 	"sword": Vector2i(1, 3), "axe": Vector2i(1, 3), "mace": Vector2i(1, 3),
-	"staff": Vector2i(1, 4), "bow": Vector2i(2, 3), "spear": Vector2i(1, 4),
+	"staff": Vector2i(1, 4), "bow": Vector2i(2, 3), "crossbow": Vector2i(2, 3), "spear": Vector2i(1, 4),
 	"shield": Vector2i(2, 2),
 }
 const TWO_HANDED_SIZES := {
 	"sword": Vector2i(2, 4), "axe": Vector2i(2, 3), "mace": Vector2i(2, 4),
 }
 const SLOT_SIZES := {
-	"helmet": Vector2i(2, 2), "chest": Vector2i(2, 3), "gloves": Vector2i(2, 2),
+	"helmet": Vector2i(2, 2), "shoulders": Vector2i(2, 2), "chest": Vector2i(2, 3), "gloves": Vector2i(2, 2),
 	"boots": Vector2i(2, 2), "ring": Vector2i(1, 1), "amulet": Vector2i(1, 1),
 	"belt": Vector2i(2, 1), "flask": Vector2i(1, 2),
 	"weapon": Vector2i(1, 3), "offhand": Vector2i(2, 2),
@@ -82,7 +82,7 @@ func max_sockets() -> int:
 			return 0
 		"ring", "amulet":
 			return 1
-		"gloves", "boots":
+		"gloves", "boots", "shoulders":
 			return 2
 		"helmet":
 			return 3
@@ -90,8 +90,8 @@ func max_sockets() -> int:
 			return 6
 	if two_handed:
 		return 6
-	if weapon_type == "dagger":
-		return 3
+	if weapon_type == "dagger" or weapon_type == "crossbow":
+		return 3  # (a two-handed crossbow took 6 above)
 	return 4  # one-handed swords, axes, maces; shields
 
 

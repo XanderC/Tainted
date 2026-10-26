@@ -57,6 +57,11 @@ func setup(what: String, hl: Dictionary) -> void:
 func _dress(hl: Dictionary) -> void:
 	var gear: Dictionary = hl.get("gear", {})
 	if rig.skin == "":
+		var w = gear.get("weapon")
+		var want := RigSprite.rig_for_seen(String(w[0]) if w is Array else "", String(w[1]) if w is Array else "")
+		if rig.rig_dir != want:  # a bow, a spear, a dagger, a weapon in both hands: its rig
+			rig = RigSprite.swap_rig(rig, want)
+			rig.play_loop("Idle")
 		Appearance.apply(rig, hl.get("look", {}))
 		for slot in Player.VISIBLE_SLOTS:
 			var g = gear.get(slot)
@@ -66,7 +71,10 @@ func _dress(hl: Dictionary) -> void:
 		return
 	var bow = gear.get("weapon")
 	var art := "res://assets/gear/weapon/%s/Bow.png" % (String(bow[0]) if bow is Array else "")
-	rig.set_part_overrides({"Bow": load(art)} if bow is Array and ResourceLoader.exists(art) else {})
+	var parts := RigSprite.skin_parts(rig.skin).duplicate()  # its own look, holding the bow
+	if bow is Array and ResourceLoader.exists(art):
+		parts["Bow"] = load(art)
+	rig.set_part_overrides(parts)
 
 
 ## Where it is and what it plays: [kind, position, facing, animation, speed] (Net._ally_state).

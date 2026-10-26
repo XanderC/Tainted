@@ -1,0 +1,2744 @@
+{
+	"amazon_warrior_1_weapon": {
+		"name": "Amazon Warrior 1's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"amazon_warrior_2_weapon": {
+		"name": "Amazon Warrior 2's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"amazon_warrior_3_weapon": {
+		"name": "Amazon Warrior 3's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"arbalest": {
+		"name": "Arbalest",
+		"group": "bow",
+		"item": true
+	},
+	"archer_1_bow": {
+		"name": "Archer 1's Bow",
+		"group": "bow",
+		"item": false
+	},
+	"archer_2_bow": {
+		"name": "Archer 2's Bow",
+		"group": "bow",
+		"item": false
+	},
+	"archer_3_bow": {
+		"name": "Archer 3's Bow",
+		"group": "bow",
+		"item": false
+	},
+	"axe_1_1": {
+		"name": "Crude Axe I",
+		"group": "melee",
+		"item": false
+	},
+	"axe_1_3": {
+		"name": "Fine Axe I",
+		"group": "melee",
+		"item": false
+	},
+	"axe_1_4": {
+		"name": "Ornate Axe I",
+		"group": "melee",
+		"item": false
+	},
+	"axe_2_1": {
+		"name": "Crude Axe II",
+		"group": "melee",
+		"item": false
+	},
+	"axe_2_2": {
+		"name": "Plain Axe II",
+		"group": "melee",
+		"item": false
+	},
+	"axe_2_3": {
+		"name": "Fine Axe II",
+		"group": "melee",
+		"item": false
+	},
+	"axe_2_5": {
+		"name": "Masterwork Axe II",
+		"group": "melee",
+		"item": false
+	},
+	"axe_3_2": {
+		"name": "Plain Axe III",
+		"group": "melee",
+		"item": false
+	},
+	"axe_3_3": {
+		"name": "Fine Axe III",
+		"group": "melee",
+		"item": false
+	},
+	"axe_3_4": {
+		"name": "Ornate Axe III",
+		"group": "melee",
+		"item": false
+	},
+	"axe_3_5": {
+		"name": "Masterwork Axe III",
+		"group": "melee",
+		"item": false
+	},
+	"axe_4_1": {
+		"name": "Crude Axe IV",
+		"group": "melee",
+		"item": false
+	},
+	"axe_4_3": {
+		"name": "Fine Axe IV",
+		"group": "melee",
+		"item": false
+	},
+	"axe_4_4": {
+		"name": "Ornate Axe IV",
+		"group": "melee",
+		"item": false
+	},
+	"axe_4_5": {
+		"name": "Masterwork Axe IV",
+		"group": "melee",
+		"item": false
+	},
+	"axe_5_1": {
+		"name": "Crude Axe V",
+		"group": "melee",
+		"item": false
+	},
+	"axe_5_2": {
+		"name": "Plain Axe V",
+		"group": "melee",
+		"item": false
+	},
+	"axe_5_4": {
+		"name": "Ornate Axe V",
+		"group": "melee",
+		"item": false
+	},
+	"axe_5_5": {
+		"name": "Masterwork Axe V",
+		"group": "melee",
+		"item": false
+	},
+	"axe_6_1": {
+		"name": "Crude Axe VI",
+		"group": "melee",
+		"item": false
+	},
+	"axe_6_2": {
+		"name": "Plain Axe VI",
+		"group": "melee",
+		"item": false
+	},
+	"axe_6_3": {
+		"name": "Fine Axe VI",
+		"group": "melee",
+		"item": false
+	},
+	"axe_6_4": {
+		"name": "Ornate Axe VI",
+		"group": "melee",
+		"item": false
+	},
+	"axe_7_1": {
+		"name": "Crude Axe VII",
+		"group": "melee",
+		"item": false
+	},
+	"axe_7_2": {
+		"name": "Plain Axe VII",
+		"group": "melee",
+		"item": false
+	},
+	"axe_7_4": {
+		"name": "Ornate Axe VII",
+		"group": "melee",
+		"item": false
+	},
+	"axe_7_5": {
+		"name": "Masterwork Axe VII",
+		"group": "melee",
+		"item": false
+	},
+	"axe_8_2": {
+		"name": "Plain Axe VIII",
+		"group": "melee",
+		"item": false
+	},
+	"axe_8_3": {
+		"name": "Fine Axe VIII",
+		"group": "melee",
+		"item": false
+	},
+	"axe_8_4": {
+		"name": "Ornate Axe VIII",
+		"group": "melee",
+		"item": false
+	},
+	"barbarian_warrior_weapon": {
+		"name": "Barbarian Warrior's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"bastard_sword": {
+		"name": "Bastard Sword",
+		"group": "melee",
+		"item": true
+	},
+	"battle_axe": {
+		"name": "Battle Axe",
+		"group": "melee",
+		"item": true
+	},
+	"black_ninja_weapon": {
+		"name": "Black Ninja's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"blood_demon_1_weapon": {
+		"name": "Blood Demon 1's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"blood_demon_2_weapon": {
+		"name": "Blood Demon 2's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"blood_demon_3_weapon": {
+		"name": "Blood Demon 3's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"boarding_axe": {
+		"name": "Boarding Axe",
+		"group": "melee",
+		"item": true
+	},
+	"bone_hand_crossbow": {
+		"name": "Bone Hand Crossbow",
+		"group": "handxbow",
+		"item": true
+	},
+	"broad_sword": {
+		"name": "Broad Sword",
+		"group": "melee",
+		"item": true
+	},
+	"citizen_1_weapon": {
+		"name": "Citizen 1's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"citizen_2_weapon": {
+		"name": "Citizen 2's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"citizen_3_weapon": {
+		"name": "Citizen 3's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"citizen_women_1_weapon": {
+		"name": "Citizen Women 1's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"citizen_women_2_weapon": {
+		"name": "Citizen Women 2's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"citizen_women_3_weapon": {
+		"name": "Citizen Women 3's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"colossus_mallet": {
+		"name": "Colossus Mallet",
+		"group": "melee",
+		"item": true
+	},
+	"composite_bow": {
+		"name": "Composite Bow",
+		"group": "bow",
+		"item": true
+	},
+	"copper_sword": {
+		"name": "Copper Sword",
+		"group": "melee",
+		"item": true
+	},
+	"corsair_sabre": {
+		"name": "Corsair Sabre",
+		"group": "melee",
+		"item": true
+	},
+	"crystal_staff": {
+		"name": "Crystal Staff",
+		"group": "melee",
+		"item": true
+	},
+	"cursed_alchemist_1_weapon": {
+		"name": "Cursed Alchemist 1's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"cursed_alchemist_2_weapon": {
+		"name": "Cursed Alchemist 2's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"cursed_alchemist_3_weapon": {
+		"name": "Cursed Alchemist 3's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"cutlass": {
+		"name": "Cutlass",
+		"group": "melee",
+		"item": true
+	},
+	"dagger": {
+		"name": "Dagger",
+		"group": "melee",
+		"item": true
+	},
+	"dagger_1_2": {
+		"name": "Plain Dagger I",
+		"group": "melee",
+		"item": false
+	},
+	"dagger_1_3": {
+		"name": "Fine Dagger I",
+		"group": "melee",
+		"item": false
+	},
+	"dagger_1_4": {
+		"name": "Ornate Dagger I",
+		"group": "melee",
+		"item": false
+	},
+	"dagger_1_5": {
+		"name": "Masterwork Dagger I",
+		"group": "melee",
+		"item": false
+	},
+	"dagger_2_1": {
+		"name": "Crude Dagger II",
+		"group": "melee",
+		"item": false
+	},
+	"dagger_2_2": {
+		"name": "Plain Dagger II",
+		"group": "melee",
+		"item": false
+	},
+	"dagger_2_3": {
+		"name": "Fine Dagger II",
+		"group": "melee",
+		"item": false
+	},
+	"dagger_2_4": {
+		"name": "Ornate Dagger II",
+		"group": "melee",
+		"item": false
+	},
+	"dagger_2_5": {
+		"name": "Masterwork Dagger II",
+		"group": "melee",
+		"item": false
+	},
+	"dagger_3_1": {
+		"name": "Crude Dagger III",
+		"group": "melee",
+		"item": false
+	},
+	"dagger_3_2": {
+		"name": "Plain Dagger III",
+		"group": "melee",
+		"item": false
+	},
+	"dagger_3_3": {
+		"name": "Fine Dagger III",
+		"group": "melee",
+		"item": false
+	},
+	"dagger_3_4": {
+		"name": "Ornate Dagger III",
+		"group": "melee",
+		"item": false
+	},
+	"dagger_3_5": {
+		"name": "Masterwork Dagger III",
+		"group": "melee",
+		"item": false
+	},
+	"dagger_4_1": {
+		"name": "Crude Dagger IV",
+		"group": "melee",
+		"item": false
+	},
+	"dagger_4_2": {
+		"name": "Plain Dagger IV",
+		"group": "melee",
+		"item": false
+	},
+	"dagger_4_3": {
+		"name": "Fine Dagger IV",
+		"group": "melee",
+		"item": false
+	},
+	"dagger_4_4": {
+		"name": "Ornate Dagger IV",
+		"group": "melee",
+		"item": false
+	},
+	"dagger_4_5": {
+		"name": "Masterwork Dagger IV",
+		"group": "melee",
+		"item": false
+	},
+	"dagger_5_1": {
+		"name": "Crude Dagger V",
+		"group": "melee",
+		"item": false
+	},
+	"dagger_5_3": {
+		"name": "Fine Dagger V",
+		"group": "melee",
+		"item": false
+	},
+	"dagger_5_4": {
+		"name": "Ornate Dagger V",
+		"group": "melee",
+		"item": false
+	},
+	"dagger_5_5": {
+		"name": "Masterwork Dagger V",
+		"group": "melee",
+		"item": false
+	},
+	"dagger_6_1": {
+		"name": "Crude Dagger VI",
+		"group": "melee",
+		"item": false
+	},
+	"dagger_6_2": {
+		"name": "Plain Dagger VI",
+		"group": "melee",
+		"item": false
+	},
+	"dagger_6_4": {
+		"name": "Ornate Dagger VI",
+		"group": "melee",
+		"item": false
+	},
+	"dagger_6_5": {
+		"name": "Masterwork Dagger VI",
+		"group": "melee",
+		"item": false
+	},
+	"dagger_7_1": {
+		"name": "Crude Dagger VII",
+		"group": "melee",
+		"item": false
+	},
+	"dagger_7_2": {
+		"name": "Plain Dagger VII",
+		"group": "melee",
+		"item": false
+	},
+	"dagger_7_3": {
+		"name": "Fine Dagger VII",
+		"group": "melee",
+		"item": false
+	},
+	"dagger_7_4": {
+		"name": "Ornate Dagger VII",
+		"group": "melee",
+		"item": false
+	},
+	"dagger_7_5": {
+		"name": "Masterwork Dagger VII",
+		"group": "melee",
+		"item": false
+	},
+	"dagger_8_1": {
+		"name": "Crude Dagger VIII",
+		"group": "melee",
+		"item": false
+	},
+	"dagger_8_2": {
+		"name": "Plain Dagger VIII",
+		"group": "melee",
+		"item": false
+	},
+	"dagger_8_3": {
+		"name": "Fine Dagger VIII",
+		"group": "melee",
+		"item": false
+	},
+	"dagger_8_4": {
+		"name": "Ornate Dagger VIII",
+		"group": "melee",
+		"item": false
+	},
+	"dark_elves_1_weapon": {
+		"name": "Dark Elves 1's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"dark_elves_2_weapon": {
+		"name": "Dark Elves 2's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"dark_elves_3_weapon": {
+		"name": "Dark Elves 3's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"dark_oracle_1_weapon": {
+		"name": "Dark Oracle 1's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"dark_oracle_2_weapon": {
+		"name": "Dark Oracle 2's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"dark_oracle_3_weapon": {
+		"name": "Dark Oracle 3's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"death_knight_weapon": {
+		"name": "Death Knight's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"demons_of_darkness_1_weapon": {
+		"name": "Demons Of Darkness 1's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"demons_of_darkness_2_weapon": {
+		"name": "Demons Of Darkness 2's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"demons_of_darkness_3_weapon": {
+		"name": "Demons Of Darkness 3's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"desert_nomad_1_weapon": {
+		"name": "Desert Nomad 1's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"desert_nomad_2_weapon": {
+		"name": "Desert Nomad 2's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"desert_nomad_3_weapon": {
+		"name": "Desert Nomad 3's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"despot_axe": {
+		"name": "Despot Axe",
+		"group": "melee",
+		"item": true
+	},
+	"devil_masked_guy_weapon": {
+		"name": "Devil Masked Guy's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"devil_weapon": {
+		"name": "Devil's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"double_axe": {
+		"name": "Double Axe",
+		"group": "melee",
+		"item": true
+	},
+	"dragon_crossbow": {
+		"name": "Dragon Crossbow",
+		"group": "bow",
+		"item": true
+	},
+	"dragon_mace": {
+		"name": "Dragon Mace",
+		"group": "melee",
+		"item": true
+	},
+	"dragon_spear": {
+		"name": "Dragon Spear",
+		"group": "melee",
+		"item": true
+	},
+	"elemental_spirits_1_weapon": {
+		"name": "Elemental Spirits 1's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"elemental_spirits_2_weapon": {
+		"name": "Elemental Spirits 2's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"elemental_spirits_3_weapon": {
+		"name": "Elemental Spirits 3's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"elementals_1_weapon": {
+		"name": "Elementals 1's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"elementals_2_weapon": {
+		"name": "Elementals 2's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"elementals_3_weapon": {
+		"name": "Elementals 3's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"elf_archer_1_bow": {
+		"name": "Archer 1's Bow",
+		"group": "bow",
+		"item": false
+	},
+	"eternal_sword": {
+		"name": "Eternal Sword",
+		"group": "melee",
+		"item": true
+	},
+	"evil_bald_guy_weapon": {
+		"name": "Evil Bald Guy's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"executioner_blade": {
+		"name": "Executioner Blade",
+		"group": "melee",
+		"item": true
+	},
+	"fallen_angels_1_weapon": {
+		"name": "Fallen Angels 1's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"fallen_angels_2_weapon": {
+		"name": "Fallen Angels 2's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"fallen_angels_3_weapon": {
+		"name": "Fallen Angels 3's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"flanged_mace": {
+		"name": "Flanged Mace",
+		"group": "melee",
+		"item": true
+	},
+	"forest_guardian_1_weapon": {
+		"name": "Forest Guardian 1's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"forest_guardian_2_weapon": {
+		"name": "Forest Guardian 2's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"forest_guardian_3_weapon": {
+		"name": "Forest Guardian 3's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"forest_ranger_3_weapon": {
+		"name": "Forest Ranger 3's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"frontier_defender_spartan_knight_weapon": {
+		"name": "Frontier Defender Spartan Knight's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"frost_knight_1_weapon": {
+		"name": "Frost Knight 1's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"frost_knight_2_weapon": {
+		"name": "Frost Knight 2's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"frost_knight_3_weapon": {
+		"name": "Frost Knight 3's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"ghost_ghost_knight_1_weapon": {
+		"name": "Ghost Knight 1's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"ghost_ghost_knight_2_weapon": {
+		"name": "Ghost Knight 2's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"ghost_ghost_knight_3_weapon": {
+		"name": "Ghost Knight 3's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"ghost_knight_1_weapon": {
+		"name": "Ghost Knight 1's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"ghost_knight_2_weapon": {
+		"name": "Ghost Knight 2's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"ghost_knight_3_weapon": {
+		"name": "Ghost Knight 3's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"ghoul_hunter_1_weapon": {
+		"name": "Ghoul Hunter 1's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"ghoul_hunter_2_weapon": {
+		"name": "Ghoul Hunter 2's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"ghoul_hunter_3_weapon": {
+		"name": "Ghoul Hunter 3's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"ghoul_weapon": {
+		"name": "Ghoul's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"gilded_hand_crossbow": {
+		"name": "Gilded Hand Crossbow",
+		"group": "handxbow",
+		"item": true
+	},
+	"gilded_warbow": {
+		"name": "Gilded Warbow",
+		"group": "bow",
+		"item": true
+	},
+	"girl_knight_1_weapon": {
+		"name": "Girl Knight 1's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"girl_knight_2_weapon": {
+		"name": "Girl Knight 2's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"girl_knight_3_weapon": {
+		"name": "Girl Knight 3's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"gnoll_gnoll_1_weapon": {
+		"name": "Gnoll Gnoll 1's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"gnoll_gnoll_2_weapon": {
+		"name": "Gnoll Gnoll 2's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"gnoll_gnoll_3_weapon": {
+		"name": "Gnoll Gnoll 3's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"gnome_1_weapon": {
+		"name": "Gnome 1's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"gnome_2_weapon": {
+		"name": "Gnome 2's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"gnome_3_weapon": {
+		"name": "Gnome 3's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"goblin_1_weapon": {
+		"name": "Goblin 1's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"goblin_2_weapon": {
+		"name": "Goblin 2's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"goblin_3_weapon": {
+		"name": "Goblin 3's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"goblin_weapon": {
+		"name": "Goblin's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"golem_1_weapon": {
+		"name": "Golem 1's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"golem_2_weapon": {
+		"name": "Golem 2's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"golem_3_weapon": {
+		"name": "Golem 3's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"great_club": {
+		"name": "Great Club",
+		"group": "melee",
+		"item": true
+	},
+	"greatsword": {
+		"name": "Greatsword",
+		"group": "melee",
+		"item": true
+	},
+	"hand_axe": {
+		"name": "Hand Axe",
+		"group": "melee",
+		"item": true
+	},
+	"hand_crossbow": {
+		"name": "Hand Crossbow",
+		"group": "handxbow",
+		"item": true
+	},
+	"harpoon": {
+		"name": "Harpoon",
+		"group": "melee",
+		"item": true
+	},
+	"hell_knight_weapon": {
+		"name": "Hell Knight's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"horn_hand_crossbow": {
+		"name": "Horn Hand Crossbow",
+		"group": "handxbow",
+		"item": true
+	},
+	"human_magician_1_weapon": {
+		"name": "Human Magician 1's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"human_magician_2_weapon": {
+		"name": "Human Magician 2's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"human_magician_3_weapon": {
+		"name": "Human Magician 3's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"hunting_bow": {
+		"name": "Hunting Bow",
+		"group": "bow",
+		"item": true
+	},
+	"hunting_crossbow": {
+		"name": "Hunting Crossbow",
+		"group": "bow",
+		"item": true
+	},
+	"hunting_spear": {
+		"name": "Hunting Spear",
+		"group": "melee",
+		"item": true
+	},
+	"iron_hand_crossbow": {
+		"name": "Iron Hand Crossbow",
+		"group": "handxbow",
+		"item": true
+	},
+	"iron_mace": {
+		"name": "Iron Mace",
+		"group": "melee",
+		"item": true
+	},
+	"jade_hand_crossbow": {
+		"name": "Jade Hand Crossbow",
+		"group": "handxbow",
+		"item": true
+	},
+	"jade_hatchet": {
+		"name": "Jade Hatchet",
+		"group": "melee",
+		"item": true
+	},
+	"knight_1_weapon": {
+		"name": "Knight 1's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"knight_2_weapon": {
+		"name": "Knight 2's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"knight_3_weapon": {
+		"name": "Knight 3's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"kris": {
+		"name": "Kris",
+		"group": "melee",
+		"item": true
+	},
+	"labrys": {
+		"name": "Labrys",
+		"group": "melee",
+		"item": true
+	},
+	"lich_weapon": {
+		"name": "Lich's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"light_crossbow": {
+		"name": "Light Crossbow",
+		"group": "bow",
+		"item": true
+	},
+	"long_bow": {
+		"name": "Long Bow",
+		"group": "bow",
+		"item": true
+	},
+	"mace_1_2": {
+		"name": "Plain Mace I",
+		"group": "melee",
+		"item": false
+	},
+	"mace_1_3": {
+		"name": "Fine Mace I",
+		"group": "melee",
+		"item": false
+	},
+	"mace_1_4": {
+		"name": "Ornate Mace I",
+		"group": "melee",
+		"item": false
+	},
+	"mace_1_5": {
+		"name": "Masterwork Mace I",
+		"group": "melee",
+		"item": false
+	},
+	"mace_2_1": {
+		"name": "Crude Mace II",
+		"group": "melee",
+		"item": false
+	},
+	"mace_2_3": {
+		"name": "Fine Mace II",
+		"group": "melee",
+		"item": false
+	},
+	"mace_2_4": {
+		"name": "Ornate Mace II",
+		"group": "melee",
+		"item": false
+	},
+	"mace_2_5": {
+		"name": "Masterwork Mace II",
+		"group": "melee",
+		"item": false
+	},
+	"mace_3_1": {
+		"name": "Crude Mace III",
+		"group": "melee",
+		"item": false
+	},
+	"mace_3_2": {
+		"name": "Plain Mace III",
+		"group": "melee",
+		"item": false
+	},
+	"mace_3_4": {
+		"name": "Ornate Mace III",
+		"group": "melee",
+		"item": false
+	},
+	"mace_3_5": {
+		"name": "Masterwork Mace III",
+		"group": "melee",
+		"item": false
+	},
+	"mace_4_1": {
+		"name": "Crude Mace IV",
+		"group": "melee",
+		"item": false
+	},
+	"mace_4_2": {
+		"name": "Plain Mace IV",
+		"group": "melee",
+		"item": false
+	},
+	"mace_4_3": {
+		"name": "Fine Mace IV",
+		"group": "melee",
+		"item": false
+	},
+	"mace_4_4": {
+		"name": "Ornate Mace IV",
+		"group": "melee",
+		"item": false
+	},
+	"mace_5_1": {
+		"name": "Crude Mace V",
+		"group": "melee",
+		"item": false
+	},
+	"mace_5_2": {
+		"name": "Plain Mace V",
+		"group": "melee",
+		"item": false
+	},
+	"mace_5_3": {
+		"name": "Fine Mace V",
+		"group": "melee",
+		"item": false
+	},
+	"mace_5_5": {
+		"name": "Masterwork Mace V",
+		"group": "melee",
+		"item": false
+	},
+	"mace_6_1": {
+		"name": "Crude Mace VI",
+		"group": "melee",
+		"item": false
+	},
+	"mace_6_3": {
+		"name": "Fine Mace VI",
+		"group": "melee",
+		"item": false
+	},
+	"mace_6_4": {
+		"name": "Ornate Mace VI",
+		"group": "melee",
+		"item": false
+	},
+	"mace_6_5": {
+		"name": "Masterwork Mace VI",
+		"group": "melee",
+		"item": false
+	},
+	"mace_7_1": {
+		"name": "Crude Mace VII",
+		"group": "melee",
+		"item": false
+	},
+	"mace_7_2": {
+		"name": "Plain Mace VII",
+		"group": "melee",
+		"item": false
+	},
+	"mace_7_4": {
+		"name": "Ornate Mace VII",
+		"group": "melee",
+		"item": false
+	},
+	"mace_8_2": {
+		"name": "Plain Mace VIII",
+		"group": "melee",
+		"item": false
+	},
+	"mace_8_3": {
+		"name": "Fine Mace VIII",
+		"group": "melee",
+		"item": false
+	},
+	"mace_8_4": {
+		"name": "Ornate Mace VIII",
+		"group": "melee",
+		"item": false
+	},
+	"mace_8_5": {
+		"name": "Masterwork Mace VIII",
+		"group": "melee",
+		"item": false
+	},
+	"magician_1_weapon": {
+		"name": "Magician 1's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"magician_2_weapon": {
+		"name": "Magician 2's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"magician_3_weapon": {
+		"name": "Magician 3's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"magician_girl_1_weapon": {
+		"name": "Magician Girl 1's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"magician_girl_2_weapon": {
+		"name": "Magician Girl 2's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"magician_girl_3_weapon": {
+		"name": "Magician Girl 3's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"magician_magician_1_weapon": {
+		"name": "Magician 1's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"magician_magician_2_weapon": {
+		"name": "Magician 2's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"magician_magician_3_weapon": {
+		"name": "Magician 3's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"medieval_commander_weapon": {
+		"name": "Medieval Commander's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"medieval_knight_weapon": {
+		"name": "Medieval Knight's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"medieval_warrior_girl_weapon": {
+		"name": "Medieval Warrior Girl's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"medieval_warrior_weapon": {
+		"name": "Medieval Warrior's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"medusa_1_weapon": {
+		"name": "Medusa 1's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"medusa_2_weapon": {
+		"name": "Medusa 2's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"medusa_3_weapon": {
+		"name": "Medusa 3's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"mercenaries_1_weapon": {
+		"name": "Mercenaries 1's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"mercenaries_2_weapon": {
+		"name": "Mercenaries 2's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"mercenaries_3_weapon": {
+		"name": "Mercenaries 3's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"mimic_1_weapon": {
+		"name": "Mimic 1's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"mimic_2_weapon": {
+		"name": "Mimic 2's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"mimic_3_weapon": {
+		"name": "Mimic 3's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"minotaur_1_weapon": {
+		"name": "Minotaur 1's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"minotaur_2_weapon": {
+		"name": "Minotaur 2's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"minotaur_3_weapon": {
+		"name": "Minotaur 3's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"moonlit_bow": {
+		"name": "Moonlit Bow",
+		"group": "bow",
+		"item": true
+	},
+	"morning_star": {
+		"name": "Morning Star",
+		"group": "melee",
+		"item": true
+	},
+	"mummy_weapon": {
+		"name": "Mummy's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"necromancer_of_the_shadow_1_weapon": {
+		"name": "Necromancer Of The Shadow 1's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"necromancer_of_the_shadow_2_weapon": {
+		"name": "Necromancer Of The Shadow 2's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"necromancer_of_the_shadow_3_weapon": {
+		"name": "Necromancer Of The Shadow 3's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"oak_staff": {
+		"name": "Oak Staff",
+		"group": "melee",
+		"item": true
+	},
+	"ogre_weapon": {
+		"name": "Ogre's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"old_guy_weapon": {
+		"name": "Old Guy's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"old_hero_1_weapon": {
+		"name": "Old Hero 1's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"old_hero_2_weapon": {
+		"name": "Old Hero 2's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"old_hero_3_weapon": {
+		"name": "Old Hero 3's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"orc_weapon": {
+		"name": "Orc's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"paladin_1_weapon": {
+		"name": "Paladin 1's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"paladin_2_weapon": {
+		"name": "Paladin 2's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"paladin_3_weapon": {
+		"name": "Paladin 3's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"persian_and_arab_warriors_1_weapon": {
+		"name": "Persian And Arab Warriors 1's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"persian_and_arab_warriors_2_weapon": {
+		"name": "Persian And Arab Warriors 2's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"persian_and_arab_warriors_3_weapon": {
+		"name": "Persian And Arab Warriors 3's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"poleaxe": {
+		"name": "Poleaxe",
+		"group": "melee",
+		"item": true
+	},
+	"pyromancer_1_weapon": {
+		"name": "Pyromancer 1's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"pyromancer_2_weapon": {
+		"name": "Pyromancer 2's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"pyromancer_3_weapon": {
+		"name": "Pyromancer 3's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"quarterstaff": {
+		"name": "Quarterstaff",
+		"group": "melee",
+		"item": true
+	},
+	"reaper_man_1_weapon": {
+		"name": "Reaper Man 1's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"reaper_man_2_weapon": {
+		"name": "Reaper Man 2's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"reaper_man_3_weapon": {
+		"name": "Reaper Man 3's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"reaver_blade": {
+		"name": "Reaver Blade",
+		"group": "melee",
+		"item": true
+	},
+	"recurve_bow": {
+		"name": "Recurve Bow",
+		"group": "bow",
+		"item": true
+	},
+	"repeating_crossbow": {
+		"name": "Repeating Crossbow",
+		"group": "bow",
+		"item": true
+	},
+	"romanian_settler_weapon": {
+		"name": "Romanian Settler's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"runic_arbalest": {
+		"name": "Runic Arbalest",
+		"group": "bow",
+		"item": true
+	},
+	"runic_hatchet": {
+		"name": "Runic Hatchet",
+		"group": "melee",
+		"item": true
+	},
+	"rusty_sword": {
+		"name": "Rusty Sword",
+		"group": "melee",
+		"item": true
+	},
+	"sabre": {
+		"name": "Sabre",
+		"group": "melee",
+		"item": true
+	},
+	"sabre_1_1": {
+		"name": "Crude Sabre I",
+		"group": "melee",
+		"item": false
+	},
+	"sabre_1_3": {
+		"name": "Fine Sabre I",
+		"group": "melee",
+		"item": false
+	},
+	"sabre_1_4": {
+		"name": "Ornate Sabre I",
+		"group": "melee",
+		"item": false
+	},
+	"sabre_1_5": {
+		"name": "Masterwork Sabre I",
+		"group": "melee",
+		"item": false
+	},
+	"sabre_2_1": {
+		"name": "Crude Sabre II",
+		"group": "melee",
+		"item": false
+	},
+	"sabre_2_2": {
+		"name": "Plain Sabre II",
+		"group": "melee",
+		"item": false
+	},
+	"sabre_2_3": {
+		"name": "Fine Sabre II",
+		"group": "melee",
+		"item": false
+	},
+	"sabre_2_4": {
+		"name": "Ornate Sabre II",
+		"group": "melee",
+		"item": false
+	},
+	"sabre_2_5": {
+		"name": "Masterwork Sabre II",
+		"group": "melee",
+		"item": false
+	},
+	"sabre_3_1": {
+		"name": "Crude Sabre III",
+		"group": "melee",
+		"item": false
+	},
+	"sabre_3_2": {
+		"name": "Plain Sabre III",
+		"group": "melee",
+		"item": false
+	},
+	"sabre_3_3": {
+		"name": "Fine Sabre III",
+		"group": "melee",
+		"item": false
+	},
+	"sabre_3_4": {
+		"name": "Ornate Sabre III",
+		"group": "melee",
+		"item": false
+	},
+	"sabre_3_5": {
+		"name": "Masterwork Sabre III",
+		"group": "melee",
+		"item": false
+	},
+	"sabre_4_1": {
+		"name": "Crude Sabre IV",
+		"group": "melee",
+		"item": false
+	},
+	"sabre_4_2": {
+		"name": "Plain Sabre IV",
+		"group": "melee",
+		"item": false
+	},
+	"sabre_4_4": {
+		"name": "Ornate Sabre IV",
+		"group": "melee",
+		"item": false
+	},
+	"sabre_4_5": {
+		"name": "Masterwork Sabre IV",
+		"group": "melee",
+		"item": false
+	},
+	"sabre_5_1": {
+		"name": "Crude Sabre V",
+		"group": "melee",
+		"item": false
+	},
+	"sabre_5_2": {
+		"name": "Plain Sabre V",
+		"group": "melee",
+		"item": false
+	},
+	"sabre_5_3": {
+		"name": "Fine Sabre V",
+		"group": "melee",
+		"item": false
+	},
+	"sabre_5_4": {
+		"name": "Ornate Sabre V",
+		"group": "melee",
+		"item": false
+	},
+	"sabre_5_5": {
+		"name": "Masterwork Sabre V",
+		"group": "melee",
+		"item": false
+	},
+	"sabre_6_1": {
+		"name": "Crude Sabre VI",
+		"group": "melee",
+		"item": false
+	},
+	"sabre_6_2": {
+		"name": "Plain Sabre VI",
+		"group": "melee",
+		"item": false
+	},
+	"sabre_6_3": {
+		"name": "Fine Sabre VI",
+		"group": "melee",
+		"item": false
+	},
+	"sabre_6_4": {
+		"name": "Ornate Sabre VI",
+		"group": "melee",
+		"item": false
+	},
+	"sabre_6_5": {
+		"name": "Masterwork Sabre VI",
+		"group": "melee",
+		"item": false
+	},
+	"sabre_7_1": {
+		"name": "Crude Sabre VII",
+		"group": "melee",
+		"item": false
+	},
+	"sabre_7_2": {
+		"name": "Plain Sabre VII",
+		"group": "melee",
+		"item": false
+	},
+	"sabre_7_3": {
+		"name": "Fine Sabre VII",
+		"group": "melee",
+		"item": false
+	},
+	"sabre_7_5": {
+		"name": "Masterwork Sabre VII",
+		"group": "melee",
+		"item": false
+	},
+	"sabre_8_1": {
+		"name": "Crude Sabre VIII",
+		"group": "melee",
+		"item": false
+	},
+	"sabre_8_2": {
+		"name": "Plain Sabre VIII",
+		"group": "melee",
+		"item": false
+	},
+	"sabre_8_3": {
+		"name": "Fine Sabre VIII",
+		"group": "melee",
+		"item": false
+	},
+	"sabre_8_4": {
+		"name": "Ornate Sabre VIII",
+		"group": "melee",
+		"item": false
+	},
+	"sabre_8_5": {
+		"name": "Masterwork Sabre VIII",
+		"group": "melee",
+		"item": false
+	},
+	"samurai_1_weapon": {
+		"name": "Samurai 1's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"samurai_2_weapon": {
+		"name": "Samurai 2's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"samurai_3_weapon": {
+		"name": "Samurai 3's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"seer_1_weapon": {
+		"name": "Seer 1's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"seer_2_weapon": {
+		"name": "Seer 2's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"seer_3_weapon": {
+		"name": "Seer 3's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"serpent_bow": {
+		"name": "Serpent Bow",
+		"group": "bow",
+		"item": true
+	},
+	"serpent_staff": {
+		"name": "Serpent Staff",
+		"group": "melee",
+		"item": true
+	},
+	"shaman_1_weapon": {
+		"name": "Shaman 1's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"shaman_2_weapon": {
+		"name": "Shaman 2's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"shaman_3_weapon": {
+		"name": "Shaman 3's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"shaman_of_thunder_1_weapon": {
+		"name": "Shaman Of Thunder 1's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"shaman_of_thunder_2_weapon": {
+		"name": "Shaman Of Thunder 2's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"shaman_of_thunder_3_weapon": {
+		"name": "Shaman Of Thunder 3's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"shamans_1_weapon": {
+		"name": "Shamans 1's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"shamans_2_weapon": {
+		"name": "Shamans 2's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"shamans_3_weapon": {
+		"name": "Shamans 3's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"short_bow": {
+		"name": "Short Bow",
+		"group": "bow",
+		"item": true
+	},
+	"siege_crossbow": {
+		"name": "Siege Crossbow",
+		"group": "bow",
+		"item": true
+	},
+	"skean": {
+		"name": "Skean",
+		"group": "melee",
+		"item": true
+	},
+	"skeleton_1_weapon": {
+		"name": "Skeleton 1's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"skeleton_2_weapon": {
+		"name": "Skeleton 2's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"skeleton_3_weapon": {
+		"name": "Skeleton 3's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"skeleton_archer_3_bow": {
+		"name": "Archer 3's Bow",
+		"group": "bow",
+		"item": false
+	},
+	"skeleton_crusader_1_weapon": {
+		"name": "Skeleton Crusader 1's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"skeleton_crusader_2_weapon": {
+		"name": "Skeleton Crusader 2's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"skeleton_crusader_3_weapon": {
+		"name": "Skeleton Crusader 3's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"skeleton_death_knight_1_weapon": {
+		"name": "Skeleton Death Knight 1's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"skeleton_death_knight_2_weapon": {
+		"name": "Skeleton Death Knight 2's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"skeleton_death_knight_3_weapon": {
+		"name": "Skeleton Death Knight 3's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"skeleton_hunter_1_bow": {
+		"name": "Skeleton Hunter 1's Bow",
+		"group": "bow",
+		"item": false
+	},
+	"skeleton_hunter_2_bow": {
+		"name": "Skeleton Hunter 2's Bow",
+		"group": "bow",
+		"item": false
+	},
+	"skeleton_necromancer_1_weapon": {
+		"name": "Skeleton Necromancer 1's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"skeleton_necromancer_2_weapon": {
+		"name": "Skeleton Necromancer 2's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"skeleton_necromancer_3_weapon": {
+		"name": "Skeleton Necromancer 3's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"skeleton_pirate_captain_1_weapon": {
+		"name": "Skeleton Pirate Captain 1's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"skeleton_pirate_captain_2_weapon": {
+		"name": "Skeleton Pirate Captain 2's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"skeleton_pirate_captain_3_weapon": {
+		"name": "Skeleton Pirate Captain 3's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"skeleton_shaman_1_weapon": {
+		"name": "Skeleton Shaman 1's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"skeleton_shaman_2_weapon": {
+		"name": "Skeleton Shaman 2's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"skeleton_shaman_3_weapon": {
+		"name": "Skeleton Shaman 3's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"skeleton_sorcerer_1_weapon": {
+		"name": "Skeleton Sorcerer 1's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"skeleton_sorcerer_2_weapon": {
+		"name": "Skeleton Sorcerer 2's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"skeleton_sorcerer_3_weapon": {
+		"name": "Skeleton Sorcerer 3's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"skeleton_viking_1_weapon": {
+		"name": "Skeleton Viking 1's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"skeleton_viking_2_weapon": {
+		"name": "Skeleton Viking 2's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"skeleton_viking_3_weapon": {
+		"name": "Skeleton Viking 3's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"skeleton_warrior_1_weapon": {
+		"name": "Skeleton Warrior 1's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"skeleton_warrior_2_weapon": {
+		"name": "Skeleton Warrior 2's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"skeleton_warrior_3_weapon": {
+		"name": "Skeleton Warrior 3's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"skeleton_weapon": {
+		"name": "Skeleton's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"skull_knight_weapon": {
+		"name": "Skull Knight's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"spear_1_2": {
+		"name": "Plain Spear I",
+		"group": "melee",
+		"item": false
+	},
+	"spear_1_3": {
+		"name": "Fine Spear I",
+		"group": "melee",
+		"item": false
+	},
+	"spear_1_4": {
+		"name": "Ornate Spear I",
+		"group": "melee",
+		"item": false
+	},
+	"spear_1_5": {
+		"name": "Masterwork Spear I",
+		"group": "melee",
+		"item": false
+	},
+	"spear_2_1": {
+		"name": "Crude Spear II",
+		"group": "melee",
+		"item": false
+	},
+	"spear_2_2": {
+		"name": "Plain Spear II",
+		"group": "melee",
+		"item": false
+	},
+	"spear_2_3": {
+		"name": "Fine Spear II",
+		"group": "melee",
+		"item": false
+	},
+	"spear_2_4": {
+		"name": "Ornate Spear II",
+		"group": "melee",
+		"item": false
+	},
+	"spear_2_5": {
+		"name": "Masterwork Spear II",
+		"group": "melee",
+		"item": false
+	},
+	"spear_3_1": {
+		"name": "Crude Spear III",
+		"group": "melee",
+		"item": false
+	},
+	"spear_3_2": {
+		"name": "Plain Spear III",
+		"group": "melee",
+		"item": false
+	},
+	"spear_3_3": {
+		"name": "Fine Spear III",
+		"group": "melee",
+		"item": false
+	},
+	"spear_3_4": {
+		"name": "Ornate Spear III",
+		"group": "melee",
+		"item": false
+	},
+	"spear_3_5": {
+		"name": "Masterwork Spear III",
+		"group": "melee",
+		"item": false
+	},
+	"spear_4_1": {
+		"name": "Crude Spear IV",
+		"group": "melee",
+		"item": false
+	},
+	"spear_4_2": {
+		"name": "Plain Spear IV",
+		"group": "melee",
+		"item": false
+	},
+	"spear_4_3": {
+		"name": "Fine Spear IV",
+		"group": "melee",
+		"item": false
+	},
+	"spear_4_4": {
+		"name": "Ornate Spear IV",
+		"group": "melee",
+		"item": false
+	},
+	"spear_4_5": {
+		"name": "Masterwork Spear IV",
+		"group": "melee",
+		"item": false
+	},
+	"spear_5_1": {
+		"name": "Crude Spear V",
+		"group": "melee",
+		"item": false
+	},
+	"spear_5_2": {
+		"name": "Plain Spear V",
+		"group": "melee",
+		"item": false
+	},
+	"spear_5_4": {
+		"name": "Ornate Spear V",
+		"group": "melee",
+		"item": false
+	},
+	"spear_5_5": {
+		"name": "Masterwork Spear V",
+		"group": "melee",
+		"item": false
+	},
+	"spear_6_1": {
+		"name": "Crude Spear VI",
+		"group": "melee",
+		"item": false
+	},
+	"spear_6_3": {
+		"name": "Fine Spear VI",
+		"group": "melee",
+		"item": false
+	},
+	"spear_6_4": {
+		"name": "Ornate Spear VI",
+		"group": "melee",
+		"item": false
+	},
+	"spear_6_5": {
+		"name": "Masterwork Spear VI",
+		"group": "melee",
+		"item": false
+	},
+	"spear_7_1": {
+		"name": "Crude Spear VII",
+		"group": "melee",
+		"item": false
+	},
+	"spear_7_2": {
+		"name": "Plain Spear VII",
+		"group": "melee",
+		"item": false
+	},
+	"spear_7_3": {
+		"name": "Fine Spear VII",
+		"group": "melee",
+		"item": false
+	},
+	"spear_7_5": {
+		"name": "Masterwork Spear VII",
+		"group": "melee",
+		"item": false
+	},
+	"spear_8_1": {
+		"name": "Crude Spear VIII",
+		"group": "melee",
+		"item": false
+	},
+	"spear_8_2": {
+		"name": "Plain Spear VIII",
+		"group": "melee",
+		"item": false
+	},
+	"spear_8_3": {
+		"name": "Fine Spear VIII",
+		"group": "melee",
+		"item": false
+	},
+	"spear_8_4": {
+		"name": "Ornate Spear VIII",
+		"group": "melee",
+		"item": false
+	},
+	"spiked_club": {
+		"name": "Spiked Club",
+		"group": "melee",
+		"item": true
+	},
+	"spiked_maul": {
+		"name": "Spiked Maul",
+		"group": "melee",
+		"item": true
+	},
+	"spiritual_monk_1_weapon": {
+		"name": "Spiritual Monk 1's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"spiritual_monk_2_weapon": {
+		"name": "Spiritual Monk 2's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"spiritual_monk_3_weapon": {
+		"name": "Spiritual Monk 3's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"staff_1_2": {
+		"name": "Plain Staff I",
+		"group": "melee",
+		"item": false
+	},
+	"staff_1_3": {
+		"name": "Fine Staff I",
+		"group": "melee",
+		"item": false
+	},
+	"staff_1_4": {
+		"name": "Ornate Staff I",
+		"group": "melee",
+		"item": false
+	},
+	"staff_1_5": {
+		"name": "Masterwork Staff I",
+		"group": "melee",
+		"item": false
+	},
+	"staff_2_1": {
+		"name": "Crude Staff II",
+		"group": "melee",
+		"item": false
+	},
+	"staff_2_2": {
+		"name": "Plain Staff II",
+		"group": "melee",
+		"item": false
+	},
+	"staff_2_3": {
+		"name": "Fine Staff II",
+		"group": "melee",
+		"item": false
+	},
+	"staff_2_4": {
+		"name": "Ornate Staff II",
+		"group": "melee",
+		"item": false
+	},
+	"staff_2_5": {
+		"name": "Masterwork Staff II",
+		"group": "melee",
+		"item": false
+	},
+	"staff_3_1": {
+		"name": "Crude Staff III",
+		"group": "melee",
+		"item": false
+	},
+	"staff_3_2": {
+		"name": "Plain Staff III",
+		"group": "melee",
+		"item": false
+	},
+	"staff_3_3": {
+		"name": "Fine Staff III",
+		"group": "melee",
+		"item": false
+	},
+	"staff_3_4": {
+		"name": "Ornate Staff III",
+		"group": "melee",
+		"item": false
+	},
+	"staff_3_5": {
+		"name": "Masterwork Staff III",
+		"group": "melee",
+		"item": false
+	},
+	"staff_4_1": {
+		"name": "Crude Staff IV",
+		"group": "melee",
+		"item": false
+	},
+	"staff_4_2": {
+		"name": "Plain Staff IV",
+		"group": "melee",
+		"item": false
+	},
+	"staff_4_4": {
+		"name": "Ornate Staff IV",
+		"group": "melee",
+		"item": false
+	},
+	"staff_4_5": {
+		"name": "Masterwork Staff IV",
+		"group": "melee",
+		"item": false
+	},
+	"staff_5_1": {
+		"name": "Crude Staff V",
+		"group": "melee",
+		"item": false
+	},
+	"staff_5_2": {
+		"name": "Plain Staff V",
+		"group": "melee",
+		"item": false
+	},
+	"staff_5_3": {
+		"name": "Fine Staff V",
+		"group": "melee",
+		"item": false
+	},
+	"staff_5_4": {
+		"name": "Ornate Staff V",
+		"group": "melee",
+		"item": false
+	},
+	"staff_6_1": {
+		"name": "Crude Staff VI",
+		"group": "melee",
+		"item": false
+	},
+	"staff_6_3": {
+		"name": "Fine Staff VI",
+		"group": "melee",
+		"item": false
+	},
+	"staff_6_4": {
+		"name": "Ornate Staff VI",
+		"group": "melee",
+		"item": false
+	},
+	"staff_6_5": {
+		"name": "Masterwork Staff VI",
+		"group": "melee",
+		"item": false
+	},
+	"staff_7_1": {
+		"name": "Crude Staff VII",
+		"group": "melee",
+		"item": false
+	},
+	"staff_7_2": {
+		"name": "Plain Staff VII",
+		"group": "melee",
+		"item": false
+	},
+	"staff_7_3": {
+		"name": "Fine Staff VII",
+		"group": "melee",
+		"item": false
+	},
+	"staff_7_4": {
+		"name": "Ornate Staff VII",
+		"group": "melee",
+		"item": false
+	},
+	"staff_7_5": {
+		"name": "Masterwork Staff VII",
+		"group": "melee",
+		"item": false
+	},
+	"staff_8_1": {
+		"name": "Crude Staff VIII",
+		"group": "melee",
+		"item": false
+	},
+	"staff_8_2": {
+		"name": "Plain Staff VIII",
+		"group": "melee",
+		"item": false
+	},
+	"staff_8_3": {
+		"name": "Fine Staff VIII",
+		"group": "melee",
+		"item": false
+	},
+	"staff_8_5": {
+		"name": "Masterwork Staff VIII",
+		"group": "melee",
+		"item": false
+	},
+	"stiletto": {
+		"name": "Stiletto",
+		"group": "melee",
+		"item": true
+	},
+	"succubus_weapon": {
+		"name": "Succubus's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"sword_1_2": {
+		"name": "Plain Sword I",
+		"group": "melee",
+		"item": false
+	},
+	"sword_1_3": {
+		"name": "Fine Sword I",
+		"group": "melee",
+		"item": false
+	},
+	"sword_1_4": {
+		"name": "Ornate Sword I",
+		"group": "melee",
+		"item": false
+	},
+	"sword_2_1": {
+		"name": "Crude Sword II",
+		"group": "melee",
+		"item": false
+	},
+	"sword_2_2": {
+		"name": "Plain Sword II",
+		"group": "melee",
+		"item": false
+	},
+	"sword_2_3": {
+		"name": "Fine Sword II",
+		"group": "melee",
+		"item": false
+	},
+	"sword_2_5": {
+		"name": "Masterwork Sword II",
+		"group": "melee",
+		"item": false
+	},
+	"sword_3_2": {
+		"name": "Plain Sword III",
+		"group": "melee",
+		"item": false
+	},
+	"sword_3_3": {
+		"name": "Fine Sword III",
+		"group": "melee",
+		"item": false
+	},
+	"sword_3_4": {
+		"name": "Ornate Sword III",
+		"group": "melee",
+		"item": false
+	},
+	"sword_3_5": {
+		"name": "Masterwork Sword III",
+		"group": "melee",
+		"item": false
+	},
+	"sword_4_1": {
+		"name": "Crude Sword IV",
+		"group": "melee",
+		"item": false
+	},
+	"sword_4_2": {
+		"name": "Plain Sword IV",
+		"group": "melee",
+		"item": false
+	},
+	"sword_4_4": {
+		"name": "Ornate Sword IV",
+		"group": "melee",
+		"item": false
+	},
+	"sword_4_5": {
+		"name": "Masterwork Sword IV",
+		"group": "melee",
+		"item": false
+	},
+	"sword_5_1": {
+		"name": "Crude Sword V",
+		"group": "melee",
+		"item": false
+	},
+	"sword_5_2": {
+		"name": "Plain Sword V",
+		"group": "melee",
+		"item": false
+	},
+	"sword_5_4": {
+		"name": "Ornate Sword V",
+		"group": "melee",
+		"item": false
+	},
+	"sword_5_5": {
+		"name": "Masterwork Sword V",
+		"group": "melee",
+		"item": false
+	},
+	"sword_6_1": {
+		"name": "Crude Sword VI",
+		"group": "melee",
+		"item": false
+	},
+	"sword_6_3": {
+		"name": "Fine Sword VI",
+		"group": "melee",
+		"item": false
+	},
+	"sword_6_4": {
+		"name": "Ornate Sword VI",
+		"group": "melee",
+		"item": false
+	},
+	"sword_7_1": {
+		"name": "Crude Sword VII",
+		"group": "melee",
+		"item": false
+	},
+	"sword_7_2": {
+		"name": "Plain Sword VII",
+		"group": "melee",
+		"item": false
+	},
+	"sword_7_3": {
+		"name": "Fine Sword VII",
+		"group": "melee",
+		"item": false
+	},
+	"sword_7_4": {
+		"name": "Ornate Sword VII",
+		"group": "melee",
+		"item": false
+	},
+	"sword_7_5": {
+		"name": "Masterwork Sword VII",
+		"group": "melee",
+		"item": false
+	},
+	"sword_8_1": {
+		"name": "Crude Sword VIII",
+		"group": "melee",
+		"item": false
+	},
+	"sword_8_3": {
+		"name": "Fine Sword VIII",
+		"group": "melee",
+		"item": false
+	},
+	"sword_8_4": {
+		"name": "Ornate Sword VIII",
+		"group": "melee",
+		"item": false
+	},
+	"sword_8_5": {
+		"name": "Masterwork Sword VIII",
+		"group": "melee",
+		"item": false
+	},
+	"templar_knight_weapon": {
+		"name": "Templar Knight's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"time_keeper_1_weapon": {
+		"name": "Time Keeper 1's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"time_keeper_2_weapon": {
+		"name": "Time Keeper 2's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"time_keeper_3_weapon": {
+		"name": "Time Keeper 3's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"tomahawk": {
+		"name": "Tomahawk",
+		"group": "melee",
+		"item": true
+	},
+	"u_archmage_staff": {
+		"group": "melee",
+		"name": "Archmage's Staff",
+		"source": "weapon/staff_7_5",
+		"unique": "archmage_staff",
+		"item": false
+	},
+	"u_bloodsworn_hatchet": {
+		"group": "melee",
+		"name": "Bloodsworn Hatchet",
+		"source": "weapon/axe_4_5",
+		"unique": "bloodsworn_hatchet",
+		"item": false
+	},
+	"u_bloodthirst_cleaver": {
+		"group": "melee",
+		"name": "Bloodthirst Cleaver",
+		"source": "weapon/axe_3_4",
+		"unique": "bloodthirst_cleaver",
+		"item": false
+	},
+	"u_buriza": {
+		"group": "bow",
+		"name": "Buriza-Do Kyanon",
+		"source": "weapon/arbalest",
+		"unique": "buriza",
+		"item": false
+	},
+	"u_earthshaker": {
+		"group": "melee",
+		"name": "Earthshaker",
+		"source": "weapon/mace_5_5",
+		"unique": "earthshaker",
+		"item": false
+	},
+	"u_emberheart": {
+		"group": "melee",
+		"name": "Emberheart",
+		"source": "weapon/staff_3_5",
+		"unique": "emberheart",
+		"item": false
+	},
+	"u_executioners_due": {
+		"group": "melee",
+		"name": "Executioner's Due",
+		"source": "weapon/axe_6_4",
+		"unique": "executioners_due",
+		"item": false
+	},
+	"u_frostbinder": {
+		"group": "melee",
+		"name": "Frostbinder",
+		"source": "weapon/staff_8_5",
+		"unique": "frostbinder",
+		"item": false
+	},
+	"u_fury_of_the_ancients": {
+		"group": "melee",
+		"name": "Fury of the Ancients",
+		"source": "weapon/sword_5_4",
+		"unique": "fury_of_the_ancients",
+		"item": false
+	},
+	"u_hail_of_thorns": {
+		"group": "bow",
+		"name": "Hail of Thorns",
+		"source": "weapon/archer_1_bow",
+		"unique": "hail_of_thorns",
+		"item": false
+	},
+	"u_hellrack": {
+		"group": "bow",
+		"name": "Hellrack",
+		"source": "weapon/siege_crossbow",
+		"unique": "hellrack",
+		"item": false
+	},
+	"u_lightbringer": {
+		"group": "melee",
+		"name": "Lightbringer",
+		"source": "weapon/mace_6_5",
+		"unique": "lightbringer",
+		"item": false
+	},
+	"u_maelstrom_edge": {
+		"group": "melee",
+		"name": "Maelstrom Edge",
+		"source": "weapon/sword_7_5",
+		"unique": "maelstrom_edge",
+		"item": false
+	},
+	"u_shadowfang": {
+		"group": "melee",
+		"name": "Shadowfang",
+		"source": "weapon/dagger_6_5",
+		"unique": "shadowfang",
+		"item": false
+	},
+	"u_skybreaker": {
+		"group": "melee",
+		"name": "Skybreaker",
+		"source": "weapon/mace_8_5",
+		"unique": "skybreaker",
+		"item": false
+	},
+	"u_stormcallers_crook": {
+		"group": "melee",
+		"name": "Stormcaller's Crook",
+		"source": "weapon/staff_2_5",
+		"unique": "stormcallers_crook",
+		"item": false
+	},
+	"u_templar_mace": {
+		"group": "melee",
+		"name": "Templar's Mace",
+		"source": "weapon/mace_1_5",
+		"unique": "templar_mace",
+		"item": false
+	},
+	"u_vipers_kiss": {
+		"group": "melee",
+		"name": "Viper's Kiss",
+		"source": "weapon/dagger_5_5",
+		"unique": "vipers_kiss",
+		"item": false
+	},
+	"u_warlord_maul": {
+		"group": "melee",
+		"name": "Warlord's Maul",
+		"source": "weapon/mace_2_5",
+		"unique": "warlord_maul",
+		"item": false
+	},
+	"u_windpiercer": {
+		"group": "bow",
+		"name": "Windpiercer",
+		"source": "weapon/elf_archer_1_bow",
+		"unique": "windpiercer",
+		"item": false
+	},
+	"u_windrunner_bow": {
+		"group": "bow",
+		"name": "Windrunner's Bow",
+		"source": "weapon/skeleton_hunter_2_bow",
+		"unique": "windrunner_bow",
+		"item": false
+	},
+	"undead_archer_1_bow": {
+		"name": "Archer 1's Bow",
+		"group": "bow",
+		"item": false
+	},
+	"undead_archer_3_bow": {
+		"name": "Archer 3's Bow",
+		"group": "bow",
+		"item": false
+	},
+	"valkyrie_1_weapon": {
+		"name": "Valkyrie 1's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"valkyrie_2_weapon": {
+		"name": "Valkyrie 2's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"valkyrie_3_weapon": {
+		"name": "Valkyrie 3's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"vampire_1_weapon": {
+		"name": "Vampire 1's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"vampire_2_weapon": {
+		"name": "Vampire 2's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"vampire_3_weapon": {
+		"name": "Vampire 3's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"vampire_hunter_1_weapon": {
+		"name": "Vampire Hunter 1's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"vampire_hunter_2_weapon": {
+		"name": "Vampire Hunter 2's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"vampire_hunter_3_weapon": {
+		"name": "Vampire Hunter 3's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"vampire_weapon": {
+		"name": "Vampire's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"very_heavy_armored_frontier_defender_weapon": {
+		"name": "Very Heavy Armored Frontier Defender's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"viking_1_weapon": {
+		"name": "Viking 1's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"viking_2_weapon": {
+		"name": "Viking 2's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"viking_3_weapon": {
+		"name": "Viking 3's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"void_staff": {
+		"name": "Void Staff",
+		"group": "melee",
+		"item": true
+	},
+	"war_bow": {
+		"name": "War Bow",
+		"group": "bow",
+		"item": true
+	},
+	"war_maul": {
+		"name": "War Maul",
+		"group": "melee",
+		"item": true
+	},
+	"war_spear": {
+		"name": "War Spear",
+		"group": "melee",
+		"item": true
+	},
+	"war_sword": {
+		"name": "War Sword",
+		"group": "melee",
+		"item": true
+	},
+	"winter_witch_1_weapon": {
+		"name": "Winter Witch 1's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"winter_witch_2_weapon": {
+		"name": "Winter Witch 2's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"winter_witch_3_weapon": {
+		"name": "Winter Witch 3's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"witch_1_weapon": {
+		"name": "Witch 1's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"witch_2_weapon": {
+		"name": "Witch 2's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"witch_3_weapon": {
+		"name": "Witch 3's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"wooden_spear": {
+		"name": "Wooden Spear",
+		"group": "melee",
+		"item": true
+	},
+	"zombie_villager_1_weapon": {
+		"name": "Zombie Villager 1's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"zombie_villager_2_weapon": {
+		"name": "Zombie Villager 2's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"zombie_villager_3_weapon": {
+		"name": "Zombie Villager 3's Weapon",
+		"group": "melee",
+		"item": false
+	},
+	"zombie_weapon": {
+		"name": "Zombie's Weapon",
+		"group": "melee",
+		"item": false
+	}
+}

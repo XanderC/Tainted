@@ -41,11 +41,15 @@ const LEGENDARIES := {
 		"power": {"cost_red": [0.15, 0.25]}, "flavor": "Waste nothing, not even fury."},
 	"eye_of_carnage": {"name": "Eye of Carnage", "base": "old_amulet",
 		"power": {"rampage": [0.20, 0.40]}, "flavor": "It sees only what is about to burst."},
-	# ---- Dexterity: bows, daggers, speed ----
+	# ---- Dexterity: bows, crossbows, daggers, speed ----
 	"windpiercer": {"name": "Windpiercer", "base": "long_bow", "attr": "dex",
 		"power": {"skill_dmg:power_shot": [0.6, 1.0], "bow_inc": [0.10, 0.20]}, "flavor": "It never misses twice."},
 	"hail_of_thorns": {"name": "Hail of Thorns", "base": "short_bow", "attr": "dex",
 		"power": {"skill_dmg:multishot": [0.5, 0.9], "skill_dmg:arrow_rain": [0.5, 0.9]}, "flavor": "One string, a hundred wounds."},
+	"buriza": {"name": "Buriza-Do Kyanon", "base": "arbalest", "attr": "dex",
+		"power": {"bow_inc": [0.20, 0.35], "crit": [0.05, 0.08]}, "flavor": "The blizzard's breath in every quarrel."},
+	"hellrack": {"name": "Hellrack", "base": "siege_crossbow", "attr": "dex",
+		"power": {"bow_inc": [0.25, 0.40], "skill_dmg:power_shot": [0.6, 1.0]}, "flavor": "Forged in the brimstone pits to shatter stone and bone."},
 	"shadowfang": {"name": "Shadowfang", "base": "stiletto", "attr": "dex",
 		"power": {"skill_dmg:shadow_step": [0.6, 1.0], "skill_cdr:shadow_step": [0.25, 0.40]}, "flavor": "You see it only after."},
 	"vipers_kiss": {"name": "Viper's Kiss", "base": "kris", "attr": "dex",
@@ -241,6 +245,26 @@ static func info_of(uid: String) -> Dictionary:
 	if LEGENDARIES.has(uid):
 		return LEGENDARIES[uid]
 	return SET_ITEMS.get(uid, {})
+
+
+static func item_name(uid: String) -> String:
+	return String(info_of(uid).get("name", uid.capitalize()))
+
+
+## A unique's own look (Wardrobe): armour, weapons and shields have their own art, a recoloured
+## piece of the gear library in assets/gear/<folder>/u_<id>/ (tools/make_unique_looks.py); "" for
+## the rest (jewellery, belts).
+static func look_of(uid: String) -> String:
+	var grp := Wardrobe.group_of_base(LootGenerator.base_by_id(String(info_of(uid).get("base", ""))))
+	var id := "u_" + uid
+	return id if grp != "" and Wardrobe.exists(grp, id) else ""
+
+
+## The unique whose own look `look_id` is ("" if none).
+static func with_look(look_id: String) -> String:
+	if look_id.begins_with("u_") and not info_of(look_id.substr(2)).is_empty():
+		return look_id.substr(2)
+	return ""
 
 
 static func set_of(uid: String) -> String:

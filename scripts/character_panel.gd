@@ -4,8 +4,8 @@ extends PanelContainer
 ## paperdoll (each slot shaped like what it holds, the flasks in a row under the belt) and the bag
 ## grid under it. Everything is drag and drop:
 ##   bag <-> bag (rearrange/swap), bag -> equipment slot (equip), equipment -> bag (unequip),
-##   stash -> bag (take), anything -> the drop box under the boots (drop on the ground), and
-##   anything the current left panel accepts (e.g. buying a ware).
+##   stash -> bag (take), anything the current left panel accepts (e.g. buying a ware). Gear dragged
+##   onto the empty screen around the windows is dropped on the ground (DropZone).
 ## Tapping an item selects it for the left panel (details, gems, blacksmith, merchant...).
 ## Currency and loose gems aren't carried: they are the account's, in the
 ## shared stash (StashPanel), whose Currency tab is where orbs are used.
@@ -15,13 +15,14 @@ const GEAR_GRID_CELL := 46.0  # the 12 x 5 bag under the paperdoll on a 720p-tal
 const DOLL_U := 40.0  # the paperdoll's unit: each slot is a whole number of these
 const DOLL_GAP := Vector2(58, 6)  # between slots across (so the doll is as wide as the bag) and down
 ## Each slot's place on the paperdoll as [column, top, width, height]: the top is so many units plus
-## so many gaps down ([units, gaps]), the size in units. Columns: 0 weapon and gloves, 1 a ring,
+## so many gaps down ([units, gaps]), the size in units. Columns: 0 weapon and gloves, 1 shoulders and a ring,
 ## 2 helmet / body / belt, 3 amulet and the other ring, 4 off hand and boots.
 const DOLL := {
 	"weapon": [0, [0, 0], 2, 4],
 	"gloves": [0, [4, 2], 2, 2],  # level with the bottom of the belt
 	"ring": [1, [3, 1], 1, 1],  # beside the middle of the body armour
 	"helmet": [2, [0, 0], 2, 2],
+	"shoulders": [1, [0, 0], 1, 2],  # beside the helmet
 	"chest": [2, [2, 1], 2, 3],
 	"belt": [2, [5, 2], 2, 1],
 	"amulet": [3, [1, 0], 1, 1],  # beside the bottom of the helmet
@@ -100,31 +101,6 @@ func _ready() -> void:
 	v.add_child(_bag_view)
 
 
-## On the paperdoll under the boots, beside the flasks: drag gear here (from the bag, the paperdoll or
-## a flask slot) to drop it on the ground. Replaces the Drop button the item panel used to have.
-func _drop_box() -> DragSlot:
-	var r := drop_box_rect()
-	var box := DragSlot.new(r.size)
-	box.position = r.position
-	box.setup(null, Color(0.55, 0.22, 0.20), Color(0.13, 0.06, 0.06), 0, "", "Drag an item here to drop it on the ground")
-	var lbl := UIKit.label("🗑\nDROP", 14, Color(0.85, 0.45, 0.40))
-	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	box.add_child(lbl)
-	box.can_accept = func(d: Dictionary) -> bool:
-		return d.get("kind", "") == "item" and d.get("item") != null and d.get("from", "") in ["bag", "gear", "flask"]
-	box.on_drop = func(d: Dictionary) -> void:
-		var it: ItemInstance = d.get("item")
-		player.drop_item(it)
-		menu.feedback("Dropped %s." % it.display_name)
-		if menu.selected == it:
-			menu.select(null)
-		else:
-			menu.refresh()
-	return box
-
-
 func refresh() -> void:
 	_level_lbl.text = str(GameState.level)
 	_class_lbl.text = "%s   •   Level %d" % [player.class_def.display_name, GameState.level]
@@ -147,7 +123,6 @@ func refresh() -> void:
 		var cell := _flask_cell(i)
 		cell.position = flask_rect(i).position
 		_doll.add_child(cell)
-	_doll.add_child(_drop_box())
 
 	_bag_view.selected = menu.selected
 	_bag_view.refresh()
@@ -173,11 +148,6 @@ static func _col_x(c: int) -> float:
 	for i in c:
 		x += DOLL_COL_UNITS[i] * DOLL_U + DOLL_GAP.x
 	return x
-
-
-## The drop box: under the boots, level with the flasks.
-static func drop_box_rect() -> Rect2:
-	return Rect2(_col_x(4), _down(FLASK_TOP), DOLL_U * 2.0, DOLL_U * 2.0)
 
 
 ## Where equipment slot `slot` sits on the paperdoll.

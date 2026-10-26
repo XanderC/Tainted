@@ -8,8 +8,19 @@ $adb = "D:\Android\Sdk\platform-tools\adb.exe"
 $godot = "D:\godot_bin\Godot_v4.4.1-stable_win64_console.exe"
 $apk = "$PSScriptRoot\builds\android\Tainted.apk"
 
+# The game goes in the APK as one pack (Updater: GAME_PACK), exported first (as a .pck: Godot won't
+# export to another name)
+Write-Host "Exporting the game pack..." -ForegroundColor Cyan
+New-Item -ItemType Directory -Force "$PSScriptRoot\pack", "$PSScriptRoot\builds\android" | Out-Null
+Remove-Item "$PSScriptRoot\builds\android\game.pck" -ErrorAction SilentlyContinue
+& $godot --headless --path $PSScriptRoot --export-pack "Android Data" "$PSScriptRoot\builds\android\game.pck"
+if (-not (Test-Path "$PSScriptRoot\builds\android\game.pck")) {
+    Write-Error "Exporting the game pack failed!"
+    exit 1
+}
+Copy-Item "$PSScriptRoot\builds\android\game.pck" "$PSScriptRoot\pack\game.mp4" -Force
 Write-Host "Building Android APK..." -ForegroundColor Cyan
-& $godot --headless --export-debug "Android" $apk
+& $godot --headless --path $PSScriptRoot --export-debug "Android" $apk
 if ($LASTEXITCODE -ne 0) {
     Write-Error "Build failed!"
     exit 1

@@ -58,9 +58,16 @@ Write-Host "Exporting the server pack..." -ForegroundColor Cyan
 if (-not (Test-Path $pck)) { Write-Error "Export failed: no $pck" }
 Write-Host ("Pack: {0:N0} MB" -f ((Get-Item $pck).Length / 1MB))
 
+# The update the server offers games (builds\update, made by publish_update.ps1; none: an empty offer)
+$update = Join-Path $PSScriptRoot "builds\update"
+New-Item -ItemType Directory -Force $update | Out-Null
+if (-not (Test-Path (Join-Path $update "update.json"))) { [IO.File]::WriteAllText((Join-Path $update "update.json"), "{}") }
+
 # 2. Copy it over
 Write-Host "Copying to $HostName`:$remote..." -ForegroundColor Cyan
-& ssh @ssh $HostName "mkdir -p $remote"
+& ssh @ssh $HostName "mkdir -p $remote && rm -rf $remote/update && mkdir -p $remote/update"
+& scp @ssh -q (Get-ChildItem $update -File | ForEach-Object FullName) "$HostName`:$remote/update/"
+if ($LASTEXITCODE -ne 0) { Write-Error "Copying the update failed" }
 $files = "Dockerfile", "docker-compose.yml", "entrypoint.sh", "tainted-admin", "backup.sh", "tainted-backup.service", "tainted-backup.timer" |
     ForEach-Object { Join-Path $PSScriptRoot "server\$_" }
 & scp @ssh -q @files $pck "$HostName`:$remote/"

@@ -22,6 +22,7 @@ const NAME_SUFFIXES := ["of Woe", "of the Pit", "of Ruin", "of Dusk", "of Tormen
 
 
 func _ready() -> void:
+	Updater.note("LootGenerator ready")
 	randomize()
 	_build_bases()
 	_build_affixes()
@@ -120,7 +121,7 @@ const WEAPON_BASES := [
 	["serpent_staff", "Serpent Staff", "staff", true, 20, 27, Color(0.5, 0.65, 0.45)],
 	["crystal_staff", "Crystal Staff", "staff", true, 32, 38, Color(0.55, 0.8, 0.9)],
 	["void_staff", "Void Staff", "staff", true, 44, 50, Color(0.6, 0.5, 0.85)],
-	# Bows (two-handed): Desert Scout hirelings use them (HirelingDB); the art is the archer skins' own
+	# Bows (two-handed): Woodland Scout hirelings use them (HirelingDB); the art is the archer skins' own
 	["hunting_bow", "Hunting Bow", "bow", true, 1, 9, Color(0.60, 0.45, 0.30)],
 	["short_bow", "Short Bow", "bow", true, 5, 12, Color(0.80, 0.55, 0.25)],
 	["recurve_bow", "Recurve Bow", "bow", true, 10, 16, Color(0.45, 0.40, 0.38)],
@@ -130,6 +131,22 @@ const WEAPON_BASES := [
 	["serpent_bow", "Serpent Bow", "bow", true, 34, 38, Color(0.65, 0.65, 0.35)],
 	["moonlit_bow", "Moonlit Bow", "bow", true, 40, 45, Color(0.65, 0.80, 0.85)],
 	["gilded_warbow", "Gilded Warbow", "bow", true, 46, 54, Color(0.95, 0.75, 0.25)],
+	# Crossbows (two-handed): heavy, high-impact ranged weapons
+	["hunting_crossbow", "Hunting Crossbow", "crossbow", true, 1, 10, Color(0.65, 0.45, 0.30)],
+	["light_crossbow", "Light Crossbow", "crossbow", true, 6, 14, Color(0.75, 0.55, 0.35)],
+	["arbalest", "Arbalest", "crossbow", true, 14, 21, Color(0.60, 0.58, 0.68)],
+	["repeating_crossbow", "Repeating Crossbow", "crossbow", true, 22, 28, Color(0.75, 0.62, 0.35)],
+	["siege_crossbow", "Siege Crossbow", "crossbow", true, 30, 36, Color(0.52, 0.54, 0.60)],
+	["runic_arbalest", "Runic Arbalest", "crossbow", true, 38, 46, Color(0.45, 0.80, 0.95)],
+	["dragon_crossbow", "Dragon Crossbow", "crossbow", true, 46, 56, Color(0.95, 0.50, 0.20)],
+	# Hand crossbows (one-handed): aimed in one hand, a shield or another weapon in the other
+	# (tools/import_new_gear.py; drawn on the hand crossbow rig)
+	["hand_crossbow", "Hand Crossbow", "crossbow", false, 1, 6, Color(0.55, 0.38, 0.22)],
+	["iron_hand_crossbow", "Iron Hand Crossbow", "crossbow", false, 10, 11, Color(0.58, 0.60, 0.64)],
+	["bone_hand_crossbow", "Bone Hand Crossbow", "crossbow", false, 18, 16, Color(0.88, 0.84, 0.72)],
+	["horn_hand_crossbow", "Horn Hand Crossbow", "crossbow", false, 26, 21, Color(0.78, 0.70, 0.55)],
+	["gilded_hand_crossbow", "Gilded Hand Crossbow", "crossbow", false, 34, 27, Color(0.95, 0.78, 0.28)],
+	["jade_hand_crossbow", "Jade Hand Crossbow", "crossbow", false, 42, 33, Color(0.30, 0.75, 0.35)],
 	# Shields
 	["wooden_shield", "Wooden Shield", "shield", false, 1, 12, Color(0.55, 0.40, 0.25)],
 	["buckler", "Buckler", "shield", false, 6, 16, Color(0.6, 0.5, 0.4)],
@@ -174,6 +191,22 @@ const BOOT_BASES := [
 	["frost_greaves", "Frost Greaves", 40, 17, Color(0.55, 0.70, 0.85)],
 	["death_greaves", "Death Greaves", 50, 21, Color(0.35, 0.20, 0.22)],
 ]
+## Shoulder pieces: [id, name, drop level, armour, colour] (tools/import_new_gear.py, worn over the
+## top of both arms). Better ones need more Strength (Attributes).
+const SHOULDER_BASES := [
+	["strapped_pauldrons", "Strapped Pauldrons", 1, 3, Color(0.60, 0.45, 0.30)],
+	["leaf_mantle", "Leaf Mantle", 4, 4, Color(0.40, 0.55, 0.25)],
+	["hunters_mantle", "Hunter's Mantle", 8, 6, Color(0.70, 0.62, 0.50)],
+	["iron_pauldrons", "Iron Pauldrons", 12, 8, Color(0.55, 0.58, 0.62)],
+	["bonebound_mantle", "Bonebound Mantle", 16, 10, Color(0.80, 0.75, 0.62)],
+	["spiked_pauldrons", "Spiked Pauldrons", 20, 12, Color(0.50, 0.54, 0.58)],
+	["skull_pauldron", "Skull Pauldron", 25, 14, Color(0.88, 0.84, 0.72)],
+	["warlord_pauldrons", "Warlord Pauldrons", 30, 16, Color(0.35, 0.35, 0.38)],
+	["gilded_pauldrons", "Gilded Pauldrons", 35, 18, Color(0.95, 0.78, 0.28)],
+	["horned_skull_pauldron", "Horned Skull Pauldron", 40, 20, Color(0.85, 0.80, 0.68)],
+	["frost_spaulders", "Frost Spaulders", 45, 22, Color(0.55, 0.80, 0.95)],
+	["void_spaulders", "Void Spaulders", 50, 25, Color(0.45, 0.25, 0.55)],
+]
 ## [id, name, drop level, armour, colour]. Better ones need more Strength (Attributes).
 const HELMET_BASES := [
 	["linen_wrap", "Linen Wrap", 1, 3, Color(0.75, 0.55, 0.25)],
@@ -210,17 +243,19 @@ func _build_bases() -> void:
 			w[5], w[2], two)
 		bases[-1].drop_level = w[4]
 	for b in bases:
-		if b.weapon_type == "bow":
+		if (b.weapon_type == "bow" or b.weapon_type == "crossbow") and b.two_handed:
 			b.weight = 60  # rarer than gear you wear yourself: they are for your hireling
+		elif b.weapon_type == "crossbow":
+			b.grid_size = Vector2i(2, 2)  # a hand crossbow
 	bases[_base_index("tower_shield")].grid_size = Vector2i(2, 3)  # a tall shield takes a tall space
 	# Helmets in tiers: the helmets the character packs draw on their heads, cut out by
-	# tools/import_helmets.py (worn art and bag icon)
+	# tools/import_headgear.py (worn art and bag icon, from the packs' vector heads)
 	for h in HELMET_BASES:
 		_base(h[0], h[1], "helmet", h[4], "armor", h[3])
 		bases[-1].drop_level = h[2]
 	# Body armour, gloves and boots in tiers: the character packs' own clothes (tools/import_armour.py),
 	# worn on the character and as the bag icon
-	for table in [["chest", CHEST_BASES], ["gloves", GLOVE_BASES], ["boots", BOOT_BASES]]:
+	for table in [["chest", CHEST_BASES], ["gloves", GLOVE_BASES], ["boots", BOOT_BASES], ["shoulders", SHOULDER_BASES]]:
 		for a in table[1]:
 			_base(a[0], a[1], table[0], a[4], "armor", a[3])
 			bases[-1].drop_level = a[2]
@@ -306,19 +341,19 @@ func _build_affixes() -> void:
 	_affix("mana_flat", "+{v} Maximum Mana", "mana_max", F, 10, 40)
 	affixes[-1].slots = ["weapon", "offhand", "amulet", "ring", "helmet", "chest", "belt"]
 	_affix("mana_regen", "{v}% Increased Mana Regeneration", "mana_regen_inc", F, 0.10, 0.40, true)
-	affixes[-1].slots = ["weapon", "offhand", "amulet", "ring", "helmet", "chest", "gloves", "boots"]
-	_affix("bow_inc", "{v}% Increased Bow Damage", "bow_inc", F, 0.10, 0.30, true)
+	affixes[-1].slots = ["weapon", "offhand", "amulet", "ring", "helmet", "shoulders", "chest", "gloves", "boots"]
+	_affix("bow_inc", "{v}% Increased Ranged Damage", "bow_inc", F, 0.10, 0.30, true)
 	affixes[-1].slots = ["weapon", "gloves", "amulet", "ring"]
-	affixes[-1].weapon_types = ["bow"]
+	affixes[-1].weapon_types = ["bow", "crossbow"]
 	# Resistances (armour and jewellery; Vitality gives some too)
 	for r in [["res_fire", "Fire"], ["res_cold", "Cold"], ["res_lightning", "Lightning"], ["res_chaos", "Poison"]]:
 		_affix(r[0], "+{v}%% %s Resistance" % r[1], r[0], F, 0.06, 0.20, true)
-		affixes[-1].slots = ["helmet", "chest", "gloves", "boots", "belt", "ring", "amulet", "offhand"]
+		affixes[-1].slots = ["helmet", "shoulders", "chest", "gloves", "boots", "belt", "ring", "amulet", "offhand"]
 	_affix("res_all", "+{v}% to all Resistances", "res_all", F, 0.04, 0.12, true, 8, 40)
 	affixes[-1].slots = ["helmet", "chest", "shield", "ring", "amulet", "offhand"]
 	_affix("attack_inc", "{v}% Increased Attack Damage", "attack_inc", F, 0.06, 0.18, true)
 	affixes[-1].slots = ["weapon", "gloves", "amulet", "ring"]
-	affixes[-1].weapon_types = ["sword", "axe", "mace", "spear", "dagger", "bow"]
+	affixes[-1].weapon_types = ["sword", "axe", "mace", "spear", "dagger", "bow", "crossbow"]
 
 	# Flask modifiers. Prefixes change the flask; suffixes work while it is in effect.
 	_flask_affix("fl_ample", "Ample", true, "{v}% Increased Amount Recovered", "flask_amount", 0.15, 0.35, true, ["life", "power"])
@@ -360,7 +395,7 @@ func roll_item(ilvl: int = 1, forced_rarity: int = -1, slot: String = "") -> Ite
 		pool = bases.filter(func(b): return slot == "" or b.slot == slot)
 	if smart_class != null and randf() < SMART_LOOT_CHANCE:
 		# Things you can wield now (anyone may use any weapon: the ones whose requirements you meet), or
-		# your hireling can use (a Desert Scout's bows)
+		# your hireling can use (a Woodland Scout's bows)
 		var extra: Array = Hirelings.type_def().get("weapons", []) if Hirelings.has() else []
 		var have := GameState.attribute_totals()
 		var usable := pool.filter(func(b): return b.weapon_type == "" or extra.has(b.weapon_type) \

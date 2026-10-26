@@ -45,7 +45,7 @@ static func adventurer() -> ClassDef:
 		"crit_chance": 0.05,
 		"life_regen": 1.5,
 	}
-	c.weapon_types = ["sword", "axe", "mace", "spear", "dagger", "staff", "bow", "shield"]
+	c.weapon_types = ["sword", "axe", "mace", "spear", "dagger", "staff", "bow", "crossbow", "shield"]
 	c.dual_wield = true
 	# Adrenaline (Strength skills): starts empty, built by their basic attacks, slowly drains away
 	c.power_name = "Adrenaline"

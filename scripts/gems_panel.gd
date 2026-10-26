@@ -2,9 +2,8 @@ class_name GemsPanel
 extends MenuPanel
 ## Gems: socket gems (and runes) are the account's, in the shared stash, so they go in and out of
 ## sockets only at the stash or the Jeweler (GameState.gem_station), where the shared gems show here:
-## drag one onto any item with a free socket, worn or in the bag (CharacterPanel takes the drop), or
-## onto a socket of the item tapped. Tap an item to see its sockets here, and drag a socketed gem back
-## onto the shared gems to take it out. Elsewhere the sockets are view-only. At the Jeweler
+## drag one onto any item with a free socket, worn or in the bag (CharacterPanel takes the drop). An
+## item's card there has "Take gems out" (GameMenu.show_item_tip), which puts them back. At the Jeweler
 ## (`jeweler = true`) it also combines GemDef.COMBINE_COUNT gems into the next tier for orbs.
 ## Tapping a gem (or rune) pops up its card where it was tapped (the menu's ItemTip).
 
@@ -27,9 +26,8 @@ func panel_title() -> String:
 
 func refresh() -> void:
 	UIKit.clear(self)
-	_add_sockets()
 	if GameState.gem_station:
-		add_child(UIKit.label("Drag a gem or rune onto any item with a free socket, worn or in your bag. Tap an item to see its sockets; drag a gem from a socket back here to take it out.", 13, UIKit.TEXT_DIM, true))
+		add_child(UIKit.label("Drag a gem or rune onto any item with a free socket, worn or in your bag. To take gems out, tap the item and use Take gems out on its card.", 13, UIKit.TEXT_DIM, true))
 		_add_pool()
 	else:
 		add_child(UIKit.label("🔒 Socket gems at the stash or the Jeweler in town.", 13, UIKit.TEXT_DIM, true))
@@ -37,76 +35,9 @@ func refresh() -> void:
 		_add_combine()
 
 
-# ---------- sockets of the selected item ----------
-
-func _add_sockets() -> void:
-	var it := menu.selected
-	var sec := UIKit.section(self, "SOCKETS")
-	if it == null:
-		sec.add_child(UIKit.label("Tap an item in your bag or equipment to see its sockets.", 14, UIKit.TEXT_DIM, true))
-		return
-	sec.add_child(UIKit.label("%s%s" % [it.display_name, "   (equipped)" if player.equipment.values().has(it) else ""],
-		16, ItemInstance.RARITY_COLORS[it.rarity], true))
-	if it.sockets <= 0:
-		sec.add_child(UIKit.label("This item has no sockets. Magic and Rare items roll more of them.", 14, UIKit.TEXT_DIM, true))
-		return
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 8)
-	sec.add_child(row)
-	for i in it.sockets:
-		row.add_child(_socket_cell(it, i))
-	if it.is_runeword():
-		sec.add_child(UIKit.label("The runes of a runeword are set for good: they can't be taken out or swapped.",
-			13, Color(0.78, 0.70, 0.47), true))
-	elif jeweler and not it.gems.is_empty():
-		var rm := UIKit.button("Remove All Gems", Color(0.28, 0.12, 0.12), Color(0.95, 0.45, 0.45), Vector2(0, 44), 15)
-		rm.pressed.connect(func():
-			var n := 0
-			while not it.gems.is_empty() and GameState.unsocket_gem(it, it.gems.size() - 1):
-				n += 1
-			menu.feedback("Removed %d gem(s)." % n)
-			menu.refresh()
-		)
-		sec.add_child(rm)
-	# What the gems currently add
-	var lines := Runewords.card_bbcode(it)
-	var why := Runewords.why_not(it)
-	if why != "":
-		lines += "[color=#f59e0b]⚠ %s[/color]\n" % why
-	for gid in it.gems:
-		var g := it.socket_info(gid)
-		lines += "[color=#%s]◆ %s[/color]  [color=#888888](%s)[/color]\n" % [Color(g.color).to_html(false), g.text, g.name]
-	if lines != "":
-		sec.add_child(UIKit.rich(lines, 14))
-
-
-func _socket_cell(it: ItemInstance, i: int) -> DragSlot:
-	var cell := DragSlot.new(Vector2(62, 62))
-	if i < it.gems.size():
-		var gid: String = it.gems[i]
-		var g := GemDef.info(gid)
-		cell.setup(GemDef.icon(gid), Color.WHITE if gid == _sel_gem else g.color, Color(g.color).darkened(0.82))
-		cell.payload = {"kind": "gem", "from": "socket", "idx": i, "item": it}
-		cell.clicked.connect(func():
-			_sel_gem = gid
-			menu.refresh()
-			show_gem_tip(gid, "Set in the runeword for good." if it.is_runeword() else "Drag it back onto the shared gems to take it out.")
-		)
-	else:
-		cell.setup(null, Color(0.45, 0.50, 0.70), Color(0.06, 0.06, 0.10), 0, "◇", "Empty socket - drop a gem here")
-	if not GameState.gem_station or it.is_runeword():
-		cell.payload = {}  # view-only away from the stash and the Jeweler, and a runeword's runes are set
-		return cell
-	cell.can_accept = func(d: Dictionary) -> bool:
-		return d.get("kind", "") == "gem" and d.get("from", "") == "pouch"
-	cell.on_drop = func(d: Dictionary) -> void:
-		socket_into(menu, it, i, String(d.get("gem_id", "")))
-	return cell
-
-
 ## Puts gem `gid` into socket `idx` of `it` (past the filled ones: the next free one) and says how it
-## went: socketed, a runeword formed, or why the runes don't make one yet. (Also for gems dropped
-## straight onto an item in the character panel.)
+## went: socketed, a runeword formed, or why the runes don't make one yet (for gems dropped onto an
+## item in the character panel).
 static func socket_into(m: GameMenu, it: ItemInstance, idx: int, gid: String) -> void:
 	var was := it.runeword_id
 	if GameState.socket_gem(it, idx, gid):
@@ -132,7 +63,7 @@ func show_gem_tip(gid: String, note := "") -> void:
 
 
 ## A gem's card: its effect, tier, the next tier, how many you own, what it would add to the item
-## whose sockets are open, and for a rune the runewords it is part of.
+## tapped last, and for a rune the runewords it is part of.
 func _gem_card(v: VBoxContainer, gid: String) -> void:
 	var g := GemDef.info(gid)
 	var head := HBoxContainer.new()
@@ -161,7 +92,7 @@ func _gem_card(v: VBoxContainer, gid: String) -> void:
 			t += "[color=#4ade80]Socketing it adds %s to %s[/color]%s\n" % [adds, it.display_name,
 				" (you're wearing it)" if player.equipment.values().has(it) else ""]
 		else:
-			t += "[color=#f59e0b]%s has no free socket: drop it on a socket to swap gems.[/color]\n" % it.display_name
+			t += "[color=#f59e0b]%s has no free socket: take a gem out on its card first.[/color]\n" % it.display_name
 	elif it == null:
 		t += "[color=#9ca3af]Drag it onto an item with a free socket, worn or in your bag.[/color]\n"
 	var nxt_id := GemDef.next_id(gid)
@@ -203,8 +134,8 @@ static func owned_gems() -> Array[String]:
 	return owned
 
 
-## One pouch cell (gid "" = empty). Drag a gem onto a socket in the Gems panel; dropping a
-## socketed gem here takes it out. Tapping a gem picks it for the Jeweler's combine.
+## One pouch cell (gid "" = empty). Drag a gem onto an item with a free socket. Tapping a gem shows
+## its card and picks it for the Jeweler's combine.
 static func pouch_cell(m: GameMenu, gid: String, sz: Vector2, owner: GemsPanel = null) -> DragSlot:
 	var cell := DragSlot.new(sz)
 	if gid != "":
@@ -225,12 +156,6 @@ static func pouch_cell(m: GameMenu, gid: String, sz: Vector2, owner: GemsPanel =
 		)
 	else:
 		cell.setup(null, UIKit.EMPTY_BORDER)
-	cell.can_accept = func(d: Dictionary) -> bool:
-		return d.get("kind", "") == "gem" and d.get("from", "") == "socket"
-	cell.on_drop = func(d: Dictionary) -> void:
-		if GameState.unsocket_gem(d.get("item"), int(d.get("idx", -1))):
-			m.feedback("Gem returned to the shared gems.")
-		m.refresh()
 	return cell
 
 

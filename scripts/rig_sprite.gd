@@ -14,6 +14,9 @@ extends Node2D
 ## and the OFF-HAND weapon in the screen-left hand ("Right Hand", same grip as the Sword, copied
 ## over); a shield is strapped to the screen-left hand.
 ## Gear art lives at  res://assets/gear/<slot>/<gear id>/<Object name>.png
+## Art made for the sword rig (the appearance parts, hair and beards, and gear) is drawn on its
+## canvases; on the archer rig, whose Head and Face canvases are laid out differently, it is moved
+## to where it belongs (_sword_shift).
 
 signal one_shot_finished(anim_name: String)
 
@@ -25,6 +28,9 @@ const GEAR_ROOT := "res://assets/gear"
 const GEAR_LAYERS := {
 	"weapon": {"mode": "replace", "objects": ["Sword"]},
 	"helmet": {"mode": "overlay", "objects": ["Head"], "above": ["Head", "Face 01"]},
+	# Over the top of each arm, above body armour's sleeves; kept its own size and turning only a
+	# little with the arm, so it stays on the shoulder (SHOULDER_ART)
+	"shoulders": {"mode": "overlay", "objects": ["Right Arm", "Left Arm"], "z": 1.5, "rigid": true},
 	"chest": {"mode": "overlay", "objects": ["Body", "Right Arm", "Left Arm"]},
 	"gloves": {"mode": "overlay", "objects": ["Right Hand", "Left Hand"]},
 	"boots": {"mode": "overlay", "objects": ["Left Leg", "Right Leg"]},
@@ -78,6 +84,12 @@ var _rhand_i := -1
 var _file_override := {}  # part file name -> Texture2D
 var _obj_tint := {}  # object index -> Color
 var _looks: Array = []  # {sprite, obj, z2, by_file: {file name -> Texture2D}, hair: bool}
+var _override_sword := false  # _file_override is art for the sword rig's canvases
+var _sword_shift := {}  # object index -> where the sword rig's canvas sits on this rig's (canvas px)
+var _hair_hidden := false  # the helmet worn covers the hair
+## Headgear: id -> {name, kind, hides_hair, source} (tools/import_headgear.py)
+const HEADGEAR_CATALOG := "res://assets/gear/helmet/catalog.json"
+static var _headgear := {}
 
 ## Shield size on the rig, in rig pixels (the body art is ~320 px).
 const SHIELD_HEIGHT := 200.0
@@ -111,6 +123,7 @@ func _ready() -> void:
 		set_process(false)
 		return
 	_n = rig.objects.size()
+	_sword_shift = _canvas_shifts()
 	_sword_i = rig.objects.find("Sword")
 	_bow_i = rig.objects.find("Bow")
 	_lhand_i = rig.objects.find("Left Hand")
@@ -134,13 +147,80 @@ func _ready() -> void:
 
 
 const SWORD_RIG := "res://assets/rigs/zombie"
+## Weapon rigs: the sword rig's animations with the weapon held and swung its own way
+## (tools/make_weapon_rigs.py): two-handed swords, axes and maces in both hands, bigger, chopping;
+## spears in both hands along the shaft, bigger, thrusting; daggers in one hand, stabbing; hand
+## crossbows aimed in one hand, raised and loosed.
+const TWOHAND_RIG := "res://assets/rigs/twohand"
+const SPEAR_RIG := "res://assets/rigs/spear"
+const DAGGER_RIG := "res://assets/rigs/dagger"
+const HANDXBOW_RIG := "res://assets/rigs/handxbow"
+const TWOHAND_TYPES := ["sword", "axe", "mace"]
+## A weapon's style (weapon_style) -> its rig
+const STYLE_RIGS := {"2h": TWOHAND_RIG, "spear": SPEAR_RIG, "dagger": DAGGER_RIG, "bow": ARCHER_RIG,
+	"handxbow": HANDXBOW_RIG}
+## Where a shoulder piece is pinned on each arm's art: its shoulder (tools/import_new_gear.py SHOULDER)
+const SHOULDER_ART := {"Right Arm": Vector2(57.5, 33.0), "Left Arm": Vector2(70.5, 37.0)}
+const SHOULDER_TURN := 0.35  # how much of the arm's swing a shoulder piece follows
 
 
-## The rig a player character holding weapon `weapon_id` is drawn on: the archer rig with a bow (its
-## own bow, shooting animations), else the sword rig.
+## The rig a character holding weapon base `weapon_id` is drawn on: the archer rig with a bow (its
+## own bow, shooting animations), a weapon rig for its style, else the sword rig.
 static func rig_for_weapon(weapon_id: String) -> String:
 	var b: ItemBase = LootGenerator.base_by_id(weapon_id) if weapon_id != "" else null
-	return ARCHER_RIG if b != null and b.weapon_type == "bow" else SWORD_RIG
+	if b == null:  # a weapon look (Wardrobe) by itself: a bow's is drawn on the archer rig
+		return ARCHER_RIG if Wardrobe.is_bow_art(weapon_id) else SWORD_RIG
+	return STYLE_RIGS.get(weapon_style(b), SWORD_RIG)
+
+
+## How a weapon base is held and swung: "bow", "handxbow" (a one-handed crossbow), "2h" (two-handed
+## sword, axe or mace), "spear", "dagger", or "" (one hand, slashing: the sword rig).
+static func weapon_style(b: ItemBase) -> String:
+	if b == null:
+		return ""
+	if b.weapon_type == "crossbow" and not b.two_handed:
+		return "handxbow"
+	if b.weapon_type in ["bow", "crossbow"]:
+		return "bow"
+	if b.weapon_type == "spear":
+		return "spear"
+	if b.weapon_type == "dagger":
+		return "dagger"
+	return "2h" if holds_two_handed(b) else ""
+
+
+## A new figure on rig `dir` in `old`'s place (same parent, place among its siblings, size and
+## position), `old` freed. Dress it again after.
+static func swap_rig(old: RigSprite, dir: String) -> RigSprite:
+	var r := RigSprite.new()
+	r.base_scale = old.base_scale
+	r.weapon_from_gear = old.weapon_from_gear
+	r.frame_skip = old.frame_skip
+	r.rig_dir = dir
+	r.position = old.position
+	var parent := old.get_parent()
+	var at := old.get_index()
+	parent.remove_child(old)
+	old.queue_free()
+	parent.add_child(r)
+	parent.move_child(r, at)
+	return r
+
+
+## Whether a weapon base is held in both hands (the two-handed rig).
+static func holds_two_handed(b: ItemBase) -> bool:
+	return b != null and b.two_handed and b.weapon_type in TWOHAND_TYPES
+
+
+## The rig for a weapon as another player sends it (Net: its look's art, and its style): the look
+## says bow or not, the style how a melee weapon is held (its look can be any melee weapon's).
+static func rig_for_seen(art_id: String, style: String) -> String:
+	if style == "handxbow":
+		return HANDXBOW_RIG
+	var b: ItemBase = LootGenerator.base_by_id(art_id) if art_id != "" else null
+	if Wardrobe.is_bow_art(art_id) or (b != null and b.weapon_type in ["bow", "crossbow"]):
+		return ARCHER_RIG
+	return STYLE_RIGS.get(style, SWORD_RIG) if style != "bow" else SWORD_RIG
 
 
 ## Whether skin `id` is an archer (drawn on the archer rig).
@@ -278,9 +358,11 @@ func _process(delta: float) -> void:
 # ---------------------------------------------------------------- appearance
 
 ## Swap the art of the rig's parts: part file name ("Head", "Face 01", "Body"...) -> texture.
-## Missing names keep the rig's own art.
-func set_part_overrides(overrides: Dictionary) -> void:
+## Missing names keep the rig's own art. `on_sword_canvas`: the art is drawn for the sword rig's
+## canvases (Appearance), not this rig's own (a skin's).
+func set_part_overrides(overrides: Dictionary, on_sword_canvas := false) -> void:
 	_file_override = overrides
+	_override_sword = on_sword_canvas
 	for i in _n:
 		_tex_of[i] = null  # re-pick every texture on the next frame
 	if current_anim != "":
@@ -331,11 +413,20 @@ func set_gear(slot: String, gear_id: String, dye := "") -> void:
 		return
 	_gear[slot] = gear_id
 	_gear_dye[slot] = dye
+	if slot == "helmet":
+		_hair_hidden = gear_id != "" and bool(headgear(gear_id).get("hides_hair", true))
 	var cfg: Dictionary = GEAR_LAYERS[slot]
 	if cfg["mode"] == "replace":
 		_weapon_equipped = gear_id != ""
-		# No art for this weapon yet: it falls back to the rig's own sword image.
-		_weapon_tex = _gear_texture(slot, gear_id, cfg["objects"][0])
+		# On archer rig (or rigs holding a bow), prefer Bow.png then Sword.png, else vice versa.
+		if _bow_i >= 0 and _sword_i < 0:
+			_weapon_tex = _gear_texture(slot, gear_id, "Bow")
+			if _weapon_tex == null:
+				_weapon_tex = _gear_texture(slot, gear_id, cfg["objects"][0])
+		else:
+			_weapon_tex = _gear_texture(slot, gear_id, cfg["objects"][0])
+			if _weapon_tex == null:
+				_weapon_tex = _gear_texture(slot, gear_id, "Bow")
 	else:
 		for ov in _overlays.duplicate():
 			if ov["slot"] == slot:
@@ -358,7 +449,8 @@ func set_gear(slot: String, gear_id: String, dye := "") -> void:
 					var ai := rig.objects.find(above)
 					if ai >= 0:
 						top = maxf(top, _z[ai])
-				_overlays.append({"sprite": s, "obj": obj_i, "slot": slot, "z2": top * 2.0 + 1.0})
+				_overlays.append({"sprite": s, "obj": obj_i, "slot": slot, "z2": top * 2.0 + float(cfg.get("z", 1.0)),
+					"rigid": bool(cfg.get("rigid", false)), "anchor": SHOULDER_ART.get(obj_name, Vector2.ZERO)})
 		_reorder()
 	if current_anim != "":
 		_apply_frame()
@@ -411,6 +503,55 @@ func overlay_count(slot: String) -> int:
 		if ov["slot"] == slot:
 			c += 1
 	return c
+
+
+## A piece of headgear's entry in the catalog ({} if it isn't there).
+static func headgear(id: String) -> Dictionary:
+	if _headgear.is_empty() and ResourceLoader.exists(HEADGEAR_CATALOG):
+		var res = load(HEADGEAR_CATALOG)
+		_headgear = res.data if res != null and res.data is Dictionary else {"": {}}
+	return _headgear.get(id, {})
+
+
+## Where the sword rig's Head and Face canvases sit on this rig's: object index -> shift in canvas
+## px. Both rigs' rest pose (the first frame of Idle) with the Body, whose art they share, as the
+## anchor; empty on the sword rig itself.
+func _canvas_shifts() -> Dictionary:
+	var out := {}
+	var sword := RigData.load_rig(SWORD_RIG)
+	if sword == null or sword == rig:
+		return out
+	var mine: PackedFloat32Array = rig.animations.get("Idle", rig.animations.values()[0])["data"]
+	var theirs: PackedFloat32Array = sword.animations.get("Idle", sword.animations.values()[0])["data"]
+	for obj in ["Head", "Face 01"]:
+		var i := rig.objects.find(obj)
+		var j := sword.objects.find(obj)
+		if i < 0 or j < 0:
+			continue
+		var m := _in_body(rig, mine, i).affine_inverse() * _in_body(sword, theirs, j)
+		out[i] = m.origin
+	return out
+
+
+## Object i's canvas (texture px) in the Body's canvas, in the first frame of `data`.
+static func _in_body(r: RigData, data: PackedFloat32Array, i: int) -> Transform2D:
+	return _canvas_xf(r, data, r.objects.find("Body")).affine_inverse() * _canvas_xf(r, data, i)
+
+
+static func _canvas_xf(r: RigData, data: PackedFloat32Array, i: int) -> Transform2D:
+	var o := i * STRIDE
+	var sz := r.textures[int(data[o])].get_size()
+	return Transform2D(data[o + 3], Vector2(data[o + 4], data[o + 5]), 0.0, Vector2(data[o + 1], data[o + 2])) 		* Transform2D(0.0, Vector2(-sz.x * data[o + 8], -sz.y * (1.0 - data[o + 9])))
+
+
+## The offset that puts `tex` on object i (frame's file fi, pivot px, py): art for the sword rig's
+## canvas (`sword_art`) goes where that canvas sits on this rig's own.
+func _offset(i: int, fi: int, px: float, py: float, tex: Texture2D, sword_art: bool) -> Vector2:
+	if sword_art and _sword_shift.has(i):
+		var own := rig.textures[fi].get_size()
+		return Vector2(-own.x * px, -own.y * (1.0 - py)) + _sword_shift[i]
+	var sz := tex.get_size()
+	return Vector2(-sz.x * px, -sz.y * (1.0 - py))
 
 
 func _gear_texture(slot: String, gear_id_: String, obj_name: String) -> Texture2D:
@@ -474,6 +615,8 @@ func _apply_frame() -> void:
 		elif i == _slash_i and weapon_from_gear and not _weapon_equipped:
 			alpha = 0.0
 		elif i == _bow_i:
+			if _weapon_tex != null:
+				tex = _weapon_tex
 			alpha = 1.0
 		if alpha <= 0.001:
 			s.visible = false
@@ -482,8 +625,8 @@ func _apply_frame() -> void:
 		var pivot := Vector2(data[o + 8], data[o + 9])
 		if tex != _tex_of[i] or pivot != _pivot_of[i]:
 			s.texture = tex
-			var sz := tex.get_size()
-			s.offset = Vector2(-sz.x * pivot.x, -sz.y * (1.0 - pivot.y))
+			var overridden := _override_sword and _file_override.has(rig.files[fi])
+			s.offset = _offset(i, fi, pivot.x, pivot.y, tex, overridden)
 			_tex_of[i] = tex
 			_pivot_of[i] = pivot
 		s.position = Vector2(data[o + 1], data[o + 2])
@@ -496,20 +639,18 @@ func _apply_frame() -> void:
 	if _shield_sprite != null:
 		_place_shield(data, base)
 
-	var helmet_on: bool = _gear.get("helmet", "") != ""
 	for lk in _looks:
 		var o3: int = base + int(lk["obj"]) * STRIDE
 		var s3: Sprite2D = lk["sprite"]
 		var fi3 := int(data[o3])
 		var tex3: Texture2D = lk["by_file"].get(rig.files[fi3]) if fi3 >= 0 else null
-		if tex3 == null or data[o3 + 6] <= 0.001 or (lk["hair"] and helmet_on):
+		if tex3 == null or data[o3 + 6] <= 0.001 or (lk["hair"] and _hair_hidden):
 			s3.visible = false  # hair is hidden under a helmet
 			continue
 		s3.visible = true
 		if s3.texture != tex3:
 			s3.texture = tex3
-		var sz3 := tex3.get_size()
-		s3.offset = Vector2(-sz3.x * data[o3 + 8], -sz3.y * (1.0 - data[o3 + 9]))
+		s3.offset = _offset(int(lk["obj"]), fi3, data[o3 + 8], data[o3 + 9], tex3, true)
 		s3.position = Vector2(data[o3 + 1], data[o3 + 2])
 		s3.rotation = data[o3 + 3]
 		s3.scale = Vector2(data[o3 + 4], data[o3 + 5])
@@ -521,12 +662,29 @@ func _apply_frame() -> void:
 			s2.visible = false
 			continue
 		s2.visible = true
-		var sz2 := s2.texture.get_size()
-		s2.offset = Vector2(-sz2.x * data[o2 + 8], -sz2.y * (1.0 - data[o2 + 9]))
+		s2.offset = _offset(int(ov["obj"]), int(data[o2]), data[o2 + 8], data[o2 + 9], s2.texture, true)
+		s2.modulate.a = data[o2 + 6]
+		if ov["rigid"]:
+			_place_rigid(s2, data, o2, base, ov["anchor"])
+			continue
 		s2.position = Vector2(data[o2 + 1], data[o2 + 2])
 		s2.rotation = data[o2 + 3]
 		s2.scale = Vector2(data[o2 + 4], data[o2 + 5])
-		s2.modulate.a = data[o2 + 6]
+
+
+## A piece pinned at `anchor` on its object's art (a shoulder piece on the shoulder): there, at its own
+## size (an arm stretched to reach a weapon doesn't stretch it), turned with the body and only
+## SHOULDER_TURN of the way with the arm.
+func _place_rigid(s: Sprite2D, data: PackedFloat32Array, o: int, base: int, anchor: Vector2) -> void:
+	var scl := Vector2(data[o + 4], data[o + 5])
+	var at := Vector2(data[o + 1], data[o + 2]) + Transform2D(data[o + 3], scl, 0.0, Vector2.ZERO) * (anchor + s.offset)
+	var body := rig.objects.find("Body")
+	var body_rot := data[base + body * STRIDE + 3] if body >= 0 else 0.0
+	var rot := body_rot + SHOULDER_TURN * wrapf(data[o + 3] - body_rot, -PI, PI)
+	var flip := Vector2(signf(scl.x) if scl.x != 0.0 else 1.0, signf(scl.y) if scl.y != 0.0 else 1.0)
+	s.rotation = rot
+	s.scale = flip
+	s.position = at - Transform2D(rot, flip, 0.0, Vector2.ZERO) * (anchor + s.offset)
 
 
 func _xf(data: PackedFloat32Array, o: int) -> Transform2D:

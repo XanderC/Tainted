@@ -11,14 +11,14 @@ const SWING_TIME := 0.15
 const BAG_COLS := 12  # like Path of Exile: 12 x 5
 const BAG_ROWS := 5
 const BAG_SIZE := BAG_COLS * BAG_ROWS  # cells
-const SLOTS := ["weapon", "offhand", "helmet", "chest", "gloves", "boots", "ring", "ring2", "amulet", "belt"]  # two ring slots
+const SLOTS := ["weapon", "offhand", "helmet", "shoulders", "chest", "gloves", "boots", "ring", "ring2", "amulet", "belt"]  # two ring slots
 ## Flask slots, Path of Exile style: the belt opens some of them (ItemBase.flask_slots); without
 ## one there is NO_BELT_FLASKS. Flasks in slots beyond that stay put but can't be drunk.
 const FLASK_SLOTS := 5
 const NO_BELT_FLASKS := 1
 const FLASK_KEYS := [KEY_Q, KEY_E, KEY_R, KEY_T, KEY_F]
 ## Slots that change how the character looks (see RigSprite.GEAR_LAYERS).
-const VISIBLE_SLOTS := ["weapon", "helmet", "chest", "gloves", "boots"]
+const VISIBLE_SLOTS := ["weapon", "helmet", "shoulders", "chest", "gloves", "boots"]
 ## Slots that belong to a weapon set. Only the active set is in `equipment` (and gives stats);
 ## the other set waits in `alt_set` until swap_weapon_set().
 const SET_SLOTS := ["weapon", "offhand"]
@@ -102,6 +102,7 @@ var _ring_color := Color.WHITE
 
 func _ready() -> void:
 	GameState.leveled_up.connect(_on_leveled_up)  # a burst of stars
+	GameState.looks_unlocked.connect(_on_looks_unlocked)
 	if class_def == null:
 		class_def = ClassLibrary.adventurer()
 	add_to_group("player")
@@ -481,10 +482,10 @@ func skill_block_reason(s: SkillDef) -> String:
 	var wt := main_weapon_type()
 	match s.weapon:
 		"bow":
-			if wt != "bow":
-				return "Needs a bow"
+			if wt != "bow" and wt != "crossbow":
+				return "Needs a bow or crossbow"
 		"melee":
-			if wt == "bow":
+			if wt == "bow" or wt == "crossbow":
 				return "Needs a melee weapon"
 	if s.hireling_only or s.for_hireling:
 		return ""
@@ -509,7 +510,7 @@ func damage_for(s: SkillDef) -> float:
 func attack_mult(s: SkillDef = null) -> float:
 	var attr := "dex" if s != null and s.main_attribute() == "dex" else "str"
 	var m := 1.0 + Attributes.ATTACK_PER_STR * GameState.attribute_bonus(attr) + passive("attack_inc") + stats.get_stat("attack_inc")
-	if s != null and s.weapon == "bow":
+	if s != null and (s.weapon == "bow" or s.weapon == "crossbow"):
 		m += passive("bow_inc") + stats.get_stat("bow_inc")
 	return maxf(m, 0.1)
 
@@ -550,7 +551,9 @@ func _aim(reach: float) -> Vector2:
 
 
 func _play_shoot() -> void:
-	rig.play_once("Slashing" if rig.rig_dir == RigSprite.ARCHER_RIG else "Throwing", maxf(1.2, 0.5 * stats.get_stat("attack_speed")))
+	# A bow or a hand crossbow: its rig's own shot; else the sword rig throws
+	var shoots := rig.rig_dir in [RigSprite.ARCHER_RIG, RigSprite.HANDXBOW_RIG]
+	rig.play_once("Slashing" if shoots else "Throwing", maxf(1.2, 0.5 * stats.get_stat("attack_speed")))
 
 
 func _play_cast() -> void:
@@ -1752,7 +1755,7 @@ func is_better_in_slot(item: ItemInstance) -> bool:
 		"weapon", "offhand":
 			if d_dmg > 0.0 or (d_dmg == 0.0 and d_as > 0.0):
 				return true
-		"chest", "helmet", "gloves", "boots":
+		"chest", "helmet", "shoulders", "gloves", "boots":
 			if (d_armor > 0.0 and d_life >= 0.0) or (d_life > 0.0 and d_armor >= 0.0):
 				return true
 
@@ -1866,9 +1869,10 @@ func equip_with_overflow(item: ItemInstance) -> ItemInstance:
 static func dress_rig(r: RigSprite, gear: Dictionary) -> void:
 	for slot in VISIBLE_SLOTS:
 		var it = gear.get(slot)
-		r.set_gear(slot, it.base.id if it != null else "", it.dye if it != null and slot in DyeDB.SLOTS else "")
+		# each piece in the look it has (Wardrobe)
+		r.set_gear(slot, Wardrobe.look_of(it) if it != null else "", it.dye if it != null and slot in DyeDB.SLOTS else "")
 	var off = gear.get("offhand")
-	r.set_offhand(off.base.id if off != null else "", off != null and off.base.weapon_type == "shield")
+	r.set_offhand(Wardrobe.look_of(off) if off != null else "", off != null and off.base.weapon_type == "shield")
 
 
 ## Called whenever the worn gear changes: redress the rig and recount Legendary powers and
@@ -1893,17 +1897,8 @@ func _match_rig() -> void:
 	var want := RigSprite.rig_for_weapon(w.base.id if w != null else "")
 	if rig.rig_dir == want:
 		return
-	var r := RigSprite.new()
-	r.base_scale = rig.base_scale
-	r.weapon_from_gear = true
-	r.rig_dir = want
-	var at := rig.get_index()
-	remove_child(rig)
-	rig.queue_free()
-	add_child(r)
-	move_child(r, at)
-	Appearance.apply(r, GameState.appearance)
-	rig = r
+	rig = RigSprite.swap_rig(rig, want)
+	Appearance.apply(rig, GameState.appearance)
 
 
 ## Whether worn (or wearable) gear meets its attribute requirements, so its stats count.
@@ -2001,6 +1996,27 @@ func _show_ring(radius: float, col: Color, t: float) -> void:
 	_ring_radius = radius
 	_ring_color = col
 	Coop.player_fx(["ring", radius, col.to_html(false), t])
+
+
+## New armour looks for the Wardrobe (picked up, bought or identified): said over your head.
+func _on_looks_unlocked(looks: Array) -> void:
+	if not is_inside_tree() or GameState.player != self:
+		return
+	for k in looks.size():
+		var l := Label.new()
+		l.text = "👘 New look: " + Wardrobe.look_name(String(looks[k][0]), String(looks[k][1]))
+		l.add_theme_font_size_override("font_size", 17)
+		l.add_theme_color_override("font_color", Color(0.85, 0.75, 1.0))
+		l.add_theme_color_override("font_outline_color", Color.BLACK)
+		l.add_theme_constant_override("outline_size", 5)
+		l.z_index = 20
+		get_parent().add_child(l)
+		l.position = global_position + Vector2(-90, -170 - 24 * k)
+		var t := l.create_tween()
+		t.tween_interval(0.8)
+		t.tween_property(l, "position:y", l.position.y - 40.0, 1.6)
+		t.parallel().tween_property(l, "modulate:a", 0.0, 1.6)
+		t.tween_callback(l.queue_free)
 
 
 func _on_leveled_up(_level: int) -> void:

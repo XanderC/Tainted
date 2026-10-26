@@ -1,0 +1,50 @@
+{
+	"bonebound_mantle": {
+		"name": "Bonebound Mantle",
+		"item": true
+	},
+	"frost_spaulders": {
+		"name": "Frost Spaulders",
+		"item": true
+	},
+	"gilded_pauldrons": {
+		"name": "Gilded Pauldrons",
+		"item": true
+	},
+	"horned_skull_pauldron": {
+		"name": "Horned Skull Pauldron",
+		"item": true
+	},
+	"hunters_mantle": {
+		"name": "Hunter's Mantle",
+		"item": true
+	},
+	"iron_pauldrons": {
+		"name": "Iron Pauldrons",
+		"item": true
+	},
+	"leaf_mantle": {
+		"name": "Leaf Mantle",
+		"item": true
+	},
+	"skull_pauldron": {
+		"name": "Skull Pauldron",
+		"item": true
+	},
+	"spiked_pauldrons": {
+		"name": "Spiked Pauldrons",
+		"item": true
+	},
+	"strapped_pauldrons": {
+		"name": "Strapped Pauldrons",
+		"item": true
+	},
+	"void_spaulders": {
+		"name": "Void Spaulders",
+		"item": true
+	},
+	"warlord_pauldrons": {
+		"name": "Warlord Pauldrons",
+		"item": true
+	}
+}

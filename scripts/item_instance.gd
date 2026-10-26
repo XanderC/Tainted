@@ -49,6 +49,10 @@ var hidden_name := ""
 ## Dye (DyeDB id, "" for the item's own colours): armour can be dyed by the Dyer in town.
 ## It is only how the item looks, and stays through crafting.
 @export var dye: String = ""
+## Appearance (Wardrobe look id, "" for its own): armour, weapons and shields can be made to look
+## like another piece you have unlocked, by the Dyer. Only how it looks, like a dye: its stats stay
+## its own.
+@export var look: String = ""
 ## This item's own id (made the first time it's saved): a trade moves it by id, and the server keeps a
 ## traded-away item out of the giver's saves. A copy (the Mirror) gets a new one.
 var uid := ""
@@ -245,6 +249,8 @@ func get_tooltip() -> String:
 		lines.append(("Socket: " + socket_info(gems[i]).get("text", "?")) if i < gems.size() else "Empty socket")
 	if dye != "":
 		lines.append("Dyed " + DyeDB.dye_name(dye))
+	if look != "":
+		lines.append("Looks like " + Wardrobe.look_name(Wardrobe.group(self), look))
 	if corrupted:
 		lines.append("Corrupted")
 	if mirrored:
@@ -279,6 +285,7 @@ func to_dict() -> Dictionary:
 		"identified": identified,
 		"hidden_name": hidden_name,
 		"dye": dye,
+		"look": look,
 		"uid": _ensure_uid(),
 	}
 
@@ -308,6 +315,8 @@ static func from_dict(d: Dictionary) -> ItemInstance:
 	it.hidden_name = String(d.get("hidden_name", ""))
 	var dyed := String(d.get("dye", ""))
 	it.dye = dyed if DyeDB.has(dyed) and it.can_dye() else ""
+	var looked := String(d.get("look", ""))
+	it.look = looked if Wardrobe.exists(Wardrobe.group_of_base(b), looked) else ""
 	var pw: Dictionary = d.get("powers", {})
 	for k in pw:
 		it.powers[String(k)] = float(pw[k])

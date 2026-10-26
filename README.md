@@ -15,8 +15,27 @@ for the phone's shape).
 - Windows: `.\build_windows.ps1` makes `builds\windows\Tainted.exe`, one standalone file you can copy
   anywhere and run (`-Run` starts it). Uses the "Windows Desktop" preset (x86_64, game packed in the exe).
 - Android: `.\deploy_android.ps1` builds the APK and installs it on the phone over wireless debugging.
-- For players: `.\publish_builds.ps1` builds both and puts them on the NAS (Tainted > builds), where
-  the server's "update your game" message sends them.
+  The APK holds the game as **one pack** (`pack/game.mp4`, exported first with the "Android Data"
+  preset), plus only `updater.gd`, `build.json` and the project font: the "Android" preset exports
+  just those. Updater loads the pack at startup. Don't put the game in the APK as loose files again:
+  the first pack Godot loads at runtime (the game pack, a patch) makes it list every file of the APK
+  one at a time through Android's asset manager, which took a phone 90 seconds with the game's
+  ~9,500 files. (`.mp4` because the exporter leaves that extension uncompressed, so the pack can be
+  read from anywhere in it at once.)
+- For players: `.\publish_builds.ps1` is a **full release**: it builds both, puts them on the NAS
+  (Tainted > builds, where the server's "update your game" message sends players) and keeps each
+  platform's pack in `builds\base` as the base later updates are made against. Deploy the server
+  after it (`.\deploy_server.ps1`).
+- **Updates** (`.\publish_update.ps1`): players don't reinstall. It stamps a new build number
+  (`build.json`), exports a patch per platform of just the files changed since the last full release
+  (Godot's `--export-patch`), and deploys the server with them. A game connecting to an older build's
+  server asks first (`scripts/updater.gd`, over raw packets rather than RPCs, so it works whatever an
+  update changed), downloads the patch in chunks, checks its SHA-256, saves it in `user://update` and
+  restarts (a phone reopens itself in a new process, or asks the player to); from then on the patch loads at startup,
+  before any other script. An update can change any script, scene or art, new `class_name`s
+  included, but not the engine, export settings (icons, permissions), project settings or the
+  autoload list: those need a full release, which players install once. Test: start a local server
+  with `--update-dir=<folder>` and run `scratch/update_client.tscn -- --update-test`.
 
 ## What's here
 | File | Purpose |
@@ -64,8 +83,10 @@ reach a spot, enter a zone, touch a waypoint, kill monsters of a kind, kill a bo
 and rewards (experience, orbs, passive points, items). NPCs with quest business show a gold ! or ?
 and talk first (`DialogueUI`); the tracker (top left) shows what to do next and opens the quest log
 (also J). Progress is saved per character.
-So far: **Into the Wastes** (main, Brom) and **The Lost Caravan** (side, Caravan Master Hesk, with
-Vesh the Raider Captain), in **The Dune Wastes**, reached by the west road out of Ashfall.
+So far: **Into the Ashwood** (main, Brom) and **The Lost Caravan** (side, Caravan Master Hesk, with
+Vesh the Raider Captain), in **The Ashwood**, autumn woods reached by the west road out of Ashfall.
+Act 1 is woodland (the tutorial, Ashfall and the Ashwood: see **Map themes and walls**). The zone's
+id is still `dune_wastes` from when it was a desert, so saved waypoints and quests keep working.
 Zone maps come from `tools/gen_zones.py`; tweak them in the map editor (rerunning the script
 overwrites them).
 
@@ -86,21 +107,42 @@ classes can reuse the same animation calls later.
 ### Weapons
 59 weapon and shield bases in tiers (`LootGenerator.WEAPON_BASES`): one- and two-handed swords and
 sabres, axes and maces, spears (two-handed, usable by the Warrior), daggers, staves, shields and
-bows (for Desert Scout hirelings), each with a drop level so better bases appear in deeper rifts and
+bows (for Woodland Scout hirelings), each with a drop level so better bases appear in deeper rifts and
 later zones. Their art, in the hand and in the bag, comes from the CraftPix weapon packs via
 `tools/import_weapons.py` (base id -> pack design and grade); the packs have no bows, so the bows
 are the archer skins' own (`tools/import_bows.py`).
 
-Helmets come in 14 tiers, from a Linen Wrap to the Lich Crown (`LootGenerator.HELMET_BASES`), and
-are the helmets the character packs draw on their heads, cut out by `tools/import_helmets.py` the way
-hair is (everything on the head that isn't skin or outline, with its own outline, small gaps filled):
-the worn art and the bag icon are the same helmet, and your own face shows under it (great helms
-such as the Frost Great Helm and Death Visage cover it). Better ones need more Strength.
+Helmets come in 14 tiers, from a Linen Wrap to the Lich Crown (`LootGenerator.HELMET_BASES`). They
+come from a library of about 150 pieces of headgear (helmets, great helms, hoods, hats, crowns,
+circlets, headbands, turbans, wraps and masks) that `tools/import_headgear.py` cuts out of the
+character packs' vector sources (the `.ai` files on the NAS, Tainted > assets > sprites): each head
+is drawn as separate shapes, so a helmet is exactly its own shapes, outlines and shading, with
+nothing cropped, fitted to the player's bare head. They are all in `assets/gear/helmet/<id>/`
+(worn `Head.png` and bag `icon.png`), listed with their name and kind in
+`assets/gear/helmet/catalog.json`, ready for new items: give one a `HELMET_BASES` line with its id.
+The worn art and the bag icon are the same piece, and your own face shows under it (great helms
+and masks cover it). Crowns, circlets, headbands and masks leave your hair showing; the rest hide
+it. Better ones need more Strength.
 
 Body armour (13 tiers, Linen Robe to Death Knight Plate), gloves (6) and boots (7) are the character
-packs' own clothes: a character's body and arms, hands and legs (`tools/import_armour.py`). They are
-worn on your character exactly where its own parts are (gloves and boots show too), and the bag icon
-is the piece as it sits in the idle pose (`tools/rig_pose.py`).
+packs' own clothes: a character's body and arms, hands and legs. They are worn on your character
+exactly where its own parts are (gloves and boots show too), and the bag icon is the piece as it sits
+in the idle pose (`tools/rig_pose.py`). `tools/import_armour.py` takes them from every character in
+the packs on the NAS (Tainted > assets > sprites), leaving out bare skin and bones (a part mostly its
+character's skin colour) and creature bodies, and keeping each piece once: a library of 183 suits of
+armour, 45 pairs of gloves and 147 pairs of boots in `assets/gear/<slot>/<id>/`, listed in
+`assets/gear/<slot>/catalog.json`, ready for new items (a line in `CHEST_BASES`, `GLOVE_BASES` or
+`BOOT_BASES` with the id).
+
+**Shoulders** are their own slot (beside the helmet on the paperdoll): 12 tiers, Strapped Pauldrons
+to Void Spaulders (`LootGenerator.SHOULDER_BASES`), worn over the top of both arms on every rig. A
+shoulder piece is pinned to each shoulder at its own size and follows the arm only a little
+(`RigSprite.SHOULDER_ART`), so it stays put when an arm stretches to a weapon. They can be dyed and
+restyled like other armour. **Hand crossbows** are one-handed crossbows (6 tiers, Hand Crossbow to
+Jade Hand Crossbow): they shoot with bow skills, leave the off hand free for a shield or another
+weapon, need Dexterity, and are held on their own rig (`assets/rigs/handxbow`, made by
+`tools/make_weapon_rigs.py`: aimed forward in one hand, raised and loosed). Scouts can't use them.
+Both come from the concept sheets in `tools/art/`, cut out by `tools/import_new_gear.py`.
 
 Flask icons are the CraftPix potion icons (`tools/import_potions.py`, pack folder on the NAS):
 red bottles for life, orange for power, small to large as they get grander, and a grey, blue,
@@ -140,6 +182,35 @@ still looks like chain mail, and dark dyes stay dark), both worn and in the bag,
 item (`ItemInstance.dye`, saved) through crafting and trading to the stash. Only the gear you can see
 worn: not weapons or jewellery.
 - Tests: `godot --headless --path . res://scratch/test_dye.tscn`; `res://scratch/capture_dye.tscn`
+
+**Lucky Mott, the Gambler** (by the Captain, east of the plaza; `scripts/gambler.gd`,
+`scripts/gamble_panel.gd`) sells 18 pieces of random gear, all unidentified, Diablo II style: about
+70% Magic, 25% Rare, 3% Legendary and 2% Set, rolled for your level from every kind of gear (weapons,
+shields, armour, shoulders, jewellery, belts; no flasks). On the stall every piece shows as a plain one
+of its base, with no rarity colour or sockets, so you only find out what you bought once you identify
+it. Prices go by item level (2 then 5 Alterations, 1 Alchemy, then 1 Chaos; jewellery double). The
+stall is new every 20 minutes, or as soon as it's sold out, and is saved with the character.
+- Test: `godot --headless --path . res://scratch/test_gambler.tscn`
+
+**Appearances** (transmog, the Dyer's second tab): every helmet, body armour, gloves, boots, weapon and
+shield you pick up, buy or wear unlocks its look for all your characters (`GameState.wardrobe`, saved in the account,
+`scripts/wardrobe.gd`), with a "New look" message over your head. At the Dyer, tap a piece of gear,
+then any unlocked look of its kind, and **Change look** (free): the piece looks like that, worn, on
+your hireling and to other players, but keeps its own stats; **Its own look** puts it back. The look
+stays with the item (`ItemInstance.look`, saved) like a dye, and the two go together. A look is a piece
+of the gear library (`assets/gear/<folder>/catalog.json`). Looks keep to their group: each armour
+slot; melee weapons (any melee weapon can look like any other: the rig holds them alike); bows and
+crossbows (drawn on the archer rig); shields. The weapon library (`tools/import_weapon_library.py`) is
+every design in the CraftPix weapon packs on the NAS (Tainted > assets > weapons: 8 designs in 5 grades
+of swords, sabres, axes, maces, daggers, spears, staves and shields) and every weapon and bow the
+characters in the character packs hold: about 500 melee weapons, 30 bows and 43 shields. Every
+Legendary and Set item but jewellery has its own look, `u_<id>` (`UniqueItems.look_of`): a library
+piece (for a weapon, a design of its own kind it doesn't otherwise have) recoloured by
+`tools/make_unique_looks.py`, a set's pieces in one colour (embers for the Ashen Warlord, wine for
+the Bloodsworn, teal for the Windrunner, violet for the Archmage, gold for the Templar), unlocked once
+the item is identified.
+- Tests: `godot --headless --path . res://scratch/test_wardrobe.tscn` (`-- --shot=<png>` with a
+  window for a picture of the tab)
   for screenshots (needs a window).
 
 ### Attributes and gear requirements
@@ -367,7 +438,7 @@ against an Autharr (`--auth= --email= --password=`, `--phase=first` then `--phas
 checks a trade and the anti-duplication (`--role=a` and `--role=b`, `--shot`), `scratch/admin_bot.tscn` checks the
 admin commands against a server with `--data= --admin=`, `scratch/lost_bot.tscn` checks a game that loses
 the server goes back to the start screen (kill the server once it's in town), and `scratch/coop_bot.tscn` plays a whole party rift with
-two bots (`--role=leader|follower`; `--zone` for the Dune Wastes instead; `--shot` for a screenshot,
+two bots (`--role=leader|follower`; `--zone` for the Ashwood instead; `--shot` for a screenshot,
 `--leave-after=6 --takeover` a handover, `--drop-at=6` a reconnect mid-rift, `--affixes` elite affixes on the
 guest, `--allies` hirelings and Ancients, `--revive` falling and reviving, `--levels` party rift levels,
 `--goto` arrows and "go to"; `--addr= --key= --partner=` for many pairs on one server, as in the load test).
@@ -383,7 +454,7 @@ level, and grows stronger: life and damage with each level, and 5 attribute poin
 you add yourself (Strength, Dexterity, Vitality; its gear's requirements are judged by them).
 - **Sellsword** (from the start): sword or axe or mace and a shield; Cleave, Frenzy or Sundering
   Strike, plus two of Shield Slam, Ground Stomp, Battle Cry, War Cry and Iron Skin.
-- **Desert Scout** (after *Into the Wastes*): an archer who keeps her distance; Shot, plus two of
+- **Woodland Scout** (after *Into the Ashwood*): an archer who keeps her distance; Shot, plus two of
   Power Shot (pierces), Multishot and Arrow Rain. Holds the bow you give her.
 - **Iron Warden** (after *The Lost Caravan*): two-handed weapons; Cleave, Sundering Strike or Double
   Swing, plus two of Whirlwind, Leap Slam, Earthquake, Demoralizing Taunt (pulls monsters onto
@@ -412,14 +483,13 @@ Tap **Bag** (top right) or press **I**. The game pauses while it's open.
   two of the same unique ring, or the same unique one-hander in both hands, won't go on),
   the five flask slots in a row under the belt, and the 12 x 5 bag grid under that. The weapon-set switch
   (I / II) is in the header.
-- The left window has the Skills, Gems and Hireling tabs; there is no item tab. Tap any item (in the bag, worn, in the stash or on the hireling) and its card pops up where you tapped. The card is a tooltip made for touch: it stays until you tap elsewhere, and a tap that closes it still goes through.
+- Opened as the inventory (the 🎒 button or I), it is the bag window alone. The left window shows an NPC's panel with its tabs (the stash: Items, Currency, Gems; the Jeweler: Jeweler and Skills; the Merchant and Blacksmith: their own), the hireling's page (its portrait), or your Stats. Tap any item (in the bag, worn, in the stash or on the hireling) and its card pops up where you tapped. The card is a tooltip made for touch: it stays until you tap elsewhere, and a tap that closes it still goes through.
 - Next to it is the card of what you wear in that slot (EQUIPPED; on the hireling's page, what it wears), with each stat marked green or red. Under the tapped card: 🔺 UPGRADE when it beats what you wear, and the list of what changes "Instead of your ...". Gear you can't use says why not. Unidentified items show the comparison without stat marks and have an **Identify** button (Scroll of Identify).
-- Skill and support gems work the same way: tap one (on the Skills tab, at the stash or on the hireling's page) and its card pops up. It shows what the gem does, its level and experience, and the Gemcutter's Prism button. There is no gem info column.
+- On the Jeweler's Skills tab, tap a skill slot or a support link and a dropdown opens there: the skill gems (or supports) you have that can go in it, each with its level: tap one to see its card beside the dropdown, tap it again to equip it (a gem in another slot swaps the two; a support that clashes with the slot's others is greyed out), and for the gem there now **What it does** and **Take it out**. There are no lists of loose gems. Skill and support gems on the hireling's page work as before: tap one and its card pops up. It shows what the gem does, its level and experience, and the Gemcutter's Prism button. There is no gem info column.
 - So do socket gems and runes (in sockets, the shared gems and the Jeweler's combine slots) and orbs (stash Currency tab). A gem's card shows its effect, tier, count, what it adds to the open item and the next tier. A rune's card also lists the runewords it is part of, with their recipes. An orb's card shows what it does, how many you have, shards, and why it can't be used on the item on the bench.
 - **Equip** by dragging it onto its equipment slot (the old item takes its bag space). **Drop** by
-  dragging it onto the 🗑 Drop box under the boots, beside the flasks (from the bag, the paperdoll
-  or a flask slot); it
-  lands on the ground and you can't re-pick it for 1.5s. Item cards have no Equip or Drop buttons.
+  dragging it (from the bag, the paperdoll or a flask slot) onto the empty screen around the windows
+  (`scripts/drop_zone.gd`); it lands on the ground and you can't re-pick it for 1.5s. Item cards have no Equip or Drop buttons.
 - Tap an equipped item and press **Unequip** on its card (needs a space in the bag its shape fits),
   or drag it back into the bag.
 - Equipping is only ever done by dragging: picked-up loot (flasks too) always goes into the bag,
@@ -470,9 +540,9 @@ Orbs and shards, and loose skill, support and socket gems belong to the
 account, not a character (`GameState.SHARED_KEYS`, saved in the account file). The stash shows them
 in tabs: **Items** (the grid), **Currency** and **Gems**. The inventory keeps only
 Equipment and Consumables.
-- Gems are changed only at the stash (its Gems tab: skill slots and the tapped item's sockets
-  beside the shared gems) or socketed at the Jeweler (`GameState.gem_station`). Elsewhere the
-  Skills and Gems panels are view-only. Gem levels and what each character has socketed stay
+- Skill gems are set only at the Jeweler (its Skills tab). Socket gems and runes go into items at
+  the stash (its Gems tab) or the Jeweler (`GameState.gem_station`): drag one onto an item, and take
+  them out with the button on the item's card. Gem levels and what each character has socketed stay
   that character's.
 - Currency is used only in the stash's Currency tab: tap an item (bag, worn or stashed), then tap
   an orb; or drag an orb onto worn gear. The item details and the Blacksmith no longer use orbs.
@@ -579,10 +649,27 @@ rebuilt in Godot so that equipment shows on the body.
   calls `rig.set_gear(slot, item.base.id)` whenever you equip or unequip.
 - Gear art lives at `assets/gear/<slot>/<base id>/`:
   - `weapon/<id>/Sword.png` replaces the sword. Its grip must sit at about (73, 59).
-  - `helmet/<id>/Head.png` overlays the head.
+  - `helmet/<id>/Head.png` overlays the head (`catalog.json` says whether it hides the hair).
   - `chest/<id>/Body.png`, `Right Arm.png`, `Left Arm.png` overlay the torso and arms.
   - `icon.png` is used in the bag and on the ground.
   Keep the same canvas size and alignment as the matching part in `assets/rigs/zombie/parts/`.
+  The archer rig (a bow in hand) lays its Head and Face canvases out differently; `RigSprite` moves
+  art made for the zombie rig's (the appearance parts, hair, beards and gear) to where it belongs.
+- **Weapon rigs**: `tools/make_weapon_rigs.py` makes three from the zombie rig, each keeping its body,
+  head and legs and posing the weapon (a guard while idle, walking and running; an attack timed by
+  the zombie rig's own slash), the weapon hand at the grip, each arm turned from its shoulder to
+  reach its hand. `RigSprite.rig_for_weapon` picks one by the weapon held (`weapon_style`):
+  - `twohand`: two-handed swords, axes and maces, in both hands, 1.35 times bigger: a chop from
+    the shoulder forward and down
+  - `spear`: spears, 1.5 times bigger, the weapon hand a third of the way up the shaft out in
+    front (drawn over the shaft) and the near hand back towards the butt: a thrust, no slash trail
+  - `dagger`: daggers, in the weapon hand held low and forward: a short stab at the chest
+  - `handxbow`: one-handed crossbows, 1.6 times bigger, aimed forward: raised and loosed
+  Rerun it after changing the zombie rig; the styles (sizes, poses, grips) are at its top. Others are
+  told the style (the second value of the weapon in its looks), since its look can be any melee
+  weapon's. `tools/rig_render.py` draws a rig's frames to an image, to check animations without
+  the game.
+  Test: `godot --headless --path . res://scratch/test_twohand.tscn`.
   If art is missing, weapons fall back to the rig's own sword and helmets/armour show nothing.
 - `tools/make_gear_art.py` generates the placeholder gear art. To add an item, add a `_base(...)`
   line in `loot_generator.gd` with a new id and drop art in the matching folder.
@@ -593,20 +680,40 @@ rebuilt in Godot so that equipment shows on the body.
 **Licence:** check the CraftPix licence (https://craftpix.net/file-licenses) before releasing.
 Don't redistribute the raw art on its own.
 
-**Android export:** add `*.json` to Export > Resources > "Filters to export non-resource files",
-as a precaution for `rig.json`.
+**Android export:** two presets: "Android Data" exports the whole game (all resources, `*.json`
+too, for `rig.json`; not `scratch/`, `tools/`, `builds/` or `pack/`) as the game pack; "Android"
+exports the APK with only the selected files `scripts/updater.gd` and `assets/fonts/body.tres` (the
+font loads before any script) and the non-resource files `build.json, pack/*`.
 
-## Desert map (CraftPix 2D RPG Desert Tileset)
+The app icon (`assets/icon/`, the project icon and the Android launcher and adaptive icons) is made by
+`tools/make_app_icon.py`: the Death Visage helm over a glowing purple rift.
 
-`scripts/desert_map.gd` builds the arena scenery from `assets/tiles/desert/`: a tiled sand
-ground, a camp near the start, an oasis, a few buildings and a pyramid, and about 900
-scattered palms, cacti and rocks (fixed seed, so the map is the same each run). Trunks and
-big rocks block movement; grass and small rocks don't. Props are y-sorted with the
-characters. Edit the `PROPS` table (scale, weight, blocker size) to tune it.
+## Map themes and walls (CraftPix 2D RPG tilesets)
 
-Not used yet: the road and plateau/cliff autotile pieces (`land_*`, `road_*`, `stones_10-12`).
-They need a TileMap autotile setup, which is the next step for hand-built maps.
-Licence: `assets/tiles/desert/LICENSE_craftpix.txt`; check craftpix.net/file-licenses.
+A map file's `"theme"` sets its look (`scripts/map_theme.gd`): **desert** (the rifts) and **woodland**
+(Act 1: the tutorial, Ashfall and the Ashwood, from the autumn pack). Each theme is a folder
+`assets/tiles/<theme>/` holding one CraftPix "2D RPG" tileset, plus which of its pictures dress a map
+(trees on wall edges, plants on the floor, big trees on wide plateaus) and the town's random scenery.
+A prop can borrow another theme's picture as `"<theme>/<name>"`, e.g. the woods' wagons, tents and
+campfire are `desert/decor_8`, `desert/decor_2` and `desert/decor_7`.
+
+**Walls** are raised plateaus with a rock cliff facing the floor below them. `scripts/wall_tiles.gd`
+picks each quarter of a wall cell from its neighbours (outer corner, edge, inner corner, middle; a
+cliff, or a cliff with a thin ledge on top where a wall is one cell thick), so walls of any shape
+join up; `MazeMap` draws them as a tile layer. The packs are drawn for single square plateaus (no
+inner corners, and each piece's surface a little different), so `tools/import_tilesets.py` remakes
+the pieces on one surface and adds the missing ones in `assets/tiles/<theme>/walls/`.
+
+The packs are on the NAS (Tainted > assets > maps). To add a theme, put its zip in `THEMES` in
+`tools/import_tilesets.py` and run `python tools/import_tilesets.py <theme>`, then give it an entry in
+`MapTheme.THEMES` and the map editor's `THEMES`. All the "2D RPG" packs (desert, autumn, winter,
+tropical) share one layout, so they work as they are; the dungeon, cave and city packs are drawn
+differently and would need their own wall pieces.
+
+`scripts/town_map.gd` (on `scripts/scenery_map.gd`) lays out Ashfall by hand with the theme's
+pictures and scatters scenery round it (fixed seed); trunks and big rocks block movement, grass
+doesn't, and props are y-sorted with the characters.
+Licence: `assets/tiles/<theme>/LICENSE_craftpix.txt`; check craftpix.net/file-licenses.
 
 ## Dungeon instance (scripts/dungeon_run.gd)
 

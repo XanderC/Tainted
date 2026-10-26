@@ -1,7 +1,8 @@
 class_name TownMap
-extends DesertMap
-## Ashfall Outpost: the hub. Buildings, camp dressing and a ring of scenery, with invisible walls.
-## Reuses DesertMap's prop helpers and the CraftPix desert art.
+extends SceneryMap
+## Ashfall Outpost: the hub, a village in the Act 1 woods. Buildings, camp dressing and a ring of
+## woodland round it, with invisible walls. The woodland theme has no campfire, tents, wagon or pond,
+## so those are borrowed from the desert's.
 
 const BOUNDS := Rect2(-1000, -720, 2000, 1420)   # walkable area (world px)
 const CAM_LIMIT := Rect2(-1180, -900, 2360, 1800)
@@ -12,6 +13,7 @@ var keepouts: Array[Vector3] = []  # x, y, radius: no random props inside these
 func _ready() -> void:
 	y_sort_enabled = true
 	texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+	theme = "woodland"
 	_rng.seed = 424242
 	_add_ground()
 	_build_bag()
@@ -22,26 +24,29 @@ func _ready() -> void:
 
 func _layout() -> void:
 	# Plaza and camp
-	_prop("decor_7", Vector2(0, 60), 0.6, 0, 0.8)           # central campfire
-	_prop("decor_3", Vector2(110, 150), 0.5, 6)              # signpost
-	_prop("decor_6", Vector2(-120, 200), 0.5, 0, 0.8)        # skull
-	# Stash keeper: the big building at the north
-	_prop("building_1", Vector2(0, -330), 0.55, 70, 0.95)
-	_prop("building_4", Vector2(340, -330), 0.5, 40, 0.95)
-	# Blacksmith: wide building on the west, forge fire and rock pile
-	_prop("building_2", Vector2(-560, -270), 0.6, 80, 0.95)
-	_prop("decor_7", Vector2(-420, -200), 0.45, 0, 0.8)
-	_prop("stones_4", Vector2(-700, -170), 0.5, 26, 0.85)
-	_prop("decor_4", Vector2(-640, -150), 0.5, 0, 0.8)
-	# Merchant: building on the east, tent and wagon
-	_prop("building_5", Vector2(580, -240), 0.55, 50, 0.95)
-	_prop("decor_8", Vector2(760, -120), 0.45, 40, 0.8)
-	_prop("decor_2", Vector2(450, -130), 0.42, 34, 0.85)
-	# Dungeon gate area
-	_prop("decor_1", Vector2(820, 120), 0.55, 50, 0.85)      # pyramid
-	# Dressing
-	_prop("building_3", Vector2(-840, -20), 0.55, 40, 0.95)
-	var lake := _prop("lake", Vector2(-700, 420), 0.7, 0, 0.5)
+	_prop("desert/decor_7", Vector2(0, 60), 0.6, 0, 0.8)    # central campfire
+	_prop("decor_9", Vector2(110, 150), 0.5, 6)              # signpost
+	_prop("decor_10", Vector2(-120, 200), 0.45, 10, 0.85)    # barrel
+	_prop("decor_3", Vector2(-150, -40), 0.5, 6, 0.95)       # Ashfall's banner
+	# Stash keeper: the big house at the north, and a cottage beside it
+	_prop("building_3", Vector2(0, -330), 0.55, 70, 0.95)
+	_prop("building_6", Vector2(340, -330), 0.45, 40, 0.95)
+	# Blacksmith: the open-fronted workshop on the west, forge fire, log pile and a rock
+	_prop("building_5", Vector2(-560, -270), 0.55, 80, 0.95)
+	_prop("desert/decor_7", Vector2(-420, -200), 0.45, 0, 0.8)
+	_prop("stones_1", Vector2(-700, -170), 0.45, 26, 0.85)
+	_prop("decor_8", Vector2(-660, -130), 0.4, 20, 0.9)
+	# Merchant: house on the east, tent and wagon
+	_prop("building_1", Vector2(580, -240), 0.5, 50, 0.95)
+	_prop("desert/decor_8", Vector2(760, -120), 0.45, 40, 0.8)
+	_prop("desert/decor_2", Vector2(450, -130), 0.42, 34, 0.85)
+	_prop("decor_4", Vector2(690, -170), 0.45, 6, 0.95)      # lamp post
+	# The watchtower by the Rift Gate
+	_prop("building_4", Vector2(820, 120), 0.45, 40, 0.95)
+	# Dressing: the well, and the pond with trees round it
+	_prop("building_7", Vector2(-840, -20), 0.5, 40, 0.92)
+	_prop("decor_1", Vector2(-340, -80), 0.45, 6, 0.9)       # hanging lantern
+	var lake := _prop("desert/lake", Vector2(-700, 420), 0.7, 0, 0.5)
 	lake.z_index = -50
 	_prop("tree_2", Vector2(-900, 400), 0.55, 12)
 	_prop("tree_3", Vector2(-560, 400), 0.55, 12)
@@ -82,9 +87,9 @@ func _scatter_town() -> void:
 		if not ok:
 			continue
 		var n: String = _bag[_rng.randi() % _bag.size()]
-		if inside and (n.begins_with("tree_") or n == "stones_6" or n == "stones_4"):
+		var d: Array = MapTheme.data(theme).scatter[n]
+		if inside and (n.begins_with("tree_") or float(d[2]) > 0.0):
 			continue  # keep the town floor open; only small scenery inside the walls
-		var d: Array = PROPS[n]
 		_prop(n, pos, d[0] * _rng.randf_range(0.9, 1.15), d[2] if not inside else 0.0, d[3])
 		placed.append(pos)
 

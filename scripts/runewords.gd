@@ -103,7 +103,7 @@ static func fits(rw: Dictionary, b: ItemBase) -> bool:
 			"shield":
 				if b.weapon_type == "shield": return true
 			"armour":
-				if b.slot in ["helmet", "chest", "gloves", "boots"] or b.weapon_type == "shield": return true
+				if b.slot in ["helmet", "shoulders", "chest", "gloves", "boots"] or b.weapon_type == "shield": return true
 			"helmet", "chest", "gloves", "boots":
 				if b.slot == String(t): return true
 			_:
@@ -226,7 +226,7 @@ static func types_text(id: String) -> String:
 	const NAMES := {"weapon": "Weapon", "one_handed": "One-Handed Weapon", "two_handed": "Two-Handed Weapon",
 		"shield": "Shield", "armour": "Armour", "helmet": "Helmet", "chest": "Body Armour", "gloves": "Gloves",
 		"boots": "Boots", "sword": "Sword", "axe": "Axe", "mace": "Mace", "staff": "Staff", "bow": "Bow",
-		"dagger": "Dagger"}
+		"crossbow": "Crossbow", "dagger": "Dagger"}
 	var parts: Array[String] = []
 	for t in LIST.get(id, {}).get("types", []):
 		parts.append(String(NAMES.get(String(t), String(t).capitalize())))

@@ -1,9 +1,9 @@
 {
 	"format": 1,
 	"id": "dune_wastes",
-	"name": "The Dune Wastes",
+	"name": "The Ashwood",
 	"kind": "story",
-	"theme": "desert",
+	"theme": "woodland",
 	"cell": 128,
 	"auto_decorate": true,
 	"grid": [
@@ -75,7 +75,7 @@
 			"type": "prop",
 			"x": 832,
 			"y": 2752,
-			"sprite": "decor_3",
+			"sprite": "decor_9",
 			"scale": 0.5,
 			"solid": false
 		},
@@ -91,7 +91,7 @@
 			"type": "prop",
 			"x": 4288,
 			"y": 2752,
-			"sprite": "decor_8",
+			"sprite": "desert/decor_8",
 			"scale": 0.55,
 			"solid": true
 		},
@@ -99,7 +99,7 @@
 			"type": "prop",
 			"x": 4800,
 			"y": 3008,
-			"sprite": "decor_8",
+			"sprite": "desert/decor_8",
 			"scale": 0.5,
 			"solid": true
 		},
@@ -107,15 +107,23 @@
 			"type": "prop",
 			"x": 4544,
 			"y": 3136,
-			"sprite": "decor_4",
-			"scale": 0.5,
+			"sprite": "decor_10",
+			"scale": 0.4,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 4633,
+			"y": 3136,
+			"sprite": "decor_10",
+			"scale": 0.35,
 			"solid": false
 		},
 		{
 			"type": "prop",
 			"x": 4416,
 			"y": 3136,
-			"sprite": "decor_6",
+			"sprite": "desert/decor_6",
 			"scale": 0.45,
 			"solid": false
 		},
@@ -123,7 +131,7 @@
 			"type": "prop",
 			"x": 4928,
 			"y": 2624,
-			"sprite": "decor_6",
+			"sprite": "desert/decor_6",
 			"scale": 0.4,
 			"solid": false
 		},
@@ -138,7 +146,7 @@
 			"type": "prop",
 			"x": 6976,
 			"y": 960,
-			"sprite": "decor_2",
+			"sprite": "desert/decor_2",
 			"scale": 0.55,
 			"solid": true
 		},
@@ -146,7 +154,7 @@
 			"type": "prop",
 			"x": 7616,
 			"y": 832,
-			"sprite": "decor_2",
+			"sprite": "desert/decor_2",
 			"scale": 0.55,
 			"solid": true
 		},
@@ -154,7 +162,7 @@
 			"type": "prop",
 			"x": 7872,
 			"y": 1344,
-			"sprite": "decor_2",
+			"sprite": "desert/decor_2",
 			"scale": 0.55,
 			"solid": true
 		},
@@ -162,7 +170,7 @@
 			"type": "prop",
 			"x": 6848,
 			"y": 1472,
-			"sprite": "decor_2",
+			"sprite": "desert/decor_2",
 			"scale": 0.55,
 			"solid": true
 		},
@@ -170,7 +178,7 @@
 			"type": "prop",
 			"x": 7360,
 			"y": 1216,
-			"sprite": "decor_7",
+			"sprite": "desert/decor_7",
 			"scale": 0.5,
 			"solid": false
 		},
@@ -178,8 +186,32 @@
 			"type": "prop",
 			"x": 7232,
 			"y": 1600,
-			"sprite": "decor_8",
+			"sprite": "desert/decor_8",
 			"scale": 0.5,
+			"solid": true
+		},
+		{
+			"type": "prop",
+			"x": 7232,
+			"y": 832,
+			"sprite": "decor_3",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 7744,
+			"y": 1088,
+			"sprite": "decor_1",
+			"scale": 0.45,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 8000,
+			"y": 960,
+			"sprite": "decor_8",
+			"scale": 0.45,
 			"solid": true
 		},
 		{
@@ -206,7 +238,7 @@
 			"type": "prop",
 			"x": 4032,
 			"y": 4928,
-			"sprite": "lake",
+			"sprite": "desert/lake",
 			"scale": 0.8,
 			"solid": false
 		},
@@ -215,15 +247,15 @@
 			"x": 3520,
 			"y": 4800,
 			"sprite": "tree_2",
-			"scale": 0.55,
+			"scale": 0.6,
 			"solid": false
 		},
 		{
 			"type": "prop",
 			"x": 4544,
 			"y": 4800,
-			"sprite": "tree_5",
-			"scale": 0.55,
+			"sprite": "tree_8",
+			"scale": 0.6,
 			"solid": false
 		},
 		{
@@ -231,38 +263,54 @@
 			"x": 3776,
 			"y": 5184,
 			"sprite": "tree_2",
-			"scale": 0.55,
+			"scale": 0.6,
 			"solid": false
 		},
 		{
 			"type": "prop",
 			"x": 4416,
 			"y": 5184,
-			"sprite": "tree_5",
-			"scale": 0.55,
+			"sprite": "tree_8",
+			"scale": 0.6,
 			"solid": false
 		},
 		{
 			"type": "prop",
 			"x": 1344,
 			"y": 4672,
-			"sprite": "building_3",
-			"scale": 0.55,
-			"solid": true
-		},
-		{
-			"type": "prop",
-			"x": 1984,
-			"y": 4544,
 			"sprite": "building_2",
 			"scale": 0.5,
 			"solid": true
 		},
 		{
 			"type": "prop",
+			"x": 1984,
+			"y": 4544,
+			"sprite": "building_6",
+			"scale": 0.45,
+			"solid": true
+		},
+		{
+			"type": "prop",
+			"x": 1728,
+			"y": 4928,
+			"sprite": "decor_16",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 1216,
+			"y": 5056,
+			"sprite": "building_7",
+			"scale": 0.45,
+			"solid": true
+		},
+		{
+			"type": "prop",
 			"x": 1600,
 			"y": 5056,
-			"sprite": "decor_6",
+			"sprite": "desert/decor_6",
 			"scale": 0.45,
 			"solid": false
 		},

@@ -1,13 +1,12 @@
 # The Tainted World: the game's dedicated server, beside the estate's applications on 192.168.86.18.
 # Brought up by deploy_server.ps1 (run on the development PC), from /opt/projects/Tainted/server.
 #
-# LAN: port 24601 is published on the host, so games on the home network join ws://192.168.86.18:24601
-# (project setting tainted/net/world_addresses). The router doesn't forward it, so it's LAN-only.
+# Public: games join wss://tainted.xandflix.uk (first in the project setting tainted/net/world_addresses):
+# Cloudflare, then the estate's Traefik (its tainted-public router, in the estate repository's
+# traefik/dynamic.yml), which reaches this container on the shared `arr` network as http://tainted:24601.
 #
-# Public (not switched on): on the shared `arr` network the proxy can reach it as http://tainted:24601,
-# so going public is a Traefik router for tainted.xandflix.uk (WebSockets pass through as they are)
-# and a public hostname on the Cloudflare Tunnel, then wss://tainted.xandflix.uk added first to
-# tainted/net/world_addresses. See the README's Multiplayer section.
+# LAN: port 24601 is also published on the host, so a game on the home network can join
+# ws://192.168.86.18:24601 (the second address it tries). The router doesn't forward it.
 services:
   tainted:
     build: .

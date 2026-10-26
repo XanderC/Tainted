@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scratch/capture_weapon_looks.gd" id="1"]
+
+[node name="CaptureWeaponLooks" type="Node2D"]
+script = ExtResource("1")

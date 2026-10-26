@@ -12,9 +12,7 @@ signal selection_changed(index: int)
 signal hovered(cell: Vector2i, world: Vector2)
 
 const WALL_COLOR := Color(0.36, 0.24, 0.15)
-const WALL_EDGE := Color(0.22, 0.14, 0.09)
 const PICK_RADIUS := 40.0
-const PLATEAU_TINT := Color(0.86, 0.76, 0.66)   # same as the game (MazeMap)
 
 var map := {}            # the document (grid + objects)
 var tool := "wall"       # wall | floor | rect_wall | rect_floor | select | start | portal | pack | marker | prop | tile | npc | trigger
@@ -25,6 +23,8 @@ var tile_sprite := ""
 var tile_scale := 0.5    # ground tiles: 0.5 matches the game's art scale (land = 1 cell, road = 1/4 cell)
 var selected := -1       # index into map.objects
 var textures := {}       # sprite name -> Texture2D (loaded by the editor from the game's assets)
+var wall_textures := {}  # wall piece -> Texture2D (the theme's walls/)
+var tiles_root := ""     # the game's assets/tiles: where "<theme>/<name>" sprites borrowed from another theme are
 var bg: Texture2D
 
 var zoom := 0.35
@@ -186,9 +186,17 @@ func _release() -> void:
 	queue_redraw()
 
 
+## The picture for `sprite`: one of the map's theme, or "<theme>/<name>" from another theme.
+func texture(sprite: String) -> Texture2D:
+	if not textures.has(sprite) and "/" in sprite and tiles_root != "":
+		var img := Image.load_from_file(tiles_root.path_join(sprite + ".png"))
+		textures[sprite] = ImageTexture.create_from_image(img) if img != null else null
+	return textures.get(sprite)
+
+
 ## Ground tiles snap to a grid the size of the tile; painting over a spot replaces what's there.
 func tile_step(sprite: String, sc: float) -> Vector2:
-	var tex: Texture2D = textures.get(sprite)
+	var tex := texture(sprite)
 	return (tex.get_size() if tex != null else Vector2(256, 256)) * sc
 
 
@@ -317,26 +325,28 @@ func _draw() -> void:
 	for i in map.objects.size():
 		var o: Dictionary = map.objects[i]
 		if o.type == "tile":
-			var tex: Texture2D = textures.get(String(o.sprite))
+			var tex := texture(String(o.sprite))
 			var r := Rect2(Vector2(float(o.x), float(o.y)), tile_step(String(o.sprite), float(o.get("scale", 0.5))))
 			if tex != null:
 				draw_texture_rect(tex, r, false)
 			if i == selected:
 				draw_rect(r, Color.WHITE, false, 3.0 / zoom)
-	# Walls, like the game: plateau tops with rock cliffs facing the floor
+	# Walls, like the game: plateau tops with rock cliffs facing the floor, a quarter cell at a time
 	var wall := func(c: Vector2i) -> bool: return is_wall(c)
+	var q := cs * 0.5
 	for y in rows():
 		var row := String(map.grid[y])
 		for x in row.length():
 			if row[x] != "#":
 				continue
-			var r := Rect2(x * cs, y * cs, cs, cs)
-			var tile := MapCanvasHelpers.wall_tile(wall, Vector2i(x, y))
-			var tex: Texture2D = textures.get(tile)
-			if tex == null:
-				draw_rect(r, WALL_COLOR)
-			else:
-				draw_texture_rect(tex, r, false, Color.WHITE if tile in ["land_12", "land_17", "land_14"] else PLATEAU_TINT)
+			var pieces := MapCanvasHelpers.wall_pieces(wall, Vector2i(x, y))
+			for i in 4:
+				var r := Rect2(x * cs + (i % 2) * q, y * cs + (i >> 1) * q, q, q)
+				var tex: Texture2D = wall_textures.get(pieces[i])
+				if tex == null:
+					draw_rect(r, WALL_COLOR)
+				else:
+					draw_texture_rect_region(tex, r, Rect2((i % 2) * 128, (i >> 1) * 128, 128, 128))
 	# Grid
 	if zoom > 0.15:
 		var gc := Color(1, 1, 1, 0.07)
@@ -364,7 +374,7 @@ func _draw() -> void:
 	elif tool == "tile" and tile_sprite != "":
 		var step := tile_step(tile_sprite, tile_scale)
 		var p := (_hover / step).floor() * step
-		var tex: Texture2D = textures.get(tile_sprite)
+		var tex := texture(tile_sprite)
 		if tex != null:
 			draw_texture_rect(tex, Rect2(p, step), false, Color(1, 1, 1, 0.55))
 		draw_rect(Rect2(p, step), Color.WHITE, false, 2.0 / zoom)
@@ -381,7 +391,7 @@ func _draw() -> void:
 
 
 func _draw_prop(o: Dictionary, sel: bool) -> void:
-	var tex: Texture2D = textures.get(String(o.get("sprite", "")))
+	var tex := texture(String(o.get("sprite", "")))
 	var p := Vector2(float(o.x), float(o.y))
 	if tex == null:
 		draw_circle(p, 20, Color(1, 0, 1, 0.6))

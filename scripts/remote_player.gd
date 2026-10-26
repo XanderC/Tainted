@@ -67,8 +67,8 @@ func setup(id: int, info: Dictionary, state: Dictionary) -> void:
 func apply_looks(info: Dictionary) -> void:
 	var gear: Dictionary = info.get("gear", {})
 	var w = gear.get("weapon")
-	var want := RigSprite.rig_for_weapon(String(w[0]) if w is Array else "")
-	if rig.rig_dir != want:  # a bow in hand: the archer rig (as their own game draws them)
+	var want := RigSprite.rig_for_seen(String(w[0]) if w is Array else "", String(w[1]) if w is Array else "")
+	if rig.rig_dir != want:  # a bow, a spear, a dagger, a weapon in both hands: their rig (as their game draws it)
 		var r := RigSprite.new()
 		r.base_scale = rig.base_scale
 		r.weapon_from_gear = true

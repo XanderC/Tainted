@@ -4,18 +4,19 @@ extends Node2D
 ## Jeweler: combine gems into higher tiers and remove socketed gems.
 ## Sage: identifies every item in your bag and stash, free.
 ## Rift Gate: pick a rift level, then start a run (scenes/main.tscn).
-## The story: NPCs with quest business talk first (DialogueUI), the west road leads to the Dune
-## Wastes (Zone), a waypoint travels to zones you've found, and town portals (TownPortals: yours
+## The story: NPCs with quest business talk first (DialogueUI), the west road leads to the Ashwood
+## (Zone), a waypoint travels to zones you've found, and town portals (TownPortals: yours
 ## and your party's) stand by the square, back to where they were read.
 
 const DUNGEON_SCENE := "res://scenes/main.tscn"
 const SPAWN := Vector2(0, 360)
-const WEST_EXIT := Vector2(-940, 620)  # the road out to the Dune Wastes
+const WEST_EXIT := Vector2(-940, 620)  # the road out to the Ashwood
 const WEST_EXIT_ZONE := "dune_wastes"
 const WAYPOINT := Vector2(260, 300)
 const PORTAL := Vector2(-80, 470)  # where an open town portal stands
 const DYER := Vector2(-410, 40)  # the Dyer, between the Blacksmith's and the Sage's
-const CAPTAIN := Vector2(560, 120)  # the Mercenary Captain, by the road east to the Rift Gate
+const CAPTAIN := Vector2(560, 120)
+const GAMBLER := Vector2(390, 30)  # Lucky Mott, between the Jeweler and the Captain  # the Mercenary Captain, by the road east to the Rift Gate
 const EXIT_REACH := 70.0
 
 const UpgradePopupUIScript = preload("res://scripts/upgrade_popup_ui.gd")
@@ -61,7 +62,7 @@ func _ready() -> void:
 	_add_npc("Merchant", "Buy & Sell", Vector2(580, -185), "merchant", "Talk to the Merchant", func(): menu.open_vendor("shop"))
 	_add_npc("Stash Keeper", "Shared Storage", Vector2(0, -270), "stash_keeper", "Open the Stash", func(): menu.open_vendor("stash"))
 	_add_npc("Battlemaster Brom", "Passive Tree", Vector2(-240, -160), "battlemaster", "Open the Passive Tree", func(): skill_tree_ui.open())
-	_add_npc("Jeweler", "Gems", Vector2(280, -175), "jeweler", "Talk to the Jeweler", func(): menu.open_vendor("jeweler"))
+	_add_npc("Jeweler", "Skills & Gems", Vector2(280, -175), "jeweler", "Talk to the Jeweler", func(): menu.open_vendor("jeweler"))
 	_add_npc("Sage Aldous", "Identify", Vector2(-600, 150), "sage", "Talk to the Sage", _identify_all)
 	_add_npc("Caravan Master Hesk", "Caravans", Vector2(-330, 250), "caravan_master", "Talk to Hesk",
 		func(): dialogue.open("hesk"), "hesk")
@@ -69,8 +70,14 @@ func _ready() -> void:
 		{"weapon": "war_sword", "helmet": "iron_helm", "chest": "chain_mail", "offhand": "kite_shield"})
 	var dyer_look := Appearance.default_look("female")
 	dyer_look["hair_color"] = "ginger"
-	_add_npc("Dyer Calla", "Dye Armour", DYER, "", "Talk to the Dyer", func(): dye_ui.open(), "dyer",
+	_add_npc("Dyer Calla", "Dyes & Looks", DYER, "", "Talk to the Dyer", func(): dye_ui.open(), "dyer",
 		{"helmet": ["leather_cap", "teal"], "chest": ["padded_vest", "rose"]}, dyer_look)
+	var gambler_look := Appearance.default_look("male")
+	gambler_look["hair_color"] = "black"
+	gambler_look["beard"] = "thick"
+	gambler_look["beard_color"] = "black"
+	_add_npc("Lucky Mott", "Gambler", GAMBLER, "", "Talk to the Gambler", func(): menu.open_vendor("gamble"), "gambler",
+		{"helmet": "wide_brim_hat", "chest": ["medieval_king_armour", "blood"], "shoulders": "gilded_pauldrons"}, gambler_look)
 	_add_gate(Vector2(820, 220))
 	_add_exit(WEST_EXIT, WEST_EXIT_ZONE, "town", "→ " + ActDB.zone_name(WEST_EXIT_ZONE))
 	if String(GameState.town_portal.get("kind", "")) == "rift" and String(GameState.town_portal.get("inst", "")) == "" \
@@ -198,10 +205,12 @@ func _show_hub_intro() -> void:
 		"  • [color=#ffd54a]Merchant[/color] - buy skill gems, flasks and orbs, and sell loot for orbs\n" +
 		"  • [color=#ffd54a]Blacksmith[/color] - forge recipes and plans\n" +
 		"  • [color=#ffd54a]Stash Keeper[/color] - storage shared by all your characters\n" +
-		"  • [color=#ffd54a]Jeweler[/color] - combine and remove item gems\n" +
+		"  • [color=#ffd54a]Jeweler[/color] - set your skill gems, combine gems and runes\n" +
 		"  • [color=#ffd54a]Battlemaster Brom[/color] - your passive tree (you get a point every level)\n" +
 		"  • [color=#ffd54a]Captain Rourke[/color] - hire a fighter to follow you and fight at your side\n" +
-		"  • [color=#ffd54a]Dyer Calla[/color] - dye your helmet and armour any colour\n" +
+		"  • [color=#ffd54a]Dyer Calla[/color] - dye your armour, or make your gear look like any piece you've found\n" +
+		"  • [color=#ffd54a]Lucky Mott[/color] - gamble orbs on unidentified gear
+" +
 		"  • [color=#ffd54a]Mystic Seraphine[/color] - reset your passive points for free\n\n" +
 		"When you're ready, step into the [color=#c084fc]Rift Gate[/color] (east) to fight through rifts for loot.", 16)
 	t.custom_minimum_size = Vector2(700, 0)

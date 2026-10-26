@@ -173,6 +173,8 @@ static func slot_block_reason(item: ItemInstance, slot: String) -> String:
 	var wt := item.base.weapon_type
 	if wt != "" and not wt in (t.weapons as Array):
 		return "%ss can't use %ss" % [tname, String(ItemBase.TYPE_NAMES.get(wt, wt)).to_lower()]
+	if bool(t.get("ranged", false)) and wt == "crossbow" and not item.base.two_handed:
+		return "%ss shoot bows and two-handed crossbows" % tname
 	if bool(t.get("one_handed", false)) and item.base.two_handed:
 		return "%ss fight one-handed, with a shield" % tname
 	return Attributes.block_reason(item.base, attributes(), "they have")

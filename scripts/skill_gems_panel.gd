@@ -3,18 +3,22 @@ extends MenuPanel
 ## Skill gems, Path of Exile style. Six skill slots (one HUD button each; slot 1 is the main
 ## attack): each holds a skill gem plus support gems in its links. Links open as you level
 ## (GameState.links_unlocked). Loose gems are the account's, kept in the shared stash: gems can only
-## be socketed or swapped at the stash (GameState.gem_station), where the shared skill and support
-## gems show below the slots. Elsewhere the slots are view-only. At the stash, drag and drop:
-##   shared gems -> slot (socket it; a gem already there goes back to the shared gems)
-##   slot -> slot (swap the two slots), slot / link -> the shared gems (take it out)
-##   shared supports -> link (link it; replaces what is there), link -> link (move / swap)
-## Skill and support gems level up while socketed. Tap any gem and its card pops up where you tapped
-## (the menu's ItemTip): what it does, its level, and Gemcutter's Prism.
+## be socketed or swapped at the Jeweler (GameState.gem_station). There, tap a slot or a link and a
+## dropdown opens where you tapped (the menu's ItemTip): the skill gems (or supports) you have that
+## can go there, what the one there does, and taking it out. Tapping a gem in it shows its card
+## beside the dropdown; tapping it again equips it. Slots also drag onto slots (swap) and
+## links onto links (move / swap). Elsewhere the slots are view-only: tapping a gem shows its card.
+## Skill and support gems level up while socketed. A gem's card: what it does, its level, and
+## Gemcutter's Prism.
 
 const CELL := Vector2(56, 56)
 const SLOT_CELL := Vector2(60, 60)
+const PICK_ROW_H := 50.0  # a dropdown's rows
+const PICK_MAX_H := 380.0  # its list scrolls past this
 
 var _sel := {}  # {"type": "skill" | "support", "id": String, "slot": int}
+var _pick_rows: Array = []  # the open dropdown's rows: {button, id, sub, note}
+var _chosen := ""  # the gem tapped once in the open dropdown (its card shows beside it)
 ## Shown inside another panel (the stash's Gems tab): tapping a gem doesn't switch panels.
 var embedded := false
 
@@ -34,12 +38,10 @@ func refresh() -> void:
 	for i in GameState.SKILL_SLOTS:
 		sec.add_child(_slot_row(i, links))
 	if GameState.gem_station:
-		sec.add_child(UIKit.label("Drag gems between your slots and the shared gems below.", 12, UIKit.TEXT_DIM, true))
+		sec.add_child(UIKit.label("Tap a slot or a link to choose its gem.", 12, UIKit.TEXT_DIM, true))
 	else:
-		sec.add_child(UIKit.label("🔒 Change skill and support gems at the stash in town.", 13, UIKit.TEXT_DIM, true))
-	sec.add_child(UIKit.label("Tap a gem to see what it does.", 12, UIKit.TEXT_DIM, true))
-	if GameState.gem_station:
-		_add_pools()
+		sec.add_child(UIKit.label("🔒 Change skill and support gems at the Jeweler in town. Tap a gem to see what it does.",
+			13, UIKit.TEXT_DIM, true))
 
 
 # ---------- slots ----------
@@ -71,7 +73,7 @@ func _skill_cell(skill_id: String, slot: int, sz: Vector2) -> DragSlot:
 	var cell := DragSlot.new(sz)
 	var sk := SkillTree.get_skill(skill_id) if skill_id != "" else null
 	if sk == null:
-		cell.setup(null, Color(0.45, 0.40, 0.30), Color(0.07, 0.06, 0.08), 0, "◇", "Empty skill slot - drop a skill gem here")
+		cell.setup(null, Color(0.45, 0.40, 0.30), Color(0.07, 0.06, 0.08), 0, "◇", "Empty skill slot - tap to choose a skill gem")
 	else:
 		var sel: bool = _sel.get("type", "") == "skill" and _sel.get("id", "") == skill_id
 		var ok := GameState.skill_gem_block_reason(skill_id) == ""
@@ -82,23 +84,18 @@ func _skill_cell(skill_id: String, slot: int, sz: Vector2) -> DragSlot:
 		if SkillIcons.texture(skill_id) == null:  # the drawn gem carries the skill's symbol
 			_overlay(cell, sk.icon, 22, Color.WHITE, VERTICAL_ALIGNMENT_CENTER, HORIZONTAL_ALIGNMENT_CENTER)
 		_overlay(cell, "%d" % GameState.gem_level(skill_id), 11, Color(1.0, 0.9, 0.5), VERTICAL_ALIGNMENT_TOP, HORIZONTAL_ALIGNMENT_LEFT)
-		cell.payload = {"kind": "skillgem", "from": "pouch" if slot < 0 else "slot", "slot": slot, "skill": skill_id}
-		cell.clicked.connect(_select.bind({"type": "skill", "id": skill_id, "slot": slot}))
-	if slot >= 0 and not GameState.gem_station:
-		cell.payload = {}  # view-only away from the stash
-	elif slot >= 0:
-		cell.can_accept = func(d: Dictionary) -> bool:
-			return d.get("kind", "") == "skillgem" and not (d.get("from", "") == "slot" and int(d.get("slot", -1)) == slot)
-		cell.on_drop = func(d: Dictionary) -> void:
-			if d.get("from", "") == "slot":
-				GameState.swap_slots(int(d.slot), slot)
-			else:
-				var why := GameState.skill_gem_block_reason(d.skill)
-				if why != "" or not GameState.set_slot_skill(slot, d.skill):
-					menu.feedback(why if why != "" else "Can't socket that here.")
-			menu.refresh()
-	else:
-		_accept_returns(cell)
+		cell.payload = {"kind": "skillgem", "from": "slot", "slot": slot, "skill": skill_id}
+		if not GameState.gem_station:
+			cell.clicked.connect(_select.bind({"type": "skill", "id": skill_id, "slot": slot}))
+	if not GameState.gem_station:
+		cell.payload = {}  # view-only away from the Jeweler
+		return cell
+	cell.clicked.connect(func(): _pick_skill(slot, get_viewport().get_mouse_position()))
+	cell.can_accept = func(d: Dictionary) -> bool:
+		return d.get("kind", "") == "skillgem" and d.get("from", "") == "slot" and int(d.get("slot", -1)) != slot
+	cell.on_drop = func(d: Dictionary) -> void:
+		GameState.swap_slots(int(d.slot), slot)
+		menu.refresh()
 	return cell
 
 
@@ -107,39 +104,35 @@ func _support_cell(rune_id: String, slot: int, idx: int, sz: Vector2) -> DragSlo
 	var cell := DragSlot.new(sz)
 	var r := RuneDef.DB.get_rune(rune_id) if rune_id != "" else null
 	if r == null:
-		cell.setup(null, Color(0.40, 0.36, 0.52), Color(0.06, 0.05, 0.09), 0, "◌", "Empty link - drop a support gem here")
+		cell.setup(null, Color(0.40, 0.36, 0.52), Color(0.06, 0.05, 0.09), 0, "◌", "Empty link - tap to choose a support gem")
 	else:
 		var sel: bool = _sel.get("type", "") == "support" and _sel.get("id", "") == rune_id
 		var border := r.rarity_color() if r.rarity > 0 else r.color
 		cell.setup(r.get_icon(), Color.WHITE if sel else border, r.color.darkened(0.8),
 			GameState.rune_count(rune_id) if slot < 0 else 0)  # tap: its card
 		_overlay(cell, "%d" % GameState.support_level(rune_id), 11, Color(1.0, 0.9, 0.5), VERTICAL_ALIGNMENT_TOP, HORIZONTAL_ALIGNMENT_LEFT)
-		cell.payload = {"kind": "rune", "from": "pouch" if slot < 0 else "link", "slot": slot, "idx": idx, "rune_id": rune_id}
-		cell.clicked.connect(_select.bind({"type": "support", "id": rune_id, "slot": slot}))
-	if slot >= 0 and not GameState.gem_station:
-		cell.payload = {}  # view-only away from the stash
-	elif slot >= 0:
-		cell.can_accept = func(d: Dictionary) -> bool:
-			return d.get("kind", "") == "rune" and not (d.get("from", "") == "link" and int(d.slot) == slot and int(d.idx) == idx)
-		cell.on_drop = func(d: Dictionary) -> void:
-			var ok: bool
-			if d.get("from", "") == "link":
-				ok = GameState.move_support(int(d.slot), int(d.idx), slot, idx)
-			else:
-				ok = GameState.socket_support(slot, mini(idx, GameState.slot_supports(slot).size()), d.rune_id)
-			if not ok:
-				menu.feedback("Can't link that: one elemental support per skill, and no doubles.")
-			menu.refresh()
-	else:
-		_accept_returns(cell)
+		cell.payload = {"kind": "rune", "from": "link", "slot": slot, "idx": idx, "rune_id": rune_id}
+		if not GameState.gem_station:
+			cell.clicked.connect(_select.bind({"type": "support", "id": rune_id, "slot": slot}))
+	if not GameState.gem_station:
+		cell.payload = {}  # view-only away from the Jeweler
+		return cell
+	cell.clicked.connect(func(): _pick_support(slot, idx, get_viewport().get_mouse_position()))
+	cell.can_accept = func(d: Dictionary) -> bool:
+		return d.get("kind", "") == "rune" and d.get("from", "") == "link" and not (int(d.slot) == slot and int(d.idx) == idx)
+	cell.on_drop = func(d: Dictionary) -> void:
+		if not GameState.move_support(int(d.slot), int(d.idx), slot, idx):
+			menu.feedback("Can't link that: one elemental support per skill, and no doubles.")
+		menu.refresh()
 	return cell
 
 
 ## Picks a gem and shows its card where it was tapped (switching the menu's left side to this
 ## panel first if needed).
-func _select(sel: Dictionary) -> void:
+func _select(sel: Dictionary, at = null) -> void:
 	_sel = sel
-	var at := get_viewport().get_mouse_position()
+	if not at is Vector2:
+		at = get_viewport().get_mouse_position()
 	if not embedded and menu.current_panel() != self:
 		menu.show_panel("skills")
 	else:
@@ -154,44 +147,6 @@ func _show_tip(at: Vector2) -> void:
 		_add_details(d, at))
 
 
-## The shared skill and support gems, below the slots while at the stash. Dropping a slotted gem
-## or linked support on them takes it back out.
-func _add_pools() -> void:
-	for pool in [["SHARED SKILL GEMS", owned_skill_gems(), true], ["SHARED SUPPORT GEMS", owned_supports(), false]]:
-		var sec := UIKit.section(self, pool[0])
-		var grid := UIKit.grid(POOL_COLS)
-		sec.add_child(grid)
-		var ids: Array[String] = pool[1]
-		var total := maxi(POOL_COLS, int(ceil(float(ids.size() + 1) / POOL_COLS)) * POOL_COLS)
-		for i in total:
-			var id: String = ids[i] if i < ids.size() else ""
-			grid.add_child(pouch_skill_cell(id, CELL) if pool[2] else pouch_support_cell(id, CELL))
-
-
-const POOL_COLS := 8
-
-
-## Pool cells: a loose skill gem, a loose support, or an empty cell (skill_id / rune_id "").
-## Each takes gems back out of slots and links.
-func pouch_skill_cell(skill_id: String, sz: Vector2) -> DragSlot:
-	if skill_id == "":
-		return _empty_pouch_cell(sz)
-	return _skill_cell(skill_id, -1, sz)
-
-
-func pouch_support_cell(rune_id: String, sz: Vector2) -> DragSlot:
-	if rune_id == "":
-		return _empty_pouch_cell(sz)
-	return _support_cell(rune_id, -1, -1, sz)
-
-
-func _empty_pouch_cell(sz: Vector2) -> DragSlot:
-	var empty := DragSlot.new(sz)
-	empty.setup(null, UIKit.EMPTY_BORDER)
-	_accept_returns(empty)
-	return empty
-
-
 ## Owned skill gems / supports, in display order.
 static func owned_skill_gems() -> Array[String]:
 	var ids: Array[String] = []
@@ -199,19 +154,6 @@ static func owned_skill_gems() -> Array[String]:
 		if GameState.skill_gem_count(sk.id) > 0:
 			ids.append(sk.id)
 	return ids
-
-
-## Inventory cells take gems back out of slots and links.
-func _accept_returns(cell: DragSlot) -> void:
-	cell.can_accept = func(d: Dictionary) -> bool:
-		return (d.get("kind", "") == "skillgem" and d.get("from", "") == "slot") \
-			or (d.get("kind", "") == "rune" and d.get("from", "") == "link")
-	cell.on_drop = func(d: Dictionary) -> void:
-		if d.kind == "skillgem":
-			GameState.clear_slot_skill(int(d.slot))
-		else:
-			GameState.unsocket_support(int(d.slot), int(d.idx))
-		menu.refresh()
 
 
 static func owned_supports() -> Array[String]:
@@ -234,10 +176,182 @@ func _overlay(cell: Control, text: String, size: int, col: Color, v: int, h: int
 	cell.add_child(l)
 
 
+# ---------- dropdowns ----------
+
+## The skill gems slot `slot` can take, in a dropdown at `at`: yours not in a slot, and those in
+## other slots (picking one swaps the two); what the one there does, and taking it out.
+func _pick_skill(slot: int, at: Vector2) -> void:
+	var here := GameState.slot_skill(slot)
+	var rows: Array = []  # [icon, text, enabled, Callable]
+	for sk in SkillTree.active_skills():
+		var other := GameState.slot_of(sk.id)
+		if sk.id == here or (other < 0 and GameState.skill_gem_count(sk.id) <= 0):
+			continue
+		var why := GameState.skill_gem_block_reason(sk.id)
+		var text := "%s   Lv %d" % [sk.display_name, GameState.gem_level(sk.id)]
+		if other >= 0:
+			text += "\n[color]swaps with %s" % ("the main attack" if other == 0 else "skill %d" % other)
+		elif why != "":
+			text += "\n[color]" + why
+		var id: String = sk.id
+		rows.append([IconFactory.gem_icon("skill:" + id, sk.color, 3), text, why == "", func():
+			if not GameState.set_slot_skill(slot, id):
+				menu.feedback("Can't socket that here.")
+			_close_pick(), id])
+	var title := "MAIN ATTACK" if slot == 0 else "SKILL %d" % slot
+	_show_pick(at, title, "Choose a skill gem", rows, "skill", here, func():
+		GameState.clear_slot_skill(slot)
+		_close_pick(), "You have no other skill gems. Find them in rifts, or buy them from the Merchant.")
+
+
+## The supports link `idx` of slot `slot` can take, in a dropdown at `at`: yours not linked, each
+## greyed out if it can't go with the slot's others; what the one there does, and taking it out.
+func _pick_support(slot: int, idx: int, at: Vector2) -> void:
+	var list: Array = GameState.slot_supports(slot)
+	var here: String = String(list[idx]) if idx < list.size() else ""
+	var rows: Array = []
+	for rid in owned_supports():
+		if rid == here:
+			continue  # (another of the one there)
+		var r := RuneDef.DB.get_rune(rid)
+		var trial: Array = list.duplicate()
+		if idx < trial.size():
+			trial[idx] = rid
+		else:
+			trial.append(rid)
+		var fits := SkillDef.supports_valid(trial)
+		var text := "%s   Lv %d   ×%d" % [r.display_name, GameState.support_level(rid), GameState.rune_count(rid)]
+		if not fits:
+			text += "\n[color]one elemental support per skill, and no doubles"
+		var id: String = rid
+		rows.append([r.get_icon(), text, fits, func():
+			if not GameState.socket_support(slot, mini(idx, GameState.slot_supports(slot).size()), id):
+				menu.feedback("Can't link that: one elemental support per skill, and no doubles.")
+			_close_pick(), id])
+	var sk := GameState.get_slot_skill_def(slot)
+	var title := "SUPPORT FOR %s" % (sk.display_name.to_upper() if sk != null else ("THE MAIN ATTACK" if slot == 0 else "SKILL %d" % slot))
+	_show_pick(at, title, "Choose a support gem", rows, "support", here, func():
+		GameState.unsocket_support(slot, idx)
+		_close_pick(), "You have no loose support gems. Find them in rifts.")
+
+
+## A dropdown at `at`: its title, the gem there now (what it does, Take it out) and the rows to pick
+## from ([icon, text (a second line after "\n[color]" is dimmed), enabled, Callable, gem id]).
+func _show_pick(at: Vector2, title: String, prompt: String, rows: Array, type: String, here: String,
+		take_out: Callable, none: String) -> void:
+	_pick_rows.clear()
+	_chosen = ""
+	menu.item_tip().show_content(at, func(d: VBoxContainer):
+		var head := UIKit.label(title, 15, UIKit.GOLD)
+		head.custom_minimum_size.x = 260  # clear of the close button
+		d.add_child(head)
+		if here != "":
+			var bar := HBoxContainer.new()
+			bar.add_theme_constant_override("separation", 6)
+			d.add_child(bar)
+			var info := UIKit.button("ℹ What it does", Color(0.12, 0.12, 0.18), Color(0.55, 0.60, 0.80), Vector2(0, 40), 13)
+			info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			info.pressed.connect(func(): _select({"type": type, "id": here, "slot": -1}, at))
+			bar.add_child(info)
+			var out := UIKit.button("✖ Take it out", Color(0.20, 0.10, 0.10), Color(0.90, 0.45, 0.40), Vector2(0, 40), 13)
+			out.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			out.pressed.connect(take_out)
+			bar.add_child(out)
+		d.add_child(UIKit.label(prompt + ": tap to see it, again to equip", 12, UIKit.TEXT_DIM, true))
+		if rows.is_empty():
+			d.add_child(UIKit.label(none, 13, UIKit.TEXT_DIM, true))
+			return
+		var scroll := ScrollContainer.new()
+		scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+		scroll.custom_minimum_size = Vector2(0, minf(rows.size() * (PICK_ROW_H + 4.0), PICK_MAX_H))
+		d.add_child(scroll)
+		var list := VBoxContainer.new()
+		list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		list.add_theme_constant_override("separation", 4)
+		scroll.add_child(list)
+		for r in rows:
+			list.add_child(_pick_row(r[0], String(r[1]), bool(r[2]), r[3], String(r[4]), type)))
+
+
+## One row of a dropdown: the gem's icon, its name (and a dim second line). The first tap shows its
+## card beside the dropdown; tapping it again picks it (if it can go there).
+func _pick_row(icon: Texture2D, text: String, enabled: bool, pick: Callable, id: String, type: String) -> Button:
+	var b := Button.new()
+	b.custom_minimum_size = Vector2(0, PICK_ROW_H)
+	b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	b.focus_mode = Control.FOCUS_NONE
+	_style_row(b, false)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 8)
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	b.add_child(row)
+	row.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT, Control.PRESET_MODE_MINSIZE, 4)
+	var ic := TextureRect.new()
+	ic.texture = icon
+	ic.custom_minimum_size = Vector2(PICK_ROW_H - 10.0, PICK_ROW_H - 10.0)
+	ic.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	ic.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	ic.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_child(ic)
+	var lines := text.split("\n[color]")
+	var col := VBoxContainer.new()
+	col.add_theme_constant_override("separation", 0)
+	col.alignment = BoxContainer.ALIGNMENT_CENTER
+	col.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_child(col)
+	var main := UIKit.label(lines[0], 14, Color(0.92, 0.90, 0.84) if enabled else Color(0.55, 0.53, 0.50))
+	main.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	col.add_child(main)
+	var note: String = lines[1] if lines.size() > 1 else ""
+	var sub := UIKit.label(note, 11, Color(0.95, 0.55, 0.45) if not enabled else UIKit.TEXT_DIM)
+	sub.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	sub.visible = note != ""
+	col.add_child(sub)
+	_pick_rows.append({"button": b, "id": id, "sub": sub, "note": note, "enabled": enabled})
+	b.pressed.connect(func():
+		if _chosen == id and enabled:
+			pick.call()
+			return
+		_choose(id, type))
+	return b
+
+
+## A gem tapped once in the dropdown: its row lit (and told to tap again), its card beside it.
+func _choose(id: String, type: String) -> void:
+	_chosen = id
+	for r in _pick_rows:
+		var on: bool = r.id == id
+		_style_row(r.button, on)
+		var sub: Label = r.sub
+		if on and r.enabled:
+			sub.text = "Tap again to equip"
+			sub.add_theme_color_override("font_color", Color(0.45, 0.95, 0.55))
+		else:
+			sub.text = r.note
+			sub.add_theme_color_override("font_color", Color(0.95, 0.55, 0.45) if not r.enabled else UIKit.TEXT_DIM)
+		sub.visible = sub.text != ""
+	_sel = {"type": type, "id": id, "slot": -1}
+	menu.item_tip().show_beside(func(d: VBoxContainer): _add_details(d, Vector2.ZERO, false))
+
+
+func _style_row(b: Button, on: bool) -> void:
+	var border := Color(0.95, 0.80, 0.40) if on else Color(0.32, 0.30, 0.40)
+	for st in ["normal", "hover", "pressed"]:
+		var bg := Color(0.20, 0.17, 0.10) if on else (Color(0.18, 0.16, 0.24) if st == "hover" else Color(0.10, 0.09, 0.13))
+		b.add_theme_stylebox_override(st, UIKit.box(bg, border, 2 if on else 1, 5))
+	b.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+
+
+func _close_pick() -> void:
+	menu.item_tip().close()
+	menu.refresh()
+
+
 # ---------- details ----------
 
-## The picked gem's card (in the tooltip at `at`).
-func _add_details(d: VBoxContainer, at: Vector2) -> void:
+## The picked gem's card (in the tooltip at `at`); `prism`: with the Gemcutter's Prism button (not in
+## a dropdown's side card).
+func _add_details(d: VBoxContainer, at: Vector2, prism := true) -> void:
 	if _sel.type == "skill":
 		var id: String = _sel.id
 		var slot := GameState.slot_of(id)
@@ -266,7 +380,8 @@ func _add_details(d: VBoxContainer, at: Vector2) -> void:
 			d.add_child(UIKit.rich("[color=#%s]With its supports this costs %d %s (base %d).[/color]" % [
 				"60a5fa" if sk.uses_mana() else "fb923c", int(round(player.skill_cost(sk))), sk.resource_name(), int(sk.resource_cost)], 13))
 		d.add_child(UIKit.label("Socketed skill gems level up from the experience you earn.", 12, UIKit.TEXT_DIM, true))
-		_add_gemcutter(d, id, false, lvl, at)
+		if prism:
+			_add_gemcutter(d, id, false, lvl, at)
 	else:
 		var r := RuneDef.DB.get_rune(_sel.id)
 		if r == null:
@@ -280,7 +395,8 @@ func _add_details(d: VBoxContainer, at: Vector2) -> void:
 		d.add_child(UIKit.label(r.description, 14, Color(0.9, 0.9, 0.95), true))
 		d.add_child(UIKit.rich(r.stat_lines(slvl), 14))
 		d.add_child(UIKit.label("Supports linked to a socketed skill level up from the experience you earn: +3% effects and +1% skill damage per level.", 12, UIKit.TEXT_DIM, true))
-		_add_gemcutter(d, r.id, true, slvl, at)
+		if prism:
+			_add_gemcutter(d, r.id, true, slvl, at)
 
 
 ## "Use Gemcutter's Prism" button: a level's worth of experience for this gem (its card shows again).

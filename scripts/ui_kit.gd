@@ -14,6 +14,7 @@ const STAT_LABELS := {
 
 const SLOT_NAMES := {
 	"helmet": "Helmet",
+	"shoulders": "Shoulders",
 	"chest": "Body Armor",
 	"weapon": "Main Hand",
 	"offhand": "Off Hand",
@@ -28,6 +29,7 @@ const SLOT_NAMES := {
 
 const SLOT_ICONS := {
 	"helmet": "⛑",
+	"shoulders": "🪖",
 	"chest": "🛡",
 	"weapon": "⚔",
 	"offhand": "🛡",
@@ -462,6 +464,8 @@ static func item_card(parent: Node, item: ItemInstance, compact := false, deltas
 		txt += "[color=#555555]No magical properties[/color]\n"
 	if DyeDB.dyed(item):
 		txt += "[color=#%s]🎨 Dyed %s[/color]\n" % [DyeDB.color(item.dye).lightened(0.25).to_html(false), DyeDB.dye_name(item.dye)]
+	if item.look != "":
+		txt += "[color=#c9b9e8]👘 Looks like %s[/color]\n" % Wardrobe.look_name(Wardrobe.group(item), item.look)
 	if item.corrupted:
 		txt += "[color=#e04848][b]Corrupted[/b][/color]\n"
 	if item.mirrored:

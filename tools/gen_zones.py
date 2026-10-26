@@ -22,8 +22,8 @@ def cell_pos(c, dx=0.5, dy=0.5):
 
 
 class Zone:
-    def __init__(self, zid, name, cols, rows, seed):
-        self.id, self.name, self.cols, self.rows = zid, name, cols, rows
+    def __init__(self, zid, name, cols, rows, seed, theme):
+        self.id, self.name, self.cols, self.rows, self.theme = zid, name, cols, rows, theme
         self.rng = random.Random(seed)
         self.wall = [[False] * cols for _ in range(rows)]
         self.objects = []
@@ -141,7 +141,7 @@ class Zone:
 
     def save(self, area_name_kind="story"):
         grid = ["".join("#" if w else "." for w in row) for row in self.wall]
-        data = {"format": 1, "id": self.id, "name": self.name, "kind": area_name_kind, "theme": "desert",
+        data = {"format": 1, "id": self.id, "name": self.name, "kind": area_name_kind, "theme": self.theme,
                 "cell": CELL, "auto_decorate": True, "grid": grid, "objects": self.objects}
         with open(os.path.join(MAPS, self.id + ".json"), "w") as f:
             json.dump(data, f, indent="\t")
@@ -154,14 +154,17 @@ class Zone:
 
 
 def dune_wastes():
-    z = Zone("dune_wastes", "The Dune Wastes", 70, 46, seed=1101)
+    """Act 1's first zone, the Ashwood: autumn woods west of Ashfall (the id is from when it was a
+    desert, kept so saved waypoints and quests still find it). Wagons, tents, the campfire, the pond
+    and skulls are borrowed from the desert theme ("desert/...")."""
+    z = Zone("dune_wastes", "The Ashwood", 70, 46, seed=1101, theme="woodland")
     start = (4, 23)
     waypoint = (19, 27)
     wreck = (35, 22)
     camp = (57, 9)
-    oasis = (31, 38)
-    ruins = (12, 37)
-    landmarks = [(start, 4), (waypoint, 3), (wreck, 5), (camp, 6), (oasis, 5), (ruins, 5)]
+    pond = (31, 38)
+    hamlet = (12, 37)
+    landmarks = [(start, 4), (waypoint, 3), (wreck, 5), (camp, 6), (pond, 5), (hamlet, 5)]
 
     z.outcrops(85, 1.5, 5.0)
     z.border(2)
@@ -171,9 +174,9 @@ def dune_wastes():
     z.road(start, waypoint, 1)
     z.road(waypoint, wreck, 1)
     z.road(wreck, camp, 1)
-    z.road(wreck, oasis, 1)
-    z.road(waypoint, ruins, 1)
-    z.road(oasis, ruins, 1)
+    z.road(wreck, pond, 1)
+    z.road(waypoint, hamlet, 1)
+    z.road(pond, hamlet, 1)
     z.reachable_only(start)
 
     # The road from Ashfall comes in on the west edge
@@ -181,37 +184,43 @@ def dune_wastes():
     z.add("portal", (start[0] - 2, start[1]), target="town")
     z.clear((start[0] - 2, start[1]), 1)
     z.add("waypoint", waypoint)
-    z.prop("decor_3", (start[0] + 2, start[1] - 2), scale=0.5)  # signpost
+    z.prop("decor_9", (start[0] + 2, start[1] - 2), scale=0.5)  # signpost
 
-    # The caravan wreck: wagons on their sides, a dead campfire, a survivor
+    # The caravan wreck: wagons, spilled barrels, the dead, a survivor
     z.add("trigger", wreck, radius=420, id="caravan_wreck",
           text="Hesk's caravan... or what's left of it.")
-    z.prop("decor_8", (wreck[0] - 2, wreck[1] - 1), scale=0.55, solid=True)
-    z.prop("decor_8", (wreck[0] + 2, wreck[1] + 1), scale=0.5, solid=True)
-    z.prop("decor_4", (wreck[0], wreck[1] + 2), scale=0.5)
-    z.prop("decor_6", (wreck[0] - 1, wreck[1] + 2), scale=0.45)
-    z.prop("decor_6", (wreck[0] + 3, wreck[1] - 2), scale=0.4)
+    z.prop("desert/decor_8", (wreck[0] - 2, wreck[1] - 1), scale=0.55, solid=True)
+    z.prop("desert/decor_8", (wreck[0] + 2, wreck[1] + 1), scale=0.5, solid=True)
+    z.prop("decor_10", (wreck[0], wreck[1] + 2), scale=0.4)
+    z.prop("decor_10", (wreck[0] + 1, wreck[1] + 2), dx=0.2, scale=0.35)
+    z.prop("desert/decor_6", (wreck[0] - 1, wreck[1] + 2), scale=0.45)
+    z.prop("desert/decor_6", (wreck[0] + 3, wreck[1] - 2), scale=0.4)
     z.add("npc", (wreck[0] + 1, wreck[1] - 1), id="caravan_guard", facing=-1)
 
-    # The raider camp: tents round a fire, Vesh, and the strongbox
+    # The raider camp: tents round a fire, their banner, Vesh, and the strongbox
     for i, (dx, dy) in enumerate([(-3, -2), (2, -3), (4, 1), (-4, 2)]):
-        z.prop("decor_2", (camp[0] + dx, camp[1] + dy), scale=0.55, solid=True)
-    z.prop("decor_7", camp, scale=0.5)
-    z.prop("decor_8", (camp[0] - 1, camp[1] + 3), scale=0.5, solid=True)
+        z.prop("desert/decor_2", (camp[0] + dx, camp[1] + dy), scale=0.55, solid=True)
+    z.prop("desert/decor_7", camp, scale=0.5)
+    z.prop("desert/decor_8", (camp[0] - 1, camp[1] + 3), scale=0.5, solid=True)
+    z.prop("decor_3", (camp[0] - 1, camp[1] - 3), scale=0.5)  # banner
+    z.prop("decor_1", (camp[0] + 3, camp[1] - 1), scale=0.45)  # lantern post
+    z.prop("decor_8", (camp[0] + 5, camp[1] - 2), scale=0.45, solid=True)  # log pile
     z.add("boss", (camp[0] + 1, camp[1] + 1), id="raider_captain", name="Vesh, the Raider Captain",
           kind="bandit_archer", skin="archer_guy", hp=9.0, size=1.45)
     z.add("quest_object", (camp[0] + 2, camp[1] - 1), id="strongbox", sprite="", prompt="Take the strongbox",
           text="You recover Hesk's strongbox.")
 
-    # The oasis and the ruins
-    z.prop("lake", oasis, scale=0.8)
+    # The pond, and the abandoned hamlet
+    z.prop("desert/lake", pond, scale=0.8)
     for dx, dy in [(-4, -1), (4, -1), (-2, 2), (3, 2)]:
-        z.prop("tree_" + str(z.rng.choice([1, 2, 3, 5])), (oasis[0] + dx, oasis[1] + dy), scale=0.55)
-    z.prop("building_3", (ruins[0] - 2, ruins[1] - 1), scale=0.55, solid=True)
-    z.prop("building_2", (ruins[0] + 3, ruins[1] - 2), scale=0.5, solid=True)
-    z.prop("decor_6", (ruins[0], ruins[1] + 2), scale=0.45)
+        z.prop("tree_" + str(z.rng.choice([1, 2, 6, 8])), (pond[0] + dx, pond[1] + dy), scale=0.6)
+    z.prop("building_2", (hamlet[0] - 2, hamlet[1] - 1), scale=0.5, solid=True)
+    z.prop("building_6", (hamlet[0] + 3, hamlet[1] - 2), scale=0.45, solid=True)
+    z.prop("decor_16", (hamlet[0] + 1, hamlet[1] + 1), scale=0.5)  # scarecrow
+    z.prop("building_7", (hamlet[0] - 3, hamlet[1] + 2), scale=0.45, solid=True)  # well
+    z.prop("desert/decor_6", (hamlet[0], hamlet[1] + 2), scale=0.45)
 
-    themes = [(camp, 13, "bandit_archer"), (ruins, 10, "skeleton"), (oasis, 8, "ghoul"),
+    themes = [(camp, 13, "bandit_archer"), (hamlet, 10, "skeleton"), (pond, 8, "ghoul"),
               (wreck, 9, "villager")]
     avoid = [(start, 9), (waypoint, 4), (wreck, 3), (camp, 3)]
     z.packs(24, avoid, themes, min_gap=7, start=start)

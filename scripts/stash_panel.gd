@@ -1,15 +1,17 @@
 class_name StashPanel
 extends MenuPanel
-## The shared (account-wide) stash. At the stash the menu's tab row is Items, Skills, Currency,
-## Gems (GameMenu._build_tabs); Items and Currency are this panel, Skills and Gems are the usual
-## gem panels, which can change gems here (GameState.gem_station).
-##   Items     - a grid like the bag, bigger. Drag gear between it and the bag on the right, or
-##               within the stash to rearrange; dropping onto one item swaps the two.
+## The shared (account-wide) stash. At the stash the menu's tab row is Items, Currency and Gems
+## (GameMenu._build_tabs); Items and Currency are this panel, Gems is the usual gem panel,
+## which can socket gems here (GameState.gem_station).
+##   Items     - a grid like the bag, its cells as big as fit the panel without scrolling. Drag gear
+##               between it and the bag on the right, or within the stash to rearrange; dropping
+##               onto one item swaps the two. Tap an item for its card.
 ##   Currency  - the one place currency is used. Drag a piece of gear into the slot (or tap it),
 ##               pick an orb, then tap Use. After a use the item shows before and after.
 ## Everything here is shared by all your characters.
 
-const CELL := 44.0
+const MIN_CELL := 40.0  # the Items grid's cells: as big as fit the panel (fit_cell), within these
+const MAX_CELL := 96.0
 const ORB_CELL := Vector2(60, 60)
 const BENCH_SLOT := Vector2(150, 150)
 
@@ -18,6 +20,40 @@ var _orb := ""  # the orb picked on the Currency tab
 # The item as it was before the last orb used on it, to show what changed
 var _before: ItemInstance = null
 var _before_of: ItemInstance = null
+var _cell := 0.0  # the Items grid's cell size last laid out; a resize that changes it lays it out again
+
+
+func _ready() -> void:
+	resized.connect(_refit.call_deferred)
+	visibility_changed.connect(_refit.call_deferred)
+	var sc := _scroll()
+	if sc != null:
+		sc.resized.connect(_refit.call_deferred)
+
+
+func _refit() -> void:
+	if is_visible_in_tree() and tab == "items" and fit_cell() != _cell:
+		refresh()
+
+
+## The scroll area the panel sits in (its height is the room the grid has).
+func _scroll() -> ScrollContainer:
+	var n := get_parent()
+	while n != null and not n is ScrollContainer:
+		n = n.get_parent()
+	return n as ScrollContainer
+
+
+## The Items grid's cell size: the biggest that fits the whole grid in the panel without scrolling
+## (less the section's title and padding, and the waiting-for-room row if there is one).
+func fit_cell() -> float:
+	var w := (size.x if size.x > 0.0 else 600.0) - 24.0
+	var sc := _scroll()
+	var h := (sc.size.y if sc != null and sc.size.y > 0.0 else 500.0) - 56.0
+	if not GameState.stash_overflow.is_empty():
+		h -= 120.0
+	var c := floorf(minf(w / GameState.STASH_COLS, h / GameState.STASH_ROWS))
+	return clampf(c, MIN_CELL, MAX_CELL)
 
 
 func panel_title() -> String:
@@ -38,9 +74,8 @@ func _show_items() -> void:
 	var used := GameState.STASH_SIZE - GameState.stash.free_cells()
 	var sec := UIKit.section(self, "SHARED STASH   %d items   %d / %d cells" % [
 		GameState.stash.count(), used, GameState.STASH_SIZE])
-	sec.add_child(UIKit.label("Drag gear between the stash and your bag. Bigger pieces take more room. Every character shares this stash.", 13, UIKit.TEXT_DIM, true))
-
-	var view := ItemGridView.new(GameState.stash, CELL, "stash")
+	_cell = fit_cell()
+	var view := ItemGridView.new(GameState.stash, _cell, "stash")
 	view.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	view.selected = menu.selected
 	view.can_accept_at = func(d: Dictionary, at: Vector2i) -> bool:
@@ -79,9 +114,6 @@ func _show_items() -> void:
 				menu.show_item_tip(it)
 			)
 			row.add_child(cell)
-
-	if menu.selected != null:
-		UIKit.item_card(self, menu.selected, true)
 
 
 # ---------- currency ----------

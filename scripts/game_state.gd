@@ -10,6 +10,7 @@ signal leveled_up(level: int)
 signal quests_changed
 signal scrolls_changed  ## tp_scrolls changed
 signal town_portal_changed  ## a town portal of yours opened or closed (town_portal)
+signal looks_unlocked(looks: Array)  ## new armour looks for the Wardrobe: [[slot, look id], ...]
 
 const SAVE_PATH := "user://tainted_save.json"  # the single save from before characters existed
 const ACCOUNT_PATH := "user://tainted_account.json"
@@ -52,6 +53,9 @@ const MAX_SCROLLS := 40
 var tp_scrolls := START_SCROLLS
 var town_portal := {}
 var left_loot := {}
+## The Gambler's stall (Gambler): its unidentified wares and when they were laid out (unix seconds)
+var gamble_stock: Array[ItemInstance] = []
+var gamble_at := 0
 var portal_arrival := {}
 var rift_resume := {}
 ## Where the next Zone scene loads and where in it you arrive: "start", "waypoint", "portal" (the
@@ -67,6 +71,8 @@ var stash := ItemGrid.new(STASH_COLS, STASH_ROWS)  # shared storage, account-wid
 ## Items that had nowhere to go when an older save was loaded (it counted items, not cells, so a
 ## full bag or stash of big gear can't all fit the grids). Moved into the stash as room is made.
 var stash_overflow: Array[ItemInstance] = []
+## Armour looks unlocked for every character (Wardrobe): slot -> [look ids]. Saved in the account.
+var wardrobe := {}
 
 # Skill gems (Path of Exile style) and the passive tree
 const SKILL_SLOTS := 6     # skill gem slots (one HUD button each)
@@ -111,6 +117,7 @@ var _save_queued := false
 
 
 func _ready() -> void:
+	Updater.note("GameState ready")
 	get_tree().root.theme = UIKit.ui_theme()  # the pack's scrollbars everywhere
 	if "--server" in OS.get_cmdline_user_args():
 		return  # a dedicated server (Net) plays no character: nothing to load or save
@@ -133,6 +140,8 @@ func _new_game() -> void:
 	tp_scrolls = START_SCROLLS
 	town_portal = {}
 	left_loot = {}
+	gamble_stock = []
+	gamble_at = 0
 	portal_arrival = {}
 	rift_resume = {}
 	_pending_inventory.clear()
@@ -1199,9 +1208,28 @@ func attach_player(p: Player) -> void:
 	p.hp = p.stats.get_stat("max_life")
 	_restoring = false
 	p.inventory_changed.connect(_changed)
+	p.inventory_changed.connect(_note_looks)
+	_note_looks(true)  # what the character has from before the Wardrobe
 	p.sync_skills_from_state()
 	p.inventory_changed.emit()
 	Net.update_looks()  # online: others see this character (its name, level and gear)
+
+
+## Unlocks the looks of what the player carries and wears, and their hireling's (Wardrobe), and says
+## so (looks_unlocked) unless `quiet`.
+func _note_looks(quiet := false) -> void:
+	if not is_instance_valid(player):
+		return
+	var items: Array = []
+	items.append_array(player.inventory)
+	items.append_array(player.equipment.values())
+	items.append_array(hireling_gear.values())
+	var new := Wardrobe.unlock(items)
+	if new.is_empty():
+		return
+	_save_account()
+	if not quiet:
+		looks_unlocked.emit(new)
 
 
 ## The Sage in town: identifies everything in the bag and the stash, free. Returns how many.
@@ -1260,6 +1288,7 @@ func save() -> void:
 		"rift_unlocked": rift_unlocked, "rift_level": rift_level,
 		"quests": quests, "waypoints": waypoints, "town_portal": town_portal,
 		"tp_scrolls": tp_scrolls, "left_loot": left_loot,
+		"gamble": {"at": gamble_at, "items": gamble_stock.map(func(i): return i.to_dict())},
 		"inventory": inv, "equipment": eq,
 		"alt_weapon_set": _pending_alt_set, "active_weapon_set": _pending_active_set,
 		# Skills & Runes
@@ -1376,6 +1405,7 @@ func _save_account() -> void:
 		"stash_overflow": stash_overflow.map(func(i): return i.to_dict()),
 		"shared": {"orbs": orbs, "shards": shards,
 			"skill_gems": skill_gems, "runes": runes, "gems": gems},
+		"wardrobe": wardrobe,
 	})
 
 
@@ -1388,6 +1418,7 @@ func _load_account() -> void:
 		last_character = ""
 		stash.clear()
 		stash_overflow.clear()
+		wardrobe = {}
 		if not online_saves:
 			_migrate_single_save()
 		_load_shared({})
@@ -1413,6 +1444,10 @@ func _load_account() -> void:
 		_save_account()
 	_load_stash(acc.get("stash", []), acc.get("stash_overflow", []))
 	_load_shared(acc)
+	wardrobe = Wardrobe.sanitize(acc.get("wardrobe", {}))
+	# Accounts from before the Wardrobe: what is in the stash unlocks its look
+	if Wardrobe.unlock(stash.items() + stash_overflow).size() > 0:
+		_save_account()
 
 
 func _load_stash(list: Array, overflow: Array = []) -> void:
@@ -1610,6 +1645,13 @@ func _apply_save(data: Dictionary) -> void:
 			"x": float(town_portal.get("x", 0.0)), "y": float(town_portal.get("y", 0.0))}
 	tp_scrolls = clampi(int(data.get("tp_scrolls", START_SCROLLS)), 0, MAX_SCROLLS)
 	left_loot = data.get("left_loot", {})
+	var gamble: Dictionary = data.get("gamble", {}) if data.get("gamble", {}) is Dictionary else {}
+	gamble_at = int(gamble.get("at", 0))
+	gamble_stock = []
+	for d in gamble.get("items", []):
+		var it := ItemInstance.from_dict(d) if d is Dictionary else null
+		if it != null:
+			gamble_stock.append(it)
 	portal_arrival = {}
 	rift_resume = {}
 	_pending_inventory = data.get("inventory", [])

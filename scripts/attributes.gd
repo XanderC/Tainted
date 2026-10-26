@@ -110,6 +110,8 @@ const WEAPON_REQ := {
 	"dagger": [0, 0.0, 12, 1.1, 0, 0.0],
 	"staff_2h": [10, 0.6, 0, 0.0, 10, 1.0],
 	"bow_2h": [6, 0.5, 14, 1.2, 0, 0.0],
+	"crossbow_2h": [10, 0.8, 12, 1.0, 0, 0.0],
+	"crossbow": [4, 0.4, 12, 1.1, 0, 0.0],  # a hand crossbow
 	"shield": [12, 1.1, 0, 0.0, 0, 0.0],
 }
 ## Armour wants Strength by how much armour its base gives: this many points per point of armour,
@@ -137,7 +139,7 @@ static func requirements(base: ItemBase) -> Dictionary:
 				var v := int(round(float(r[i * 2]) + float(r[i * 2 + 1]) * dl))
 				if v > 0:
 					out[["str", "dex", "ene"][i]] = v
-	elif base.slot in ["helmet", "chest", "gloves", "boots"] and base.implicit_stat == "armor" \
+	elif base.slot in ["helmet", "shoulders", "chest", "gloves", "boots"] and base.implicit_stat == "armor" \
 			and base.implicit_value >= ARMOUR_REQ_FROM:
 		out["str"] = int(round(base.implicit_value * ARMOUR_REQ_PER))
 	_req_cache[base.id] = out

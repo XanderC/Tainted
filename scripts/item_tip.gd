@@ -19,6 +19,7 @@ var _cmp: PanelContainer
 var _cmp_body: VBoxContainer
 var _close: BaseButton
 var _shown := 0  # which show this is, so a late placement of an older one is ignored
+var _at := Vector2.ZERO  # where it was last shown
 
 
 func _init() -> void:
@@ -84,7 +85,28 @@ func show_content(at: Vector2, build: Callable) -> void:
 	_present(at, mine)
 
 
+## Shows a second card beside the one shown (show_content): `build` fills it, Callable(parent:
+## VBoxContainer). The first card stays where it is (the pair nudged on screen together).
+func show_beside(build: Callable) -> void:
+	if not visible:
+		return
+	_shown += 1
+	var mine := _shown
+	UIKit.clear(_cmp_body)
+	build.call(_cmp_body)
+	_cmp.visible = true
+	_cmp.position = Vector2(-4000, -4000)  # measured off screen first
+	await get_tree().process_frame
+	await get_tree().process_frame
+	if mine == _shown and visible:
+		_place(_at)
+	await get_tree().process_frame
+	if mine == _shown and visible:
+		_place(_at)
+
+
 func _present(at: Vector2, mine: int) -> void:
+	_at = at
 	# Laid out off screen first: its height is only known once its text has been measured
 	modulate.a = 0.0
 	visible = true

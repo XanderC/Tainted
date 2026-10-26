@@ -1,0 +1,959 @@
+{
+	"amazon_warrior_1_armour": {
+		"name": "Amazon Warrior 1 Armour",
+		"source": "amazon/Amazon_Warrior_1",
+		"item": false
+	},
+	"amazon_warrior_2_armour": {
+		"name": "Amazon Warrior 2 Armour",
+		"source": "amazon/Amazon_Warrior_2",
+		"item": false
+	},
+	"amazon_warrior_3_armour": {
+		"name": "Amazon Warrior 3 Armour",
+		"source": "amazon/Amazon_Warrior_3",
+		"item": false
+	},
+	"archer_1_armour": {
+		"name": "Archer 1 Armour",
+		"source": "archer-chibi-2d/Archer_1",
+		"item": false
+	},
+	"archer_2_armour": {
+		"name": "Archer 2 Armour",
+		"source": "archer-chibi-2d/Archer_2",
+		"item": false
+	},
+	"archer_3_armour": {
+		"name": "Archer 3 Armour",
+		"source": "archer-chibi-2d/Archer_3",
+		"item": false
+	},
+	"archer_guy_armour": {
+		"name": "Archer Guy Armour",
+		"source": "archer-barbarian/Archer Guy",
+		"item": false
+	},
+	"assassin_guy_armour": {
+		"name": "Assassin Guy Armour",
+		"source": "ninja/Assassin Guy",
+		"item": false
+	},
+	"battle_plate": {
+		"name": "Battle Plate",
+		"source": "medieval-warrior/Medieval Commander",
+		"item": true
+	},
+	"black_wizard_armour": {
+		"name": "Black Wizard Armour",
+		"source": "fantasy/Black Wizard",
+		"item": false
+	},
+	"blacksmith_guy_armour": {
+		"name": "Blacksmith Guy Armour",
+		"source": "4-chibi-character/Blacksmith Guy",
+		"item": false
+	},
+	"brigandine": {
+		"name": "Brigandine",
+		"source": "chibi-mercenaries/Mercenaries_1",
+		"item": true
+	},
+	"chain_mail": {
+		"name": "Chain Mail",
+		"source": "free-chibi-skeleton-crusader/Skeleton_Crusader_2",
+		"item": true
+	},
+	"chibi_prisoner_guy_armour": {
+		"name": "Chibi Prisoner Guy Armour",
+		"source": "4-chibi-character/Chibi Prisoner Guy",
+		"item": false
+	},
+	"citizen_1_armour": {
+		"name": "Citizen 1 Armour",
+		"source": "citizen/Citizen_1",
+		"item": false
+	},
+	"citizen_2_armour": {
+		"name": "Citizen 2 Armour",
+		"source": "citizen/Citizen_2",
+		"item": false
+	},
+	"citizen_3_armour": {
+		"name": "Citizen 3 Armour",
+		"source": "citizen/Citizen_3",
+		"item": false
+	},
+	"citizen_women_1_armour": {
+		"name": "Citizen Women 1 Armour",
+		"source": "women/Citizen-Women_1",
+		"item": false
+	},
+	"citizen_women_2_armour": {
+		"name": "Citizen Women 2 Armour",
+		"source": "women/Citizen-Women_2",
+		"item": false
+	},
+	"citizen_women_3_armour": {
+		"name": "Citizen Women 3 Armour",
+		"source": "women/Citizen-Women_3",
+		"item": false
+	},
+	"crusader_hauberk": {
+		"name": "Crusader Hauberk",
+		"source": "free-chibi-skeleton-crusader/Skeleton_Crusader_1",
+		"item": true
+	},
+	"cursed_alchemist_1_armour": {
+		"name": "Cursed Alchemist 1 Armour",
+		"source": "chibi-cursed/Cursed_Alchemist_1",
+		"item": false
+	},
+	"cursed_alchemist_2_armour": {
+		"name": "Cursed Alchemist 2 Armour",
+		"source": "chibi-cursed/Cursed_Alchemist_2",
+		"item": false
+	},
+	"cursed_alchemist_3_armour": {
+		"name": "Cursed Alchemist 3 Armour",
+		"source": "chibi-cursed/Cursed_Alchemist_3",
+		"item": false
+	},
+	"dark_elves_2_armour": {
+		"name": "Dark Elves 2 Armour",
+		"source": "dark-elves/Dark_Elves_2",
+		"item": false
+	},
+	"dark_elves_3_armour": {
+		"name": "Dark Elves 3 Armour",
+		"source": "dark-elves/Dark_Elves_3",
+		"item": false
+	},
+	"dark_oracle_1_armour": {
+		"name": "Dark Oracle 1 Armour",
+		"source": "free-chibi-dark/Dark_Oracle_1",
+		"item": false
+	},
+	"dark_oracle_3_armour": {
+		"name": "Dark Oracle 3 Armour",
+		"source": "free-chibi-dark/Dark_Oracle_3",
+		"item": false
+	},
+	"death_plate": {
+		"name": "Death Plate",
+		"source": "death-knight-skeleton/Death_Knight",
+		"item": true
+	},
+	"demon_plate": {
+		"name": "Demon Plate",
+		"source": "chibi-blood/Blood_Demon_1",
+		"item": true
+	},
+	"demons_of_darkness_1_armour": {
+		"name": "Demons Of Darkness 1 Armour",
+		"source": "demon-of/Demons_of_Darkness_1",
+		"item": false
+	},
+	"demons_of_darkness_2_armour": {
+		"name": "Demons Of Darkness 2 Armour",
+		"source": "demon-of/Demons_of_Darkness_2",
+		"item": false
+	},
+	"desert_nomad_1_armour": {
+		"name": "Desert Nomad 1 Armour",
+		"source": "desert/Desert_Nomad_1",
+		"item": false
+	},
+	"desert_nomad_3_armour": {
+		"name": "Desert Nomad 3 Armour",
+		"source": "desert/Desert_Nomad_3",
+		"item": false
+	},
+	"devil_masked_guy_armour": {
+		"name": "Devil Masked Guy Armour",
+		"source": "fantasy/Devil Masked Guy",
+		"item": false
+	},
+	"elemental_spirits_2_armour": {
+		"name": "Elemental Spirits 2 Armour",
+		"source": "elemental-spirits/Elemental_Spirits_2",
+		"item": false
+	},
+	"elf_archer_1_armour": {
+		"name": "Elf Archer 1 Armour",
+		"source": "elf-archer/Archer_1",
+		"item": false
+	},
+	"elf_archer_2_armour": {
+		"name": "Elf Archer 2 Armour",
+		"source": "elf-archer/Archer_2",
+		"item": false
+	},
+	"elf_archer_3_armour": {
+		"name": "Elf Archer 3 Armour",
+		"source": "elf-archer/Archer_3",
+		"item": false
+	},
+	"fallen_angels_2_armour": {
+		"name": "Fallen Angels 2 Armour",
+		"source": "free-fallen/Fallen_Angels_2",
+		"item": false
+	},
+	"forest_guardian_3_armour": {
+		"name": "Forest Guardian 3 Armour",
+		"source": "forest-guardian/Forest_Guardian_3",
+		"item": false
+	},
+	"forest_ranger_1_armour": {
+		"name": "Forest Ranger 1 Armour",
+		"source": "free-forest/Forest_Ranger_1",
+		"item": false
+	},
+	"forest_ranger_2_armour": {
+		"name": "Forest Ranger 2 Armour",
+		"source": "free-forest/Forest_Ranger_2",
+		"item": false
+	},
+	"frontier_defender_spartan_knight_armour": {
+		"name": "Frontier Defender Spartan Knight Armour",
+		"source": "spartan/Frontier Defender Spartan Knight",
+		"item": false
+	},
+	"frost_knight_1_armour": {
+		"name": "Frost Knight 1 Armour",
+		"source": "frost/Frost_Knight_1",
+		"item": false
+	},
+	"frost_knight_2_armour": {
+		"name": "Frost Knight 2 Armour",
+		"source": "frost/Frost_Knight_2",
+		"item": false
+	},
+	"frost_knight_3_armour": {
+		"name": "Frost Knight 3 Armour",
+		"source": "frost/Frost_Knight_3",
+		"item": false
+	},
+	"frost_plate": {
+		"name": "Frost Plate",
+		"source": "ghost-knight-chibi/Ghost_Knight_1",
+		"item": true
+	},
+	"ghost_knight_2_armour": {
+		"name": "Ghost Knight 2 Armour",
+		"source": "chibi-ghost/Ghost_Knight_2",
+		"item": false
+	},
+	"ghost_knight_3_armour": {
+		"name": "Ghost Knight 3 Armour",
+		"source": "chibi-ghost/Ghost_Knight_3",
+		"item": false
+	},
+	"ghoul_hunter_1_armour": {
+		"name": "Ghoul Hunter 1 Armour",
+		"source": "ghoul-hunter/Ghoul_Hunter_1",
+		"item": false
+	},
+	"ghoul_hunter_2_armour": {
+		"name": "Ghoul Hunter 2 Armour",
+		"source": "ghoul-hunter/Ghoul_Hunter_2",
+		"item": false
+	},
+	"ghoul_hunter_3_armour": {
+		"name": "Ghoul Hunter 3 Armour",
+		"source": "ghoul-hunter/Ghoul_Hunter_3",
+		"item": false
+	},
+	"girl_knight_1_armour": {
+		"name": "Girl Knight 1 Armour",
+		"source": "girl-knight/Girl_Knight_1",
+		"item": false
+	},
+	"girl_knight_2_armour": {
+		"name": "Girl Knight 2 Armour",
+		"source": "girl-knight/Girl_Knight_2",
+		"item": false
+	},
+	"girl_knight_3_armour": {
+		"name": "Girl Knight 3 Armour",
+		"source": "girl-knight/Girl_Knight_3",
+		"item": false
+	},
+	"gnoll_3_armour": {
+		"name": "Gnoll 3 Armour",
+		"source": "gnoll/Gnoll/Gnoll_3",
+		"item": false
+	},
+	"gnome_1_armour": {
+		"name": "Gnome 1 Armour",
+		"source": "gnome/Gnome_1",
+		"item": false
+	},
+	"gnome_2_armour": {
+		"name": "Gnome 2 Armour",
+		"source": "gnome/Gnome_2",
+		"item": false
+	},
+	"gnome_3_armour": {
+		"name": "Gnome 3 Armour",
+		"source": "gnome/Gnome_3",
+		"item": false
+	},
+	"goblin_2_armour": {
+		"name": "Goblin 2 Armour",
+		"source": "goblin-chibi-character/Goblin_2",
+		"item": false
+	},
+	"goblin_3_armour": {
+		"name": "Goblin 3 Armour",
+		"source": "goblin-chibi-character/Goblin_3",
+		"item": false
+	},
+	"human_magician_1_armour": {
+		"name": "Human Magician 1 Armour",
+		"source": "human/Human Magician_1",
+		"item": false
+	},
+	"human_magician_2_armour": {
+		"name": "Human Magician 2 Armour",
+		"source": "human/Human Magician_2",
+		"item": false
+	},
+	"human_magician_3_armour": {
+		"name": "Human Magician 3 Armour",
+		"source": "human/Human Magician_3",
+		"item": false
+	},
+	"knight_2_armour": {
+		"name": "Knight 2 Armour",
+		"source": "knight-chibi-character-sprites/Knight_2",
+		"item": false
+	},
+	"knight_3_armour": {
+		"name": "Knight 3 Armour",
+		"source": "knight-chibi-character-sprites/Knight_3",
+		"item": false
+	},
+	"leather_jerkin": {
+		"name": "Leather Jerkin",
+		"source": "free-forest/Forest_Ranger_3",
+		"item": true
+	},
+	"lich_armour": {
+		"name": "Lich Armour",
+		"source": "ghoul-lich/Lich",
+		"item": false
+	},
+	"linen_robe": {
+		"name": "Linen Robe",
+		"source": "free-seer/Seer_1",
+		"item": true
+	},
+	"magician_1_armour": {
+		"name": "Magician 1 Armour",
+		"source": "magician-chibi-2d/Magician_1",
+		"item": false
+	},
+	"magician_2_armour": {
+		"name": "Magician 2 Armour",
+		"source": "magician-chibi-2d/Magician_2",
+		"item": false
+	},
+	"magician_3_armour": {
+		"name": "Magician 3 Armour",
+		"source": "magician-chibi-2d/Magician_3",
+		"item": false
+	},
+	"magician_demon_1_armour": {
+		"name": "Magician Demon 1 Armour",
+		"source": "magician-demon/Magician_1",
+		"item": false
+	},
+	"magician_demon_3_armour": {
+		"name": "Magician Demon 3 Armour",
+		"source": "magician-demon/Magician_3",
+		"item": false
+	},
+	"magician_girl_1_armour": {
+		"name": "Magician Girl 1 Armour",
+		"source": "magician-girl/Magician_Girl_1",
+		"item": false
+	},
+	"magician_girl_3_armour": {
+		"name": "Magician Girl 3 Armour",
+		"source": "magician-girl/Magician_Girl_3",
+		"item": false
+	},
+	"magician_undead_1_armour": {
+		"name": "Magician Undead 1 Armour",
+		"source": "magician-undead/Magician_1",
+		"item": false
+	},
+	"magician_undead_2_armour": {
+		"name": "Magician Undead 2 Armour",
+		"source": "magician-undead/Magician_2",
+		"item": false
+	},
+	"magician_undead_3_armour": {
+		"name": "Magician Undead 3 Armour",
+		"source": "magician-undead/Magician_3",
+		"item": false
+	},
+	"medieval_hooded_girl_armour": {
+		"name": "Medieval Hooded Girl Armour",
+		"source": "fantasy/Medieval Hooded Girl",
+		"item": false
+	},
+	"medieval_king_armour": {
+		"name": "Medieval King Armour",
+		"source": "medieval-king/Medieval King",
+		"item": false
+	},
+	"medieval_knight_armour": {
+		"name": "Medieval Knight Armour",
+		"source": "armored/Medieval Knight",
+		"item": false
+	},
+	"medieval_mage_armour": {
+		"name": "Medieval Mage Armour",
+		"source": "archer-barbarian/Medieval Mage",
+		"item": false
+	},
+	"medieval_thug_armour": {
+		"name": "Medieval Thug Armour",
+		"source": "4-chibi-character/Medieval Thug",
+		"item": false
+	},
+	"medieval_warrior_armour": {
+		"name": "Medieval Warrior Armour",
+		"source": "medieval-warrior/Medieval Warrior",
+		"item": false
+	},
+	"medieval_warrior_girl_armour": {
+		"name": "Medieval Warrior Girl Armour",
+		"source": "medieval-warrior/Medieval Warrior Girl",
+		"item": false
+	},
+	"medusa_1_armour": {
+		"name": "Medusa 1 Armour",
+		"source": "medusa/Medusa_1",
+		"item": false
+	},
+	"medusa_3_armour": {
+		"name": "Medusa 3 Armour",
+		"source": "medusa/Medusa_3",
+		"item": false
+	},
+	"mercenaries_2_armour": {
+		"name": "Mercenaries 2 Armour",
+		"source": "chibi-mercenaries/Mercenaries_2",
+		"item": false
+	},
+	"mimic_3_armour": {
+		"name": "Mimic 3 Armour",
+		"source": "mimic/Mimic_3",
+		"item": false
+	},
+	"minotaur_3_armour": {
+		"name": "Minotaur 3 Armour",
+		"source": "free-minotaur/Minotaur_3",
+		"item": false
+	},
+	"monk_guy_armour": {
+		"name": "Monk Guy Armour",
+		"source": "monk-evil/Monk Guy",
+		"item": false
+	},
+	"necromancer_of_the_shadow_1_armour": {
+		"name": "Necromancer Of The Shadow 1 Armour",
+		"source": "free-chibi-necromancer/Necromancer_of_the_Shadow_1",
+		"item": false
+	},
+	"necromancer_of_the_shadow_2_armour": {
+		"name": "Necromancer Of The Shadow 2 Armour",
+		"source": "free-chibi-necromancer/Necromancer_of_the_Shadow_2",
+		"item": false
+	},
+	"old_guy_armour": {
+		"name": "Old Guy Armour",
+		"source": "monk-evil/Old Guy",
+		"item": false
+	},
+	"old_hero_1_armour": {
+		"name": "Old Hero 1 Armour",
+		"source": "old-hero/Old_hero_1",
+		"item": false
+	},
+	"old_hero_3_armour": {
+		"name": "Old Hero 3 Armour",
+		"source": "old-hero/Old_hero_3",
+		"item": false
+	},
+	"padded_vest": {
+		"name": "Padded Vest",
+		"source": "desert/Desert_Nomad_2",
+		"item": true
+	},
+	"paladin_1_armour": {
+		"name": "Paladin 1 Armour",
+		"source": "paladin/Paladin_1",
+		"item": false
+	},
+	"paladin_2_armour": {
+		"name": "Paladin 2 Armour",
+		"source": "paladin/Paladin_2",
+		"item": false
+	},
+	"paladin_3_armour": {
+		"name": "Paladin 3 Armour",
+		"source": "paladin/Paladin_3",
+		"item": false
+	},
+	"persian_and_arab_warriors_2_armour": {
+		"name": "Persian And Arab Warriors 2 Armour",
+		"source": "persian/Persian_and_Arab_Warriors_2",
+		"item": false
+	},
+	"persian_and_arab_warriors_3_armour": {
+		"name": "Persian And Arab Warriors 3 Armour",
+		"source": "persian/Persian_and_Arab_Warriors_3",
+		"item": false
+	},
+	"pumpkin_head_guy_armour": {
+		"name": "Pumpkin Head Guy Armour",
+		"source": "halloween/Pumpkin Head Guy",
+		"item": false
+	},
+	"pyromancer_1_armour": {
+		"name": "Pyromancer 1 Armour",
+		"source": "pyromancer/Pyromancer_1",
+		"item": false
+	},
+	"pyromancer_2_armour": {
+		"name": "Pyromancer 2 Armour",
+		"source": "pyromancer/Pyromancer_2",
+		"item": false
+	},
+	"pyromancer_3_armour": {
+		"name": "Pyromancer 3 Armour",
+		"source": "pyromancer/Pyromancer_3",
+		"item": false
+	},
+	"reaper_man_1_armour": {
+		"name": "Reaper Man 1 Armour",
+		"source": "free-reaper/Reaper_Man_1",
+		"item": false
+	},
+	"reaper_man_2_armour": {
+		"name": "Reaper Man 2 Armour",
+		"source": "free-reaper/Reaper_Man_2",
+		"item": false
+	},
+	"reaper_man_3_armour": {
+		"name": "Reaper Man 3 Armour",
+		"source": "free-reaper/Reaper_Man_3",
+		"item": false
+	},
+	"romanian_settler_armour": {
+		"name": "Romanian Settler Armour",
+		"source": "4-chibi-character/Romanian Settler",
+		"item": false
+	},
+	"samurai_1_armour": {
+		"name": "Samurai 1 Armour",
+		"source": "samurai/Samurai_1",
+		"item": false
+	},
+	"samurai_2_armour": {
+		"name": "Samurai 2 Armour",
+		"source": "samurai/Samurai_2",
+		"item": false
+	},
+	"samurai_3_armour": {
+		"name": "Samurai 3 Armour",
+		"source": "samurai/Samurai_3",
+		"item": false
+	},
+	"scale_mail": {
+		"name": "Scale Mail",
+		"source": "free-chibi-skeleton-warrior/Skeleton_Warrior_2",
+		"item": true
+	},
+	"seer_2_armour": {
+		"name": "Seer 2 Armour",
+		"source": "free-seer/Seer_2",
+		"item": false
+	},
+	"seer_3_armour": {
+		"name": "Seer 3 Armour",
+		"source": "free-seer/Seer_3",
+		"item": false
+	},
+	"shadow_mail": {
+		"name": "Shadow Mail",
+		"source": "dark-elves/Dark_Elves_1",
+		"item": true
+	},
+	"shaman_2_armour": {
+		"name": "Shaman 2 Armour",
+		"source": "shaman-chibi-character/Shaman_2",
+		"item": false
+	},
+	"shaman_of_thunder_3_armour": {
+		"name": "Shaman Of Thunder 3 Armour",
+		"source": "chibi-shaman/Shaman_of_Thunder_3",
+		"item": false
+	},
+	"shamans_2_armour": {
+		"name": "Shamans 2 Armour",
+		"source": "orc-shaman/Shamans_2",
+		"item": false
+	},
+	"skeleton_2_armour": {
+		"name": "Skeleton 2 Armour",
+		"source": "skeleton-chibi/Skeleton_2",
+		"item": false
+	},
+	"skeleton_3_armour": {
+		"name": "Skeleton 3 Armour",
+		"source": "skeleton-chibi/Skeleton_3",
+		"item": false
+	},
+	"skeleton_archer_1_armour": {
+		"name": "Skeleton Archer 1 Armour",
+		"source": "chibi-skeleton-archer/Archer_1",
+		"item": false
+	},
+	"skeleton_archer_2_armour": {
+		"name": "Skeleton Archer 2 Armour",
+		"source": "chibi-skeleton-archer/Archer_2",
+		"item": false
+	},
+	"skeleton_archer_3_armour": {
+		"name": "Skeleton Archer 3 Armour",
+		"source": "chibi-skeleton-archer/Archer_3",
+		"item": false
+	},
+	"skeleton_armour": {
+		"name": "Skeleton Armour",
+		"source": "death-knight-skeleton/Skeleton",
+		"item": false
+	},
+	"skeleton_crusader_3_armour": {
+		"name": "Skeleton Crusader 3 Armour",
+		"source": "free-chibi-skeleton-crusader/Skeleton_Crusader_3",
+		"item": false
+	},
+	"skeleton_death_knight_2_armour": {
+		"name": "Skeleton Death Knight 2 Armour",
+		"source": "chibi-skeleton-death/Skeleton_Death_Knight_2",
+		"item": false
+	},
+	"skeleton_death_knight_3_armour": {
+		"name": "Skeleton Death Knight 3 Armour",
+		"source": "chibi-skeleton-death/Skeleton_Death_Knight_3",
+		"item": false
+	},
+	"skeleton_hunter_1_armour": {
+		"name": "Skeleton Hunter 1 Armour",
+		"source": "chibi-skeleton-hunter/Skeleton_Hunter_1",
+		"item": false
+	},
+	"skeleton_hunter_2_armour": {
+		"name": "Skeleton Hunter 2 Armour",
+		"source": "chibi-skeleton-hunter/Skeleton_Hunter_2",
+		"item": false
+	},
+	"skeleton_hunter_3_armour": {
+		"name": "Skeleton Hunter 3 Armour",
+		"source": "chibi-skeleton-hunter/Skeleton_Hunter_3",
+		"item": false
+	},
+	"skeleton_necromancer_1_armour": {
+		"name": "Skeleton Necromancer 1 Armour",
+		"source": "chibi-skeleton-necromancer/Skeleton_Necromancer_1",
+		"item": false
+	},
+	"skeleton_necromancer_2_armour": {
+		"name": "Skeleton Necromancer 2 Armour",
+		"source": "chibi-skeleton-necromancer/Skeleton_Necromancer_2",
+		"item": false
+	},
+	"skeleton_pirate_captain_1_armour": {
+		"name": "Skeleton Pirate Captain 1 Armour",
+		"source": "chibi-skeleton-pirate/Skeleton_Pirate_Captain_1",
+		"item": false
+	},
+	"skeleton_pirate_captain_2_armour": {
+		"name": "Skeleton Pirate Captain 2 Armour",
+		"source": "chibi-skeleton-pirate/Skeleton_Pirate_Captain_2",
+		"item": false
+	},
+	"skeleton_pirate_captain_3_armour": {
+		"name": "Skeleton Pirate Captain 3 Armour",
+		"source": "chibi-skeleton-pirate/Skeleton_Pirate_Captain_3",
+		"item": false
+	},
+	"skeleton_shaman_2_armour": {
+		"name": "Skeleton Shaman 2 Armour",
+		"source": "chibi-skeleton-shaman/Skeleton_Shaman_2",
+		"item": false
+	},
+	"skeleton_shaman_3_armour": {
+		"name": "Skeleton Shaman 3 Armour",
+		"source": "chibi-skeleton-shaman/Skeleton_Shaman_3",
+		"item": false
+	},
+	"skeleton_sorcerer_1_armour": {
+		"name": "Skeleton Sorcerer 1 Armour",
+		"source": "chibi-skeleton-sorcerer/Skeleton_Sorcerer_1",
+		"item": false
+	},
+	"skeleton_sorcerer_2_armour": {
+		"name": "Skeleton Sorcerer 2 Armour",
+		"source": "chibi-skeleton-sorcerer/Skeleton_Sorcerer_2",
+		"item": false
+	},
+	"skeleton_sorcerer_3_armour": {
+		"name": "Skeleton Sorcerer 3 Armour",
+		"source": "chibi-skeleton-sorcerer/Skeleton_Sorcerer_3",
+		"item": false
+	},
+	"skeleton_viking_2_armour": {
+		"name": "Skeleton Viking 2 Armour",
+		"source": "chibi-skeleton-viking/Skeleton_Viking_2",
+		"item": false
+	},
+	"skeleton_viking_3_armour": {
+		"name": "Skeleton Viking 3 Armour",
+		"source": "chibi-skeleton-viking/Skeleton_Viking_3",
+		"item": false
+	},
+	"skeleton_warrior_1_armour": {
+		"name": "Skeleton Warrior 1 Armour",
+		"source": "free-chibi-skeleton-warrior/Skeleton_Warrior_1",
+		"item": false
+	},
+	"skull_knight_armour": {
+		"name": "Skull Knight Armour",
+		"source": "halloween/Skull Knight",
+		"item": false
+	},
+	"spartan_knight_with_spear_armour": {
+		"name": "Spartan Knight With Spear Armour",
+		"source": "spartan/Spartan Knight with Spear",
+		"item": false
+	},
+	"spiritual_monk_2_armour": {
+		"name": "Spiritual Monk 2 Armour",
+		"source": "chibi-spiritual/Spiritual_Monk_2",
+		"item": false
+	},
+	"spiritual_monk_3_armour": {
+		"name": "Spiritual Monk 3 Armour",
+		"source": "chibi-spiritual/Spiritual_Monk_3",
+		"item": false
+	},
+	"studded_leather": {
+		"name": "Studded Leather",
+		"source": "medieval-king/Medieval Sergeant",
+		"item": true
+	},
+	"succubus_armour": {
+		"name": "Succubus Armour",
+		"source": "devil/Succubus",
+		"item": false
+	},
+	"templar_knight_armour": {
+		"name": "Templar Knight Armour",
+		"source": "armored/Templar Knight",
+		"item": false
+	},
+	"time_keeper_1_armour": {
+		"name": "Time Keeper 1 Armour",
+		"source": "chibi-time/Time_Keeper_1",
+		"item": false
+	},
+	"time_keeper_2_armour": {
+		"name": "Time Keeper 2 Armour",
+		"source": "chibi-time/Time_Keeper_2",
+		"item": false
+	},
+	"time_keeper_3_armour": {
+		"name": "Time Keeper 3 Armour",
+		"source": "chibi-time/Time_Keeper_3",
+		"item": false
+	},
+	"u_archmage_robe": {
+		"name": "Archmage's Robe",
+		"source": "chest/human_magician_3_armour",
+		"unique": "archmage_robe",
+		"item": false
+	},
+	"u_bloodsworn_vest": {
+		"name": "Bloodsworn Vest",
+		"source": "chest/demons_of_darkness_1_armour",
+		"unique": "bloodsworn_vest",
+		"item": false
+	},
+	"u_heart_of_the_mountain": {
+		"name": "Heart of the Mountain",
+		"source": "chest/very_heavy_armored_frontier_defender_armour",
+		"unique": "heart_of_the_mountain",
+		"item": false
+	},
+	"u_martyrs_thornmail": {
+		"name": "Martyr's Thornmail",
+		"source": "chest/skull_knight_armour",
+		"unique": "martyrs_thornmail",
+		"item": false
+	},
+	"u_templar_plate": {
+		"name": "Templar's Plate",
+		"source": "chest/templar_knight_armour",
+		"unique": "templar_plate",
+		"item": false
+	},
+	"u_warlord_hauberk": {
+		"name": "Warlord's Hauberk",
+		"source": "chest/skeleton_death_knight_2_armour",
+		"unique": "warlord_hauberk",
+		"item": false
+	},
+	"u_windrunner_vest": {
+		"name": "Windrunner's Vest",
+		"source": "chest/forest_ranger_1_armour",
+		"unique": "windrunner_vest",
+		"item": false
+	},
+	"undead_archer_1_armour": {
+		"name": "Undead Archer 1 Armour",
+		"source": "undead-archer/Archer_1",
+		"item": false
+	},
+	"undead_archer_2_armour": {
+		"name": "Undead Archer 2 Armour",
+		"source": "undead-archer/Archer_2",
+		"item": false
+	},
+	"undead_archer_3_armour": {
+		"name": "Undead Archer 3 Armour",
+		"source": "undead-archer/Archer_3",
+		"item": false
+	},
+	"valkyrie_2_armour": {
+		"name": "Valkyrie 2 Armour",
+		"source": "free-chibi-valkyrie/Valkyrie_2",
+		"item": false
+	},
+	"valkyrie_3_armour": {
+		"name": "Valkyrie 3 Armour",
+		"source": "free-chibi-valkyrie/Valkyrie_3",
+		"item": false
+	},
+	"vampire_1_armour": {
+		"name": "Vampire 1 Armour",
+		"source": "vampire-chibi/Vampire_1",
+		"item": false
+	},
+	"vampire_2_armour": {
+		"name": "Vampire 2 Armour",
+		"source": "vampire-chibi/Vampire_2",
+		"item": false
+	},
+	"vampire_3_armour": {
+		"name": "Vampire 3 Armour",
+		"source": "vampire-chibi/Vampire_3",
+		"item": false
+	},
+	"vampire_armour": {
+		"name": "Vampire Armour",
+		"source": "halloween/Vampire",
+		"item": false
+	},
+	"vampire_hunter_1_armour": {
+		"name": "Vampire Hunter 1 Armour",
+		"source": "chibi-vampire/Vampire_Hunter_1",
+		"item": false
+	},
+	"vampire_hunter_2_armour": {
+		"name": "Vampire Hunter 2 Armour",
+		"source": "chibi-vampire/Vampire_Hunter_2",
+		"item": false
+	},
+	"very_heavy_armored_frontier_defender_armour": {
+		"name": "Very Heavy Armored Frontier Defender Armour",
+		"source": "medieval-king/Very Heavy Armored Frontier Defender",
+		"item": false
+	},
+	"viking_1_armour": {
+		"name": "Viking 1 Armour",
+		"source": "viking-chibi/Viking_1",
+		"item": false
+	},
+	"viking_2_armour": {
+		"name": "Viking 2 Armour",
+		"source": "viking-chibi/Viking_2",
+		"item": false
+	},
+	"viking_3_armour": {
+		"name": "Viking 3 Armour",
+		"source": "viking-chibi/Viking_3",
+		"item": false
+	},
+	"white_armored_knight_armour": {
+		"name": "White Armored Knight Armour",
+		"source": "armored/White Armored Knight",
+		"item": false
+	},
+	"white_ninja_armour": {
+		"name": "White Ninja Armour",
+		"source": "ninja/White Ninja",
+		"item": false
+	},
+	"winter_witch_1_armour": {
+		"name": "Winter Witch 1 Armour",
+		"source": "chibi-winter/Winter_Witch_1",
+		"item": false
+	},
+	"winter_witch_2_armour": {
+		"name": "Winter Witch 2 Armour",
+		"source": "chibi-winter/Winter_Witch_2",
+		"item": false
+	},
+	"winter_witch_3_armour": {
+		"name": "Winter Witch 3 Armour",
+		"source": "chibi-winter/Winter_Witch_3",
+		"item": false
+	},
+	"witch_1_armour": {
+		"name": "Witch 1 Armour",
+		"source": "witch-chibi/Witch_1",
+		"item": false
+	},
+	"witch_2_armour": {
+		"name": "Witch 2 Armour",
+		"source": "witch-chibi/Witch_2",
+		"item": false
+	},
+	"witch_3_armour": {
+		"name": "Witch 3 Armour",
+		"source": "witch-chibi/Witch_3",
+		"item": false
+	},
+	"zombie_armour": {
+		"name": "Zombie Armour",
+		"source": "death-knight-skeleton/Zombie",
+		"item": false
+	},
+	"zombie_villager_1_armour": {
+		"name": "Zombie Villager 1 Armour",
+		"source": "free-zombie/Zombie_Villager_1",
+		"item": false
+	},
+	"zombie_villager_2_armour": {
+		"name": "Zombie Villager 2 Armour",
+		"source": "free-zombie/Zombie_Villager_2",
+		"item": false
+	}
+}

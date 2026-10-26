@@ -1,13 +1,16 @@
 class_name GameMenu
 extends CanvasLayer
-## Diablo IV style menu: the CharacterPanel (equipment + bag) sits on the right half and the left
-## half shows whatever was opened — skills, gems or the hireling from the inventory, or a vendor
-## (stash, merchant, blacksmith, jeweler) opened by an NPC. Items drag between both halves; tapping
-## one shows its card where it was tapped, beside what you wear in its slot (show_item_tip).
-## The skill tree is separate and full screen (SkillTreeUI).
+## Diablo IV style menu: the CharacterPanel (equipment + bag) on the right, and on the left a vendor
+## (stash, merchant, blacksmith, jeweler) opened by an NPC, the hireling's page (its portrait), or
+## your stats. Opened as the inventory (the bag button, I) it is the bag alone. Items drag between
+## both halves; tapping one shows its card where it was tapped, beside what you wear in its slot
+## (show_item_tip). Dragging an item out of the bag, the paperdoll or a flask slot onto the empty
+## screen around the windows drops it on the ground (DropZone). Skill gems are set only at the
+## Jeweler (its Skills tab). The skill tree is separate and full screen (SkillTreeUI).
 
-## Panels the player can always switch to from the inventory.
-const PLAYER_PANELS := ["skills", "gems", "hireling"]
+## Each vendor's tabs after its own panel (the stash's are its own: see _build_tabs).
+const VENDOR_TABS := {"jeweler": ["skills"]}
+const DEFAULT_TABS := []
 
 var player: Player
 var selected: ItemInstance = null  ## item picked in the character panel (bag or worn)
@@ -23,15 +26,18 @@ var _feedback: Label
 var _stats_popup: VBoxContainer  # shown in the left window in place of its tabs and panel
 var _stats_rows: VBoxContainer
 var _char: CharacterPanel
+var _cols: HBoxContainer  # the two windows side by side
+var _toast: Label  # feedback while the left window (which shows it) is hidden
 
 var _panels := {}  # name -> MenuPanel
-var _current := "skills"
+var _current := ""  # the left side's panel; "" for none (the bag alone)
 var _vendor := ""  # vendor panel opened by an NPC; "" when opened as the inventory
 var _tabs_gap: Control
 var _tip: ItemTip  ## the item card shown where you tap an item (ItemTip, made for touch)
 var _tip_at := Vector2.ZERO  # where it was tapped (shown again there after Identify)
-## Where the hireling's page goes back to (it has no tab row of its own: back() returns here)
-var _back_panel := "skills"
+## Where the hireling's page goes back to (it has no tab row of its own: back() returns here; "" is
+## the bag alone)
+var _back_panel := ""
 
 
 func _ready() -> void:
@@ -73,9 +79,9 @@ func is_open() -> bool:
 	return _root.visible
 
 
-## Open the inventory (available anywhere) with one of PLAYER_PANELS on the left.
-func open(panel: String = "skills") -> void:
-	_open_with("skills" if panel not in PLAYER_PANELS else panel, "")
+## Open the inventory (available anywhere): the bag alone, or the hireling's page beside it.
+func open(panel: String = "") -> void:
+	_open_with("hireling" if panel == "hireling" else "", "")
 
 
 ## Open a vendor ("stash", "shop", "smith", "jeweler") on the left. Only call this from that
@@ -98,7 +104,7 @@ func _open_with(panel: String, vendor: String) -> void:
 	layer = 25
 	_root.visible = true
 	get_tree().paused = true
-	_back_panel = vendor if vendor != "" else "skills"
+	_back_panel = vendor
 	_current = _back_panel
 	show_panel(panel)
 
@@ -120,12 +126,20 @@ func show_panel(panel_name: String) -> void:
 	_tabs_row.visible = panel_name != "hireling"
 	_tabs_gap.visible = _tabs_row.visible
 	_current = panel_name
-	var p := _get_panel(panel_name)
 	for n in _panels:
 		_panels[n].visible = n == panel_name
-	_left_title.text = p.panel_title()
+	if panel_name != "":
+		_left_title.text = _get_panel(panel_name).panel_title()
+	_show_left()
 	_build_tabs()
 	refresh()
+
+
+## The left window shows while it has a panel or the stats are up.
+func _show_left() -> void:
+	_left_frame.visible = _current != "" or _stats_popup.visible
+	# The bag alone stays on the right, where it is beside a vendor
+	_cols.alignment = BoxContainer.ALIGNMENT_BEGIN if _left_frame.visible else BoxContainer.ALIGNMENT_END
 
 
 ## The item card that pops up where an item was tapped, over both halves (hidden with the menu).
@@ -166,8 +180,27 @@ func show_item_tip(item: ItemInstance, extra := Callable(), at = null) -> void:
 					parent.add_child(UIKit.label("Two-handed: your off-hand item goes back to the bag.", 12, UIKit.TEXT_DIM, true))
 		if not item.identified:
 			parent.add_child(_identify_button(item))
+		if GameState.gem_station and not item.gems.is_empty() and not item.is_runeword():
+			parent.add_child(_take_gems_button(item))
 		if extra.is_valid():
 			extra.call(parent), on, deltas)
+
+
+## Take gems out, on the card of an item with gems in it at the stash or the Jeweler: back into the
+## shared gems (a runeword's runes are set for good).
+func _take_gems_button(item: ItemInstance) -> Button:
+	var n := item.gems.size()
+	var b := UIKit.button("💎 Take %s out" % ("the gem" if n == 1 else "all %d gems" % n),
+		Color(0.10, 0.14, 0.22), Color(0.45, 0.65, 0.98), Vector2(0, 44), 15)
+	b.pressed.connect(func():
+		var taken := 0
+		while not item.gems.is_empty() and GameState.unsocket_gem(item, item.gems.size() - 1):
+			taken += 1
+		feedback("Took %d gem%s out of %s: back with your shared gems." % [taken, "" if taken == 1 else "s", item.display_name])
+		var at := _tip_at
+		refresh()
+		show_item_tip(item, Callable(), at))
+	return b
 
 
 ## Unequip, on a worn item's card: back into the bag (it needs a space its shape fits).
@@ -199,13 +232,13 @@ func _identify_button(item: ItemInstance) -> Control:
 	return b
 
 
-## Back from the hireling's page to the panel it was opened from.
+## Back from the hireling's page to the panel it was opened from (the bag alone if none).
 func back() -> void:
-	show_panel(_back_panel if _back_panel != "" and _back_panel != "hireling" else "skills")
+	show_panel(_back_panel if _back_panel != "hireling" else "")
 
 
 func current_panel() -> MenuPanel:
-	return _panels.get(_current)
+	return _panels.get(_current) if _current != "" else null
 
 
 ## True while an NPC's vendor panel (stash, merchant...) is open on the left.
@@ -250,11 +283,13 @@ func refresh() -> void:
 func feedback(msg: String) -> void:
 	if msg == "":
 		return
-	_feedback.text = msg
-	_feedback.visible = true
+	# In the left window, or over the screen when the bag is open alone
+	var l := _feedback if _left_frame.visible else _toast
+	l.text = msg
+	l.visible = true
 	get_tree().create_timer(3.0, true, false, true).timeout.connect(func():
-		if _feedback.text == msg:
-			_feedback.visible = false
+		if l.text == msg:
+			l.visible = false
 	)
 
 
@@ -262,10 +297,13 @@ func toggle_stats() -> void:
 	_set_stats(not _stats_popup.visible)
 
 
-## Character stats take the left window's place (its tabs and panel) until closed.
+## Character stats take the left window's place (its tabs and panel) until closed; with the bag
+## alone, the left window shows for them.
 func _set_stats(on: bool) -> void:
 	_stats_popup.visible = on
 	_left_body.visible = not on
+	if _left_frame != null:
+		_show_left()
 	if on:
 		_refresh_stats()
 
@@ -287,6 +325,7 @@ func _get_panel(panel_name: String) -> MenuPanel:
 		"stash": p = StashPanel.new()
 		"shop": p = ShopPanel.new()
 		"smith": p = SmithPanel.new()
+		"gamble": p = GamblePanel.new()
 		_: p = SkillGemsPanel.new()
 	p.menu = self
 	p.player = player
@@ -295,17 +334,16 @@ func _get_panel(panel_name: String) -> MenuPanel:
 	return p
 
 
-## One row of tabs: the vendor's panel then PLAYER_PANELS. At the stash it is Items, Skills,
-## Currency, Gems instead (Items and Currency are the two tabs of the StashPanel).
+## One row of tabs: the vendor's panel then its VENDOR_TABS. At the stash it is Items, Currency and
+## Gems (Items and Currency are the two tabs of the StashPanel). None with no vendor.
 func _build_tabs() -> void:
 	UIKit.clear(_tabs_row)
 	var tabs: Array = []  # [panel name, stash tab or ""]
 	if _vendor == "stash":
-		tabs = [["stash", "items"], ["skills", ""], ["stash", "currency"], ["gems", ""], ["hireling", ""]]
-	else:
-		if _vendor != "":
-			tabs.append([_vendor, ""])
-		for n in PLAYER_PANELS:
+		tabs = [["stash", "items"], ["stash", "currency"], ["gems", ""]]
+	elif _vendor != "":
+		tabs.append([_vendor, ""])
+		for n in VENDOR_TABS.get(_vendor, DEFAULT_TABS):
 			tabs.append([n, ""])
 	var stash := _panels.get("stash") as StashPanel
 	for t in tabs:
@@ -358,8 +396,15 @@ func _build() -> void:
 	dim.color = Color(0.03, 0.02, 0.04, 0.80)
 	_root.add_child(dim)
 	dim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	# Behind the windows: gear dragged onto the empty screen is dropped on the ground
+	var zone := DropZone.new()
+	zone.menu = self
+	_root.add_child(zone)
+	zone.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 
 	var cols := HBoxContainer.new()
+	_cols = cols
+	cols.mouse_filter = Control.MOUSE_FILTER_IGNORE  # (its empty space is the drop zone's)
 	cols.add_theme_constant_override("separation", 10)
 	_root.add_child(cols)
 	cols.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT, Control.PRESET_MODE_MINSIZE, 8)
@@ -417,11 +462,23 @@ func _build() -> void:
 	_stats_rows.add_theme_constant_override("separation", 6)
 	pad.add_child(_stats_rows)
 
-	# RIGHT: character, equipment and bag
+	_toast = UIKit.label("", 17, Color(1.0, 0.85, 0.40), true)
+	_toast.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_toast.add_theme_color_override("font_outline_color", Color.BLACK)
+	_toast.add_theme_constant_override("outline_size", 6)
+	_toast.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_toast.visible = false
+	_root.add_child(_toast)
+	_toast.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP)
+	_toast.offset_left = -400.0
+	_toast.offset_right = 400.0
+	_toast.offset_top = 24.0
+
+	# RIGHT: character, equipment and bag, only as wide as they need: the left panel takes the rest
 	_char = CharacterPanel.new()
 	_char.menu = self
 	_char.player = player
-	_char.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_char.size_flags_horizontal = Control.SIZE_FILL
 	cols.add_child(_char)
 
 

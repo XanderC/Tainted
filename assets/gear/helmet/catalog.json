@@ -1,0 +1,942 @@
+{
+	"alchemists_hood": {
+		"name": "Alchemist's Hood",
+		"kind": "hood",
+		"hides_hair": true,
+		"source": "chibi-cursed/Cursed_Alchemist_2"
+	},
+	"amethyst_circlet": {
+		"name": "Amethyst Circlet",
+		"kind": "circlet",
+		"hides_hair": false,
+		"source": "vampire-chibi/Vampire_2"
+	},
+	"antler_helm": {
+		"name": "Antler Helm",
+		"kind": "helmet",
+		"hides_hair": true,
+		"source": "free-forest/Forest_Ranger_3"
+	},
+	"assassins_hood": {
+		"name": "Assassin's Hood",
+		"kind": "hood",
+		"hides_hair": true,
+		"source": "ninja/Assassin Guy"
+	},
+	"bandit_mask": {
+		"name": "Bandit Mask",
+		"kind": "mask",
+		"hides_hair": false,
+		"source": "archer-barbarian/Archer Guy"
+	},
+	"barbute": {
+		"name": "Barbute",
+		"kind": "helmet",
+		"hides_hair": true,
+		"source": "655241-knight-chibi-character-sprites/Knight_3"
+	},
+	"barrel_helm": {
+		"name": "Barrel Helm",
+		"kind": "novelty",
+		"hides_hair": true,
+		"source": "mimic/Mimic_3"
+	},
+	"black_greathelm": {
+		"name": "Black Great Helm",
+		"kind": "great_helm",
+		"hides_hair": true,
+		"source": "chibi-ghost/Ghost_Knight_3"
+	},
+	"blindfold": {
+		"name": "Blindfold",
+		"kind": "mask",
+		"hides_hair": false,
+		"source": "chibi-spiritual/Spiritual_Monk_1"
+	},
+	"blood_helm": {
+		"name": "Blood Helm",
+		"kind": "helmet",
+		"hides_hair": true,
+		"source": "chibi-blood/Blood_Demon_1"
+	},
+	"bone_diadem": {
+		"name": "Bone Diadem",
+		"kind": "crown",
+		"hides_hair": false,
+		"source": "chibi-skeleton-shaman/Skeleton_Shaman_2"
+	},
+	"bone_hood": {
+		"name": "Bone Hood",
+		"kind": "hood",
+		"hides_hair": true,
+		"source": "chibi-skeleton-sorcerer/Skeleton_Sorcerer_3"
+	},
+	"bowler_hat": {
+		"name": "Bowler Hat",
+		"kind": "hat",
+		"hides_hair": true,
+		"source": "chibi-skeleton-hunter/Skeleton_Hunter_3"
+	},
+	"brown_hood": {
+		"name": "Brown Hood",
+		"kind": "hood",
+		"hides_hair": true,
+		"source": "ghoul-hunter/Ghoul_Hunter_3"
+	},
+	"buckled_hat": {
+		"name": "Buckled Hat",
+		"kind": "hat",
+		"hides_hair": true,
+		"source": "human/Human Magician_2"
+	},
+	"captains_hat": {
+		"name": "Captain's Hat",
+		"kind": "hat",
+		"hides_hair": true,
+		"source": "chibi-skeleton-pirate/Skeleton_Pirate_Captain_1"
+	},
+	"coif_helm": {
+		"name": "Coif Helm",
+		"kind": "helmet",
+		"hides_hair": true,
+		"source": "free-chibi-skeleton-warrior/Skeleton_Warrior_3"
+	},
+	"corinthian_helm": {
+		"name": "Corinthian Helm",
+		"kind": "great_helm",
+		"hides_hair": true,
+		"source": "spartan/Greek Warrior"
+	},
+	"corsair_hat": {
+		"name": "Corsair Hat",
+		"kind": "hat",
+		"hides_hair": true,
+		"source": "chibi-skeleton-pirate/Skeleton_Pirate_Captain_2"
+	},
+	"crimson_hood": {
+		"name": "Crimson Hood",
+		"kind": "hood",
+		"hides_hair": true,
+		"source": "fantasy/Medieval Hooded Girl"
+	},
+	"crimson_turban": {
+		"name": "Crimson Turban",
+		"kind": "turban",
+		"hides_hair": true,
+		"source": "persian/Persian_and_Arab_Warriors_3"
+	},
+	"crossed_hat": {
+		"name": "Hunter's Hat",
+		"kind": "hat",
+		"hides_hair": true,
+		"source": "chibi-vampire/Vampire_Hunter_2"
+	},
+	"crusader_helm": {
+		"name": "Crusader Helm",
+		"kind": "helmet",
+		"hides_hair": true,
+		"source": "free-chibi-skeleton-crusader/Skeleton_Crusader_1"
+	},
+	"dark_hood": {
+		"name": "Dark Hood",
+		"kind": "hood",
+		"hides_hair": true,
+		"source": "chibi-skeleton-archer/Archer_3"
+	},
+	"death_visage": {
+		"name": "Death Visage",
+		"kind": "great_helm",
+		"hides_hair": true,
+		"source": "death-knight-skeleton/Death_Knight"
+	},
+	"deathshroud": {
+		"name": "Deathshroud",
+		"kind": "hood",
+		"hides_hair": true,
+		"source": "free-reaper/Reaper_Man_2"
+	},
+	"demon_helm": {
+		"name": "Demon Helm",
+		"kind": "great_helm",
+		"hides_hair": true,
+		"source": "demon-of/Demons_of_Darkness_2"
+	},
+	"dread_helm": {
+		"name": "Dread Helm",
+		"kind": "helmet",
+		"hides_hair": true,
+		"source": "chibi-skeleton-death/Skeleton_Death_Knight_1"
+	},
+	"dread_hood": {
+		"name": "Dread Hood",
+		"kind": "hood",
+		"hides_hair": true,
+		"source": "chibi-skeleton-death/Skeleton_Death_Knight_3"
+	},
+	"drow_helm": {
+		"name": "Drow Helm",
+		"kind": "helmet",
+		"hides_hair": true,
+		"source": "dark-elves/Dark_Elves_3"
+	},
+	"druids_hood": {
+		"name": "Druid's Hood",
+		"kind": "hood",
+		"hides_hair": true,
+		"source": "forest-guardian/Forest_Guardian_3"
+	},
+	"dusk_cowl": {
+		"name": "Dusk Cowl",
+		"kind": "hood",
+		"hides_hair": true,
+		"source": "free-chibi-necromancer/Necromancer_of_the_Shadow_2"
+	},
+	"dusk_hood": {
+		"name": "Dusk Hood",
+		"kind": "hood",
+		"hides_hair": true,
+		"source": "elf-archer/Archer_3"
+	},
+	"eared_helm": {
+		"name": "Eared Helm",
+		"kind": "helmet",
+		"hides_hair": true,
+		"source": "free-chibi-valkyrie/Valkyrie_3"
+	},
+	"ebon_hood": {
+		"name": "Ebon Hood",
+		"kind": "hood",
+		"hides_hair": true,
+		"source": "chibi-skeleton-necromancer/Skeleton_Necromancer_3"
+	},
+	"elven_helm": {
+		"name": "Elven Helm",
+		"kind": "helmet",
+		"hides_hair": true,
+		"source": "dark-elves/Dark_Elves_2"
+	},
+	"elven_hood": {
+		"name": "Elven Hood",
+		"kind": "hood",
+		"hides_hair": true,
+		"source": "elf-archer/Archer_1"
+	},
+	"ember_mask": {
+		"name": "Ember Mask",
+		"kind": "mask",
+		"hides_hair": false,
+		"source": "pyromancer/Pyromancer_1"
+	},
+	"emerald_cowl": {
+		"name": "Emerald Cowl",
+		"kind": "hood",
+		"hides_hair": true,
+		"source": "magician-chibi-2d/Magician_2"
+	},
+	"fang_band": {
+		"name": "Fang Band",
+		"kind": "headband",
+		"hides_hair": false,
+		"source": "chibi-skeleton-shaman/Skeleton_Shaman_1"
+	},
+	"feathered_cap": {
+		"name": "Feathered Cap",
+		"kind": "hat",
+		"hides_hair": true,
+		"source": "chibi-skeleton-hunter/Skeleton_Hunter_2"
+	},
+	"flower_hat": {
+		"name": "Flower Hat",
+		"kind": "hat",
+		"hides_hair": true,
+		"source": "women/Citizen-Women_3"
+	},
+	"forest_hood": {
+		"name": "Forest Hood",
+		"kind": "hood",
+		"hides_hair": true,
+		"source": "free-forest/Forest_Ranger_1"
+	},
+	"frost_cowl": {
+		"name": "Frost Cowl",
+		"kind": "hood",
+		"hides_hair": true,
+		"source": "magician-chibi-2d/Magician_1"
+	},
+	"frost_crown": {
+		"name": "Frost Crown",
+		"kind": "crown",
+		"hides_hair": false,
+		"source": "chibi-winter/Winter_Witch_1"
+	},
+	"frost_greathelm": {
+		"name": "Frost Great Helm",
+		"kind": "great_helm",
+		"hides_hair": true,
+		"source": "ghost-knight-chibi/Ghost_Knight_1"
+	},
+	"frost_helm": {
+		"name": "Frost Helm",
+		"kind": "helmet",
+		"hides_hair": true,
+		"source": "frost/Frost_Knight_1"
+	},
+	"frost_hood": {
+		"name": "Frost Hood",
+		"kind": "helmet",
+		"hides_hair": true,
+		"source": "frost/Frost_Knight_2"
+	},
+	"frost_visor": {
+		"name": "Frost Visor",
+		"kind": "helmet",
+		"hides_hair": true,
+		"source": "frost/Frost_Knight_3"
+	},
+	"fur_cowl": {
+		"name": "Fur Cowl",
+		"kind": "hood",
+		"hides_hair": true,
+		"source": "free-reaper/Reaper_Man_3"
+	},
+	"fur_hood": {
+		"name": "Fur Hood",
+		"kind": "hood",
+		"hides_hair": true,
+		"source": "viking-chibi/Viking_1"
+	},
+	"gilded_black_helm": {
+		"name": "Gilded Black Helm",
+		"kind": "great_helm",
+		"hides_hair": true,
+		"source": "paladin/Paladin_2"
+	},
+	"gilded_hood": {
+		"name": "Gilded Hood",
+		"kind": "hood",
+		"hides_hair": true,
+		"source": "human/Human Magician_3"
+	},
+	"gilded_turban": {
+		"name": "Gilded Turban",
+		"kind": "turban",
+		"hides_hair": true,
+		"source": "free-seer/Seer_1"
+	},
+	"gnoll_hood": {
+		"name": "Hide Hood",
+		"kind": "hood",
+		"hides_hair": true,
+		"source": "gnoll/Gnoll/Gnoll_2"
+	},
+	"gnome_hood": {
+		"name": "Gnome Hood",
+		"kind": "hood",
+		"hides_hair": true,
+		"source": "gnome/Gnome_3"
+	},
+	"goblin_horned_helm": {
+		"name": "Horned Helm",
+		"kind": "helmet",
+		"hides_hair": true,
+		"source": "goblin-chibi-character/Goblin_1"
+	},
+	"golden_circlet": {
+		"name": "Golden Circlet",
+		"kind": "circlet",
+		"hides_hair": false,
+		"source": "amazon/Amazon_Warrior_3"
+	},
+	"golden_greathelm": {
+		"name": "Golden Great Helm",
+		"kind": "great_helm",
+		"hides_hair": true,
+		"source": "paladin/Paladin_3"
+	},
+	"golden_hood": {
+		"name": "Golden Hood",
+		"kind": "hood",
+		"hides_hair": true,
+		"source": "pyromancer/Pyromancer_2"
+	},
+	"golden_mask": {
+		"name": "Golden Mask",
+		"kind": "mask",
+		"hides_hair": false,
+		"source": "free-seer/Seer_3"
+	},
+	"grave_hood": {
+		"name": "Grave Hood",
+		"kind": "hood",
+		"hides_hair": true,
+		"source": "undead-archer/Archer_1"
+	},
+	"grey_hood": {
+		"name": "Grey Hood",
+		"kind": "hood",
+		"hides_hair": true,
+		"source": "gnome/Gnome_1"
+	},
+	"hags_hood": {
+		"name": "Hag's Hood",
+		"kind": "hood",
+		"hides_hair": true,
+		"source": "witch-chibi/Witch_3"
+	},
+	"heraldic_helm": {
+		"name": "Heraldic Helm",
+		"kind": "great_helm",
+		"hides_hair": true,
+		"source": "655241-knight-chibi-character-sprites/Knight_1"
+	},
+	"holy_greathelm": {
+		"name": "Holy Great Helm",
+		"kind": "great_helm",
+		"hides_hair": true,
+		"source": "paladin/Paladin_1"
+	},
+	"horned_cap": {
+		"name": "Horned Cap",
+		"kind": "helmet",
+		"hides_hair": true,
+		"source": "chibi-skeleton-viking/Skeleton_Viking_2"
+	},
+	"horned_cowl": {
+		"name": "Horned Cowl",
+		"kind": "hood",
+		"hides_hair": true,
+		"source": "magician-undead/Magician_1"
+	},
+	"horned_leaf_hood": {
+		"name": "Thorn Hood",
+		"kind": "hood",
+		"hides_hair": true,
+		"source": "elemental-spirits/Elemental_Spirits_3"
+	},
+	"hunters_hood": {
+		"name": "Hunter's Hood",
+		"kind": "hood",
+		"hides_hair": true,
+		"source": "chibi-skeleton-archer/Archer_2"
+	},
+	"infernal_crown": {
+		"name": "Infernal Crown",
+		"kind": "crown",
+		"hides_hair": false,
+		"source": "devil/Hell_Knight"
+	},
+	"iron_helm": {
+		"name": "Iron Helm",
+		"kind": "helmet",
+		"hides_hair": true,
+		"source": "medieval-king/Medieval Sergeant"
+	},
+	"jeweled_cowl": {
+		"name": "Jeweled Cowl",
+		"kind": "hood",
+		"hides_hair": true,
+		"source": "magician-undead/Magician_3"
+	},
+	"kabuto": {
+		"name": "Kabuto",
+		"kind": "helmet",
+		"hides_hair": true,
+		"source": "samurai/Samurai_1"
+	},
+	"kettle_helm": {
+		"name": "Kettle Helm",
+		"kind": "helmet",
+		"hides_hair": true,
+		"source": "undead-archer/Archer_3"
+	},
+	"knights_helm": {
+		"name": "Knight's Helm",
+		"kind": "helmet",
+		"hides_hair": true,
+		"source": "free-chibi-skeleton-warrior/Skeleton_Warrior_2"
+	},
+	"lantern_hood": {
+		"name": "Lantern Hood",
+		"kind": "hood",
+		"hides_hair": true,
+		"source": "free-chibi-dark/Dark_Oracle_2"
+	},
+	"leaf_circlet": {
+		"name": "Leaf Circlet",
+		"kind": "circlet",
+		"hides_hair": false,
+		"source": "elf-archer/Archer_2"
+	},
+	"leaf_wreath": {
+		"name": "Leaf Wreath",
+		"kind": "circlet",
+		"hides_hair": false,
+		"source": "free-forest/Forest_Ranger_2"
+	},
+	"leather_cap": {
+		"name": "Leather Cap",
+		"kind": "hat",
+		"hides_hair": true,
+		"source": "gnome/Gnome_2"
+	},
+	"legionary_helm": {
+		"name": "Legionary Helm",
+		"kind": "helmet",
+		"hides_hair": true,
+		"source": "spartan/Spartan Knight with Spear"
+	},
+	"lich_crown": {
+		"name": "Lich Crown",
+		"kind": "hood",
+		"hides_hair": true,
+		"source": "ghoul-lich/Lich"
+	},
+	"linen_wrap": {
+		"name": "Linen Wrap",
+		"kind": "turban",
+		"hides_hair": true,
+		"source": "desert/Desert_Nomad_2"
+	},
+	"mercenary_helm": {
+		"name": "Mercenary Helm",
+		"kind": "helmet",
+		"hides_hair": true,
+		"source": "chibi-mercenaries/Mercenaries_2"
+	},
+	"monks_hood": {
+		"name": "Monk's Hood",
+		"kind": "hood",
+		"hides_hair": true,
+		"source": "chibi-spiritual/Spiritual_Monk_3"
+	},
+	"moonlit_hood": {
+		"name": "Moonlit Hood",
+		"kind": "hood",
+		"hides_hair": true,
+		"source": "ghost-knight-chibi/Ghost_Knight_2"
+	},
+	"mossy_hood": {
+		"name": "Mossy Hood",
+		"kind": "hood",
+		"hides_hair": true,
+		"source": "chibi-skeleton-necromancer/Skeleton_Necromancer_2"
+	},
+	"mummy_wraps": {
+		"name": "Mummy Wraps",
+		"kind": "wrap",
+		"hides_hair": true,
+		"source": "ghoul-lich/Mummy"
+	},
+	"night_cowl": {
+		"name": "Night Cowl",
+		"kind": "hood",
+		"hides_hair": true,
+		"source": "magician-demon/Magician_2"
+	},
+	"nomad_hood": {
+		"name": "Nomad Hood",
+		"kind": "hood",
+		"hides_hair": true,
+		"source": "desert/Desert_Nomad_3"
+	},
+	"oni_mask": {
+		"name": "Oni Mask",
+		"kind": "mask",
+		"hides_hair": false,
+		"source": "fantasy/Devil Masked Guy"
+	},
+	"oracle_hood": {
+		"name": "Oracle Hood",
+		"kind": "hood",
+		"hides_hair": true,
+		"source": "free-chibi-dark/Dark_Oracle_1"
+	},
+	"plague_hood": {
+		"name": "Plague Hood",
+		"kind": "hood",
+		"hides_hair": true,
+		"source": "chibi-cursed/Cursed_Alchemist_3"
+	},
+	"plumed_greathelm": {
+		"name": "Plumed Great Helm",
+		"kind": "great_helm",
+		"hides_hair": true,
+		"source": "medieval-king/Very Heavy Armored Frontier Defender"
+	},
+	"plumed_hat": {
+		"name": "Plumed Hat",
+		"kind": "hat",
+		"hides_hair": true,
+		"source": "chibi-vampire/Vampire_Hunter_3"
+	},
+	"pointed_hood": {
+		"name": "Pointed Hood",
+		"kind": "hood",
+		"hides_hair": true,
+		"source": "fantasy/Black Wizard"
+	},
+	"pumpkin_head": {
+		"name": "Pumpkin Head",
+		"kind": "novelty",
+		"hides_hair": true,
+		"source": "halloween/Pumpkin Head Guy"
+	},
+	"rag_bandana": {
+		"name": "Rag Bandana",
+		"kind": "headband",
+		"hides_hair": false,
+		"source": "skeleton-chibi/Skeleton_2"
+	},
+	"raider_helm": {
+		"name": "Raider Helm",
+		"kind": "helmet",
+		"hides_hair": true,
+		"source": "viking-chibi/Viking_2"
+	},
+	"ram_skull": {
+		"name": "Ram Skull",
+		"kind": "hat",
+		"hides_hair": true,
+		"source": "shaman-chibi-character/Shaman_2"
+	},
+	"ranger_hood": {
+		"name": "Ranger's Hood",
+		"kind": "hood",
+		"hides_hair": true,
+		"source": "archer-chibi-2d/Archer_2"
+	},
+	"reapers_hood": {
+		"name": "Reaper's Hood",
+		"kind": "hood",
+		"hides_hair": true,
+		"source": "free-reaper/Reaper_Man_1"
+	},
+	"rime_band": {
+		"name": "Rime Band",
+		"kind": "crown",
+		"hides_hair": false,
+		"source": "chibi-skeleton-shaman/Skeleton_Shaman_3"
+	},
+	"rope_headband": {
+		"name": "Rope Headband",
+		"kind": "headband",
+		"hides_hair": false,
+		"source": "4-chibi-character/Blacksmith Guy"
+	},
+	"royal_crown": {
+		"name": "Royal Crown",
+		"kind": "crown",
+		"hides_hair": false,
+		"source": "medieval-king/Medieval King"
+	},
+	"rune_cowl": {
+		"name": "Rune Cowl",
+		"kind": "hood",
+		"hides_hair": true,
+		"source": "magician-chibi-2d/Magician_3"
+	},
+	"rune_hood": {
+		"name": "Rune Hood",
+		"kind": "hood",
+		"hides_hair": true,
+		"source": "chibi-cursed/Cursed_Alchemist_1"
+	},
+	"sand_wrap": {
+		"name": "Sand Wrap",
+		"kind": "turban",
+		"hides_hair": true,
+		"source": "desert/Desert_Nomad_1"
+	},
+	"sapphire_turban": {
+		"name": "Sapphire Turban",
+		"kind": "turban",
+		"hides_hair": true,
+		"source": "persian/Persian_and_Arab_Warriors_1"
+	},
+	"seers_hood": {
+		"name": "Seer's Hood",
+		"kind": "hood",
+		"hides_hair": true,
+		"source": "free-seer/Seer_2"
+	},
+	"sentinel_helm": {
+		"name": "Sentinel Helm",
+		"kind": "helmet",
+		"hides_hair": true,
+		"source": "armored/Medieval Knight"
+	},
+	"seraph_crown": {
+		"name": "Seraph Crown",
+		"kind": "crown",
+		"hides_hair": false,
+		"source": "free-fallen/Fallen_Angels_3"
+	},
+	"shadow_cowl": {
+		"name": "Shadow Cowl",
+		"kind": "hood",
+		"hides_hair": true,
+		"source": "free-chibi-necromancer/Necromancer_of_the_Shadow_1"
+	},
+	"shadow_helm": {
+		"name": "Shadow Helm",
+		"kind": "helmet",
+		"hides_hair": true,
+		"source": "dark-elves/Dark_Elves_1"
+	},
+	"shinobi_hood": {
+		"name": "Shinobi Hood",
+		"kind": "hood",
+		"hides_hair": true,
+		"source": "ninja/Black Ninja"
+	},
+	"shinobi_wrap": {
+		"name": "Shinobi Wrap",
+		"kind": "wrap",
+		"hides_hair": true,
+		"source": "ninja/White Ninja"
+	},
+	"shrouded_hood": {
+		"name": "Shrouded Hood",
+		"kind": "hood",
+		"hides_hair": true,
+		"source": "archer-chibi-2d/Archer_3"
+	},
+	"silver_circlet": {
+		"name": "Silver Circlet",
+		"kind": "circlet",
+		"hides_hair": false,
+		"source": "magician-girl/Magician_Girl_2"
+	},
+	"silver_visor": {
+		"name": "Silver Visor",
+		"kind": "helmet",
+		"hides_hair": true,
+		"source": "armored/White Armored Knight"
+	},
+	"silvered_hood": {
+		"name": "Silvered Hood",
+		"kind": "hood",
+		"hides_hair": true,
+		"source": "chibi-winter/Winter_Witch_3"
+	},
+	"skull_hood": {
+		"name": "Skull Hood",
+		"kind": "hood",
+		"hides_hair": true,
+		"source": "ghoul-hunter/Ghoul_Hunter_2"
+	},
+	"spectral_helm": {
+		"name": "Spectral Helm",
+		"kind": "great_helm",
+		"hides_hair": true,
+		"source": "chibi-ghost/Ghost_Knight_1"
+	},
+	"stalkers_hood": {
+		"name": "Stalker's Hood",
+		"kind": "hood",
+		"hides_hair": true,
+		"source": "ghoul-hunter/Ghoul_Hunter_1"
+	},
+	"steel_helm": {
+		"name": "Steel Helm",
+		"kind": "helmet",
+		"hides_hair": true,
+		"source": "655241-knight-chibi-character-sprites/Knight_2"
+	},
+	"straw_hat": {
+		"name": "Straw Hat",
+		"kind": "hat",
+		"hides_hair": true,
+		"source": "samurai/Samurai_2"
+	},
+	"striped_helm": {
+		"name": "Striped Helm",
+		"kind": "helmet",
+		"hides_hair": true,
+		"source": "girl-knight/Girl_Knight_3"
+	},
+	"studded_cap": {
+		"name": "Studded Cap",
+		"kind": "hat",
+		"hides_hair": true,
+		"source": "chibi-shaman/Shaman_of_Thunder_1"
+	},
+	"tattered_hood": {
+		"name": "Tattered Hood",
+		"kind": "hood",
+		"hides_hair": true,
+		"source": "chibi-skeleton-archer/Archer_1"
+	},
+	"thug_mask": {
+		"name": "Thug's Mask",
+		"kind": "mask",
+		"hides_hair": false,
+		"source": "4-chibi-character/Medieval Thug"
+	},
+	"tidal_hood": {
+		"name": "Tidal Hood",
+		"kind": "hood",
+		"hides_hair": true,
+		"source": "ghost-knight-chibi/Ghost_Knight_3"
+	},
+	"travelers_hat": {
+		"name": "Traveller's Hat",
+		"kind": "hat",
+		"hides_hair": true,
+		"source": "human/Human Magician_1"
+	},
+	"tricorn": {
+		"name": "Tricorn",
+		"kind": "hat",
+		"hides_hair": true,
+		"source": "chibi-skeleton-pirate/Skeleton_Pirate_Captain_3"
+	},
+	"u_archmage_circlet": {
+		"kind": "circlet",
+		"hides_hair": false,
+		"name": "Archmage's Circlet",
+		"source": "helmet/silver_circlet",
+		"unique": "archmage_circlet",
+		"item": false
+	},
+	"u_bloodsworn_mask": {
+		"kind": "mask",
+		"hides_hair": false,
+		"name": "Bloodsworn Mask",
+		"source": "helmet/oni_mask",
+		"unique": "bloodsworn_mask",
+		"item": false
+	},
+	"u_crown_of_wrath": {
+		"kind": "crown",
+		"hides_hair": false,
+		"name": "Crown of Wrath",
+		"source": "helmet/bone_diadem",
+		"unique": "crown_of_wrath",
+		"item": false
+	},
+	"u_hunters_cowl": {
+		"kind": "hood",
+		"hides_hair": true,
+		"name": "Hunter's Cowl",
+		"source": "helmet/ranger_hood",
+		"unique": "hunters_cowl",
+		"item": false
+	},
+	"u_sages_circlet": {
+		"kind": "circlet",
+		"hides_hair": false,
+		"name": "Sage's Circlet",
+		"source": "helmet/amethyst_circlet",
+		"unique": "sages_circlet",
+		"item": false
+	},
+	"u_templar_helm": {
+		"kind": "great_helm",
+		"hides_hair": true,
+		"name": "Templar's Helm",
+		"source": "helmet/holy_greathelm",
+		"unique": "templar_helm",
+		"item": false
+	},
+	"u_warlord_visage": {
+		"kind": "great_helm",
+		"hides_hair": true,
+		"name": "Warlord's Visage",
+		"source": "helmet/demon_helm",
+		"unique": "warlord_visage",
+		"item": false
+	},
+	"u_windrunner_hood": {
+		"kind": "hood",
+		"hides_hair": true,
+		"name": "Windrunner's Hood",
+		"source": "helmet/forest_hood",
+		"unique": "windrunner_hood",
+		"item": false
+	},
+	"umbral_cowl": {
+		"name": "Umbral Cowl",
+		"kind": "hood",
+		"hides_hair": true,
+		"source": "free-chibi-necromancer/Necromancer_of_the_Shadow_3"
+	},
+	"valkyrie_helm": {
+		"name": "Valkyrie Helm",
+		"kind": "helmet",
+		"hides_hair": true,
+		"source": "free-chibi-valkyrie/Valkyrie_2"
+	},
+	"veiled_cowl": {
+		"name": "Veiled Cowl",
+		"kind": "hood",
+		"hides_hair": true,
+		"source": "magician-undead/Magician_2"
+	},
+	"veiled_hood": {
+		"name": "Veiled Hood",
+		"kind": "hood",
+		"hides_hair": true,
+		"source": "free-chibi-dark/Dark_Oracle_3"
+	},
+	"verdant_dread_helm": {
+		"name": "Verdant Dread Helm",
+		"kind": "helmet",
+		"hides_hair": true,
+		"source": "chibi-skeleton-death/Skeleton_Death_Knight_2"
+	},
+	"viking_helm": {
+		"name": "Viking Helm",
+		"kind": "helmet",
+		"hides_hair": true,
+		"source": "chibi-skeleton-viking/Skeleton_Viking_1"
+	},
+	"violet_hood": {
+		"name": "Violet Hood",
+		"kind": "hood",
+		"hides_hair": true,
+		"source": "chibi-skeleton-necromancer/Skeleton_Necromancer_1"
+	},
+	"white_turban": {
+		"name": "White Turban",
+		"kind": "turban",
+		"hides_hair": true,
+		"source": "persian/Persian_and_Arab_Warriors_2"
+	},
+	"wide_brim_hat": {
+		"name": "Wide-brim Hat",
+		"kind": "hat",
+		"hides_hair": true,
+		"source": "chibi-skeleton-hunter/Skeleton_Hunter_1"
+	},
+	"winged_helm": {
+		"name": "Winged Helm",
+		"kind": "helmet",
+		"hides_hair": true,
+		"source": "free-chibi-valkyrie/Valkyrie_1"
+	},
+	"witch_hat": {
+		"name": "Witch Hat",
+		"kind": "hat",
+		"hides_hair": true,
+		"source": "witch-chibi/Witch_1"
+	},
+	"witchs_hood": {
+		"name": "Witch's Hood",
+		"kind": "hood",
+		"hides_hair": true,
+		"source": "witch-chibi/Witch_2"
+	},
+	"wizard_hat": {
+		"name": "Wizard Hat",
+		"kind": "hat",
+		"hides_hair": true,
+		"source": "archer-barbarian/Medieval Mage"
+	},
+	"wraith_helm": {
+		"name": "Wraith Helm",
+		"kind": "helmet",
+		"hides_hair": true,
+		"source": "chibi-ghost/Ghost_Knight_2"
+	}
+}

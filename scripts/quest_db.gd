@@ -20,7 +20,7 @@ const NPCS := {
 	"battlemaster": {"name": "Battlemaster Brom", "title": "Passive Tree", "skin": "battlemaster",
 		"greeting": "Ashfall stands because we hold the line. Every hand that can swing a blade counts."},
 	"sage": {"name": "Sage Aldous", "title": "Identify", "skin": "sage",
-		"greeting": "The taint is older than this outpost, older than the dunes themselves. I read what I can of it."},
+		"greeting": "The taint is older than this outpost, older than the oldest trees in the Ashwood. I read what I can of it."},
 	"blacksmith": {"name": "Blacksmith", "title": "Craft", "skin": "blacksmith",
 		"greeting": "Steel's steel. Bring me orbs and I'll make it sing."},
 	"merchant": {"name": "Merchant", "title": "Buy & Sell", "skin": "merchant",
@@ -30,31 +30,31 @@ const NPCS := {
 	"jeweler": {"name": "Jeweler", "title": "Gems", "skin": "jeweler",
 		"greeting": "Three small stones make one fine one. Patience, friend."},
 	"hesk": {"name": "Caravan Master Hesk", "title": "Caravans", "skin": "caravan_master",
-		"greeting": "Not a single caravan has made it through the Wastes this month. Not one."},
+		"greeting": "Not a single caravan has made it through the Ashwood this month. Not one."},
 	"caravan_guard": {"name": "Wounded Guard", "title": "Survivor", "skin": "caravan_guard",
-		"greeting": "Water... thank the sands, someone came."},
+		"greeting": "Water... thank the gods, someone came."},
 }
 
 const QUESTS := {
 	"a1_into_the_wastes": {
-		"name": "Into the Wastes", "act": 1, "kind": "main", "giver": "battlemaster", "turn_in": "battlemaster",
-		"summary": "Brom wants the road west scouted. Find the old waypoint in the Dune Wastes so Ashfall can reach it again.",
-		"offer": "You made it through the husks, so you can fight. Good. The road west runs into the [b]Dune Wastes[/b], and the old waypoint there has gone dark. Find it, wake it, and come back. Then we talk about what's out there.",
-		"progress": "The waypoint lies somewhere in the Dune Wastes, west of the outpost. Touch the stone and it will remember you.",
+		"name": "Into the Ashwood", "act": 1, "kind": "main", "giver": "battlemaster", "turn_in": "battlemaster",
+		"summary": "Brom wants the road west scouted. Find the old waypoint in the Ashwood so Ashfall can reach it again.",
+		"offer": "You made it through the husks, so you can fight. Good. The road west runs into the [b]Ashwood[/b], and the old waypoint there has gone dark. Find it, wake it, and come back. Then we talk about what's out there.",
+		"progress": "The waypoint lies somewhere in the Ashwood, west of the outpost. Touch the stone and it will remember you.",
 		"complete": "It's lit again. I saw the glow from the wall. You've earned this, and you'll need it.",
 		"steps": [
-			{"type": "waypoint", "key": "dune_wastes", "text": "Find the waypoint in the Dune Wastes"},
+			{"type": "waypoint", "key": "dune_wastes", "text": "Find the waypoint in the Ashwood"},
 		],
 		"rewards": {"xp": 160, "orbs": {"transmute": 2, "augment": 1}},
 	},
 	"a1_lost_caravan": {
 		"name": "The Lost Caravan", "act": 1, "kind": "side", "giver": "hesk", "turn_in": "hesk",
-		"summary": "Hesk's last caravan never arrived. Find what happened to it in the Dune Wastes and bring back his strongbox.",
-		"offer": "My last caravan left the oasis eight days ago and never arrived. Twelve wagons, gone. If anyone lived, they'd be near the old road through the [b]Dune Wastes[/b]. Find them. And if you find my strongbox... I'll make it worth your while.",
-		"progress": "The caravan took the old road through the Dune Wastes. Look for the wreck.",
+		"summary": "Hesk's last caravan never arrived. Find what happened to it in the Ashwood and bring back his strongbox.",
+		"offer": "My last caravan left the river crossing eight days ago and never arrived. Twelve wagons, gone. If anyone lived, they'd be near the old road through the [b]Ashwood[/b]. Find them. And if you find my strongbox... I'll make it worth your while.",
+		"progress": "The caravan took the old road through the Ashwood. Look for the wreck.",
 		"complete": "My strongbox! And the guard lives? You've done more for Ashfall today than the garrison has all month. Take this, it was meant for a buyer who'll never come now.",
 		"steps": [
-			{"type": "reach", "key": "caravan_wreck", "text": "Find the caravan wreck in the Dune Wastes"},
+			{"type": "reach", "key": "caravan_wreck", "text": "Find the caravan wreck in the Ashwood"},
 			{"type": "talk", "key": "caravan_guard", "text": "Speak to the survivor at the wreck"},
 			{"type": "kill_boss", "key": "raider_captain", "text": "Slay Vesh, the Raider Captain"},
 			{"type": "use", "key": "strongbox", "text": "Recover Hesk's strongbox from the raider camp"},
@@ -62,7 +62,7 @@ const QUESTS := {
 		"rewards": {"xp": 320, "orbs": {"alteration": 3, "augment": 2}, "item": {"slot": "flask", "rarity": 1}},
 		# What the people on the way say at a step (npc id -> {step index: line})
 		"lines": {
-			"caravan_guard": {1: "Raiders hit us at dusk. [b]Vesh[/b] and his archers, sand-masked bandits from the north ridge. They took Hesk's strongbox up to their camp. I couldn't stop them. Please... get it back."},
+			"caravan_guard": {1: "Raiders hit us at dusk. [b]Vesh[/b] and his archers, hooded bandits from the north ridge. They took Hesk's strongbox up to their camp. I couldn't stop them. Please... get it back."},
 		},
 	},
 }

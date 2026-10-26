@@ -42,7 +42,7 @@ enum Kind {
 }
 
 ## What it needs in hand: "bow", "melee" (anything but a bow), or "" (any, or none: spells).
-const WEAPON_NAMES := {"bow": "a bow", "melee": "a melee weapon"}
+const WEAPON_NAMES := {"bow": "a bow or crossbow", "melee": "a melee weapon"}
 
 @export var id: String = ""
 @export var display_name: String = ""

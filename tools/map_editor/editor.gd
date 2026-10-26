@@ -8,6 +8,7 @@ extends Control
 ## object, F frames the whole map. Tools: 1 wall, 2 floor, 3 select.
 
 const SETTINGS := "user://map_editor.cfg"
+const THEMES := ["desert", "woodland"]  # the game's MapTheme.THEMES (assets/tiles/<theme>)
 const DEFAULT_GODOT := "D:/godot_bin/Godot_v4.4.1-stable_win64.exe"
 const TOOLS := [
 	["select", "🖱 Select / Move", "Click an object to edit it, drag to move it"],
@@ -33,6 +34,8 @@ var dirty := false
 var _canvas: MapCanvas
 var _name: LineEdit
 var _kind: OptionButton
+var _theme: OptionButton
+var _textures_theme := ""   # the theme whose pictures are loaded
 var _cols: SpinBox
 var _rows: SpinBox
 var _auto: CheckBox
@@ -92,11 +95,20 @@ func _maps_dir() -> String:
 	return game_root.path_join("maps")
 
 
-## The game's tile pictures, loaded straight from its folder (they aren't part of this project).
+## The map's theme's pictures and wall pieces, loaded straight from the game's folder (they aren't
+## part of this project).
 func _load_textures() -> void:
 	_canvas.textures.clear()
+	_canvas.wall_textures.clear()
 	_props.clear()
-	var dir := game_root.path_join("assets/tiles/desert")
+	_textures_theme = String(_canvas.map.get("theme", THEMES[0]))
+	_canvas.tiles_root = game_root.path_join("assets/tiles")
+	var dir := game_root.path_join("assets/tiles").path_join(_textures_theme)
+	for f in DirAccess.get_files_at(dir.path_join("walls")):
+		if f.get_extension() == "png":
+			var wimg := Image.load_from_file(dir.path_join("walls").path_join(f))
+			if wimg != null:
+				_canvas.wall_textures[f.get_basename()] = ImageTexture.create_from_image(wimg)
 	var names: Array[String] = []
 	for f in DirAccess.get_files_at(dir):
 		if f.get_extension() == "png":
@@ -134,6 +146,8 @@ func _new_map(c: int, r: int) -> void:
 
 func _set_map(m: Dictionary, id: String) -> void:
 	_canvas.map = m
+	if String(m.get("theme", THEMES[0])) != _textures_theme:
+		_load_textures()
 	_canvas.selected = -1
 	map_id = id
 	dirty = false
@@ -149,6 +163,7 @@ func _sync_fields() -> void:
 	var m := _canvas.map
 	_name.text = String(m.get("name", ""))
 	_kind.select(maxi(["rift", "story", "special"].find(String(m.get("kind", "story"))), 0))
+	_theme.select(maxi(THEMES.find(String(m.get("theme", THEMES[0]))), 0))
 	_cols.set_value_no_signal(_canvas.cols())
 	_rows.set_value_no_signal(_canvas.rows())
 	_auto.set_pressed_no_signal(bool(m.get("auto_decorate", true)))
@@ -476,6 +491,18 @@ func _build_ui() -> void:
 		_mark_dirty()
 	)
 	top.add_child(_kind)
+	top.add_child(_label("Theme"))
+	_theme = OptionButton.new()
+	for t in THEMES:
+		_theme.add_item(t)
+	_theme.tooltip_text = "The map's look: its floor, walls and pictures (a prop can borrow another theme's as <theme>/<name>)"
+	_theme.item_selected.connect(func(i: int):
+		_snapshot()
+		_canvas.map.theme = THEMES[i]
+		_load_textures()
+		_mark_dirty()
+	)
+	top.add_child(_theme)
 	top.add_child(_label("Size"))
 	_cols = SpinBox.new()
 	_cols.min_value = 5
