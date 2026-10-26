@@ -16,18 +16,19 @@ const DOLL_U := 40.0  # the paperdoll's unit: each slot is a whole number of the
 const DOLL_GAP := Vector2(38, 6)  # between slots across (so the doll is as wide as the bag) and down
 ## Each slot's place on the paperdoll as [column, top, width, height]: the top is so many units plus
 ## so many gaps down ([units, gaps]), the size in units. Columns: 0 weapon and gloves, 1 shoulders, a ring
-## and wrists, 2 helmet / body / belt, 3 amulet, the other ring and legs, 4 off hand and boots.
+## and wrists, 2 helmet / body / belt, 3 amulet, the other ring and legs, 4 off hand and boots. Every
+## slot but the weapon, off hand, body armour and belt is 2 x 2, three to a side column.
 const DOLL := {
 	"weapon": [0, [0, 0], 2, 4],
 	"gloves": [0, [4, 2], 2, 2],  # level with the bottom of the belt
-	"ring": [1, [3, 1], 1, 1],  # beside the middle of the body armour
+	"ring": [1, [2, 1], 2, 2],  # under the shoulders
 	"wrists": [1, [4, 2], 2, 2],  # level with the gloves
 	"helmet": [2, [0, 0], 2, 2],
 	"shoulders": [1, [0, 0], 2, 2],  # beside the helmet, as big as the gloves and boots
 	"chest": [2, [2, 1], 2, 3],
 	"belt": [2, [5, 2], 2, 1],
-	"amulet": [3, [1, 0], 1, 1],  # beside the bottom of the helmet
-	"ring2": [3, [3, 1], 1, 1],
+	"amulet": [3, [0, 0], 2, 2],  # beside the helmet
+	"ring2": [3, [2, 1], 2, 2],  # under the amulet
 	"legs": [3, [4, 2], 2, 2],  # level with the boots
 	"offhand": [4, [0, 0], 2, 4],
 	"boots": [4, [4, 2], 2, 2],
