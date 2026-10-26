@@ -93,7 +93,7 @@ func set_placeholder(tex: Texture2D) -> void:
 	_caption.visible = false
 
 
-## Shows an item's sockets along the bottom of its icon: each gem or rune in its socket, then the
+## Shows an item's sockets over the middle of its icon, a column of them down a tall one: each gem or rune in its socket, then the
 ## empty ones as dark rings. `gems` are gem ids (GemDef), `total` how many sockets it has.
 func set_sockets(gems: Array, total: int) -> void:
 	_socket_gems = gems
@@ -114,9 +114,17 @@ func _layout_sockets() -> void:
 	var w := _sockets.size.x
 	if n <= 0 or w <= 0.0:
 		return
-	var d := clampf(minf(w * 0.26, (w - 8.0) / n), 10.0, 26.0)  # one socket's diameter
-	var x := (w - (d * n + 2.0 * (n - 1))) * 0.5
-	var y := _sockets.size.y - d - 4.0
+	# Over the middle of the whole icon, as Diablo III does: down it for a tall item, across for a wide one
+	var h := _sockets.size.y
+	var column := h >= w * 0.9
+	var gap := 3.0
+	var d: float
+	if column:
+		d = clampf(minf(w * 0.55, (h - 8.0 - gap * (n - 1)) / n), 10.0, 34.0)  # one socket's diameter
+	else:
+		d = clampf(minf(h * 0.55, (w - 8.0 - gap * (n - 1)) / n), 10.0, 34.0)
+	var x := (w - d) * 0.5 if column else (w - (d * n + gap * (n - 1))) * 0.5
+	var y := (h - (d * n + gap * (n - 1))) * 0.5 if column else (h - d) * 0.5
 	for i in n:
 		var has := i < _socket_gems.size()
 		var id := String(_socket_gems[i]) if has else ""
@@ -136,7 +144,10 @@ func _layout_sockets() -> void:
 			pic.position = Vector2(d * 0.1, d * 0.1)
 			pic.size = Vector2(d * 0.8, d * 0.8)
 			ring.add_child(pic)
-		x += d + 2.0
+		if column:
+			y += d + gap
+		else:
+			x += d + gap
 
 
 ## Draw the icon in a dye (DyeDB id): the item's art recoloured, as it looks worn.

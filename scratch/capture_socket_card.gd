@@ -18,6 +18,7 @@ func _ready() -> void:
 	it.sockets = 4
 	it.gems = ["ruby_7", "diamond_3", SocketRune.all_ids()[26]]
 	p.bag.add(it)
+	p.equip_to(it, "chest")
 	p.inventory_changed.emit()
 	menu.open()
 	var two := LootGenerator.roll_item(10, ItemInstance.Rarity.MAGIC, "")
