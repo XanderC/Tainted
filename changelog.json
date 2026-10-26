@@ -1,5 +1,12 @@
 [
 	{
+		"build": 0,
+		"title": "New currency icons",
+		"notes": [
+			"New icons for Chaos, Exalted, Divine, Regal, Vaal, Alchemy, Jeweller's and Gemcutter's orbs, the Orb of Annulment, the Mirror of Kalandra, Armourer's Scrap, Blacksmith's Whetstone and the Town Portal scroll."
+		]
+	},
+	{
 		"build": 202610261944,
 		"title": "Bigger ring and amulet slots",
 		"notes": [

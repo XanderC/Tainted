@@ -61,7 +61,8 @@ static func recipe_icon(id: String) -> Texture2D:
 ## A Scroll of Town Portal (the Merchant's): a page in the portal's blue.
 static func scroll_icon() -> Texture2D:
 	if not _cache.has("town_portal"):
-		_cache["town_portal"] = _render("town_portal", "scroll", Color(0.62, 0.80, 1.0))
+		var path := "res://assets/icons/materials/portal_scroll.png"  # (tools/import_currency_icons.py)
+		_cache["town_portal"] = load(path) if ResourceLoader.exists(path) else _render("town_portal", "scroll", Color(0.62, 0.80, 1.0))
 	return _cache["town_portal"]
 
 
