@@ -331,6 +331,7 @@ static func from_dict(d: Dictionary) -> ItemInstance:
 	# Items saved before gems existed get their sockets rolled once on load
 	it.sockets = int(d.get("sockets", roll_sockets(b, it.rarity)))
 	for gid in d.get("gems", []):
+		gid = GemDef.current_id(String(gid))
 		if not GemDef.info(String(gid)).is_empty() and it.gems.size() < it.sockets:
 			it.gems.append(String(gid))
 	return it

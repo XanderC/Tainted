@@ -1,25 +1,27 @@
 class_name GemDef
 extends RefCounted
 ## Gems are socketed into equipment and add a stat to it. Each gem type grants one stat;
-## its strength comes from the tier (Chipped → Perfect). Gem ids look like "ruby_3".
+## its strength comes from the tier, Diablo 3 style (Chipped → Flawless Royal). Gem ids look like
+## "ruby_3". Tiers 1 to 5 were once Chipped, Flawed, Regular, Flawless and Perfect: Perfect is now
+## the Star gem, worth the same, so gems from before keep their strength.
 ## Owned gems live in GameState.gems (id -> count); socketed gems in ItemInstance.gems.
 
-const TIER_NAMES := ["Chipped", "Flawed", "", "Flawless", "Perfect"]
-const MAX_TIER := 5
+const TIER_NAMES := ["Chipped", "Flawed", "", "Flawless", "Star", "Imperial", "Royal", "Flawless Royal"]
+const MAX_TIER := 8
+## Gems that no longer exist, as the gem they became (Sapphire gave Armor; Ruby gives Max Life)
+const RENAMED := {"sapphire": "ruby"}
 
 const TYPES := {
 	"ruby": {"name": "Ruby", "stat": "max_life", "mod": StatBlock.ModType.FLAT, "pct": false,
-		"label": "Max Life", "color": Color(0.95, 0.20, 0.25), "values": [10.0, 18.0, 28.0, 40.0, 55.0]},
+		"label": "Max Life", "color": Color(0.95, 0.20, 0.25), "values": [10.0, 18.0, 28.0, 40.0, 55.0, 75.0, 100.0, 130.0]},
 	"topaz": {"name": "Topaz", "stat": "damage", "mod": StatBlock.ModType.FLAT, "pct": false,
-		"label": "Damage", "color": Color(1.0, 0.78, 0.20), "values": [2.0, 4.0, 6.0, 9.0, 13.0]},
-	"sapphire": {"name": "Sapphire", "stat": "armor", "mod": StatBlock.ModType.FLAT, "pct": false,
-		"label": "Armor", "color": Color(0.25, 0.45, 1.0), "values": [6.0, 11.0, 18.0, 27.0, 38.0]},
+		"label": "Damage", "color": Color(1.0, 0.78, 0.20), "values": [2.0, 4.0, 6.0, 9.0, 13.0, 18.0, 24.0, 32.0]},
 	"emerald": {"name": "Emerald", "stat": "attack_speed", "mod": StatBlock.ModType.INCREASED, "pct": true,
-		"label": "Increased Attack Speed", "color": Color(0.20, 0.85, 0.40), "values": [0.03, 0.05, 0.07, 0.10, 0.14]},
+		"label": "Increased Attack Speed", "color": Color(0.20, 0.85, 0.40), "values": [0.03, 0.05, 0.07, 0.10, 0.14, 0.18, 0.22, 0.27]},
 	"amethyst": {"name": "Amethyst", "stat": "crit_chance", "mod": StatBlock.ModType.FLAT, "pct": true,
-		"label": "Critical Chance", "color": Color(0.70, 0.35, 0.95), "values": [0.01, 0.015, 0.02, 0.03, 0.04]},
+		"label": "Critical Chance", "color": Color(0.70, 0.35, 0.95), "values": [0.01, 0.015, 0.02, 0.03, 0.04, 0.05, 0.06, 0.075]},
 	"diamond": {"name": "Diamond", "stat": "move_speed", "mod": StatBlock.ModType.INCREASED, "pct": true,
-		"label": "Increased Move Speed", "color": Color(0.85, 0.95, 1.0), "values": [0.02, 0.03, 0.05, 0.07, 0.09]},
+		"label": "Increased Move Speed", "color": Color(0.85, 0.95, 1.0), "values": [0.02, 0.03, 0.05, 0.07, 0.09, 0.11, 0.13, 0.15]},
 }
 
 
@@ -27,11 +29,20 @@ static func make_id(type: String, tier: int) -> String:
 	return "%s_%d" % [type, tier]
 
 
+## A saved gem id as the game has it now (an old Sapphire is a Ruby of its tier).
+static func current_id(id: String) -> String:
+	var parts := id.rsplit("_", true, 1)
+	if parts.size() == 2 and RENAMED.has(parts[0]):
+		return "%s_%s" % [RENAMED[parts[0]], parts[1]]
+	return id
+
+
 ## Returns {} for an unknown id. Runes (SocketRune) share the gems' pool and sockets, so their ids
 ## come through here too; `slot` picks a rune's weapon or armour stat ("" describes both).
 static func info(id: String, slot: String = "") -> Dictionary:
 	if SocketRune.is_rune(id):
 		return SocketRune.info(id, slot)
+	id = current_id(id)
 	var parts := id.rsplit("_", true, 1)
 	if parts.size() != 2 or not TYPES.has(parts[0]):
 		return {}
@@ -105,7 +116,10 @@ static func combine_cost(tier: int) -> Dictionary:
 		1: return {"transmute": 1}
 		2: return {"alteration": 1}
 		3: return {"alteration": 4}
-	return {"alchemy": 2}
+		4: return {"alchemy": 2}
+		5: return {"chaos": 1}
+		6: return {"chaos": 3}
+	return {"exalt": 1}
 
 
 ## A random gem of tier 1..max_tier (lower tiers far more common).

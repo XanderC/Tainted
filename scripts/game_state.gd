@@ -177,7 +177,7 @@ func _new_game() -> void:
 func _starter_pools() -> void:
 	orbs = CraftingDB.STARTING_CURRENCY.duplicate()
 	shards = {}
-	gems = {"ruby_1": 2, "topaz_1": 1, "sapphire_1": 1}
+	gems = {"ruby_1": 2, "topaz_1": 1, "emerald_1": 1}
 	runes = STARTER_RUNES.duplicate()
 	skill_gems = {}
 
@@ -1474,7 +1474,7 @@ func _load_shared(acc: Dictionary) -> void:
 		old_materials = _ints(sh.get("materials", {}))
 		skill_gems = _ints(sh.get("skill_gems", {}))
 		runes = _ints(sh.get("runes", {}))
-		gems = _ints(sh.get("gems", {}))
+		gems = _migrate_gems(_ints(sh.get("gems", {})))
 	elif characters.is_empty():
 		_starter_pools()
 	else:
@@ -1491,7 +1491,7 @@ func _load_shared(acc: Dictionary) -> void:
 				"skill_gems": _ints(data.get("skill_gems", {})),
 				# a character saved before these existed was given the starting ones on load
 				"runes": _ints(data.get("runes", STARTER_RUNES)),
-				"gems": _ints(data.get("gems", {"ruby_1": 2, "topaz_1": 1, "sapphire_1": 1})),
+				"gems": _migrate_gems(_ints(data.get("gems", {"ruby_1": 2, "topaz_1": 1, "emerald_1": 1}))),
 			}
 			# Saves from before orbs were the money: their gold becomes orbs of the same worth
 			var gold := Currency.gold_to_orbs(int(data.get("gold", 0)))
@@ -1752,6 +1752,15 @@ func _fix_passive_points() -> void:
 		passive_nodes = {}
 		spent = 0
 	skill_points = budget - spent
+
+
+## Saved loose gems with gems that have been renamed turned into what they are now (GemDef.RENAMED).
+func _migrate_gems(d: Dictionary) -> Dictionary:
+	var out := {}
+	for k in d:
+		var id := GemDef.current_id(String(k))
+		out[id] = int(out.get(id, 0)) + int(d[k])
+	return out
 
 
 func _ints(d: Dictionary) -> Dictionary:

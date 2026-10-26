@@ -541,6 +541,17 @@ that is never used up: drink it from a flask slot and it goes on cooldown.
 - Test: `godot --headless --path . res://scratch/test_flasks.tscn`;
   `res://scratch/capture_flasks.tscn` for screenshots.
 
+### Socket gems and runes
+**Gems** are Diablo 3 style: five kinds (Ruby: Max Life, Topaz: Damage, Emerald: Attack Speed, Amethyst:
+Critical Chance, Diamond: Move Speed) in 8 tiers, Chipped, Flawed, Regular, Flawless, Star, Imperial,
+Royal and Flawless Royal (`GemDef`). Three of a tier combine into the next at the Jeweler for orbs.
+Tiers 1 to 5 keep the strength they always had (Star is the old Perfect), so owned gems are worth the
+same; saved Sapphires became Rubies (`GemDef.RENAMED`). The **33 runes** are Diablo 2's, El to Zod
+(`SocketRune.LADDER`). Their icons come from one concept sheet, `tools/art/gems_runes.jpg`, cut by
+`tools/import_gem_sheet.py`: the sheet has red gems only, so the other colours are the red turned to
+green, yellow, purple and a pale blue-white. (`tools/import_gems_runes.py`, from the CraftPix packs, made
+the earlier icons.) Test: `scratch/test_gem_tiers.gd`.
+
 ### Shared stash tabs: currency, gems
 Orbs and shards, and loose skill, support and socket gems belong to the
 account, not a character (`GameState.SHARED_KEYS`, saved in the account file). The stash shows them

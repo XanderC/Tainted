@@ -1,5 +1,14 @@
 [
 	{
+		"build": 0,
+		"title": "New gems and runes",
+		"notes": [
+			"Gems now come in 8 tiers like Diablo 3: Chipped, Flawed, Regular, Flawless, Star, Imperial, Royal and Flawless Royal. Three gems of a tier combine into the next at the Jeweler.",
+			"Five gem colours: Ruby, Topaz, Emerald, Amethyst and Diamond. Sapphires you had are now Rubies. Your old Perfect gems are now Star gems, just as strong.",
+			"New art for every gem and all 33 runes, El to Zod."
+		]
+	},
+	{
 		"build": 202610262019,
 		"title": "New currency icons",
 		"notes": [
