@@ -1,5 +1,12 @@
 [
 	{
+		"build": 202610261944,
+		"title": "Bigger ring and amulet slots",
+		"notes": [
+			"The ring and amulet slots on the character panel are now as big as the gloves and boots slots."
+		]
+	},
+	{
 		"build": 202610261924,
 		"title": "Wrists and legs",
 		"notes": [
