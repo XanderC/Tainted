@@ -217,6 +217,7 @@ func _placed_prop(o: Dictionary) -> void:
 	s.scale = Vector2(sc, sc)
 	s.position = Vector2(float(o.get("x", 0)), float(o.get("y", 0)))
 	add_child(s)
+	PropFader.attach(self, s)  # see-through with the player behind it
 	if o.get("solid", false):
 		var body := StaticBody2D.new()
 		body.position = s.position
@@ -248,6 +249,7 @@ func _prop(name_: String, pos: Vector2, sc := 0.5) -> void:
 	s.scale = Vector2(sc, sc) * _rng.randf_range(0.9, 1.15)
 	s.position = pos
 	add_child(s)
+	PropFader.attach(self, s)  # see-through with the player behind it
 
 
 ## Walls: raised plateaus with rock cliffs facing the floor, drawn a quarter cell at a time (WallTiles

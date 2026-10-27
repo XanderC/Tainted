@@ -251,7 +251,7 @@ static func remember_loot(scene: Node, where: Dictionary) -> void:
 		if c is LootPickup and c.item != null:
 			items.append([c.item.to_dict(), c.position.x, c.position.y])
 		elif c is CurrencyPickup:
-			piles.append([c.kind, c.id, c.amount, c.position.x, c.position.y])
+			piles.append([c.kind, c.id, c.amount, c.position.x, c.position.y, c.parts, c.title])
 	GameState.left_loot = {} if items.is_empty() and piles.is_empty() else \
 		{"where": _loot_place(where), "items": items, "piles": piles}
 
@@ -275,6 +275,10 @@ static func restore_loot(scene: Node, where: Dictionary) -> void:
 		c.id = String(p[1])
 		c.amount = int(p[2])
 		c.position = Vector2(float(p[3]), float(p[4]))
+		if p.size() > 5:  # a bundle: what is in it (JSON turns its numbers to floats)
+			c.title = String(p[6])
+			for part in p[5]:
+				c.parts.append([String(part[0]), String(part[1]), int(part[2])])
 		scene.add_child(c)
 
 

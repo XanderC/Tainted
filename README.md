@@ -541,6 +541,26 @@ that is never used up: drink it from a flask slot and it goes on cooldown.
 - Test: `godot --headless --path . res://scratch/test_flasks.tscn`;
   `res://scratch/capture_flasks.tscn` for screenshots.
 
+### Random encounters, currency piles, see-through scenery
+- **Random encounters** (`ZoneEncounters`): entering a campaign zone solo has a 45% chance of one,
+  somewhere on open floor away from the start, exits and NPCs and reachable from the start
+  (`find_spot`). **Cottage**: a cottage whose zombies burst out when you come within 420 px; clear them
+  and a captive appears to free, who pays a rare, orbs and a scroll. **Ritual**: cultists round a
+  summoning circle start a 45 s countdown when you come within 650 px; each cultist you kill buys
+  6 s; kill them all to break it (rare + magic + orbs), or at 0 a boss "Summoned Horror" is called
+  (its loot is a boss's). Party zones have none yet (the host runs their monsters). Test:
+  `scratch/test_encounters.gd`; new kinds go in `ZoneEncounters.KINDS` with a `_build_`, a state in
+  `_process` and a `_reward`.
+- **Currency bundles** (`CurrencyPickup` kind "bundle"): one label holding many drops, taken in one tap.
+  `CurrencyPickup.add_to_bundle(scene, title, [kind, id, amount], pos)` adds to a bundle of that title
+  within 170 px or starts one, so a zone's drops from a fight are one pile; a rift boss's orbs and
+  shards are one "Currency" pile and its gems and runes one "Gems & Runes" pile. Drop rates are
+  lower than they were (zone shard chance 0.09, `CraftingDB.monster_drops` and `boss_drops`,
+  the rift's horde chances).
+- **See-through scenery** (`PropFader`): a prop at least 60 x 90 px as drawn fades to 35% while the
+  player is behind it (above its base line and inside its picture). `SceneryMap` and `MazeMap`
+  register their props; register anything else with `PropFader.attach(parent, sprite)`.
+
 ### Socket gems and runes
 **Gems** are Diablo 3 style: five kinds (Ruby: Max Life, Topaz: Damage, Emerald: Attack Speed, Amethyst:
 Critical Chance, Diamond: Move Speed) in 8 tiers, Chipped, Flawed, Regular, Flawless, Star, Imperial,

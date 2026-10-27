@@ -32,9 +32,15 @@ func _ready() -> void:
 	await get_tree().process_frame
 	var piles: Array = get_tree().get_nodes_in_group("currency_pickups")
 	var kinds := {}
+	var bundles := 0
 	for c in piles:
 		kinds[c.kind] = true
-	check(piles.size() >= 5, "the boss's currency lies on the ground (%d piles: %s)" % [piles.size(), kinds.keys()])
+		if c.kind == "bundle":
+			bundles += 1
+			for part in c.parts:
+				kinds[part[0]] = true  # (what is in a pile)
+	check(piles.size() >= 3 and piles.size() <= 8, "the boss's currency lies on the ground in a few piles (%d: %s)" % [piles.size(), kinds.keys()])
+	check(bundles == 2, "orbs and shards are one pile, gems and runes another (%d bundles)" % bundles)
 	check(kinds.has("orb") and kinds.has("shard") and kinds.has("rune") and kinds.has("gem"), "orbs, shards, runes and gems among them")
 	check(piles.all(func(c): return c._plate != null and c._plate.text != ""), "each has a label")
 	check(GameState.orbs == orbs0 and GameState.shards == shards0 and GameState.gems == gems0 and GameState.runes == runes0,

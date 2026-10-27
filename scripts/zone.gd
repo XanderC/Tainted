@@ -10,7 +10,7 @@ const PACK_AGGRO := 520.0
 const EXIT_REACH := 70.0
 const WAYPOINT_REACH := 110.0
 const ITEM_DROP_CHANCE := 0.10  # a normal monster's chance to drop an item (elites always do)
-const SHARD_DROP_CHANCE := 0.18
+const SHARD_DROP_CHANCE := 0.09  # (a Currency pile is one label: CurrencyPickup bundles)
 const SCROLL_DROP_CHANCE := 0.03  # a Scroll of Town Portal from a normal monster...
 const SCROLL_ELITE_CHANCE := 0.25  # ...and from an elite
 const UpgradePopupUIScript = preload("res://scripts/upgrade_popup_ui.gd")
@@ -74,6 +74,8 @@ func _ready() -> void:
 	if not party_zone:
 		_spawn_packs()
 	player.global_position = _arrival()
+	if not party_zone:
+		ZoneEncounters.roll(self)  # a cottage in the woods, a cult at its ritual: sometimes
 	GameState.portal_arrival = {}
 	portals = TownPortals.new()
 	portals.place = portal_place()
@@ -363,7 +365,7 @@ func _on_monster_died(e: Enemy, at: Vector2) -> void:
 		_drop_item(LootGenerator.roll_item(area_level + 1, r), at)
 	if randf() < SHARD_DROP_CHANCE:
 		var ids := CraftingDB.ORBS.keys()
-		spawn_currency("shard", ids[randi() % mini(4, ids.size())], 1, at)
+		CurrencyPickup.add_to_bundle(self, "Currency", ["shard", ids[randi() % mini(4, ids.size())], 1], at)
 	if randf() < (SCROLL_ELITE_CHANCE if elite else SCROLL_DROP_CHANCE):
 		spawn_currency("scroll", "town_portal", 1, at)
 
@@ -371,8 +373,8 @@ func _on_monster_died(e: Enemy, at: Vector2) -> void:
 func _drop_boss_loot(at: Vector2) -> void:
 	_drop_item(LootGenerator.roll_item(area_level + 2, ItemInstance.Rarity.RARE), at)
 	_drop_item(LootGenerator.roll_item(area_level + 2, ItemInstance.Rarity.MAGIC), at + Vector2(50, 20))
-	spawn_currency("orb", "alteration", 1, at)
-	spawn_currency("orb", "transmute", 2, at)
+	CurrencyPickup.add_to_bundle(self, "Currency", ["orb", "alteration", 1], at)
+	CurrencyPickup.add_to_bundle(self, "Currency", ["orb", "transmute", 2], at)
 	spawn_currency("scroll", "town_portal", 2, at)
 
 

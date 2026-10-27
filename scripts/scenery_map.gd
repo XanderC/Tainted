@@ -40,6 +40,7 @@ func _prop(name: String, pos: Vector2, scale := 0.5, block := 0.0, inset := 0.9)
 	s.scale = Vector2(scale, scale)
 	s.position = pos
 	add_child(s)
+	PropFader.attach(self, s)  # see-through with the player behind it
 	if block > 0.0:
 		var body := StaticBody2D.new()
 		var cs := CollisionShape2D.new()

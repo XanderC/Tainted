@@ -1,5 +1,16 @@
 [
 	{
+		"build": 0,
+		"title": "Random encounters, tidier loot",
+		"notes": [
+			"Random encounters out in the campaign (about 1 visit in 2): a cottage in the woods whose zombies burst out when you come near, and a captive to free once they're dead; or cultists chanting round a summoning circle. Break the ritual before the 45 seconds are up (each cultist you kill buys time), or a Summoned Horror comes through.",
+			"What a fight drops of currency now lies in one pile you tap once, and a rift boss's orbs and shards are one pile, its gems and runes another.",
+			"Currency drops are less frequent and smaller.",
+			"Big trees and houses turn see-through when you stand behind them, so you never lose your character.",
+			"Currency, skill gem and shoulders slot changes from before are in this update too."
+		]
+	},
+	{
 		"build": 202610270612,
 		"title": "New skill icons",
 		"notes": [

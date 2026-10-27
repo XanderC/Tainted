@@ -7,11 +7,16 @@ extends Node2D
 ## on the nearest ancestor that has it. A rift's runes and gems drop this way too.
 ## kind: "orb" | "shard" | "recipe" | "rune" (a skill rune) | "gem" (a socket gem or rune) | "skill_gem"
 ##   | "scroll" (Scrolls of Town Portal: the character's own, not the stash's)
+##   | "bundle" (many of the above under one label, `parts` = [[kind, id, amount], ...], taken in one
+##   tap: a rift boss's orbs and shards are one pile, and a zone's drops join a pile lying near them)
 
 var kind := "shard"
 var id := ""
 var amount := 1
 var delay := 0.3  # kept for spawners; a tap always works
+var parts: Array = []  # a bundle's contents
+var title := "Currency"  # a bundle's name: "Currency", "Gems & Runes"
+const MERGE_RADIUS := 170.0  # a drop within this of a bundle of its title joins it
 var _t := 0.0
 var _plate: Button  # its label (LootPickup.layout places it)
 
@@ -37,8 +42,48 @@ func _process(delta: float) -> void:
 	queue_redraw()
 
 
+## Puts one drop into the bundle called `title` lying within MERGE_RADIUS of `pos` in `scene`, or starts
+## one there: so what a fight drops is one label to tap, not a scatter.
+static func add_to_bundle(scene: Node, title: String, part: Array, pos: Vector2) -> CurrencyPickup:
+	var near: CurrencyPickup = null
+	for c in scene.get_tree().get_nodes_in_group("currency_pickups"):
+		if c is CurrencyPickup and c.kind == "bundle" and c.title == title and not c.is_queued_for_deletion() 				and c.get_parent() == scene and c.position.distance_to(pos) <= MERGE_RADIUS:
+			near = c
+			break
+	if near == null:
+		near = CurrencyPickup.new()
+		near.kind = "bundle"
+		near.title = title
+		near.position = pos + Vector2.from_angle(randf() * TAU) * randf_range(20.0, 55.0)
+		scene.add_child(near)
+	near.add_part(part)
+	return near
+
+
+## Adds [kind, id, amount] to a bundle (the same thing twice is one entry with both amounts).
+func add_part(part: Array) -> void:
+	for p in parts:
+		if p[0] == part[0] and p[1] == part[1]:
+			p[2] = int(p[2]) + int(part[2])
+			_relabel()
+			return
+	parts.append([part[0], part[1], int(part[2])])
+	_relabel()
+
+
+func _relabel() -> void:
+	if _plate != null:
+		_plate.text = label_text()
+		LootPickup._layout_dirty = true
+
+
 func label_text() -> String:
 	match kind:
+		"bundle":
+			var n := 0
+			for p in parts:
+				n += int(p[2])
+			return "%s (%d)" % [title, n]
 		"orb": return ("%d %s" % [amount, CraftingDB.ORBS[id].short]) if amount > 1 else String(CraftingDB.ORBS[id].short)
 		"recipe": return "%s: %s" % ["Plan" if CraftingDB.is_plan(id) else "Recipe", CraftingDB.RECIPES[id].name]
 		"rune": return _counted(RuneDef.DB.get_rune(id).display_name)
@@ -54,6 +99,7 @@ func _counted(name: String) -> String:
 
 func color() -> Color:
 	match kind:
+		"bundle": return Color(1.0, 0.85, 0.35) if title == "Currency" else Color(0.78, 0.65, 1.0)
 		"orb": return CraftingDB.ORBS[id].color
 		"recipe": return CraftingDB.recipe_color(id)
 		"rune": return RuneDef.DB.get_rune(id).rarity_color()
@@ -91,6 +137,17 @@ func _take() -> void:
 
 ## Hands the contents over (into the shared stash, or a page learned). Returns a message to show.
 func collect() -> String:
+	if kind == "bundle":
+		var names: Array[String] = []
+		for p in parts:
+			var one := CurrencyPickup.new()  # (just to name and hand over each part: never added to the scene)
+			one.kind = p[0]
+			one.id = p[1]
+			one.amount = int(p[2])
+			one.collect()
+			names.append(one.label_text())
+			one.free()
+		return "+ " + ", ".join(PackedStringArray(names.slice(0, 3))) + (" and %d more" % (names.size() - 3) if names.size() > 3 else "")
 	match kind:
 		"orb": GameState.add_orb(id, amount)
 		"rune": GameState.add_rune(id, amount)
@@ -111,6 +168,11 @@ func _draw() -> void:
 	var bob := sin(_t) * 3.0
 	var p := Vector2(0, -14 + bob)
 	match kind:
+		"bundle":  # a little heap of what is in it
+			for i in mini(parts.size(), 5):
+				var pc: Color = CraftingDB.ORBS.get(parts[i][1], {}).get("color", c)
+				draw_circle(p + Vector2((i - 2) * 6.0, (i % 2) * 5.0 - 3.0), 7, pc.darkened(0.45))
+				draw_circle(p + Vector2((i - 2) * 6.0, (i % 2) * 5.0 - 3.0), 5, pc)
 		"orb":
 			draw_circle(p, 11, c.darkened(0.5))
 			draw_circle(p, 8, c)

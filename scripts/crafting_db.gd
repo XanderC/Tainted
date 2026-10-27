@@ -150,21 +150,21 @@ const STARTING_CURRENCY := {"identify": 5, "transmute": 8, "alteration": 6, "aug
 ## Drops from one normal monster kill. Returns {"shards": {...}, "orbs": {...}}.
 static func monster_drops(ilvl: int) -> Dictionary:
 	var out := {"shards": {}, "orbs": {}}
-	if randf() < 0.40:
-		out.shards["transmute"] = randi_range(1, 3) + int(ilvl / 10.0)
-	elif randf() < 0.15:
-		out.shards["alteration"] = randi_range(1, 2)
+	if randf() < 0.25:
+		out.shards["transmute"] = randi_range(1, 2) + int(ilvl / 15.0)
+	elif randf() < 0.10:
+		out.shards["alteration"] = 1
 	# What used to drop as crafting materials, as the shards it was worth
 	var r := randf()
-	if r < 0.30:
-		_add(out.shards, "transmute", randi_range(4, 8))
-	elif r < 0.40:
-		_add(out.shards, "alteration", 7)
-	elif r < 0.43:
-		_add(out.orbs, "alteration", 3)
-	if randf() < 0.22:
-		out.orbs[_weighted_orb()] = 1
+	if r < 0.18:
+		_add(out.shards, "transmute", randi_range(3, 5))
+	elif r < 0.25:
+		_add(out.shards, "alteration", 4)
+	elif r < 0.27:
+		_add(out.orbs, "alteration", 2)
 	if randf() < 0.12:
+		out.orbs[_weighted_orb()] = 1
+	if randf() < 0.06:
 		_add(out.orbs, "identify", 1)
 	return out
 
@@ -184,13 +184,13 @@ static func _weighted_orb() -> String:
 ## Guaranteed boss loot (besides the item rewards). Better when cleared under the time limit.
 static func boss_drops(fast: bool) -> Dictionary:
 	var m := 2 if fast else 1
-	var out := {"shards": {"alchemy": randi_range(4, 8) * m, "chaos": randi_range(2, 5) * m}, "orbs": {}}
+	var out := {"shards": {"alchemy": randi_range(3, 5) * m, "chaos": randi_range(1, 3) * m}, "orbs": {}}
 	# What used to drop as crafting materials (cores, souls, essence, dust), as the orbs it was worth
-	_add(out.shards, "chaos", 10 * ((randi_range(1, 2) if fast else 1) + (randi_range(1, 2) if fast else 1)))
-	_add(out.orbs, "alteration", 3 * (randi_range(2, 4) if fast else randi_range(1, 2)))
-	_add(out.shards, "alteration", 7 * randi_range(4, 8))
-	_add(out.orbs, "identify", randi_range(2, 4) * m)
-	var n := 6 if fast else 3
+	_add(out.shards, "chaos", 6 * ((randi_range(1, 2) if fast else 1) + (randi_range(1, 2) if fast else 1)))
+	_add(out.orbs, "alteration", 2 * (randi_range(2, 3) if fast else randi_range(1, 2)))
+	_add(out.shards, "alteration", 5 * randi_range(2, 4))
+	_add(out.orbs, "identify", randi_range(1, 3) * m)
+	var n := 4 if fast else 2
 	for i in n:
 		var id := _weighted_orb()
 		out.orbs[id] = int(out.orbs.get(id, 0)) + 1
