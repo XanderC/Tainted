@@ -195,6 +195,7 @@ func _card(c: Dictionary) -> Control:
 		v.add_child(line)
 		var icon := DragSlot.new(Vector2(36, 36))
 		icon.setup(IconFactory.gem_icon("skill:" + sk.id, sk.color, 3), sk.color, Color(sk.color).darkened(0.85), 0, "", sk.description)
+		icon.inset_icon()
 		icon.mouse_filter = Control.MOUSE_FILTER_PASS
 		line.add_child(icon)
 		var name_l := UIKit.label(("⚔ " if i == 0 else "") + sk.display_name, 15, sk.color.lightened(0.25))

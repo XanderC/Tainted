@@ -82,6 +82,13 @@ func _init(slot_size := Vector2(60, 60)) -> void:
 	_apply_style(_border)
 
 
+## Keeps the icon (and the rim round it) clear of the slot's own border: for painted square art, such
+## as a skill gem's, that would otherwise fill the whole cell and hide the border.
+func inset_icon() -> void:
+	var m := clampf(minf(custom_minimum_size.x, custom_minimum_size.y) * 0.12, 3.0, 8.0)
+	_style.set_content_margin_all(m)
+
+
 ## An empty slot's picture of what goes in it (an equipment slot's silhouette): shown faintly in
 ## place of its caption, and not an item (nothing to drag). Call after setup().
 func set_placeholder(tex: Texture2D) -> void:

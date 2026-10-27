@@ -84,9 +84,9 @@ func _draw() -> void:
 	if not player.can_use(index):
 		col = col.darkened(0.6)  # that, or not enough Adrenaline / Mana
 
-	# The skill's painted icon filling the button (or a coloured disc without one), dimmed while it
+	# The skill's painted icon inside the button's rim (or a coloured disc without one), dimmed while it
 	# can't be used, with the cooldown sweeping over it
-	var inner_r := r - 3.0
+	var inner_r := r - maxf(5.0, r * 0.15)  # clear of the frame's rim, which the icon would hide
 	var tex := SkillIcons.texture(s.id)
 	var usable := frac <= 0.0 and player.can_use(index)
 	if tex != null:

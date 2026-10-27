@@ -143,6 +143,8 @@ func _ware_cell(w: Dictionary) -> DragSlot:
 	var sel: bool = _ware.get("id", "") == w.id
 	var border: Color = Color.WHITE if sel else (Color(w.color) if afford else Color(0.30, 0.28, 0.32))
 	cell.setup(w.icon, border, Color(0.11, 0.10, 0.14))  # tap: its card
+	if w.type == "skillgem":
+		cell.inset_icon()  # (painted square art would hide the cell's border)
 	if not afford:
 		cell.modulate = Color(1, 1, 1, 0.5)
 	cell.payload = {"kind": "ware", "ware": w}

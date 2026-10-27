@@ -312,6 +312,7 @@ func _skill_row(i: int, links: int) -> HBoxContainer:
 	var cell := DragSlot.new(SKILL_CELL)
 	if sk != null:
 		cell.setup(IconFactory.gem_icon("skill:" + sk.id, sk.color, 3), sk.color, Color(sk.color).darkened(0.85))
+		cell.inset_icon()
 		cell.clicked.connect(func():
 			_tip().show_content(_tap_point(), func(d: VBoxContainer):
 				d.add_child(UIKit.label("%s %s" % [sk.icon, sk.get_effective_name()], 18, sk.get_effective_color().lightened(0.2)))

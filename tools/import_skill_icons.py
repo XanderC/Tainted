@@ -6,6 +6,7 @@ Usage:  python tools/import_skill_icons.py <folder with the skill icon zips>
 """
 import io
 import os
+import re
 import sys
 import zipfile
 
@@ -39,6 +40,27 @@ ICONS = {
     "berserk": ("berserker", 48),
     "colossus": ("earth-magician", 21),
     "ancients": ("229027-rpg-warrior", 34),
+    # Ranger, rogue and mage skills, and the hireling Scouts' (packs picked by their CraftPix number)
+    "quick_shot": ("194977", 5),
+    "power_shot": ("194977", 8),
+    "multishot": ("194977", 15),
+    "arrow_rain": ("194977", 45),
+    "fan_of_knives": ("416397", 16),
+    "shadow_step": ("416397", 27),
+    "death_blossom": ("416397", 47),
+    "viper_strike": ("416397", 42),
+    "firebolt": ("815119", 21),
+    "meteor": ("815119", 22),
+    "frost_nova": ("171551", 40),
+    "arc": ("134539", 1),
+    "arcane_ward": ("134539", 22),
+    "thunderstorm": ("134539", 9),
+    "holy_nova": ("390906", 5),
+    "smite": ("291633", 31),
+    "hl_shot": ("893941", 1),
+    "hl_power_shot": ("893941", 5),
+    "hl_multishot": ("893941", 12),
+    "hl_rain": ("893941", 36),
     # Support gems
     "rune_frost": ("cryomancer", 3),
     "rune_fire": ("pyromancer", 24),
@@ -65,7 +87,8 @@ def main():
         if len(found) != 1:
             sys.exit("%s: %d zips match %r" % (sid, len(found), pack))
         zf = zipfile.ZipFile(os.path.join(src, found[0]))
-        name = next((n for n in zf.namelist() if n.lower().endswith("/%d.png" % num)
+        # (the number is the whole file name, or follows a space: the archer pack's "<word> 5.png")
+        name = next((n for n in zf.namelist() if re.search(r"(^|[/ ])%d\.png$" % num, n.lower())
                      and not n.split("/")[-1].startswith("._")), None)
         if name is None:
             sys.exit("%s: no icon %d in %s" % (sid, num, found[0]))

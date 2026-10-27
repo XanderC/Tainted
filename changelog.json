@@ -1,5 +1,13 @@
 [
 	{
+		"build": 0,
+		"title": "New skill icons",
+		"notes": [
+			"New painted icons for the ranger, rogue and mage skills (Quick Shot, Power Shot, Multishot, Arrow Rain, Fan of Knives, Shadow Step, Death Blossom, Viper Strike, Firebolt, Meteor, Frost Nova, Arc, Arcane Ward, Thunderstorm, Holy Nova, Smite) and for the Scouts' skills.",
+			"Skill icons are a little smaller, so the slot borders and the round button rims show around them."
+		]
+	},
+	{
 		"build": 202610262131,
 		"title": "New gems and runes",
 		"notes": [

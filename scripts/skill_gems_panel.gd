@@ -79,6 +79,7 @@ func _skill_cell(skill_id: String, slot: int, sz: Vector2) -> DragSlot:
 		var ok := GameState.skill_gem_block_reason(skill_id) == ""
 		cell.setup(IconFactory.gem_icon("skill:" + skill_id, sk.color, 3), Color.WHITE if sel else sk.color,
 			Color(sk.color).darkened(0.85), GameState.skill_gem_count(skill_id) if slot < 0 else 0)  # tap: its card
+		cell.inset_icon()
 		if not ok:
 			cell.modulate = Color(1, 1, 1, 0.45)
 		if SkillIcons.texture(skill_id) == null:  # the drawn gem carries the skill's symbol
@@ -110,6 +111,7 @@ func _support_cell(rune_id: String, slot: int, idx: int, sz: Vector2) -> DragSlo
 		var border := r.rarity_color() if r.rarity > 0 else r.color
 		cell.setup(r.get_icon(), Color.WHITE if sel else border, r.color.darkened(0.8),
 			GameState.rune_count(rune_id) if slot < 0 else 0)  # tap: its card
+		cell.inset_icon()
 		_overlay(cell, "%d" % GameState.support_level(rune_id), 11, Color(1.0, 0.9, 0.5), VERTICAL_ALIGNMENT_TOP, HORIZONTAL_ALIGNMENT_LEFT)
 		cell.payload = {"kind": "rune", "from": "link", "slot": slot, "idx": idx, "rune_id": rune_id}
 		if not GameState.gem_station:
