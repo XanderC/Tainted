@@ -51,6 +51,33 @@ func set_social(account: String, data: Dictionary) -> void:
 	_mark(rec)
 
 
+## Removes everything kept for `account` (its player deleted their Autharr account): the file, anything
+## waiting to be written, and the copies in the daily backups kept here. Only an Autharr account ("a" +
+## the subject's GUID) is accepted, so a path can never be built from anything else. Returns whether
+## there was anything to remove. (Copies already taken to the NAS by the nightly backup age out there.)
+func erase(account: String) -> bool:
+	if not is_autharr_account(account):
+		return false
+	var had: bool = _accounts.has(account) and not _accounts[account].files.is_empty()
+	_accounts.erase(account)
+	var name := account + ".json"
+	for path in [_path(account), _path(account) + ".tmp"]:
+		if FileAccess.file_exists(path):
+			DirAccess.remove_absolute(path)
+			had = true
+	for day in DirAccess.get_directories_at(base_dir + "/backups"):
+		var copy := "%s/backups/%s/%s" % [base_dir, day, name]
+		if FileAccess.file_exists(copy):
+			DirAccess.remove_absolute(copy)
+			had = true
+	return had
+
+
+## "a" followed by a lowercase GUID, as Net builds an Autharr account's id.
+static func is_autharr_account(account: String) -> bool:
+	return account.length() == 37 and account.begins_with("a") and WebhookServer.is_guid(account.substr(1)) 		and account == account.to_lower()
+
+
 func remove(account: String, vpath: String) -> void:
 	if not vpath.begins_with("characters/"):
 		return

@@ -419,6 +419,14 @@ the deploy) instead of a sign-in. `scratch/buddy_bot.tscn` checks it against a l
 - Backups: the server copies every account daily to `/appdata/estate/tainted/backups` (7 days), and
   `tainted-backup.timer` packs them onto the NAS every night at 04:30
   (`/storage/Tainted/server-backups/tainted-<date>.tar.gz`, 30 days; `server/backup.sh`).
+- **Deleting an account:** the sign-in screen has a *Delete account* button that opens Autharr's security page
+  (password checked there, billing cancelled). Autharr then posts a signed `account.deleted` notice to the
+  server's listener (`--webhook-port=24602`, `scripts/webhook_server.gd`; HMAC-SHA256 over the body in
+  `X-Autharr-Signature`, secret `TAINTED_WEBHOOK_SECRET` from the environment, made once in `.env` by
+  `deploy_server.ps1` and copied to Tainted's record in Autharr; reached at `http://tainted:24602/webhooks/autharr`
+  on the `arr` network, never published). The server sends the player away, erases the account file and its copies in
+  the daily `backups/`, and drops any ban or mute (`Net.erase_account`). Copies already packed onto the NAS age out
+  with their 30 days. Check: `godot --headless --path . res://scratch/webhook_check.tscn` (31 checks).
 
 **Opening it to the world (not done yet):** see MULTIPLAYER.md, section 4.
 1. Traefik, in `estate/traefik/dynamic.yml`: a router `tainted-public` with entry point

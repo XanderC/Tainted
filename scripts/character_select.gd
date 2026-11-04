@@ -321,6 +321,13 @@ func _signed_in_row() -> Control:
 		GameState.forget_account()
 		_refresh())
 	row.add_child(out)
+	# Deleting the account is Autharr's page (it checks the password and cancels billing); when it's done the
+	# server hears of it and erases the characters it keeps.
+	var del := UIKit.button("Delete account", Color(0.20, 0.10, 0.10), Color(0.80, 0.40, 0.40), Vector2(150, 38), 14)
+	del.tooltip_text = "Opens your account page in the browser. Deleting it removes your characters from every Xandflix app."
+	var url := Net.account_page("/account/security")
+	del.pressed.connect(func(): OS.shell_open(url))
+	row.add_child(del)
 	return row
 
 

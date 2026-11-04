@@ -82,6 +82,9 @@ cd $remote
 # TestBot's key (TAINTED_BOT_KEY): made once, kept in .env here (not in git, readable by root only)
 touch .env && chmod 600 .env
 grep -q '^TAINTED_BOT_KEY=.' .env || echo "TAINTED_BOT_KEY=`$(head -c 24 /dev/urandom | od -An -tx1 | tr -d ' \n')" >> .env
+# Autharr's account.deleted notices are signed with this (TAINTED_WEBHOOK_SECRET): made once, then copied into Tainted's record in Autharr
+grep -q '^TAINTED_WEBHOOK_SECRET=.' .env || echo "TAINTED_WEBHOOK_SECRET=`$(head -c 32 /dev/urandom | od -An -tx1 | tr -d ' 
+')" >> .env
 docker compose up -d --build 2>&1 | tail -3
 for i in `$(seq 1 30); do
   s=`$(docker inspect -f '{{.State.Health.Status}}' tainted 2>/dev/null || echo missing)

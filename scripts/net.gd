@@ -203,6 +203,7 @@ var _rejoin := ""  # the instance to go back into once reconnected
 var _rejoin_coop := {}
 var _store: AccountStore  # server only, with --data: the players' characters
 var _auth_check := ""  # server only, with --auth: Autharr's URL, to check sign-ins
+var _webhook: WebhookServer  # server only, with --webhook-port and TAINTED_WEBHOOK_SECRET: Autharr's account.deleted notices
 var _bot_key := ""  # server only, with --bot-key: a hello carrying it is a test bot's (no sign-in)
 ## A test bot's game (TestBot, --bot-key): the server's bot key instead of a sign-in.
 var bot_key := ""
@@ -249,6 +250,12 @@ func _ready() -> void:
 				moderation = Moderation.new(a.get_slice("=", 1))
 			elif a.begins_with("--auth="):
 				_auth_check = a.get_slice("=", 1).trim_suffix("/")
+			elif a.begins_with("--webhook-port="):
+				# The secret comes from the environment, not the command line, where `ps` would show it
+				_webhook = WebhookServer.new()
+				if not _webhook.start(int(a.get_slice("=", 1)), OS.get_environment("TAINTED_WEBHOOK_SECRET"), erase_account):
+					push_warning("Autharr's account.deleted notices are off: no TAINTED_WEBHOOK_SECRET, or the port is taken")
+					_webhook = null
 			elif a.begins_with("--bot-key="):
 				_bot_key = a.trim_prefix("--bot-key=")
 			elif a.begins_with("--admin="):
@@ -960,6 +967,8 @@ func _process(delta: float) -> void:
 			_rpc_ping.rpc_id(1)  # so a proxy never sees the connection idle
 	if is_server():
 		_drop_silent()
+		if _webhook != null:
+			_webhook.poll()
 		if _store != null:
 			_store_t -= delta
 			if _store_t <= 0.0:
@@ -1739,6 +1748,27 @@ func players_online() -> Array:
 		out.append({"id": id, "name": String(p.info.name), "account": String(p.get("account", "")), "level": int(p.info.get("level", 1)),
 			"where": String(p.instance), "party": int(p.party)})
 	return out
+
+
+## Server: a player deleted their Autharr account (Autharr's notice, by their subject), so everything kept
+## about them goes: the player is sent away first (and no longer tied to the account, so nothing they or
+## their leaving writes brings it back), then the characters, the backups held here, and any ban or mute.
+func erase_account(sub: String) -> void:
+	var account := "a" + sub.left(64)
+	if not AccountStore.is_autharr_account(account):
+		return
+	var id := int(_online_accounts.get(account, 0))
+	if _peers.has(id):
+		_peers[id].account = ""
+		_online_accounts.erase(account)
+		kick_player(id, "Your account was deleted.")
+	for other in _peers:  # a second connection of theirs, should one linger
+		if String(_peers[other].get("account", "")) == account:
+			_peers[other].account = ""
+			kick_player(other, "Your account was deleted.")
+	var had := _store != null and _store.erase(account)
+	moderation.forget(account)
+	log_line("Account %s deleted in Autharr: %s" % [account.left(9), "their characters were erased" if had else "nothing was kept for them"])
 
 
 ## Sends player `id` away: their game shows `reason` as when a join is refused.

@@ -20,6 +20,15 @@ func _init(dir := "") -> void:
 			mutes = d.mutes if d.get("mutes") is Dictionary else {}
 
 
+## Drops everything held about `account` (its player deleted their account): a ban or mute on it names a
+## person who no longer exists.
+func forget(account: String) -> void:
+	var changed := bans.erase(account)
+	changed = mutes.erase(account) or changed
+	if changed:
+		_save()
+
+
 func is_banned(account: String) -> bool:
 	return account != "" and bans.has(account)
 

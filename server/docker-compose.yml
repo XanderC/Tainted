@@ -21,6 +21,10 @@ services:
       - TAINTED_AUTH=${TAINTED_AUTH-http://autharr:5180}
       # Told to a game too old to join (publish_builds.ps1 puts the builds there)
       - "TAINTED_UPDATE=${TAINTED_UPDATE-Get the new version from the NAS: Tainted > builds (Tainted.apk on a phone, Tainted.exe on a PC).}"
+      # Autharr's notices (a player deleted their account) arrive at http://tainted:24602/webhooks/autharr on the arr network
+      # (not published). Signed with this secret, which must equal the one on Tainted's record in Autharr; deploy_server.ps1
+      # makes it once in .env. Empty: the listener stays off and a deleted account's characters are kept until removed by hand.
+      - TAINTED_WEBHOOK_SECRET=${TAINTED_WEBHOOK_SECRET:-}
       # Seconds' warning players get when the container stops (a redeploy, docker stop)
       - TAINTED_STOP_WARNING=${TAINTED_STOP_WARNING:-10}
       # TestBot's way in (see tainted-bot below; empty: no bots)
