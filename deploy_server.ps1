@@ -2,7 +2,7 @@
 #   1. exports the game as a pack (builds\server\tainted.pck) with the "Linux Server" export preset
 #      (added to export_presets.cfg the first time; that file is not in git)
 #   2. copies it with the server\ files (Dockerfile, compose file, start and admin scripts, the NAS
-#      backup and its timer) to /opt/projects/Tainted/server
+#      backup and its timer, the download page in server\site) to /opt/projects/Tainted/server
 #   3. rebuilds and restarts the container there (the old one warns its players and saves first),
 #      waits until it is healthy, and installs the daily backup timer
 # Clients and server must be the same build: redeploy whenever the game changes.
@@ -72,6 +72,10 @@ $files = "Dockerfile", "docker-compose.yml", "entrypoint.sh", "tainted-admin", "
     ForEach-Object { Join-Path $PSScriptRoot "server\$_" }
 & scp @ssh -q @files $pck "$HostName`:$remote/"
 if ($LASTEXITCODE -ne 0) { Write-Error "Copy failed" }
+# The download page's nginx settings and page (tainted-site)
+& ssh @ssh $HostName "mkdir -p $remote/site /appdata/estate/tainted-downloads && chmod 755 /appdata/estate/tainted-downloads"
+& scp @ssh -q (Join-Path $PSScriptRoot "server\site\default.conf") (Join-Path $PSScriptRoot "server\site\index.html") "$HostName`:$remote/site/"
+if ($LASTEXITCODE -ne 0) { Write-Error "Copying the download page failed" }
 
 # 3. Rebuild, restart, wait for healthy
 Write-Host "Building and starting the container..." -ForegroundColor Cyan

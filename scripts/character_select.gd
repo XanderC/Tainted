@@ -362,7 +362,7 @@ func _build_sign_in(parent: Control) -> void:
 	links.alignment = BoxContainer.ALIGNMENT_CENTER
 	links.add_theme_constant_override("separation", 28)
 	parent.add_child(links)
-	for l in [["Create an account", "/register"], ["Forgot your password?", "/forgot-password"]]:
+	for l in [["Create an account", "/register?app=tainted"], ["Forgot your password?", "/forgot-password"]]:
 		var b := LinkButton.new()
 		b.text = l[0]
 		b.add_theme_font_size_override("font_size", 16)

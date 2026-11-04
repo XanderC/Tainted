@@ -19,8 +19,8 @@ services:
       # Require an Autharr sign-in, checked over the arr network (Autharr has the tainted-game client).
       # Set TAINTED_AUTH= (empty) to run without it: device keys as accounts.
       - TAINTED_AUTH=${TAINTED_AUTH-http://autharr:5180}
-      # Told to a game too old to join (publish_builds.ps1 puts the builds there)
-      - "TAINTED_UPDATE=${TAINTED_UPDATE-Get the new version from the NAS: Tainted > builds (Tainted.apk on a phone, Tainted.exe on a PC).}"
+      # Told to a game too old to join (publish_builds.ps1 puts the builds on that page)
+      - "TAINTED_UPDATE=${TAINTED_UPDATE-Get the new version at https://tainted.xandflix.uk/download (Tainted.apk on a phone, Tainted.exe on a PC).}"
       # Autharr's notices (a player deleted their account) arrive at http://tainted:24602/webhooks/autharr on the arr network
       # (not published). Signed with this secret, which must equal the one on Tainted's record in Autharr; deploy_server.ps1
       # makes it once in .env. Empty: the listener stays off and a deleted account's characters are kept until removed by hand.
@@ -47,6 +47,28 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
+
+  # The download page and the full release (Tainted.exe, Tainted.apk): https://tainted.xandflix.uk/download.
+  # Static files from nginx, reached by Traefik's tainted-download router (the estate repository's
+  # traefik/dynamic.yml) as http://tainted-site:80; nothing is published on the host. The page is
+  # site/index.html; the files are put in /appdata/estate/tainted-downloads by publish_builds.ps1.
+  tainted-site:
+    image: nginx:1.27-alpine
+    container_name: tainted-site
+    restart: unless-stopped
+    volumes:
+      - ./site/default.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./site/index.html:/usr/share/nginx/html/download/index.html:ro
+      - ${TAINTED_DOWNLOADS:-/appdata/estate/tainted-downloads}:/usr/share/nginx/html/download/files:ro
+    networks:
+      - arr
+    mem_limit: 64m
+    cpus: 0.5
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "2"
 
   # TestBot: a player to try multiplayer with on your own (scripts/bots/test_bot.gd: whisper it "help").
   # It comes in with the bot key instead of a sign-in: TAINTED_BOT_KEY, in .env beside this file

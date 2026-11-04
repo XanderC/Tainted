@@ -63,10 +63,15 @@ commit). The README's Multiplayer section describes how what's done works.
       https://auth.xandflix.uk for sign-in; published 26 Oct 2026
 - [x] Updates without reinstalling (publish_update.ps1, Updater): patches fetched from the server.
       Needs one full release (publish_builds.ps1) installed by everyone first
-- [ ] Public downloads of the full release: the "update your game" message points at the NAS, which
-      only the house reaches (needed now only for a first install and for full releases)
-- [x] Sign-in screen links: create an account, forgot password (Autharr's pages at auth.xandflix.uk,
-      already public; project setting tainted/net/account_url)
+- [x] Public downloads of the full release: https://tainted.xandflix.uk/download (nginx container
+      tainted-site, files in /appdata/estate/tainted-downloads, put there by publish_builds.ps1; the
+      route is tainted-download in the estate's traefik/dynamic.yml). The "update your game" message
+      points there. Windows shows its SmartScreen warning (the exe is unsigned); the page says what to click
+- [x] Sign-in screen links: create an account (Autharr's /register?app=tainted: a Tainted sign-up that
+      sends you back to the game), forgot password (Autharr's pages at auth.xandflix.uk, already public;
+      project setting tainted/net/account_url)
+- [x] Deleting an account (Autharr) erases its characters: Autharr's account.deleted notice reaches the
+      server on :24602 (webhook_server.gd), signed with TAINTED_WEBHOOK_SECRET
 - [x] Per-address connection limits at Traefik: 6 WebSockets per Cloudflare client IP (tainted-connections)
 - [x] Town traffic grew with the square of a copy's players (each one's moves to all the others, 15
       times a second; ~10 Mbit/s up at 35 players). Now a player standing still sends nothing, and

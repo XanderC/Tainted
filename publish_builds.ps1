@@ -1,5 +1,6 @@
 # A full release: builds the game for PCs and phones and puts both on the NAS (Tainted > builds),
-# where the server's "update your game" message sends players:
+# and onto the public download page (https://tainted.xandflix.uk/download, from the host; -NoUpload skips
+# it) where the server's "update your game" message sends players:
 #   Tainted.exe  (Windows: run it)        Tainted.apk  (Android: open it on the phone to install)
 #   version.txt  (the build's number, protocol, date and commit)
 # It stamps a new build number (build.json) and keeps each platform's pack as the base later updates
@@ -7,7 +8,7 @@
 # themselves from then on. Only needed for what an update can't do (Updater: the engine, export
 # settings, project settings, the autoloads); otherwise release with publish_update.ps1.
 # Usage:  .\publish_builds.ps1 [-Dest Y:\Tainted\builds]
-param([string]$Dest = "Y:\Tainted\builds")
+param([string]$Dest = "Y:\Tainted\builds", [string]$HostName = "root@192.168.86.18", [switch]$NoUpload)
 # (Godot's log lines come on stderr: no ErrorActionPreference Stop; each step's result is checked)
 $godot = "D:\godot_bin\Godot_v4.4.1-stable_win64_console.exe"
 $apk = Join-Path $PSScriptRoot "builds\android\Tainted.apk"
@@ -50,4 +51,16 @@ Set-Content -Path (Join-Path $Dest "version.txt") -Encoding utf8 -Value @(
     "Tainted build $build, protocol $protocol",
     "Built $(Get-Date -Format 'yyyy-MM-dd HH:mm')",
     "Commit $commit")
+
+# The public download page (https://tainted.xandflix.uk/download) serves the same two files from the host
+if (-not $NoUpload) {
+    $key = Join-Path $env:USERPROFILE ".ssh\id_ed25519_estate"
+    $sshOpts = @("-i", $key, "-o", "BatchMode=yes", "-o", "ConnectTimeout=10")
+    $remote = "/appdata/estate/tainted-downloads"
+    & ssh @sshOpts $HostName "mkdir -p $remote && chmod 755 $remote"
+    & scp @sshOpts -q $exe $apk (Join-Path $Dest "version.txt") "$HostName`:$remote/"
+    if ($LASTEXITCODE -ne 0) { Write-Host "Uploading to the download page failed: it still offers the last release" -ForegroundColor Red; exit 1 }
+    & ssh @sshOpts $HostName "chmod 644 $remote/*"
+    Write-Host "Uploaded to the download page" -ForegroundColor Green
+}
 Write-Host "Published build $build to $Dest (protocol $protocol). Deploy the server too: .\deploy_server.ps1" -ForegroundColor Green

@@ -1,5 +1,14 @@
 [
 	{
+		"build": 202611042305,
+		"title": "Your own Tainted account",
+		"notes": [
+			"Tainted is free and open to anyone: Create an account on the sign-in screen opens a Tainted sign-up page, and when it's done it sends you back to the game.",
+			"Delete account on the character screen removes your characters and your sign-in, after you confirm your password in the browser.",
+			"The sign-in screen's wording is about your Tainted account."
+		]
+	},
+	{
 		"build": 202610270629,
 		"title": "Random encounters, tidier loot",
 		"notes": [
