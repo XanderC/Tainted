@@ -4,7 +4,7 @@ Top-down mobile ARPG prototype (Godot 4.3+, GDScript, GL Compatibility renderer)
 
 ## Run it
 1. Open Godot 4.3 or newer, click Import, pick `project.godot`.
-2. Press F5. The game is **online only**: sign in with your Xandflix account (Autharr) and it joins
+2. Press F5. The game is **online only**: sign in with your Tainted account (an Autharr login; free, no plan needed) and it joins
    the Tainted World (on the home network for now; see Multiplayer), which keeps your characters.
    Move with the arrow keys or by click-dragging on the left side of the window.
 

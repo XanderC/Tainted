@@ -324,7 +324,7 @@ func _signed_in_row() -> Control:
 	# Deleting the account is Autharr's page (it checks the password and cancels billing); when it's done the
 	# server hears of it and erases the characters it keeps.
 	var del := UIKit.button("Delete account", Color(0.20, 0.10, 0.10), Color(0.80, 0.40, 0.40), Vector2(150, 38), 14)
-	del.tooltip_text = "Opens your account page in the browser. Deleting it removes your characters from every Xandflix app."
+	del.tooltip_text = "Opens your account page in the browser. Deleting it removes your characters and the login itself, wherever else it is used."
 	var url := Net.account_page("/account/security")
 	del.pressed.connect(func(): OS.shell_open(url))
 	row.add_child(del)
@@ -357,7 +357,7 @@ func _build_sign_in(parent: Control) -> void:
 	pw.text_submitted.connect(func(_t): go.pressed.emit())
 	parent.add_child(go)
 	parent.add_child(err)
-	parent.add_child(UIKit.label("Your Xandflix account (Autharr).", 13, UIKit.TEXT_DIM, true))
+	parent.add_child(UIKit.label("Your Tainted account. It is free: make one with Create an account.", 13, UIKit.TEXT_DIM, true))
 	var links := HBoxContainer.new()  # Autharr's own pages, in the browser
 	links.alignment = BoxContainer.ALIGNMENT_CENTER
 	links.add_theme_constant_override("separation", 28)
