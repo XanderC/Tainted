@@ -1,5 +1,12 @@
 [
 	{
+		"build": 0,
+		"title": "Password reset in Tainted's own words",
+		"notes": [
+			"Forgot your password? on the sign-in screen opens a Tainted page, and the email it sends and the page it leads to speak of Tainted and send you back to the game."
+		]
+	},
+	{
 		"build": 202611042305,
 		"title": "Your own Tainted account",
 		"notes": [
