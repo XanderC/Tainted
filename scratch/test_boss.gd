@@ -40,6 +40,15 @@ func count_group(g: String) -> int:
 	return n
 
 
+## Waits for the boss's untouchable spell (intro, a roar) to run out by itself, as it does for a player; it must.
+func hurtable(boss: Enemy) -> void:
+	var waited := 0.0
+	while boss._shield_t > 0.0 and waited < 5.0:
+		await settle(0.1)
+		waited += 0.1
+	check(boss._shield_t <= 0.0, "his untouchable spell runs out by itself (%.1f s)" % waited)
+
+
 func boss_object(zone) -> Dictionary:
 	for o in MapData.objects_of(zone.maze.data, "boss"):
 		return o
@@ -194,7 +203,7 @@ func _ready() -> void:
 
 	# Phase two: at 65%
 	await settle(1.0)
-	boss._shield_t = 0.0
+	await hurtable(boss)
 	boss.hp = boss.max_hp * 0.6
 	for i in 40:
 		refill()
@@ -209,7 +218,7 @@ func _ready() -> void:
 	shot("boss_phase2.png")
 	# Phase three: at 30%, and the adds stay capped
 	await settle(2.0)
-	boss._shield_t = 0.0
+	await hurtable(boss)
 	boss.hp = boss.max_hp * 0.25
 	for i in 60:
 		refill()
@@ -227,7 +236,7 @@ func _ready() -> void:
 
 	# He dies: the arena opens, his adds fall, and his rewards drop
 	await settle(2.0)
-	boss._shield_t = 0.0
+	await hurtable(boss)
 	var items_before := count_group("pickups")
 	boss.hp = 1.0
 	boss.take_damage(1000.0)

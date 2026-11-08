@@ -602,7 +602,7 @@ func _process(_delta: float) -> void:
 	var plain := is_instance_valid(_boss) and not BossDB.has(String(_boss.get_meta("boss_id", "")))
 	_boss_lbl.visible = plain and not _boss._dead and _boss._aggro
 	if _boss_lbl.visible:
-		_boss_lbl.text = "%s   %d%%" % [_boss.display_name, int(100.0 * _boss.hp / maxf(_boss.max_hp, 1.0))]
+		_boss_lbl.text = "%s   %d%%" % [_boss.display_name, clampi(int(ceil(100.0 * (_boss.hp / maxf(_boss.max_hp, 1.0)) - 0.001)), 0, 100)]
 
 
 func _unhandled_input(event: InputEvent) -> void:

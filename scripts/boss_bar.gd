@@ -98,7 +98,8 @@ func _process(_delta: float) -> void:
 	if not _carded:
 		_carded = true
 		_show_card()
-	_pct.text = "%d%%" % int(ceil(100.0 * boss.hp / maxf(boss.max_hp, 1.0)))
+	# (100 * hp / max can come out a hair over 100 at full life, which ceil made 101%: divide first)
+	_pct.text = "%d%%" % clampi(int(ceil(100.0 * (boss.hp / maxf(boss.max_hp, 1.0)) - 0.001)), 0, 100)
 	_bar.queue_redraw()
 
 

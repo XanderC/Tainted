@@ -253,6 +253,7 @@ func _loose_arrow() -> void:
 
 
 func _process_ailments(delta: float) -> void:
+	_shield_t = maxf(_shield_t - delta, 0.0)  # every monster's, a boss's intro and roars included (not only an elite's)
 	if _stun_t > 0.0:
 		_stun_t = maxf(_stun_t - delta, 0.0)
 
@@ -750,7 +751,6 @@ static func players_near(tree: SceneTree, you, at: Vector2, radius: float) -> Ar
 
 
 func _tick_affixes(delta: float, dist: float) -> void:
-	_shield_t = maxf(_shield_t - delta, 0.0)
 	if has_affix("regenerating") and hp < max_hp:
 		hp = minf(hp + max_hp * 0.02 * delta, max_hp)
 	if has_affix("molten"):
