@@ -100,6 +100,14 @@ func _ready() -> void:
 	potion_pad.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	layer.add_child(potion_pad)
 	potion_pad.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT)
+	# The skill buttons, greyed out: there is nothing to fight in town, but they stay where they are
+	for i in SkillButton.CENTRES:
+		var sb := SkillButton.new()
+		sb.player = player
+		sb.index = i
+		sb.disabled = true
+		sb.position = SkillButton.pad_position(i)
+		potion_pad.add_child(sb)
 	# The flask row, between the orbs at the bottom centre
 	var flasks := FlaskBar.new()
 	flasks.player = player

@@ -1,6 +1,13 @@
 [
 	{
 		"build": 0,
+		"title": "Skill buttons in town",
+		"notes": [
+			"The skill buttons now show in Ashfall Outpost too, greyed out, so the screen looks the same in town as out in the field. They do nothing there."
+		]
+	},
+	{
+		"build": 0,
 		"title": "Loot on the ground",
 		"notes": [
 			"Items on the ground are now just their picture, without the dark box and coloured border; the name above still shows the colour.",

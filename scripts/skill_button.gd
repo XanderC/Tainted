@@ -20,6 +20,7 @@ const CENTRES := {
 
 var player: Player
 var index := 0
+var disabled := false  # shown but greyed and not tappable (in town, where nothing is fought)
 
 var _is_down := false
 var _touch_id := -1
@@ -39,6 +40,8 @@ func _ready() -> void:
 	button_size = hole_radius(index) * 2.0
 	size = Vector2(button_size, button_size)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
+	if disabled:
+		self_modulate = Color(0.55, 0.55, 0.6, 0.55)
 	GameState.skills_changed.connect(queue_redraw)
 
 
@@ -49,7 +52,7 @@ func _process(_delta: float) -> void:
 
 
 func _input(event: InputEvent) -> void:
-	if player == null:
+	if player == null or disabled:
 		return
 	if event is InputEventScreenTouch:
 		if event.pressed and Rect2(global_position, size).has_point(event.position):
