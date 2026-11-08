@@ -578,6 +578,27 @@ that is never used up: drink it from a flask slot and it goes on cooldown.
   instead of 12 times (`Coop`). Measure with `scratch/measure_density.tscn` (build time, frame time
   and a screenshot of a zone and a rift) and `scratch/count_packs.gd` (packs per map).
 
+### Kept zones
+- **A solo zone is kept as you leave it** (`ZoneInstances`, in memory only): leaving the Ashwood by an exit, a
+  waypoint, a town portal or death takes the `Zone` scene out of the tree with its monsters, loot, bosses,
+  encounters and quest objects still in it (`ActDB.travel` calls `ZoneInstances.stash_current`); coming back
+  puts the same scene in (`resume`). Closing the game, picking another character, signing out or going back to
+  the character screen forgets them all (`GameState._new_game`, `leave_character`). A party's zone is its
+  host's (Coop) and is never kept.
+- **Only what is the player's is taken away and made again**: `Zone.suspend()` frees the player, hireling, pet,
+  allies, town portal nodes and the HUD and windows; `Zone.resume(entry)` makes a new player, points the
+  monsters (`Enemy.target`) and the boss arena at them, arms the story triggers again and builds the HUD
+  (`_make_player`, `_enter`, `_build_hud`). A boss fight begun is not kept: the boss is made again, asleep
+  and at full life, with its arena open and its adds gone (`_reset_boss_fight`). Dying brings you back to the
+  waypoint in the same zone (the monsters you killed stay dead).
+- **Going to a kept zone asks** (`InstanceChoice`, the game paused): Continue, Reset area (the old one is thrown
+  away and a new one made) or Cancel (you stay where you are; the caller's `on_cancel` steps you back from the
+  exit). It says what is left ("about 280 monsters are left and Vesh still lives"). A town portal back
+  always goes to the zone it was read in, without asking, and you arrive by the portal. A solo rift left through
+  a town portal is asked about too at the Rift Gate (carry on, or a new rift that lets the old one go).
+- Loot that lies in a solo zone stays in it, so a zone no longer saves `left_loot` (a party's zone still does).
+- Test: `scratch/test_instances.tscn` (real scene changes; takes `scratch/instance_choice.png`).
+
 ### Boss fights
 - **What a quest boss is**: a map "boss" object (id, name, kind, skin, size, hp) in a zone. One with an
   entry in `BossDB` (by that id) gets a real fight; one without keeps the plain tough monster with a

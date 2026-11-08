@@ -43,6 +43,7 @@ var _near: Interactable = null
 var _leaving := false
 var coop: Coop = null  ## the party's zone (Net.coop kind "zone"): shared with the party
 var portals: TownPortals  ## the town portals open here, yours and your party's
+var _hud_layer: CanvasLayer
 var _inst := ""  # the party's instance of this zone ("" alone)
 
 
@@ -55,7 +56,23 @@ func _ready() -> void:
 	maze = MazeMap.new()
 	maze.setup(String(z["map"]))
 	add_child(maze)
+	_make_player()
 
+	# With a party, the party's copy of this zone: the first member in runs its monsters (Coop)
+	var party_zone := Net.online() and Net.in_party()
+	if party_zone:
+		Net.coop = {"inst": "zone:%d:%s" % [int(Net.party.id), zone_id], "kind": "zone"}
+		_inst = String(Net.coop.inst)
+	# The world: made once. A solo zone is kept as you leave it (ZoneInstances) and comes back by resume().
+	_place_objects(not party_zone)
+	if not party_zone:
+		_spawn_packs()
+		ZoneEncounters.roll(self)  # a cottage in the woods, a cult at its ritual: sometimes
+	_enter()
+
+
+## The player (and their camera): made when the zone is, and again each time they come back to it.
+func _make_player() -> void:
 	player = Player.new()
 	player.class_def = ClassLibrary.get_class_def(GameState.char_class)
 	add_child(player)
@@ -68,23 +85,16 @@ func _ready() -> void:
 	player.died.connect(func(): _death.visible = coop == null)  # a party's zone: PartyDeath
 	player.item_dropped.connect(_on_item_dropped)
 
-	# With a party, the party's copy of this zone: the first member in runs its monsters (Coop)
-	var party_zone := Net.online() and Net.in_party()
-	if party_zone:
-		Net.coop = {"inst": "zone:%d:%s" % [int(Net.party.id), zone_id], "kind": "zone"}
-		_inst = String(Net.coop.inst)
-	_place_objects(not party_zone)
-	if not party_zone:
-		_spawn_packs()
+
+## The player arrives: where they stand, their town portals, and the screen's buttons and windows.
+func _enter() -> void:
 	player.global_position = _arrival()
-	if not party_zone:
-		ZoneEncounters.roll(self)  # a cottage in the woods, a cult at its ritual: sometimes
 	GameState.portal_arrival = {}
 	portals = TownPortals.new()
 	portals.place = portal_place()
 	add_child(portals)
-	TownPortals.restore_loot(self, portal_place())
-	if party_zone:
+	if _inst != "":  # a party's zone: what lay on the ground waits (a solo zone is kept whole instead)
+		TownPortals.restore_loot(self, portal_place())
 		var presence := NetPresence.new()
 		presence.instance = String(Net.coop.inst)
 		add_child(presence)
@@ -117,6 +127,68 @@ func _ready() -> void:
 
 	Quests.notify("zone", zone_id)
 	_flash(ActDB.zone_name(zone_id), Color(1.0, 0.88, 0.6))
+
+
+# ---------- kept between visits (ZoneInstances) ----------
+
+## The player leaves and the zone is kept as it is: whatever is theirs is taken away (the player, their
+## hireling, pet and allies, the screen's buttons and windows) and made again by resume(). A boss fight in
+## progress is not kept: the boss is back asleep at full life, with its arena open and its adds gone.
+func suspend() -> void:
+	_reset_boss_fight()
+	for g in ["hireling", "pet", "ancients", "town_portals"]:  # (the town portals are drawn again from GameState)
+		for n in get_tree().get_nodes_in_group(g):
+			if is_ancestor_of(n):
+				n.queue_free()
+	Hirelings.node = null
+	PetDB.node = null
+	for n in [player, menu, skill_tree_ui, upgrade_popup_ui, dialogue, quest_log, waypoint_ui, portals, _hud_layer]:
+		if is_instance_valid(n):
+			n.queue_free()
+	_hud_layer = null
+	_toast = null
+	_talk_btn = null
+	_boss_lbl = null
+	_boss_bar = null
+	_death = null
+	player = null
+	_near = null
+
+
+## The player comes back to the zone as it was: a new player, the monsters turned on them, the story's
+## triggers armed again, the screen made again. `entry` is how they came (GameState.zone_entry's values).
+func resume(entry: String) -> void:
+	_leaving = false
+	GameState.current_zone = zone_id
+	GameState.zone_entry = entry
+	get_tree().paused = false
+	_make_player()
+	for e in get_tree().get_nodes_in_group("enemies"):
+		if is_ancestor_of(e):
+			e.target = player
+	for a in get_tree().get_nodes_in_group("boss_arena"):
+		if is_ancestor_of(a):
+			a.player = player
+	_triggers = MapData.objects_of(maze.data, "trigger").duplicate()  # a spot passed earlier counts again
+	_enter()
+
+
+## Puts a boss fight that was begun back to the start: the boss is made again, asleep and at full life.
+func _reset_boss_fight() -> void:
+	if not is_instance_valid(_boss) or _boss._dead:
+		return
+	if not (_boss._aggro or (_boss.brain != null and _boss.brain.state != BossBrain.S.SLEEP)):
+		return
+	var id := String(_boss.get_meta("boss_id", ""))
+	for g in ["boss_adds", "boss_arena"]:
+		for n in get_tree().get_nodes_in_group(g):
+			if is_ancestor_of(n):
+				n.queue_free()
+	_boss.queue_free()
+	_boss = null
+	for o in MapData.objects_of(maze.data, "boss"):
+		if String(o.get("id", "")) == id and Quests.boss_alive(id):
+			_spawn_boss(o)
 
 
 ## Where you appear: at the waypoint, the town portal spot, the exit to the zone you came from, or
@@ -545,14 +617,25 @@ func get_up() -> void:
 	_respawn()
 
 
-## Died: back at the waypoint (or the entrance) with the zone reset.
+## Died: back at the waypoint (or the entrance). A solo zone is as it was (ZoneInstances), but a boss fight
+## begun starts over; a party's zone is made again.
 func _respawn() -> void:
 	_leave(zone_id, "waypoint" if zone_id in GameState.waypoints else "start")
 
 
 func _leave(target: String, entry: String) -> void:
 	_leaving = true
-	ActDB.travel(get_tree(), target, entry)
+	ActDB.travel(get_tree(), target, entry, _stay)
+
+
+## You backed out of "carry on or start over?" at an exit: you are where you were, a step back from it.
+func _stay() -> void:
+	_leaving = false
+	if is_instance_valid(player):
+		for e in _exits:
+			var away: Vector2 = player.global_position - e["node"].global_position
+			if away.length() < EXIT_REACH + 40.0:
+				player.global_position = e["node"].global_position + (away.normalized() if away.length() > 1.0 else Vector2.DOWN) * (EXIT_REACH + 90.0)
 
 
 ## Where a town portal read here stands (TownPortals): this zone (the party's copy of it).
@@ -565,7 +648,8 @@ func portal_place() -> Dictionary:
 func portal_to_town() -> void:
 	if _leaving:
 		return
-	TownPortals.remember_loot(self, portal_place())
+	if coop != null:  # (a solo zone is kept whole: its loot stays where it lies)
+		TownPortals.remember_loot(self, portal_place())
 	_leave(ActDB.TOWN, "portal")
 
 
@@ -573,6 +657,7 @@ func portal_to_town() -> void:
 
 func _build_hud() -> void:
 	var layer := GameHud.build(self, player)
+	_hud_layer = layer
 	var info := VBoxContainer.new()
 	info.position = Vector2(16, 12)
 	info.add_theme_constant_override("separation", 6)

@@ -131,6 +131,7 @@ func _ready() -> void:
 
 
 func _new_game() -> void:
+	ZoneInstances.clear()  # a new game, another character or a sign-in: the zones kept for the last start afresh
 	known_recipes.clear()
 	for id in CraftingDB.RECIPES:
 		if CraftingDB.RECIPES[id].source == "start":
@@ -1626,6 +1627,7 @@ func delete_character(id: String) -> void:
 ## Save and stop playing the current character (back to the select screen).
 func leave_character() -> void:
 	save()
+	ZoneInstances.clear()  # back to the character screen: the zones you left are gone
 	char_id = ""
 	player = null
 

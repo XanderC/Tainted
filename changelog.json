@@ -1,6 +1,17 @@
 [
 	{
 		"build": 0,
+		"title": "Areas stay as you left them",
+		"notes": [
+			"When you leave an area by an exit, a waypoint or a town portal, it is still there when you come back: the monsters you killed stay dead and whatever lay on the ground is still lying there. An area only starts over when you leave the game.",
+			"If you go to an area you have already been in, a window asks whether to carry on where you left off or reset it, and tells you what is left. Reset brings back its monsters and boss.",
+			"A town portal always takes you back to the area it was opened in, as you left it, and back again.",
+			"If you die you wake at the waypoint in the same area. A boss fight you walked out of or died in starts over.",
+			"The Rift Gate asks the same if you left a rift unfinished through a town portal."
+		]
+	},
+	{
+		"build": 0,
 		"title": "Boss fights",
 		"notes": [
 			"Vesh, the Raider Captain, is now a proper boss fight. When he wakes he roars, a ring of fire seals round the camp, and his name and a health bar come up on screen.",

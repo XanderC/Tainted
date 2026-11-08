@@ -240,7 +240,7 @@ func _process(delta: float) -> void:
 		for e in _exits:
 			if player.global_position.distance_to(e["node"].global_position) < EXIT_REACH:
 				_leaving = true
-				ActDB.travel(get_tree(), e["target"], e["entry"])
+				ActDB.travel(get_tree(), e["target"], e["entry"], _stay_in_town.bind(e["node"]))
 				return
 
 	var best: Interactable = null
@@ -279,10 +279,31 @@ func _to_character_select() -> void:
 	get_tree().change_scene_to_file(CharacterSelect.SCENE)
 
 
+## You backed out of "carry on or start over?" at an exit: a step back from it, free to go again.
+func _stay_in_town(exit: Node2D) -> void:
+	_leaving = false
+	if is_instance_valid(player) and is_instance_valid(exit):
+		var away: Vector2 = player.global_position - exit.global_position
+		player.global_position = exit.global_position + (away.normalized() if away.length() > 1.0 else Vector2.DOWN) * (EXIT_REACH + 90.0)
+
+
 func enter_dungeon() -> void:
 	GameState.save()
 	if Net.in_party():
 		Net.open_party_rift(GameState.rift_level)  # the party is asked along; you go in (Net.join_portal)
+		return
+	# A solo rift you left through a town portal waits for you: carry on with it, or start a new one?
+	var tp: Dictionary = GameState.town_portal
+	if String(tp.get("kind", "")) == "rift" and String(tp.get("inst", "")) == "" and TownPortals.leads_back(tp):
+		InstanceChoice.ask(get_tree(), "Rift %d" % int(tp.get("level", 1)),
+			"You left Rift %d unfinished, with its portal still open.\nCarry on where you left off, or start a new rift?" % int(tp.get("level", 1)),
+			func(mode: String):
+				if mode == "continue":
+					TownPortals.go_back(get_tree(), GameState.town_portal, true)
+				else:
+					TownPortals.close_mine()  # the old one is let go
+					get_tree().change_scene_to_file(DUNGEON_SCENE),
+			Callable(), "Continue", "New rift", "A new rift forgets the old one: its monsters and what lay on the ground.")
 		return
 	get_tree().change_scene_to_file(DUNGEON_SCENE)
 
