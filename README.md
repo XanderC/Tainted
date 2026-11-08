@@ -718,6 +718,10 @@ Equipment and Consumables.
   that character's.
 - Currency is used only in the stash's Currency tab: tap an item (bag, worn or stashed), then tap
   an orb; or drag an orb onto worn gear. The item details and the Blacksmith no longer use orbs.
+- The Currency tab lays the orbs out like Path of Exile's currency tab: every orb has its own fixed place in a group
+  (Basics, Rares, Special: `CraftingDB.STASH_LAYOUT`), the groups side by side, a count at the top left of each (shards as
+  n/20), and an orb you have none of keeps its place as a faint slot. An orb missing from the layout still shows, in an
+  Other group (`CraftingDB.stash_groups`). Test: `scratch/test_stash_currency.tscn`.
 - A new account gets the starting pools once (`_starter_pools`), not each new character.
   Accounts from before this add every character's pools together the first time they load.
 - The tutorial altar sockets the first gem straight into the main attack slot.

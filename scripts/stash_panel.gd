@@ -12,8 +12,10 @@ extends MenuPanel
 
 const MIN_CELL := 40.0  # the Items grid's cells: as big as fit the panel (fit_cell), within these
 const MAX_CELL := 96.0
-const ORB_CELL := Vector2(60, 60)
-const BENCH_SLOT := Vector2(150, 150)
+const MIN_ORB_CELL := 44.0  # the currency grid's cells: as wide as fit CraftingDB.STASH_COLS in the panel, within these
+const MAX_ORB_CELL := 84.0
+const GROUP_GAP := 24.0  # between the currency groups
+const BENCH_SLOT := Vector2(120, 120)
 
 var tab := "items"  # "items" | "currency"
 var _orb := ""  # the orb picked on the Currency tab
@@ -21,6 +23,7 @@ var _orb := ""  # the orb picked on the Currency tab
 var _before: ItemInstance = null
 var _before_of: ItemInstance = null
 var _cell := 0.0  # the Items grid's cell size last laid out; a resize that changes it lays it out again
+var _orb_px := 0.0  # the same for the Currency tab's orb cells
 
 
 func _ready() -> void:
@@ -32,7 +35,9 @@ func _ready() -> void:
 
 
 func _refit() -> void:
-	if is_visible_in_tree() and tab == "items" and fit_cell() != _cell:
+	if not is_visible_in_tree():
+		return
+	if (tab == "items" and fit_cell() != _cell) or (tab == "currency" and orb_cell_size() != _orb_px):
 		refresh()
 
 
@@ -174,12 +179,24 @@ func _show_currency() -> void:
 		UIKit.item_card(right, it, true)
 
 	sec.add_child(UIKit.label("Tap an orb to pick it and see what it does. Dimmed orbs can't be used on this item.", 13, UIKit.TEXT_DIM, true))
-	var flow := HFlowContainer.new()
-	flow.add_theme_constant_override("h_separation", 5)
-	flow.add_theme_constant_override("v_separation", 5)
-	sec.add_child(flow)
-	for id in CraftingDB.ORB_ORDER:
-		flow.add_child(_orb_cell(id, it))
+	# Every orb in its own fixed place, in groups (CraftingDB.STASH_LAYOUT): the ones you have none of are faint
+	var cell := orb_cell_size()
+	_orb_px = cell
+	var groups_row := HBoxContainer.new()
+	groups_row.add_theme_constant_override("separation", int(GROUP_GAP))
+	sec.add_child(groups_row)
+	for g in CraftingDB.stash_groups():
+		var col := VBoxContainer.new()
+		col.add_theme_constant_override("separation", 4)
+		groups_row.add_child(col)
+		col.add_child(UIKit.label(String(g[0]).to_upper(), 12, UIKit.TEXT_DIM))
+		var grid := GridContainer.new()
+		grid.columns = CraftingDB.STASH_COLS
+		grid.add_theme_constant_override("h_separation", 6)
+		grid.add_theme_constant_override("v_separation", 6)
+		col.add_child(grid)
+		for id in g[1]:
+			grid.add_child(_orb_cell(id, it, cell))
 
 
 ## The slot gear is dragged into. It holds a reference: the item stays where it is.
@@ -197,19 +214,43 @@ func _bench_slot(it: ItemInstance) -> DragSlot:
 	return slot
 
 
-func _orb_cell(id: String, it: ItemInstance) -> DragSlot:
+## The currency grid's cell size: as big as fit the groups side by side across the panel and, under the
+## bench, the tallest group's rows down it (so the whole grid shows without scrolling).
+func orb_cell_size() -> float:
+	var w := (size.x if size.x > 0.0 else 600.0) - 40.0
+	var groups := CraftingDB.stash_groups()
+	var cols := CraftingDB.STASH_COLS
+	var across := (w - (groups.size() - 1) * GROUP_GAP - groups.size() * (cols - 1) * 6.0) / (groups.size() * cols)
+	var rows := 1
+	for g in groups:
+		rows = maxi(rows, ceili(float(g[1].size()) / cols))
+	var sc := _scroll()
+	var h := (sc.size.y if sc != null and sc.size.y > 0.0 else 600.0)
+	var down := (h - BENCH_SLOT.y - 52.0 - 150.0 - 30.0 - (rows - 1) * 6.0) / rows  # less the bench, its Use button, the notes and a group's title
+	return clampf(floorf(minf(across, down)), MIN_ORB_CELL, MAX_ORB_CELL)
+
+
+func _orb_cell(id: String, it: ItemInstance, cell_size: float) -> DragSlot:
 	var o: Dictionary = CraftingDB.ORBS[id]
 	var n := GameState.orb_count(id)
 	var sh := GameState.shard_count(id)
-	var cell := DragSlot.new(ORB_CELL)
+	var cell := DragSlot.new(Vector2(cell_size, cell_size))
+	cell.count_top_left()
+	cell.inset_icon()
 	var why := Crafting.orb_block_reason(it, id) if it != null else ""
-	var border: Color = Color.WHITE if id == _orb else (Color(o.color) if n > 0 else UIKit.EMPTY_BORDER)
-	cell.setup(CraftingDB.orb_icon(id), border, Color(0.20, 0.18, 0.28) if id == _orb else Color(0.08, 0.07, 0.10), n)
-	if n <= 0 or why != "":
-		cell.modulate = Color(1, 1, 1, 0.4)
+	var own: Color = Color(o.color)
+	if own == Color.WHITE:
+		own = Color(0.96, 0.96, 0.9)  # pure white means picked (Divine's own colour)
+	var border: Color = Color.WHITE if id == _orb else (own if n > 0 else UIKit.EMPTY_BORDER)
+	cell.setup(CraftingDB.orb_icon(id), border, Color(0.20, 0.18, 0.28) if id == _orb else Color(0.08, 0.07, 0.10), n, "", String(o.name))
+	if n <= 0 and sh <= 0:
+		cell.modulate = Color(1, 1, 1, 0.28)  # none: its place, faint
+	elif n <= 0 or why != "":
+		cell.modulate = Color(1, 1, 1, 0.5)
 	if sh > 0:
 		var l := UIKit.label("%d/%d" % [sh, Currency.SHARDS_PER_ORB], 10, Color(0.85, 0.85, 0.95))
 		l.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
+		l.size_flags_vertical = Control.SIZE_FILL
 		l.add_theme_color_override("font_outline_color", Color.BLACK)
 		l.add_theme_constant_override("outline_size", 4)
 		l.mouse_filter = Control.MOUSE_FILTER_IGNORE

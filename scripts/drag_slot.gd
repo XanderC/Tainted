@@ -35,6 +35,7 @@ var _dye_tex: Texture2D = null
 var _sockets: Control  # the item's sockets drawn along the bottom of its icon (set_sockets)
 var _socket_gems: Array = []
 var _socket_count := 0
+var _count_always := false  # show the count even for one (a stack of currency)
 
 
 func _init(slot_size := Vector2(60, 60)) -> void:
@@ -67,6 +68,7 @@ func _init(slot_size := Vector2(60, 60)) -> void:
 	_count.add_theme_constant_override("outline_size", 4)
 	_count.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	_count.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
+	_count.size_flags_vertical = Control.SIZE_FILL  # a Label centres itself in a container otherwise, and the alignment does nothing
 	_count.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_count.visible = false
 	add_child(_count)
@@ -80,6 +82,13 @@ func _init(slot_size := Vector2(60, 60)) -> void:
 	add_child(_rim)
 
 	_apply_style(_border)
+
+
+## Currency style, as in Path of Exile's stash: the count at the top left, shown for one too.
+func count_top_left() -> void:
+	_count_always = true
+	_count.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	_count.vertical_alignment = VERTICAL_ALIGNMENT_TOP
 
 
 ## Keeps the icon (and the rim round it) clear of the slot's own border: for painted square art, such
@@ -177,7 +186,7 @@ func setup(icon: Texture2D, border: Color, bg: Color = Color(0.09, 0.08, 0.12),
 	_caption.text = caption
 	_caption.visible = icon == null and caption != ""
 	_count.text = str(count)
-	_count.visible = count > 1
+	_count.visible = count > 1 or (_count_always and count > 0)
 	tooltip_text = tip
 	_apply_style(border)
 

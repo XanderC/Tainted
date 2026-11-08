@@ -1,6 +1,14 @@
 [
 	{
 		"build": 0,
+		"title": "A currency tab like Path of Exile's",
+		"notes": [
+			"The stash's Currency tab now gives every orb its own fixed place, in groups side by side (Basics, Rares and Special), with the count at the top left of each. An orb you have none of keeps its place as a faint slot, so you always know where to look.",
+			"The slots are bigger, so the whole grid shows at once, and hovering one names the orb."
+		]
+	},
+	{
+		"build": 0,
 		"title": "No more weapon sets",
 		"notes": [
 			"The weapon swap is gone: the button above the skills, the I / II switch on the character panel and the X key. If you had a second weapon set, its weapons are now in your bag."

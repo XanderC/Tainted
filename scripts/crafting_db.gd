@@ -56,6 +56,31 @@ const ORBS := {
 const ORB_ORDER := ["identify", "transmute", "alteration", "augment", "chance", "jeweller", "armourer", "whetstone",
 	"blessed", "scour", "regret", "alchemy", "regal", "chaos", "gemcutter", "vaal", "annul", "exalt", "divine", "mirror"]
 
+## How the stash's Currency tab lays the orbs out, like Path of Exile's currency tab: every orb has its own
+## fixed place in a group (an orb you have none of keeps its place, as a faint slot), so each is always
+## where you look for it. The groups stand side by side, each STASH_COLS wide; an orb missing from here
+## follows in a last group (stash_groups).
+const STASH_COLS := 4
+const STASH_LAYOUT := [
+	["Basics", ["identify", "transmute", "alteration", "augment", "chance", "jeweller", "armourer", "whetstone"]],
+	["Rares", ["alchemy", "regal", "chaos", "scour", "blessed", "annul", "exalt", "divine"]],
+	["Special", ["regret", "gemcutter", "vaal", "mirror"]],
+]
+
+
+## STASH_LAYOUT as [title, [orb ids]] groups, with any orb it forgot added in a last group.
+static func stash_groups() -> Array:
+	var groups: Array = []
+	var placed := {}
+	for g in STASH_LAYOUT:
+		groups.append([g[0], g[1].duplicate()])
+		for id in g[1]:
+			placed[id] = true
+	var rest: Array = ORB_ORDER.filter(func(id): return not placed.has(id))
+	if not rest.is_empty():
+		groups.append(["Other", rest])
+	return groups
+
 
 static func orb_icon(id: String) -> Texture2D:
 	var path := "res://assets/icons/orbs/%s.png" % id
