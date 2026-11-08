@@ -1,7 +1,9 @@
 class_name OptionsUI
 extends CanvasLayer
 ## The Options window, opened by the OPTIONS button the GameMenu puts under BAG. It sits to one side
-## so the world stays in view while you change something, and the game is paused while it is open.
+## so the world stays in view while you change something, and the game is NOT paused: the world goes
+## on behind it, so a pet you pick appears and moves at once and the zoom is seen live (a paused world
+## looked like a frozen game). Taps outside the window reach the game as usual.
 ## How far the camera is zoomed out (GameCamera), which changes the view as the slider moves, and which
 ## pet the character has (PetDB). The zoom is kept on the device (Options), the pet with the character.
 
@@ -10,11 +12,13 @@ var _value: Label
 var _less: Button
 var _more: Button
 var _pet: Label
-var _was_paused := false
 
 
-## Opens the window on `parent` (the scene's GameMenu).
+## Opens the window on `parent` (the scene's GameMenu); the one already open if there is one.
 static func open(parent: Node) -> OptionsUI:
+	for c in parent.get_children():
+		if c is OptionsUI and not c.is_queued_for_deletion():
+			return c
 	var ui := OptionsUI.new()
 	parent.add_child(ui)
 	return ui
@@ -22,16 +26,8 @@ static func open(parent: Node) -> OptionsUI:
 
 func _ready() -> void:
 	layer = 20
-	process_mode = Node.PROCESS_MODE_ALWAYS
-	_was_paused = get_tree().paused
-	get_tree().paused = true
 	_build()
 	_sync()
-
-
-func _exit_tree() -> void:
-	if get_tree() != null:
-		get_tree().paused = _was_paused
 
 
 func _unhandled_input(event: InputEvent) -> void:

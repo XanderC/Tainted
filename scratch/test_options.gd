@@ -1,5 +1,5 @@
 extends Node2D
-## The Options window and the camera zoom it sets: the button under BAG opens it and pauses the game, the
+## The Options window and the camera zoom it sets: the button under BAG opens it (the game goes on behind it), the
 ## slider and the step buttons zoom every camera as they move, Reset, Done and Escape close it, the zoom is
 ## clamped and kept on the device, and a new scene starts at the saved zoom. Takes scratch/options.png.
 ##   godot --path . --resolution 1600x720 res://scratch/test_options.tscn
@@ -37,8 +37,14 @@ func _ready() -> void:
 	await settle()
 	var ui := _find(town.menu, "OptionsUI")
 	check(ui != null, "the window opens")
-	check(get_tree().paused, "the game is paused while it is open")
-	check(not btn.visible, "the button is out of the way meanwhile")
+	check(not get_tree().paused, "the game is not paused: the world goes on behind the window")
+	btn.pressed.emit()
+	await settle()
+	var count := 0
+	for c in town.menu.get_children():
+		if c is OptionsUI and not c.is_queued_for_deletion():
+			count += 1
+	check(count == 1, "pressing OPTIONS again does not open a second window (%d)" % count)
 
 	var slider: HSlider = _find_type(ui, "HSlider")
 	check(is_equal_approx(slider.value, 0.75), "the slider shows the zoom (%.2f)" % slider.value)
