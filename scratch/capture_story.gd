@@ -1,5 +1,5 @@
 extends Node2D
-## Screenshots of the story pieces (scratch/story_<name>.png): town with quest markers, Hesk's
+## Screenshots of the story pieces (scratch/story_<name>.png): town with quest markers, Corwin's
 ## offer, the quest log, the Dune Wastes at the road in, the wreck and the raider camp.
 ##   godot --path . --resolution 1600x720 res://scratch/capture_story.tscn
 
@@ -15,8 +15,8 @@ func _ready() -> void:
 	town.dialogue.open("hesk")
 	town.dialogue._pick(Quests.npc_options("hesk")[0])
 	await _shot("offer")
-	Quests.start("a1_lost_caravan")
-	Quests.start("a1_into_the_wastes")
+	Quests.start("a1_lost_heirloom")
+	Quests.start("a1_first_incursion")
 	town.dialogue.close()
 	town.quest_log.open()
 	await _shot("log")
@@ -42,7 +42,7 @@ func _ready() -> void:
 	await _shot("camp")
 	for e in get_tree().get_nodes_in_group("enemies"):
 		e.queue_free()
-	GameState.quests["a1_lost_caravan"] = {"state": "active", "step": 3, "count": 0}
+	GameState.quests["a1_lost_heirloom"] = {"state": "active", "step": 3, "count": 0}
 	zn.player.global_position = Vector2(59.5 * 128, 9.5 * 128)
 	await _wait()
 	await _shot("strongbox")

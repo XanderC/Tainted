@@ -1651,7 +1651,7 @@ func _apply_save(data: Dictionary) -> void:
 	runs_cleared = int(data.get("runs_cleared", 0))
 	rift_unlocked = maxi(1, int(data.get("rift_unlocked", 1)))
 	rift_level = clampi(int(data.get("rift_level", 1)), 1, rift_unlocked)
-	quests = data.get("quests", {})
+	quests = Quests.migrate(data.get("quests", {}))
 	waypoints = data.get("waypoints", [])
 	town_portal = data.get("town_portal", {})
 	if not town_portal.is_empty() and not town_portal.has("kind"):  # an older save's: {"zone", "x", "y"}

@@ -4,13 +4,13 @@ extends Node2D
 ## Jeweler: combine gems into higher tiers and remove socketed gems.
 ## Sage: identifies every item in your bag and stash, free.
 ## Rift Gate: pick a rift level, then start a run (scenes/main.tscn).
-## The story: NPCs with quest business talk first (DialogueUI), the west road leads to the Ashwood
+## The story: NPCs with quest business talk first (DialogueUI), the west road leads to the Blackroot Wilds
 ## (Zone), a waypoint travels to zones you've found, and town portals (TownPortals: yours
 ## and your party's) stand by the square, back to where they were read.
 
 const DUNGEON_SCENE := "res://scenes/main.tscn"
 const SPAWN := Vector2(0, 360)
-const WEST_EXIT := Vector2(-940, 620)  # the road out to the Ashwood
+const WEST_EXIT := Vector2(-940, 620)  # the road out to the Blackroot Wilds
 const WEST_EXIT_ZONE := "dune_wastes"
 const WAYPOINT := Vector2(260, 300)
 const PORTAL := Vector2(-80, 470)  # where an open town portal stands
@@ -64,8 +64,12 @@ func _ready() -> void:
 	_add_npc("Battlemaster Brom", "Passive Tree", Vector2(-240, -160), "battlemaster", "Open the Passive Tree", func(): skill_tree_ui.open())
 	_add_npc("Jeweler", "Skills & Gems", Vector2(280, -175), "jeweler", "Talk to the Jeweler", func(): menu.open_vendor("jeweler"))
 	_add_npc("Sage Aldous", "Identify", Vector2(-600, 150), "sage", "Talk to the Sage", _identify_all)
-	_add_npc("Caravan Master Hesk", "Caravans", Vector2(-330, 250), "caravan_master", "Talk to Hesk",
-		func(): dialogue.open("hesk"), "hesk")
+	_add_npc("Merchant Corwin", "In a hurry", Vector2(-330, 250), "caravan_master", "Talk to Corwin",
+		func(): dialogue.open("corwin"), "corwin")
+	var althea_look := Appearance.default_look("female")
+	althea_look["hair_color"] = "white"
+	_add_npc("High Priestess Althea", "Wards", Vector2(430, 270), "", "Talk to Althea", func(): dialogue.open("althea"), "althea",
+		{"helmet": ["leather_cap", "ivory"], "chest": ["padded_vest", "ivory"]}, althea_look)
 	_add_npc("Captain Rourke", "Hirelings", CAPTAIN, "", "Talk to the Captain", func(): hire_ui.open(), "captain",
 		{"weapon": "war_sword", "helmet": "iron_helm", "chest": "chain_mail", "offhand": "kite_shield"})
 	var dyer_look := Appearance.default_look("female")
@@ -234,7 +238,7 @@ func take_loot(p: LootPickup) -> bool:
 
 
 func _process(delta: float) -> void:
-	_hud.text = "Ashfall Outpost\nChaos %d   Divine %d     Bag %d/%d cells" % [GameState.orb_count("chaos"), GameState.orb_count("divine"),
+	_hud.text = "Oakhaven Outpost\nChaos %d   Divine %d     Bag %d/%d cells" % [GameState.orb_count("chaos"), GameState.orb_count("divine"),
 		player.bag_cells_used(), Player.BAG_SIZE]
 	if _gate:
 		_gate.queue_redraw()
@@ -332,7 +336,7 @@ func _add_npc(title: String, subtitle: String, pos: Vector2, skin: String, promp
 	npc.position = pos
 	npc.prompt = prompt
 	npc.action = func():
-		if Quests.npc_options(npc_id).is_empty() or npc_id == "hesk":
+		if Quests.npc_options(npc_id).is_empty() or npc_id in ["corwin", "althea"]:
 			action.call()
 		else:
 			dialogue.open(npc_id, [{"label": prompt, "action": action}])

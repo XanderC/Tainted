@@ -1,6 +1,6 @@
 class_name HirelingDB
 extends RefCounted
-## The kinds of hireling you can take on in Ashfall (Diablo II's mercenaries): what each fights
+## The kinds of hireling you can take on in Oakhaven (Diablo II's mercenaries): what each fights
 ## with, how it grows, which gear it wears, the skills its gems are drawn from, and what in the
 ## story opens it up. More open as the campaign goes on: add a type here with its `unlock`.
 ##
@@ -40,8 +40,8 @@ const TYPES := {
 	},
 	"scout": {
 		"name": "Woodland Scout",
-		"desc": "Bow-armed outriders who know the Ashwood. Keep their distance and shoot, so keep them out of the crush.",
-		"ranged": true, "unlock": "a1_into_the_wastes", "unlock_text": "Finish Into the Ashwood for Brom",
+		"desc": "Bow-armed outriders who know the Blackroot Wilds. Keep their distance and shoot, so keep them out of the crush.",
+		"ranged": true, "unlock": "a1_first_incursion", "unlock_text": "Finish The First Incursion",
 		"skins": ["archer_1", "archer_2", "archer_3", "archer_guy", "elf_archer_1", "elf_archer_2",
 			"elf_archer_3", "forest_ranger_1", "forest_ranger_2"],
 		"weapons": ["bow", "crossbow"], "one_handed": false,
@@ -56,7 +56,7 @@ const TYPES := {
 	"warden": {
 		"name": "Iron Warden",
 		"desc": "Caravan wardens who swing two-handed iron. Leap into packs and break them apart.",
-		"ranged": false, "skins": [], "unlock": "a1_lost_caravan", "unlock_text": "Recover Hesk's strongbox (The Lost Caravan)",
+		"ranged": false, "skins": [], "unlock": "a1_lost_heirloom", "unlock_text": "Finish The Lost Heirloom (Merchant Corwin)",
 		"weapons": ["sword", "axe", "mace", "spear"], "one_handed": false,
 		"slots": ["weapon", "helmet", "shoulders", "chest", "wrists", "gloves", "legs", "boots"],
 		"base": {"max_life": 125.0, "damage": 11.0, "attack_speed": 0.95, "move_speed": 230.0, "armor": 14.0,

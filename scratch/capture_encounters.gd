@@ -1,5 +1,5 @@
 extends Node2D
-## Screenshots of the two random encounters in the Ashwood (scratch/enc_cottage.png, enc_ritual.png).
+## Screenshots of the two random encounters in the Blackroot Wilds (scratch/enc_cottage.png, enc_ritual.png).
 ## Needs a window:  godot --path . --resolution 1280x720 res://scratch/capture_encounters.tscn
 
 

@@ -154,81 +154,102 @@ class Zone:
 
 
 def dune_wastes():
-    """Act 1's first zone, the Ashwood: autumn woods west of Ashfall (the id is from when it was a
-    desert, kept so saved waypoints and quests still find it). Wagons, tents, the campfire, the pond
-    and skulls are borrowed from the desert theme ("desert/...")."""
-    z = Zone("dune_wastes", "The Ashwood", 70, 46, seed=1101, theme="woodland")
+    """Act 1's first zone, the Blackroot Wilds (Act I: The Bleeding Veil, see ACT1_DESIGN.md): mist-choked woodland
+    west of Oakhaven Outpost, its oaks dead, thorn barricades across the paths on, tainted beasts about. The id is
+    from when it was a desert, kept so saved waypoints and zone ids still find it. A hunting lodge where Scout
+    Captain Dennis is pinned by the briarwolves and their alpha (Chapter 1), a ruined manor with the merchant's
+    lockbox (The Lost Heirloom), and a waypoint. Dead trees, stumps and tainted pools are the woodland's own
+    props; skulls and wagons are borrowed from the desert theme ("desert/...")."""
+    z = Zone("dune_wastes", "Blackroot Wilds", 70, 46, seed=2207, theme="woodland")
     start = (4, 23)
-    waypoint = (19, 27)
-    wreck = (35, 22)
-    camp = (57, 9)
-    pond = (31, 38)
-    hamlet = (12, 37)
-    landmarks = [(start, 4), (waypoint, 3), (wreck, 5), (camp, 6), (pond, 5), (hamlet, 5)]
+    waypoint = (16, 25)
+    lodge = (42, 11)
+    manor = (53, 34)
+    gate_a, gate_b, gate_c = (10, 17), (11, 30), (17, 21)  # the packs by the road from the outpost (Chapter 1: clear the gate)
+    glade = (30, 27)
+    fungus = (24, 10)
+    landmarks = [(start, 4), (waypoint, 3), (lodge, 6), (manor, 5), (glade, 4), (fungus, 4), (gate_a, 2), (gate_b, 2), (gate_c, 2)]
 
-    z.outcrops(85, 1.5, 5.0)
+    z.outcrops(90, 1.5, 5.0)
     z.border(2)
     z.smooth(2)
     for c, r in landmarks:
         z.clear(c, r)
     z.road(start, waypoint, 1)
-    z.road(waypoint, wreck, 1)
-    z.road(wreck, camp, 1)
-    z.road(wreck, pond, 1)
-    z.road(waypoint, hamlet, 1)
-    z.road(pond, hamlet, 1)
+    z.road(waypoint, gate_c, 1)
+    z.road(gate_c, glade, 1)
+    z.road(glade, manor, 1)
+    z.road(glade, lodge, 1)
+    z.road(waypoint, gate_a, 1)
+    z.road(waypoint, gate_b, 1)
+    z.road(lodge, fungus, 1)
     z.reachable_only(start)
 
-    # The road from Ashfall comes in on the west edge
+    # The road from Oakhaven comes in on the west edge
     z.add("start", start)
     z.add("portal", (start[0] - 2, start[1]), target="town")
     z.clear((start[0] - 2, start[1]), 1)
     z.add("waypoint", waypoint)
     z.prop("decor_9", (start[0] + 2, start[1] - 2), scale=0.5)  # signpost
+    z.prop("decor_15", (start[0] + 2, start[1] + 2), scale=0.5, solid=True)  # the gate's last palisade
 
-    # The caravan wreck: wagons, spilled barrels, the dead, a survivor
-    z.add("trigger", wreck, radius=420, id="caravan_wreck",
-          text="Hesk's caravan... or what's left of it.")
-    z.prop("desert/decor_8", (wreck[0] - 2, wreck[1] - 1), scale=0.55, solid=True)
-    z.prop("desert/decor_8", (wreck[0] + 2, wreck[1] + 1), scale=0.5, solid=True)
-    z.prop("decor_10", (wreck[0], wreck[1] + 2), scale=0.4)
-    z.prop("decor_10", (wreck[0] + 1, wreck[1] + 2), dx=0.2, scale=0.35)
-    z.prop("desert/decor_6", (wreck[0] - 1, wreck[1] + 2), scale=0.45)
-    z.prop("desert/decor_6", (wreck[0] + 3, wreck[1] - 2), scale=0.4)
-    z.add("npc", (wreck[0] + 1, wreck[1] - 1), id="caravan_guard", facing=-1)
-
-    # The raider camp: tents round a fire, their banner, Vesh, and the strongbox
-    for i, (dx, dy) in enumerate([(-3, -2), (2, -3), (4, 1), (-4, 2)]):
-        z.prop("desert/decor_2", (camp[0] + dx, camp[1] + dy), scale=0.55, solid=True)
-    z.prop("desert/decor_7", camp, scale=0.5)
-    z.prop("desert/decor_8", (camp[0] - 1, camp[1] + 3), scale=0.5, solid=True)
-    z.prop("decor_3", (camp[0] - 1, camp[1] - 3), scale=0.5)  # banner
-    z.prop("decor_1", (camp[0] + 3, camp[1] - 1), scale=0.45)  # lantern post
-    z.prop("decor_8", (camp[0] + 5, camp[1] - 2), scale=0.45, solid=True)  # log pile
-    z.add("boss", (camp[0] + 1, camp[1] + 1), id="raider_captain", name="Vesh, the Raider Captain",
-          kind="bandit_archer", skin="archer_guy", hp=9.0, size=1.45)
-    z.add("quest_object", (camp[0] + 2, camp[1] - 1), id="strongbox", sprite="", prompt="Take the strongbox",
-          text="You recover Hesk's strongbox.")
-
-    # The pond, and the abandoned hamlet
-    z.prop("desert/lake", pond, scale=0.8)
-    for dx, dy in [(-4, -1), (4, -1), (-2, 2), (3, 2)]:
-        z.prop("tree_" + str(z.rng.choice([1, 2, 6, 8])), (pond[0] + dx, pond[1] + dy), scale=0.6)
-    z.prop("building_2", (hamlet[0] - 2, hamlet[1] - 1), scale=0.5, solid=True)
-    z.prop("building_6", (hamlet[0] + 3, hamlet[1] - 2), scale=0.45, solid=True)
-    z.prop("decor_16", (hamlet[0] + 1, hamlet[1] + 1), scale=0.5)  # scarecrow
-    z.prop("building_7", (hamlet[0] - 3, hamlet[1] + 2), scale=0.45, solid=True)  # well
-    z.prop("desert/decor_6", (hamlet[0], hamlet[1] + 2), scale=0.45)
-
-    themes = [(camp, 13, "bandit_archer"), (hamlet, 10, "skeleton"), (pond, 8, "ghoul"),
-              (wreck, 9, "villager")]
-    avoid = [(start, 9), (waypoint, 4), (wreck, 3), (camp, 3)]
-    z.packs(24, avoid, themes, min_gap=7, start=start)
-    # The camp is guarded: bandit archers and their melee friends close to Vesh
-    for dx, dy in [(-6, 3), (5, 5), (-2, 6)]:
-        c = (camp[0] + dx, camp[1] + dy)
+    # The hunting lodge: Dennis pinned inside, the alpha and its pack round it, the rift shard where it falls
+    z.add("trigger", lodge, radius=420, id="hunting_lodge",
+          text="A hunting lodge, its door barred from outside. Something inside is shouting.")
+    z.prop("building_5", (lodge[0] - 1, lodge[1] - 3), scale=0.5, solid=True)
+    z.prop("decor_15", (lodge[0] - 4, lodge[1] - 1), scale=0.5, solid=True)  # thorn barricade across the path
+    z.prop("decor_15", (lodge[0] + 3, lodge[1] - 1), scale=0.5, solid=True)
+    z.prop("decor_8", (lodge[0] + 4, lodge[1] - 3), scale=0.45, solid=True)  # woodpile
+    z.prop("decor_5", (lodge[0], lodge[1] + 2), scale=0.5)  # tainted pool
+    z.prop("tree_11", (lodge[0] - 5, lodge[1] - 3), scale=0.7)
+    z.prop("tree_12", (lodge[0] + 5, lodge[1] + 1), scale=0.7)
+    z.prop("desert/decor_6", (lodge[0] + 2, lodge[1] + 3), scale=0.4)  # bones
+    z.add("npc", (lodge[0] - 1, lodge[1] - 1), id="dennis", facing=1)
+    z.add("boss", (lodge[0] + 2, lodge[1] + 1), id="briar_alpha", name="The Briarwolf Alpha",
+          kind="briarwolf", skin="gnoll", hp=5.0, size=1.5)
+    z.add("quest_object", (lodge[0] + 3, lodge[1] + 2), id="rift_shard", sprite="", prompt="Take the Coagulated Rift Shard",
+          text="You pry the Coagulated Rift Shard from the alpha's flank. It is cold, oily and faintly red, and it hums.")
+    for dx, dy in [(-4, 3), (5, 3), (0, 5)]:
+        c = (lodge[0] + dx, lodge[1] + dy)
         z.clear(c, 1)
-        z.add("pack", c, min=3, max=4, kind="bandit_archer" if dx < 0 else "goblin")
+        z.add("pack", c, min=3, max=4, kind="briarwolf")
+
+    # The ruined manor: a family lockbox, and what was done to keep it
+    z.add("trigger", manor, radius=420, id="ruined_manor",
+          text="A manor, roofless and black with rot. Someone hid something in here.")
+    z.prop("building_3", (manor[0], manor[1] - 3), scale=0.55, solid=True)
+    z.prop("building_4", (manor[0] + 4, manor[1] - 2), scale=0.5, solid=True)  # its tower
+    z.prop("decor_15", (manor[0] - 4, manor[1] + 1), scale=0.5, solid=True)
+    z.prop("decor_16", (manor[0] - 2, manor[1] + 2), scale=0.5)  # scarecrow
+    z.prop("decor_7", (manor[0] + 1, manor[1] + 1), scale=0.5)
+    z.prop("tree_12", (manor[0] - 5, manor[1] - 2), scale=0.7)
+    z.prop("tree_11", (manor[0] + 6, manor[1] + 2), scale=0.7)
+    z.prop("desert/decor_6", (manor[0] + 2, manor[1] + 3), scale=0.4)
+    z.add("quest_object", (manor[0] + 1, manor[1] - 1), id="lockbox", sprite="", prompt="Open the lockbox",
+          text="Inside the lockbox: a merchant's ledger, and a diary. 'The servants were slow to die, but the thing in the "
+               "cellar was patient, and it let us through the Wilds untouched. Corwin' ... He fed his own household to the "
+               "Taint, and took his gem and walked away.")
+
+    # The glade and the fungus hollow: dead oaks, stumps, tainted pools
+    for dx, dy in [(-3, -2), (3, -2), (-2, 3), (4, 2), (0, -4)]:
+        z.prop("tree_" + str(z.rng.choice([11, 12, 11, 12, 5])), (glade[0] + dx, glade[1] + dy), scale=0.65)
+    z.prop("decor_6", (glade[0], glade[1]), scale=0.55)
+    z.prop("tree_14", (glade[0] - 1, glade[1] + 2), scale=0.55)
+    for dx, dy in [(-3, 0), (2, 2), (3, -2), (-1, -3)]:
+        z.prop("decor_14", (fungus[0] + dx, fungus[1] + dy), scale=0.4)  # fungal blooms
+    z.prop("tree_13", (fungus[0] + 1, fungus[1]), scale=0.55)
+    # The paths on are choked with thorn barricades (the Weeping Hollow and the Sunken Fen come later)
+    for dy in range(-1, 2):
+        z.prop("decor_15", (66, 22 + dy), scale=0.5, solid=True)
+    for dx in range(-1, 2):
+        z.prop("decor_15", (46 + dx, 42), scale=0.5, solid=True)
+
+    themes = [(gate_a, 6, "briarwolf"), (gate_b, 6, "briarwolf"), (gate_c, 6, "briarwolf"), (lodge, 13, "briarwolf"),
+              (manor, 10, "ghoul"), (glade, 8, "villager"), (fungus, 7, "zombie")]
+    avoid = [(start, 9), (waypoint, 4), (lodge, 3), (manor, 3)]
+    z.packs(24, avoid, themes, min_gap=7, start=start)
+    for c in (gate_a, gate_b, gate_c):  # the packs the first chapter clears from round the gate road
+        z.add("pack", c, min=3, max=4, kind="briarwolf")
     z.save()
 
 

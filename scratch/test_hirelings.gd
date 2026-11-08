@@ -43,7 +43,7 @@ func _ready() -> void:
 	# Types open with the story
 	check(HirelingDB.unlocked("sellsword"), "Sellswords are there from the start")
 	check(not HirelingDB.unlocked("scout"), "Desert Scouts wait for Into the Wastes")
-	GameState.quests["a1_into_the_wastes"] = {"state": Quests.DONE}
+	GameState.quests["a1_first_incursion"] = {"state": Quests.DONE}
 	check(HirelingDB.unlocked("scout"), "and open once it is done")
 
 	# Candidates

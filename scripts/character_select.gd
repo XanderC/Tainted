@@ -290,7 +290,7 @@ func _build_connect() -> void:
 	var head := UIKit.label(Net.world_name().to_upper(), 30, Color(0.70, 0.85, 1.0))
 	head.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	box.add_child(head)
-	var about := UIKit.label("Tainted is played online: everyone meets in Ashfall Outpost, and your characters are kept on the server.", 15, UIKit.TEXT_DIM, true)
+	var about := UIKit.label("Tainted is played online: everyone meets in Oakhaven Outpost, and your characters are kept on the server.", 15, UIKit.TEXT_DIM, true)
 	about.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	box.add_child(about)
 	var busy := Net.mode in [Net.Mode.CONNECTING, Net.Mode.RECONNECTING] or (Net.online() and not GameState.online_saves)

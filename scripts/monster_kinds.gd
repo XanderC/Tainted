@@ -13,6 +13,8 @@ const KINDS := {
 	"villager": {"name": "Rotting Villager", "skins": ["zombie_villager_1", "zombie_villager_2", "zombie_villager_3"], "min_level": 1, "hp": 0.9, "speed": 0.9, "damage": 0.9},
 	"skeleton": {"name": "Skeleton", "skins": ["skeleton_1", "skeleton_2", "skeleton_3"], "min_level": 1, "hp": 0.85, "speed": 1.1, "damage": 1.0},
 	"goblin": {"name": "Goblin", "skins": ["goblin", "goblin_1", "goblin_2", "goblin_3"], "min_level": 1, "hp": 0.7, "speed": 1.3, "damage": 0.8},
+	# Act I's own (a map or a zone's `kinds` asks for them; min_level keeps them out of rifts)
+	"briarwolf": {"name": "Tainted Briarwolf", "skin": "gnoll", "min_level": 99, "hp": 0.8, "speed": 1.5, "damage": 0.95},
 	"ghoul": {"name": "Ghoul", "skin": "ghoul", "min_level": 2, "hp": 0.9, "speed": 1.35, "damage": 1.0},
 	"mummy": {"name": "Mummy", "skin": "mummy", "min_level": 2, "hp": 1.4, "speed": 0.8, "damage": 1.1, "element": "chaos"},
 	"skeleton_warrior": {"name": "Skeleton Warrior", "skins": ["skeleton_warrior_1", "skeleton_warrior_2"], "min_level": 3, "hp": 1.15, "speed": 1.0, "damage": 1.15},

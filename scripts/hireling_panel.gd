@@ -31,7 +31,7 @@ func refresh() -> void:
 	add_theme_constant_override("separation", 6)
 	if not Hirelings.has():
 		_add_bar()
-		add_child(UIKit.rich("[center][color=#665c4f]\n\n◈ NO HIRELING ◈\n\nCaptain Rourke in Ashfall has fighters for hire. One follows you, fights beside you, levels up with you and wears gear you give it.[/color][/center]", 16))
+		add_child(UIKit.rich("[center][color=#665c4f]\n\n◈ NO HIRELING ◈\n\nCaptain Rourke in Oakhaven has fighters for hire. One follows you, fights beside you, levels up with you and wears gear you give it.[/color][/center]", 16))
 		return
 	_add_bar()
 	if _stats_mode:

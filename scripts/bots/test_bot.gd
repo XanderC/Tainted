@@ -1,7 +1,7 @@
 extends Node
 ## TestBot: a player on the Tainted World for trying multiplayer on your own (on the main host it's
 ## the tainted-bot container). It comes in with the server's bot key (--bot-key: the server's
-## TAINTED_BOT_KEY) instead of a sign-in, plays a warrior with a hireling, stands about Ashfall, and:
+## TAINTED_BOT_KEY) instead of a sign-in, plays a warrior with a hireling, stands about Oakhaven, and:
 ##   - accepts party invites, trades and friend requests;
 ##   - in a party stays with you: into party rifts and zones, fighting beside you with its skills,
 ##     standing by you when you fall (which revives you), getting up by itself if nobody revives it;

@@ -1,7 +1,7 @@
 class_name Wardrobe
 extends RefCounted
 ## Appearances (transmog): a helmet, body armour, gloves, boots, weapon or shield can be made to look
-## like any other piece of its group you have unlocked, changed by the Dyer in Ashfall (DyeUI's
+## like any other piece of its group you have unlocked, changed by the Dyer in Oakhaven (DyeUI's
 ## Appearance tab). It's only how the piece looks: its stats stay its own. An item keeps the look it
 ## was given (ItemInstance.look, "" for its own).
 ## Groups: each armour slot is one; weapons are "melee" (any melee weapon looks like any other: the

@@ -1,6 +1,6 @@
 class_name HireUI
 extends CanvasLayer
-## The Mercenary Captain in Ashfall: take on a hireling (Hirelings), revive a fallen one, or swap
+## The Mercenary Captain in Oakhaven: take on a hireling (Hirelings), revive a fallen one, or swap
 ## yours for another. A tab per type (HirelingDB.ORDER); types the story hasn't opened yet say what
 ## opens them. Each type has a few on offer, with the skill gems they come with and their price.
 

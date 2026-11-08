@@ -3,7 +3,7 @@ extends Node2D
 ## folder given after --out= (default: scratch/). Needs a window:
 ##   godot --path . --resolution 1600x720 res://scratch/capture_maps.tscn -- --out=<folder>
 
-const SHOTS := [  # map id ("town" = Ashfall), centre (cells), zoom
+const SHOTS := [  # map id ("town" = Oakhaven), centre (cells), zoom
 	["bone_labyrinth", Vector2(15, 10.5), 0.36],
 	["bone_labyrinth", Vector2(11, 6.5), 0.9],
 	["bone_labyrinth", Vector2(23, 15.5), 0.9],

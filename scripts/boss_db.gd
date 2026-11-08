@@ -30,31 +30,23 @@ extends RefCounted
 ## ground first (BossTelegraph), so a player can step out of it.
 
 const BOSSES := {
-	"raider_captain": {
-		"title": "Raider Captain", "hp": 1.8,
-		"arena": 560.0, "intro": 1.8, "enrage": 150.0, "max_adds": 5,
-		"lines": {
-			"intro": "You've come a long way to die in my camp.",
-			"enrage": "No more games!",
-		},
+	# Chapter 1 of Act I: the pack leader that has Scout Captain Dennis pinned in the hunting lodge
+	"briar_alpha": {
+		"title": "Tainted Briarwolf", "hp": 1.4,
+		"arena": 480.0, "intro": 1.4, "enrage": 120.0, "max_adds": 4,
+		"lines": {},
 		"moves": {
-			"volley": {"kind": "volley", "windup": 0.85, "cd": 3.4, "range": [180.0, 760.0], "weight": 3, "arrows": 5,
-				"spread": 0.75, "length": 620.0, "dmg": 0.9, "recover": 0.5},
-			"pin": {"kind": "pin", "windup": 1.05, "cd": 5.5, "range": [240.0, 820.0], "weight": 2, "length": 760.0,
-				"width": 64.0, "dmg": 2.4, "recover": 0.6},
-			"backstep": {"kind": "backstep", "windup": 0.15, "cd": 4.0, "range": [0.0, 210.0], "weight": 8, "dist": 380.0,
-				"speed": 1100.0, "recover": 0.25},
-			"rain": {"kind": "rain", "windup": 1.3, "cd": 8.0, "range": [0.0, 900.0], "weight": 3, "count": 5, "r": 100.0,
-				"dmg": 1.5, "recover": 0.7},
+			"lunge": {"kind": "charge", "windup": 0.7, "cd": 3.2, "range": [140.0, 620.0], "weight": 4, "length": 480.0,
+				"width": 70.0, "speed": 1150.0, "dmg": 1.3, "recover": 0.6},
+			"maul": {"kind": "slam", "windup": 0.6, "cd": 2.4, "range": [0.0, 170.0], "weight": 5, "r": 125.0, "dmg": 1.1,
+				"recover": 0.5},
+			"howl": {"kind": "summon", "windup": 0.9, "cd": 12.0, "range": [0.0, 900.0], "weight": 2, "recover": 0.6},
 		},
 		"phases": [
-			{"at": 1.0, "moves": ["volley", "pin", "backstep"]},
-			{"at": 0.65, "say": "Archers! Cut them down!", "moves": ["volley", "pin", "backstep", "rain"],
-				"adds": [{"kind": "bandit_archer", "n": 2}, {"kind": "goblin", "n": 2}], "speed": 1.1},
-			{"at": 0.3, "say": "Burn it all down!", "moves": ["volley", "pin", "backstep", "rain"],
-				"adds": [{"kind": "bandit_archer", "n": 2}], "speed": 1.2, "dmg": 1.15, "cd": 0.75},
+			{"at": 1.0, "moves": ["lunge", "maul"]},
+			{"at": 0.5, "moves": ["lunge", "maul", "howl"], "adds": [{"kind": "briarwolf", "n": 2}], "speed": 1.15},
 		],
-		"loot": {"rares": 2, "magics": 1, "orbs": {"alteration": 2, "transmute": 3, "augment": 1}, "scrolls": 2},
+		"loot": {"rares": 1, "magics": 1, "orbs": {"transmute": 2, "augment": 1}, "scrolls": 1},
 	},
 }
 

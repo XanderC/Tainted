@@ -208,7 +208,7 @@ static func leads_back(tp: Dictionary) -> bool:
 	return false
 
 
-## "The Ashwood", "Rift 3".
+## "The Blackroot Wilds", "Rift 3".
 static func where_name(tp: Dictionary) -> String:
 	if String(tp.get("kind", "")) == "rift":
 		return "Rift %d" % int(tp.get("level", 1))

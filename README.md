@@ -67,7 +67,7 @@ its waypoint.
 
 ### Town portal scrolls
 Reading a **Scroll of Town Portal** (the 🌀 button at the top of the screen, or G) in a zone or a
-rift opens a portal where you stand (`scripts/town_portals.gd`). Tap its label to go to Ashfall; a
+rift opens a portal where you stand (`scripts/town_portals.gd`). Tap its label to go to Oakhaven; a
 portal back stands by the town square, and going through it you come out where you read the
 scroll, with what you left on the ground still lying there. Your own portal closes once you go back
 through it. You have one portal open at a time: reading another closes the first. A character starts
@@ -83,10 +83,20 @@ reach a spot, enter a zone, touch a waypoint, kill monsters of a kind, kill a bo
 and rewards (experience, orbs, passive points, items). NPCs with quest business show a gold ! or ?
 and talk first (`DialogueUI`); the tracker (top left) shows what to do next and opens the quest log
 (also J). Progress is saved per character.
-So far: **Into the Ashwood** (main, Brom) and **The Lost Caravan** (side, Caravan Master Hesk, with
-Vesh the Raider Captain), in **The Ashwood**, autumn woods reached by the west road out of Ashfall.
-Act 1 is woodland (the tutorial, Ashfall and the Ashwood: see **Map themes and walls**). The zone's
-id is still `dune_wastes` from when it was a desert, so saved waypoints and quests keep working.
+Act I is **The Bleeding Veil**: the whole story, its zones, quests, world events and mini-dungeons are written in
+`ACT1_DESIGN.md`, and it is being built in phases (Oakhaven Outpost and the Blackroot Wilds, then the Weeping Hollow
+and Sunken Fen, the Ashen Verge, the Grand Ossuary, the Sepulcher of Mourning, and last the world events and
+mini-dungeons). **Built so far (phase 1):** Oakhaven Outpost (the hub), the **Blackroot Wilds** (mist-choked
+woodland: briarwolves, rotting villagers, ghouls, zombies, skeletons; a hunting lodge, a ruined manor, a waypoint),
+the main quest **The First Incursion** (Brom: cull eight briarwolves at the gate, find Scout Captain Dennis at the
+hunting lodge, kill the Briarwolf Alpha, take the Coagulated Rift Shard, see Dennis, hand it to High Priestess
+Althea) and the side quest **The Lost Heirloom** (Merchant Corwin: the lockbox in the ruined manor, whose diary
+shows what he did; paid in a gem). Act 1 is woodland (the tutorial, Oakhaven and the Blackroot Wilds: see **Map
+themes and walls**). The zone's id is still `dune_wastes` from when it was a desert, so saved waypoints keep
+working; old quests are dropped when a character loads, and finishing the old first or caravan quest counts for
+its replacement (`Quests.migrate`), which keeps the hirelings they unlocked. The Wilds' own monsters come from the
+zone's `kinds` in `ActDB.ZONES`. Tests: `scratch/test_wilds.tscn` (the map, the chapter played through in the
+real zone, the town), `scratch/test_quests.tscn`.
 Zone maps come from `tools/gen_zones.py`; tweak them in the map editor (rerunning the script
 overwrites them).
 
@@ -179,7 +189,7 @@ Google Fonts (SIL Open Font License, licences beside them in `assets/fonts`):
 Neither has the ▲ / ▼ stat arrows, so those come from the system font (`UIKit.ARROW_FONT`).
 
 ### Dyes
-**Dyer Calla** in Ashfall (west of the plaza, between the Blacksmith and the Sage) dyes helmets, body
+**Dyer Calla** in Oakhaven (west of the plaza, between the Blacksmith and the Sage) dyes helmets, body
 armour, gloves and boots: 30 dyes (`scripts/dye_db.gd`; the CraftPix paint icons, `tools/import_paints.py`), ten
 colours in bright, deep and muted shades. Tap a piece of gear (worn, in your bag, or your hireling's),
 tap a paint, see the character wearing it in the preview, and pay an Orb of Transmutation. Taking a dye
@@ -246,7 +256,7 @@ red, and gives nothing until it does again. Older characters get all their point
 
 ### Multiplayer
 The game is **online only**: there is no single player and no hosting your own game. Everyone online
-meets in Ashfall Outpost; parties of up to 4 play zones and rifts together, each with their own loot.
+meets in Oakhaven Outpost; parties of up to 4 play zones and rifts together, each with their own loot.
 The **Tainted World** is the server, on the main host (192.168.86.18) in Docker beside the estate. It's
 on the home network only for now, and set up so it can be opened to the internet later. What's done
 and what's left: MULTIPLAYER.md.
@@ -407,7 +417,7 @@ with `Tainted.exe`, `Tainted.apk` and `version.txt`). A local server instead: `.
 `godot --headless --path . -- --server --name=Home --max=32`.
 
 **TestBot**, to try multiplayer on your own: a player always on the Tainted World (the `tainted-bot`
-container, `scripts/bots/test_bot.gd`). Walk up to it in Ashfall, or whisper it `help`: it answers
+container, `scripts/bots/test_bot.gd`). Walk up to it in Oakhaven, or whisper it `help`: it answers
 `invite`, `trade`, `friend`, `follow`, `stay`, `rift`, `die` (in a rift: then revive it), `leave` and
 `say <text>`; it accepts invites, trades and friend requests, follows its party into rifts and zones and
 fights there. It comes in with the server's bot key (`TAINTED_BOT_KEY` in the host's `.env`, made by
@@ -459,7 +469,7 @@ against an Autharr (`--auth= --email= --password=`, `--phase=first` then `--phas
 checks a trade and the anti-duplication (`--role=a` and `--role=b`, `--shot`), `scratch/admin_bot.tscn` checks the
 admin commands against a server with `--data= --admin=`, `scratch/lost_bot.tscn` checks a game that loses
 the server goes back to the start screen (kill the server once it's in town), and `scratch/coop_bot.tscn` plays a whole party rift with
-two bots (`--role=leader|follower`; `--zone` for the Ashwood instead; `--shot` for a screenshot,
+two bots (`--role=leader|follower`; `--zone` for the Blackroot Wilds instead; `--shot` for a screenshot,
 `--leave-after=6 --takeover` a handover, `--drop-at=6` a reconnect mid-rift, `--affixes` elite affixes on the
 guest, `--allies` hirelings and Ancients, `--revive` falling and reviving, `--levels` party rift levels,
 `--goto` arrows and "go to"; `--addr= --key= --partner=` for many pairs on one server, as in the load test).
@@ -468,14 +478,14 @@ guest, `--allies` hirelings and Ancients, `--revive` falling and reviving, `--le
 Diablo II's mercenaries (`scripts/hirelings.gd` the rules, `hireling_db.gd` the types,
 `hireling.gd` the fighter, `hire_ui.gd` the Captain's window, `hireling_panel.gd` its inventory tab,
 `hireling_portrait.gd` its HUD portrait).
-**Captain Rourke** in Ashfall (east, by the Rift Gate) has fighters for hire, a few of each type,
+**Captain Rourke** in Oakhaven (east, by the Rift Gate) has fighters for hire, a few of each type,
 near your level: you can have one at a time. It follows you, goes after enemies near you, and
 enemies go for whichever of you is nearer. It levels with the experience you earn, never past your
 level, and grows stronger: life and damage with each level, and 5 attribute points a level that
 you add yourself (Strength, Dexterity, Vitality; its gear's requirements are judged by them).
 - **Sellsword** (from the start): sword or axe or mace and a shield; Cleave, Frenzy or Sundering
   Strike, plus two of Shield Slam, Ground Stomp, Battle Cry, War Cry and Iron Skin.
-- **Woodland Scout** (after *Into the Ashwood*): an archer who keeps her distance; Shot, plus two of
+- **Woodland Scout** (after *Into the Blackroot Wilds*): an archer who keeps her distance; Shot, plus two of
   Power Shot (pierces), Multishot and Arrow Rain. Holds the bow you give her.
 - **Iron Warden** (after *The Lost Caravan*): two-handed weapons; Cleave, Sundering Strike or Double
   Swing, plus two of Whirlwind, Leap Slam, Earthquake, Demoralizing Taunt (pulls monsters onto
@@ -577,7 +587,7 @@ that is never used up: drink it from a flask slot and it goes on cooldown.
   keep `SPACING` (400 px, under a pack's 520 px wake-up range, so a fight sometimes pulls in a neighbour) from every other pack and 650 px from the start, and stay clear of exits,
   waypoints, NPCs, quest objects and bosses (`KEEP_CLEAR`). A zone's extras are the same every visit
   (seeded by the map id); a rift's differ every run. Every maze now gets all of its hand-placed packs
-  (it used to pick 6). The Bone Labyrinth went from 27-45 monsters to 79-149, the Ashwood from 72-117
+  (it used to pick 6). The Bone Labyrinth went from 27-45 monsters to 79-149, the Blackroot Wilds from 72-117
   to 226-425 (about six packs on one screen at the 0.75 zoom). On a fast PC both still hold 60 fps
   (draw calls about 2.5x: ~725 in a rift); phones are untested. `KILL_TARGET` is unchanged, so a rift's boss comes after the first 30 kills.
 - **Cost of a crowd**: a sleeping monster more than `Enemy.REST_RANGE` / zoom (1600 px at 0.75) from you stops
@@ -608,7 +618,7 @@ that is never used up: drink it from a flask slot and it goes on cooldown.
   the party list's place; takes `scratch/minimap_*.png`).
 
 ### Kept zones
-- **A solo zone is kept as you leave it** (`ZoneInstances`, in memory only): leaving the Ashwood by an exit, a
+- **A solo zone is kept as you leave it** (`ZoneInstances`, in memory only): leaving the Blackroot Wilds by an exit, a
   waypoint, a town portal or death takes the `Zone` scene out of the tree with its monsters, loot, bosses,
   encounters and quest objects still in it (`ActDB.travel` calls `ZoneInstances.stash_current`); coming back
   puts the same scene in (`resume`). Closing the game, picking another character, signing out or going back to
@@ -622,7 +632,7 @@ that is never used up: drink it from a flask slot and it goes on cooldown.
   waypoint in the same zone (the monsters you killed stay dead).
 - **Going to a kept zone asks** (`InstanceChoice`, the game paused): Continue, Reset area (the old one is thrown
   away and a new one made) or Cancel (you stay where you are; the caller's `on_cancel` steps you back from the
-  exit). It says what is left ("about 280 monsters are left and Vesh still lives"). A town portal back
+  exit). It says what is left ("about 280 monsters are left and The Briarwolf Alpha still lives"). A town portal back
   always goes to the zone it was read in, without asking, and you arrive by the portal. A solo rift left through
   a town portal is asked about too at the Rift Gate (carry on, or a new rift that lets the old one go).
 - Loot that lies in a solo zone stays in it, so a zone no longer saves `left_loot` (a party's zone still does).
@@ -631,7 +641,7 @@ that is never used up: drink it from a flask slot and it goes on cooldown.
 ### Boss fights
 - **What a quest boss is**: a map "boss" object (id, name, kind, skin, size, hp) in a zone. One with an
   entry in `BossDB` (by that id) gets a real fight; one without keeps the plain tough monster with a
-  ground slam (all the rift bosses still do: `DungeonRun`). Today `raider_captain`, Vesh, in the Ashwood.
+  ground slam (all the rift bosses still do: `DungeonRun`). Today `briar_alpha`, the Briarwolf Alpha, in the Blackroot Wilds (Act I's act boss, Lord Malaphax, comes later).
 - **`BossDB`** holds an entry per boss: `title`, `hp` (times the map's), `arena` radius, `intro`, `enrage`
   seconds, `max_adds`, `moves`, `phases`, `lines` and `loot` (the fields are documented at its top).
   Moves: `slam` (circle on the boss), `sweep` (cone), `charge` (a dash along a line, then it stands winded),
@@ -665,11 +675,12 @@ that is never used up: drink it from a flask slot and it goes on cooldown.
   once the quest is DONE, to farm for his drops (the quest itself pays out once). A kept zone is as you left it, so
   after killing him leave and come back and choose Reset. Test: `scratch/test_boss_repeat.tscn`.
 - **Add a boss**: put a "boss" object in the map, add an entry to `BossDB.BOSSES` under its id (copy
-  `raider_captain`), and a phase's `adds` are monsters of `MonsterKinds`. Tests: `scratch/test_boss.tscn`
+  `briar_alpha`), and a phase's `adds` are monsters of `MonsterKinds`. Tests: `scratch/test_boss.tscn`
   (windowed; takes `scratch/boss_*.png`).
-- **Vesh, the Raider Captain**: an archer. Volleys (a cone of five arrows), pin shots (a long line), backsteps
-  when you close in. At 65% he calls two bandit archers and two goblins and starts raining arrows; at 30%
-  two more archers, faster and harder; enraged after 150 s. Rewards: two rares, a magic, orbs and scrolls.
+- **The Briarwolf Alpha** (Chapter 1): lunges (a dash along a line) and mauls (a circle on him). At half life
+  he howls and two briarwolves answer, and he is faster; enraged after 120 s. Rewards: a rare, a magic, orbs and a
+  scroll. `scratch/test_boss.tscn` fights Vesh, a retired archer boss with volleys, pins and rain that it keeps as
+  a fixture (`VESH` in the test registers him) because he covers most of what `BossBrain` can do.
 
 ### Pets
 - **A pet** (`Pet`, `PetDB`) is a small animal that trots beside you (a hedgehog, snail, turtle, boar,
@@ -886,7 +897,7 @@ The app icon (`assets/icon/`, the project icon and the Android launcher and adap
 ## Map themes and walls (CraftPix 2D RPG tilesets)
 
 A map file's `"theme"` sets its look (`scripts/map_theme.gd`): **desert** (the rifts) and **woodland**
-(Act 1: the tutorial, Ashfall and the Ashwood, from the autumn pack). Each theme is a folder
+(Act 1: the tutorial, Oakhaven and the Blackroot Wilds, from the autumn pack). Each theme is a folder
 `assets/tiles/<theme>/` holding one CraftPix "2D RPG" tileset, plus which of its pictures dress a map
 (trees on wall edges, plants on the floor, big trees on wide plateaus) and the town's random scenery.
 A prop can borrow another theme's picture as `"<theme>/<name>"`, e.g. the woods' wagons, tents and
@@ -905,7 +916,7 @@ The packs are on the NAS (Tainted > assets > maps). To add a theme, put its zip 
 tropical) share one layout, so they work as they are; the dungeon, cave and city packs are drawn
 differently and would need their own wall pieces.
 
-`scripts/town_map.gd` (on `scripts/scenery_map.gd`) lays out Ashfall by hand with the theme's
+`scripts/town_map.gd` (on `scripts/scenery_map.gd`) lays out Oakhaven by hand with the theme's
 pictures and scatters scenery round it (fixed seed); trunks and big rocks block movement, grass
 doesn't, and props are y-sorted with the characters.
 Licence: `assets/tiles/<theme>/LICENSE_craftpix.txt`; check craftpix.net/file-licenses.
@@ -953,7 +964,7 @@ A **Scroll of Identify** (a currency in the stash, dropped by monsters and bosse
 Merchant) identifies one item, anywhere: tap the item and press Identify on its card. The **Sage** in town identifies
 everything in your bag and stash at once, free. Flasks and Normal items are always identified.
 
-## Town: Ashfall Outpost (scenes/town.tscn, scripts/town.gd, town_map.gd)
+## Town: Oakhaven Outpost (scenes/town.tscn, scripts/town.gd, town_map.gd)
 
 The game starts here, and you return here after a dungeon (leaving, or dying). Walk up to an NPC
 and tap the Talk button at the bottom (or press E):

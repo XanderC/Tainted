@@ -5,11 +5,14 @@ extends RefCounted
 ## "portal" objects (target: a zone id or "town").
 
 const TOWN := "town"
-const TOWN_NAME := "Ashfall Outpost"
+const TOWN_NAME := "Oakhaven Outpost"
 
-## id: name, act, map (MapData id), area_level
+## id: name, act, map (MapData id), area_level, and kinds (the MonsterKinds a zone's packs are made of; without it,
+## whatever its area level allows). Act I is The Bleeding Veil (ACT1_DESIGN.md). The first zone keeps its old id
+## "dune_wastes" (saved waypoints and zone ids use it): it is the Blackroot Wilds.
 const ZONES := {
-	"dune_wastes": {"name": "The Ashwood", "act": 1, "map": "dune_wastes", "area_level": 2},
+	"dune_wastes": {"name": "Blackroot Wilds", "act": 1, "map": "dune_wastes", "area_level": 2,
+		"kinds": ["briarwolf", "villager", "ghoul", "zombie", "skeleton"]},
 }
 
 

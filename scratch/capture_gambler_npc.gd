@@ -1,5 +1,5 @@
 extends Node2D
-## A picture of Lucky Mott the Gambler in Ashfall (gambler_npc.png in the folder after --out=).
+## A picture of Lucky Mott the Gambler in Oakhaven (gambler_npc.png in the folder after --out=).
 ##   godot --path . --resolution 1600x720 res://scratch/capture_gambler_npc.tscn -- --out=<folder>
 
 

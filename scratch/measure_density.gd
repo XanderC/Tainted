@@ -1,5 +1,5 @@
 extends Node2D
-## Loads the Ashwood zone and a rift, and reports how long each took to build, how many monsters
+## Loads the Blackroot Wilds zone and a rift, and reports how long each took to build, how many monsters
 ## it made and the frame time afterwards, with a screenshot from the same spot each
 ## (scratch/density_*.png, scratch/density.log). A different tag per run: MEASURE_TAG=old|new.
 ## godot --path . --resolution 1600x720 res://scratch/measure_density.tscn
@@ -36,7 +36,7 @@ func _measure_zone() -> void:
 			best = p
 	zone.player.global_position = best + Vector2(-380, 40)
 	await _settle()
-	_stats("zone (Ashwood)", build_ms, n)
+	_stats("zone (Blackroot Wilds)", build_ms, n)
 	get_viewport().get_texture().get_image().save_png(ProjectSettings.globalize_path("res://scratch/density_zone_%s.png" % _tag))
 	zone.queue_free()
 	await get_tree().process_frame

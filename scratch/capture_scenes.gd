@@ -1,6 +1,6 @@
 extends Node
 ## Screenshots of the real scenes after the map theme change (scenes_<name>.png in the --out= folder):
-## Ashfall with its NPCs, a rift with monsters, and the Ashwood at the start.
+## Oakhaven with its NPCs, a rift with monsters, and the Blackroot Wilds at the start.
 ##   godot --path . --resolution 1600x720 res://scratch/capture_scenes.tscn -- --out=<folder>
 
 var out := "res://scratch/"

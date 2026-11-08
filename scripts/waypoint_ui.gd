@@ -1,6 +1,6 @@
 class_name WaypointUI
 extends CanvasLayer
-## The waypoint menu: travel to Ashfall Outpost or any zone whose waypoint you've touched.
+## The waypoint menu: travel to Oakhaven Outpost or any zone whose waypoint you've touched.
 
 var here := ""  # the zone (or ActDB.TOWN) this waypoint is in: not listed as a destination
 

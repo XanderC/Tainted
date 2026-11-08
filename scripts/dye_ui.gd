@@ -1,6 +1,6 @@
 class_name DyeUI
 extends CanvasLayer
-## The Dyer in Ashfall: two tabs for how your armour looks, neither changing its stats.
+## The Dyer in Oakhaven: two tabs for how your armour looks, neither changing its stats.
 ##   Dye        - pick a piece of gear (worn, in your bag, or your hireling's), pick a paint, see the
 ##                character wearing it, and pay (DyeDB.PRICE) to dye it. Taking a dye off is free.
 ##   Appearance - make a piece of armour, a weapon or a shield look like any other of its kind you

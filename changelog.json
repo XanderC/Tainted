@@ -1,5 +1,16 @@
 [
 	{
+		"build": 0,
+		"title": "Act I: The Bleeding Veil begins",
+		"notes": [
+			"Act I is being rewritten as The Bleeding Veil. The outpost is now Oakhaven Outpost, and the first zone is the Blackroot Wilds: mist-choked woodland full of briarwolves, rotting villagers, ghouls, zombies and skeletons, with a hunting lodge and a ruined manor to find.",
+			"New main quest, The First Incursion: Battlemaster Brom sends you to cull the briarwolves at the gate and find Scout Captain Dennis, who is pinned in a hunting lodge by the Briarwolf Alpha. Take the Coagulated Rift Shard to High Priestess Althea.",
+			"New side quest, The Lost Heirloom: Merchant Corwin wants a lockbox from a ruined manor in the Wilds, and pays in an uncut gem. Read what is inside.",
+			"The Alpha is a boss fight of its own: it lunges and mauls, and its pack answers at half life. Like every quest boss it comes back for you to farm once the quest is handed in.",
+			"The old Ashwood quests, Into the Ashwood and The Lost Caravan, and Vesh are gone. Characters that finished them keep what they unlocked (the hirelings)."
+		]
+	},
+	{
 		"build": 202611081847,
 		"title": "Tidier buttons",
 		"notes": [

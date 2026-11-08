@@ -1,6 +1,6 @@
 class_name DyeDB
 extends RefCounted
-## Dyes (paints) for helmets, body armour, gloves and boots, applied by the Dyer in Ashfall. A dye recolours a piece of
+## Dyes (paints) for helmets, body armour, gloves and boots, applied by the Dyer in Oakhaven. A dye recolours a piece of
 ## gear's art, worn on a character and in the bag, keeping its shading and dark outlines (see
 ## SHADER). The icons are the CraftPix paint icons (tools/import_paints.py).
 ## An item remembers its dye (ItemInstance.dye, a DyeDB id); "" is its own colours.

@@ -24,6 +24,21 @@ static func current_step(id: String) -> Dictionary:
 	return steps[i] if state(id) == ACTIVE and i < steps.size() else {}
 
 
+## A saved character's quests as this version has them: ones that no longer exist are dropped (Act I was rewritten
+## as The Bleeding Veil), and finishing an old quest counts for the one that replaced it, so what it unlocked (hirelings)
+## stays unlocked.
+static func migrate(saved: Dictionary) -> Dictionary:
+	var out := {}
+	for id in saved:
+		if QuestDB.QUESTS.has(id) and saved[id] is Dictionary:
+			out[id] = saved[id]
+	for pair in [["a1_into_the_wastes", "a1_first_incursion", 5], ["a1_lost_caravan", "a1_lost_heirloom", 2]]:
+		var old = saved.get(pair[0], {})
+		if old is Dictionary and String(old.get("state", "")) == DONE and not out.has(pair[1]):
+			out[pair[1]] = {"state": DONE, "step": int(pair[2]), "count": 0}
+	return out
+
+
 static func start(id: String) -> void:
 	if state(id) != "" or QuestDB.quest(id).is_empty():
 		return
@@ -136,6 +151,9 @@ static func turn_in(id: String, player: Player) -> Array:
 	for orb in r.get("orbs", {}):
 		GameState.add_orb(orb, int(r["orbs"][orb]))
 		got.append("%d × %s" % [int(r["orbs"][orb]), Currency.orb_name(orb)])
+	for gem in r.get("gems", {}):
+		GameState.add_gem(gem, int(r["gems"][gem]))
+		got.append("%d × %s" % [int(r["gems"][gem]), GemDef.info(gem).get("name", gem)])
 	if int(r.get("passive_points", 0)) > 0:
 		GameState.skill_points += int(r["passive_points"])
 		got.append("+%d passive skill point%s" % [int(r["passive_points"]), "" if int(r["passive_points"]) == 1 else "s"])

@@ -1,5 +1,5 @@
 extends Node2D
-## Random encounters (ZoneEncounters), forced in the Ashwood and played through: the cottage's zombies
+## Random encounters (ZoneEncounters), forced in the Blackroot Wilds and played through: the cottage's zombies
 ## come out when you get close, clearing them frees a captive who pays out; the ritual starts its
 ## countdown when you get close, each dead cultist buys time, running out calls a boss, and killing
 ## them all breaks it and pays out. Also: a spot is found on open floor away from the start, and a

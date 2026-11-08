@@ -1,6 +1,6 @@
 class_name Gambler
 extends RefCounted
-## The Gambler in Ashfall (Diablo II's Gheed): a stall of random gear, every piece unidentified, so
+## The Gambler in Oakhaven (Diablo II's Gheed): a stall of random gear, every piece unidentified, so
 ## you pay for what it might be. Most are Magic, some Rare, now and then a Legendary or Set item.
 ## Its stock (GameState.gamble_stock, saved with the character) is rolled for your level, and is new
 ## every REFRESH_SECS or as soon as you've bought it all. A piece's price goes by its item level and

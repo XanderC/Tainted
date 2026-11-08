@@ -79,7 +79,7 @@ func _build() -> void:
 			any = true
 			_card(id, q, st)
 	if not any:
-		_list.add_child(UIKit.label("No quests yet. People in Ashfall Outpost with a gold ! over their heads have work for you.", 16, UIKit.TEXT_DIM, true))
+		_list.add_child(UIKit.label("No quests yet. People in Oakhaven Outpost with a gold ! over their heads have work for you.", 16, UIKit.TEXT_DIM, true))
 
 
 func _card(id: String, q: Dictionary, st: String) -> void:

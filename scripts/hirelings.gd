@@ -1,7 +1,7 @@
 class_name Hirelings
 extends RefCounted
 ## Your hireling (Diablo II's mercenary): one at a time, hired from the Mercenary Captain in
-## Ashfall (HirelingDB has the types). It follows you and fights (Hireling), levels up with the
+## Oakhaven (HirelingDB has the types). It follows you and fights (Hireling), levels up with the
 ## experience you earn (never past your level), wears its own gear and fights with skill gems it
 ## came with. Its skill gems are its own, but you link your support gems to them, at the stash
 ## like your own. If it falls it stays down until the Captain revives it, or you hire another.

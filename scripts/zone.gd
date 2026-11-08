@@ -365,7 +365,7 @@ func _label(parent: Node2D, text: String, col: Color, y := -110.0) -> void:
 func _spawn_packs() -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash(zone_id)  # the same kind at the same spot every visit
-	var pool := MonsterKinds.pool(area_level)
+	var pool: Array = ActDB.zone(zone_id).get("kinds", MonsterKinds.pool(area_level))
 	# The map's own packs, then more across the floor (PackSpots: the same ones every visit)
 	var spots := PackSpots.for_map(maze, CELLS_PER_PACK)
 	for i in spots.size():

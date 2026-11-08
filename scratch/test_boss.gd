@@ -1,10 +1,39 @@
 extends Node2D
-## A boss fight with BossDB's Vesh, the Raider Captain, in the Ashwood: he wakes with an intro (roaring, untouchable)
+## A boss fight with BossDB's Vesh, the Raider Captain, in the Blackroot Wilds: he wakes with an intro (roaring, untouchable)
 ## and the arena seals; his attacks hurt only what stands in their warning; he moves through his phases
 ## (roaring, calling adds), enrages after a while, and dies, opening the arena, taking his adds with him and
 ## dropping his rewards. Then a party member's copy of him (no brain) seals and opens the arena the same way.
 ## Takes scratch/boss_*.png.
 ##   godot --path . --resolution 1600x720 res://scratch/test_boss.tscn
+
+## Vesh, the Raider Captain: the first boss made with BossDB, kept here as the fixture this test fights (the game no longer has him).
+const VESH := {
+	"title": "Raider Captain", "hp": 1.8,
+	"arena": 560.0, "intro": 1.8, "enrage": 150.0, "max_adds": 5,
+	"lines": {
+		"intro": "You've come a long way to die in my camp.",
+		"enrage": "No more games!",
+	},
+	"moves": {
+		"volley": {"kind": "volley", "windup": 0.85, "cd": 3.4, "range": [180.0, 760.0], "weight": 3, "arrows": 5,
+			"spread": 0.75, "length": 620.0, "dmg": 0.9, "recover": 0.5},
+		"pin": {"kind": "pin", "windup": 1.05, "cd": 5.5, "range": [240.0, 820.0], "weight": 2, "length": 760.0,
+			"width": 64.0, "dmg": 2.4, "recover": 0.6},
+		"backstep": {"kind": "backstep", "windup": 0.15, "cd": 4.0, "range": [0.0, 210.0], "weight": 8, "dist": 380.0,
+			"speed": 1100.0, "recover": 0.25},
+		"rain": {"kind": "rain", "windup": 1.3, "cd": 8.0, "range": [0.0, 900.0], "weight": 3, "count": 5, "r": 100.0,
+			"dmg": 1.5, "recover": 0.7},
+	},
+	"phases": [
+		{"at": 1.0, "moves": ["volley", "pin", "backstep"]},
+		{"at": 0.65, "say": "Archers! Cut them down!", "moves": ["volley", "pin", "backstep", "rain"],
+			"adds": [{"kind": "bandit_archer", "n": 2}, {"kind": "goblin", "n": 2}], "speed": 1.1},
+		{"at": 0.3, "say": "Burn it all down!", "moves": ["volley", "pin", "backstep", "rain"],
+			"adds": [{"kind": "bandit_archer", "n": 2}], "speed": 1.2, "dmg": 1.15, "cd": 0.75},
+	],
+	"loot": {"rares": 2, "magics": 1, "orbs": {"alteration": 2, "transmute": 3, "augment": 1}, "scrolls": 2},
+}
+
 
 var _fails := 0
 var player: Player
@@ -49,13 +78,23 @@ func hurtable(boss: Enemy) -> void:
 	check(boss._shield_t <= 0.0, "his untouchable spell runs out by itself (%.1f s)" % waited)
 
 
+## The map's boss object (where the Briarwolf Alpha stands), as Vesh the archer: his id, name, kind and look, so the
+## zone makes him as it would a quest boss with that entry.
 func boss_object(zone) -> Dictionary:
 	for o in MapData.objects_of(zone.maze.data, "boss"):
-		return o
+		var vesh: Dictionary = o.duplicate()
+		vesh["id"] = "raider_captain"
+		vesh["name"] = "Vesh, the Raider Captain"
+		vesh["kind"] = "bandit_archer"
+		vesh["skin"] = "archer_guy"
+		vesh["hp"] = 9.0
+		vesh["size"] = 1.45
+		return vesh
 	return {}
 
 
 func _ready() -> void:
+	BossDB.register("raider_captain", VESH)
 	GameState.tutorial_stage = GameState.TUTORIAL_DONE
 	GameState.current_zone = "dune_wastes"
 	GameState.zone_entry = "start"
@@ -64,7 +103,7 @@ func _ready() -> void:
 	await settle(0.5)
 	player = zone.player
 	var obj := boss_object(zone)
-	check(not obj.is_empty(), "the Ashwood has its boss object")
+	check(not obj.is_empty(), "the Blackroot Wilds has its boss object")
 	var home := Vector2(float(obj.x), float(obj.y))
 	var reach: float = float(BossDB.def("raider_captain").arena) + Zone.ARENA_CLEAR
 	var camp_packs := 0
@@ -250,13 +289,19 @@ func _ready() -> void:
 	check(rewards >= 4, "his rewards drop (%d pickups: 2 rares, a magic, currency)" % rewards)
 	check(not zone._boss_bar.visible, "his bar goes")
 
-	# Walking out: nothing holds the player now
-	player.global_position = home + Vector2(700.0, 0)
-	for i in 10:
-		player.velocity = Vector2(300, 0)
-		player.move_and_slide()
-		await get_tree().physics_frame
-	check(player.global_position.x > home.x + 700.0, "the player walks out of where the ring was")
+	# Walking out: nothing holds the player now (some way round, the map's own walls and thorn fences do: try each way)
+	var out_ways := 0
+	for k in 8:
+		var dir := Vector2.from_angle(TAU * k / 8.0)
+		player.global_position = home + dir * 700.0
+		var from := player.global_position
+		for i in 10:
+			player.velocity = dir * 300.0
+			player.move_and_slide()
+			await get_tree().physics_frame
+		if player.global_position.distance_to(from) > 20.0:
+			out_ways += 1
+	check(out_ways >= 1, "the player walks out of where the ring was (%d of 8 ways open)" % out_ways)
 
 	zone.queue_free()
 	await settle(0.4)

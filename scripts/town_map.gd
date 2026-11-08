@@ -1,6 +1,6 @@
 class_name TownMap
 extends SceneryMap
-## Ashfall Outpost: the hub, a village in the Act 1 woods. Buildings, camp dressing and a ring of
+## Oakhaven Outpost: the hub, a village in the Act 1 woods. Buildings, camp dressing and a ring of
 ## woodland round it, with invisible walls. The woodland theme has no campfire, tents, wagon or pond,
 ## so those are borrowed from the desert's.
 
@@ -27,7 +27,7 @@ func _layout() -> void:
 	_prop("desert/decor_7", Vector2(0, 60), 0.6, 0, 0.8)    # central campfire
 	_prop("decor_9", Vector2(110, 150), 0.5, 6)              # signpost
 	_prop("decor_10", Vector2(-120, 200), 0.45, 10, 0.85)    # barrel
-	_prop("decor_3", Vector2(-150, -40), 0.5, 6, 0.95)       # Ashfall's banner
+	_prop("decor_3", Vector2(-150, -40), 0.5, 6, 0.95)       # Oakhaven's banner
 	# Stash keeper: the big house at the north, and a cottage beside it
 	_prop("building_3", Vector2(0, -330), 0.55, 70, 0.95)
 	_prop("building_6", Vector2(340, -330), 0.45, 40, 0.95)

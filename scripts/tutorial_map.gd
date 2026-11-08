@@ -7,7 +7,7 @@ extends Node2D
 ##            at the stash in town and the tutorial has none)
 ##   FIGHT  - a training monster appears: kill it with the new skill
 ##   EQUIP  - it dropped an item: pick it up and equip it
-##   PORTAL - step into the portal to reach Ashfall Outpost (the town)
+##   PORTAL - step into the portal to reach Oakhaven Outpost (the town)
 ## Progress is saved (GameState.tutorial_stage), so quitting midway resumes at the same stage.
 
 const SCENE := "res://scenes/tutorial.tscn"
@@ -27,7 +27,7 @@ const HINTS := {
 		"(You change skill gems at the [color=#ffd54a]stash[/color] in town.)",
 	Stage.EQUIP: "[b]It dropped a Magic weapon![/b]\nTap its name on the ground to pick it up, then equip it in place of your Rusty Sword: " +
 		"open your [color=#ffd54a]🎒 BAG[/color] and drag it onto the Main Hand slot.",
-	Stage.PORTAL: "[b]You're ready.[/b]\nStep into the [color=#c084fc]portal[/color] to reach Ashfall Outpost, your home base. " +
+	Stage.PORTAL: "[b]You're ready.[/b]\nStep into the [color=#c084fc]portal[/color] to reach Oakhaven Outpost, your home base. " +
 		"Its traders, crafters and the Rift Gate await.",
 }
 
