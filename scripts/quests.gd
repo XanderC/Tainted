@@ -57,13 +57,16 @@ static func wants(event: String, key: String) -> bool:
 	return false
 
 
-## Whether a quest boss is still to be fought (it doesn't come back once its quest is past it).
+## Whether a quest boss stands at his post in a fresh visit: before his quest and while it is working towards him,
+## not once it is past him until it is handed in (he is dead in the story), and again once the quest is DONE: the
+## fight is then one to repeat, for his drops (a visit already begun is as it was left: ZoneInstances).
 static func boss_alive(boss_id: String) -> bool:
 	for id in QuestDB.QUESTS:
 		var steps: Array = QuestDB.quest(id).get("steps", [])
 		for i in steps.size():
 			if steps[i]["type"] == "kill_boss" and steps[i]["key"] == boss_id:
-				return state(id) == "" or (state(id) == ACTIVE and step_index(id) <= i)
+				var st := state(id)
+				return st == "" or st == DONE or (st == ACTIVE and step_index(id) <= i)
 	return true
 
 

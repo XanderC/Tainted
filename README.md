@@ -657,6 +657,10 @@ that is never used up: drink it from a flask slot and it goes on cooldown.
 - **Party play**: the host runs the brain; followers get the boss as a copy (no brain) with the same ring and
   bar, and see the warnings and the boss's lines through `Coop.host_fx` ("tele", "say"); the host does the
   hurting. If the host leaves, the copy that takes over gets a brain and carries on (no intro).
+- **Repeatable once the quest is done** (`Quests.boss_alive`): a quest boss stands at his post on every fresh visit
+  before his quest and while it works towards him, is gone between his death and the quest's hand-in, and is back for good
+  once the quest is DONE, to farm for his drops (the quest itself pays out once). A kept zone is as you left it, so
+  after killing him leave and come back and choose Reset. Test: `scratch/test_boss_repeat.tscn`.
 - **Add a boss**: put a "boss" object in the map, add an entry to `BossDB.BOSSES` under its id (copy
   `raider_captain`), and a phase's `adds` are monsters of `MonsterKinds`. Tests: `scratch/test_boss.tscn`
   (windowed; takes `scratch/boss_*.png`).

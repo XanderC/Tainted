@@ -83,7 +83,7 @@ func _ready() -> void:
 	await get_tree().process_frame
 	check(zn._waypoint != null and zn._exits.size() >= 1, "the zone has its waypoint and exit")
 	check(get_tree().get_nodes_in_group("enemies").size() > 40, "the zone is full of monsters (%d)" % get_tree().get_nodes_in_group("enemies").size())
-	check(zn._boss == null, "a dead quest boss doesn't come back")
+	check(zn._boss != null, "once the quest is handed in, its boss is back to fight again")
 	check(zn.player.global_position.distance_to(zn._exits[0]["node"].global_position) < 300, "arriving from town puts you by the road back")
 
 	print("quests: %d checks, %d failed" % [_checks, _fails])

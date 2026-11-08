@@ -1,6 +1,13 @@
 [
 	{
 		"build": 0,
+		"title": "Bosses to farm",
+		"notes": [
+			"Once you have handed in a quest, its boss is back for good: go back to the Ashwood and Vesh is at his camp again, with his rewards, every time you start the area afresh (leave, come back and choose Reset). The quest pays out once, as before."
+		]
+	},
+	{
+		"build": 0,
 		"title": "Bigger party, tougher monsters, better rewards",
 		"notes": [
 			"As in Diablo II, the more players there are in an area, the tougher its monsters: each extra player makes them take 60% more to kill. In return every kill gives each of you 35% more experience and drops come 25% more often and better, in zones and in rifts.",
