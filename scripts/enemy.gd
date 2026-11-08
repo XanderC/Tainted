@@ -305,7 +305,7 @@ func _process_ailments(delta: float) -> void:
 func _apply_dot(amount: float, dtype: RuneDef.DamageType) -> void:
 	if _dead:
 		return
-	hp -= amount
+	hp -= amount / PartyScale.life()
 	hp_changed.emit(hp, max_hp)
 	_spawn_number(amount, false, dtype)
 	queue_redraw()
@@ -420,7 +420,7 @@ func take_damage(amount: float, crit: bool = false,
 	if _sunder_t > 0.0:
 		final_dmg *= 1.35
 
-	hp -= final_dmg
+	hp -= final_dmg / PartyScale.life()  # more players here: it takes more to kill (the number shown is the blow)
 	hp_changed.emit(hp, max_hp)
 	_spawn_number(final_dmg, crit, dtype)
 	_hit_spark(dtype)
@@ -476,7 +476,7 @@ func _die() -> void:
 	died.emit(global_position)
 	if is_instance_valid(target):
 		target.on_enemy_killed(global_position)
-	GameState.add_xp(max_hp * (0.6 if is_boss else 0.4))
+	GameState.add_xp(max_hp * (0.6 if is_boss else 0.4) * PartyScale.xp())
 	if has_affix("molten"):
 		_molten_explosion()
 	rig.modulate = _tint

@@ -273,6 +273,13 @@ In town (`NetPresence`) everyone else there is a `RemotePlayer`, shown with thei
 name and level, walking where they walk. Going back to character select keeps you online.
 
 **Parties** (up to 4; `Net` keeps them on the server, `PartyUI` shows them):
+- Like Diablo II's "Players X", the more players in the same area, the tougher its monsters and the better their
+  rewards (`PartyScale`): for each extra player, monsters take 60% more to kill (`Enemy.take_damage` divides the blow, so
+  their life bars and the host's snapshots don't change), each kill gives 35% more XP to every player, and drops come
+  25% oftener and better (a zone's item, rare, shard and scroll chances; a rift's horde loot counts that many more
+  kills). The count is the players in the scene (you and the `RemotePlayer`s), so a member in town changes nothing and
+  it follows people arriving and leaving. The party list says what it is now. Monsters' damage isn't scaled. Test:
+  `scratch/test_party_scale.tscn`.
 - Walk up to another player in town and tap the Talk button (it shows their name) for their card,
   then **Invite to party**. They get a Join / No thanks pop-up, which lapses after a minute.
 - The inviter leads the party. Only the leader invites, removes members or hands over the lead

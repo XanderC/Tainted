@@ -1,5 +1,13 @@
 [
 	{
+		"build": 0,
+		"title": "Bigger party, tougher monsters, better rewards",
+		"notes": [
+			"As in Diablo II, the more players there are in an area, the tougher its monsters: each extra player makes them take 60% more to kill. In return every kill gives each of you 35% more experience and drops come 25% more often and better, in zones and in rifts.",
+			"It counts the players in the area with you, so a party member in town changes nothing, and it follows people arriving and leaving. The party list shows what it comes to."
+		]
+	},
+	{
 		"build": 202611081721,
 		"title": "Gems and runes in their places",
 		"notes": [

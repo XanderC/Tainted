@@ -22,7 +22,6 @@ extends Node
 const SNAP_HZ := 12.0
 const RUN_HZ := 2.0
 const HURT_EVERY := 0.1  ## damage to other players goes this often (burning ground hurts every frame)
-const HP_PER_PLAYER := 0.6  ## monsters' life x (1 + this per extra player in the rift)
 
 static var current: Coop = null
 
@@ -61,13 +60,6 @@ func _exit_tree() -> void:
 
 static func active() -> bool:
 	return current != null and is_instance_valid(current)
-
-
-## Monsters' life multiplier for the players in the rift (the host scales what it spawns).
-static func hp_scale() -> float:
-	if not active():
-		return 1.0
-	return 1.0 + HP_PER_PLAYER * current.get_tree().get_nodes_in_group("remote_players").size()
 
 
 # ---------- what a follower's monsters pass on ----------

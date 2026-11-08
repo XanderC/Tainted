@@ -22,6 +22,7 @@ var _pop_layer: CanvasLayer
 var _frame: VBoxContainer
 var _dock: Control = null  # a scene's spacer under the hireling's portrait (dock), which the list stands on
 var _rows := {}  # member id -> {"life": ColorRect, "where": Label, "dead": Label}
+var _scale_lbl: Label  # what the players here do to the monsters and their rewards (PartyScale), under the title
 var _invite_box: PanelContainer
 var _invites: Array = []  # [{"id", "name", "at"}], [{"portal": {...}, "at"}] or [{"friend": id, "name", "at"}]
 var _friends_win: PanelContainer
@@ -95,6 +96,10 @@ func _process(_delta: float) -> void:
 	_frame_layer.visible = show
 	_pop_layer.visible = show
 	_place()
+	if _scale_lbl != null and is_instance_valid(_scale_lbl):
+		var sum := PartyScale.summary()
+		_scale_lbl.text = sum
+		_scale_lbl.visible = sum != ""
 	# A rift you're in already needs no asking
 	if not _invites.is_empty() and _invites[0].has("portal") and Net.instance == String(_invites[0].portal.inst):
 		_drop_portal_asks()
@@ -167,6 +172,12 @@ func _rebuild() -> void:
 	var leave := UIKit.button("Leave", Color(0.22, 0.10, 0.10), Color(0.70, 0.35, 0.30), Vector2(70, 28), 12)
 	leave.pressed.connect(Net.leave_party)
 	head.add_child(leave)
+	_scale_lbl = UIKit.label("", 11, Color(0.95, 0.78, 0.45))
+	_scale_lbl.add_theme_color_override("font_outline_color", Color.BLACK)
+	_scale_lbl.add_theme_constant_override("outline_size", 3)
+	_scale_lbl.visible = false
+	_scale_lbl.tooltip_text = "The more players in an area, the tougher its monsters, and the more experience and drops they give"
+	_frame.add_child(_scale_lbl)
 	var portal: Dictionary = Net.party.get("portal", {})
 	if not portal.is_empty() and Net.instance != String(portal.inst):
 		var join := UIKit.button("🌀  Join %s's Rift %d" % [portal.by_name, int(portal.level)],

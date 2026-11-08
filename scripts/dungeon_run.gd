@@ -121,7 +121,7 @@ func _summon_boss() -> void:
 	b.display_name = boss_name
 	b.skin = String(MonsterKinds.BOSSES[boss_kind]["skin"])
 	b.element = MonsterKinds.element_of(MonsterKinds.BOSSES[boss_kind])
-	b.max_hp = BOSS_HP * hp_mult(level) * Coop.hp_scale()
+	b.max_hp = BOSS_HP * hp_mult(level)
 	b.speed = BOSS_SPEED * speed_mult(level)
 	b.touch_damage = BOSS_DAMAGE * damage_mult(level)
 	b.target = player
@@ -299,7 +299,8 @@ static func scale_drops(d: Dictionary, lvl: int) -> Dictionary:
 ## Adds what the monsters you killed would have dropped: their shards and orbs into `drops`, and
 ## runes and gems into bonus_runes / bonus_gems (all dropped round the boss: _on_boss_died).
 func horde_loot(drops: Dictionary) -> void:
-	for i in kills:
+	var count := int(round(kills * PartyScale.drops()))  # more players in the rift: it counts for more kills' drops
+	for i in count:
 		var d := scale_drops(CraftingDB.monster_drops(item_level(level, i)), level)
 		for key in ["shards", "orbs"]:
 			var into: Dictionary = drops[key]

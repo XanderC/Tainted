@@ -485,13 +485,14 @@ func _on_boss_died(b: Enemy, boss_id: String, at: Vector2) -> void:
 func _on_monster_died(e: Enemy, at: Vector2) -> void:
 	Quests.notify("kill", e.kind)
 	var elite := e.tier != MonsterAffix.Tier.NORMAL
-	if elite or randf() < ITEM_DROP_CHANCE:
-		var r := ItemInstance.Rarity.RARE if elite and randf() < 0.4 else (ItemInstance.Rarity.MAGIC if elite or randf() < 0.45 else ItemInstance.Rarity.NORMAL)
+	var more := PartyScale.drops()  # a party: better odds of every drop
+	if elite or randf() < ITEM_DROP_CHANCE * more:
+		var r := ItemInstance.Rarity.RARE if elite and randf() < 0.4 * more else (ItemInstance.Rarity.MAGIC if elite or randf() < 0.45 * more else ItemInstance.Rarity.NORMAL)
 		_drop_item(LootGenerator.roll_item(area_level + 1, r), at)
-	if randf() < SHARD_DROP_CHANCE:
+	if randf() < SHARD_DROP_CHANCE * more:
 		var ids := CraftingDB.ORBS.keys()
 		CurrencyPickup.add_to_bundle(self, "Currency", ["shard", ids[randi() % mini(4, ids.size())], 1], at)
-	if randf() < (SCROLL_ELITE_CHANCE if elite else SCROLL_DROP_CHANCE):
+	if randf() < (SCROLL_ELITE_CHANCE if elite else SCROLL_DROP_CHANCE) * more:
 		spawn_currency("scroll", "town_portal", 1, at)
 
 

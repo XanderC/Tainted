@@ -448,7 +448,7 @@ func _spawn_enemy(pos: Vector2, pack: String, tier := 0) -> Enemy:
 	e.aggro_range = PACK_AGGRO
 	e.pack = pack
 	var lvl := run.level
-	e.max_hp = (25.0 + kills * 1.5) * DungeonRun.hp_mult(lvl) * Coop.hp_scale()
+	e.max_hp = (25.0 + kills * 1.5) * DungeonRun.hp_mult(lvl)
 	e.touch_damage *= DungeonRun.damage_mult(lvl)
 	e.speed *= DungeonRun.speed_mult(lvl)
 	if not _pack_kind.has(pack):
