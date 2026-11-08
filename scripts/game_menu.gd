@@ -318,7 +318,14 @@ func _get_panel(panel_name: String) -> MenuPanel:
 	var p: MenuPanel
 	match panel_name:
 		"skills": p = SkillGemsPanel.new()
-		"gems": p = GemsPanel.new()
+		"gems":
+			var gp0 := GemsPanel.new()
+			gp0.kind = "gems"
+			p = gp0
+		"runes":
+			var rp := GemsPanel.new()
+			rp.kind = "runes"
+			p = rp
 		"jeweler":
 			var gp := GemsPanel.new()
 			gp.jeweler = true
@@ -336,13 +343,13 @@ func _get_panel(panel_name: String) -> MenuPanel:
 	return p
 
 
-## One row of tabs: the vendor's panel then its VENDOR_TABS. At the stash it is Items, Currency and
-## Gems (Items and Currency are the two tabs of the StashPanel). None with no vendor.
+## One row of tabs: the vendor's panel then its VENDOR_TABS. At the stash it is Items, Currency, Gems and
+## Runes (Items and Currency are the two tabs of the StashPanel). None with no vendor.
 func _build_tabs() -> void:
 	UIKit.clear(_tabs_row)
 	var tabs: Array = []  # [panel name, stash tab or ""]
 	if _vendor == "stash":
-		tabs = [["stash", "items"], ["stash", "currency"], ["gems", ""]]
+		tabs = [["stash", "items"], ["stash", "currency"], ["gems", ""], ["runes", ""]]
 	elif _vendor != "":
 		tabs.append([_vendor, ""])
 		for n in VENDOR_TABS.get(_vendor, DEFAULT_TABS):

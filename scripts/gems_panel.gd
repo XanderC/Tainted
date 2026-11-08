@@ -9,10 +9,23 @@ extends MenuPanel
 
 
 var jeweler := false
+## Which of the shared pool it shows: "gems", "runes", or "" for both (the Jeweler's). The stash has a tab for each.
+var kind := ""
+var _px := 0.0  # the pool's cell size last laid out; a resize that changes it lays it out again
 ## Shown inside another panel (the stash's Gems tab): tapping a gem doesn't switch panels.
 var embedded := false
 var _combine_gem := ""
 var _sel_gem := ""  # gem tapped in the Gems tab or in a socket (outlined; its card pops up)
+
+
+func _ready() -> void:
+	resized.connect(_refit.call_deferred)
+	visibility_changed.connect(_refit.call_deferred)
+
+
+func _refit() -> void:
+	if is_visible_in_tree() and GameState.gem_station and pool_cell(kind != "runes") != _px:
+		refresh()
 
 
 func panel_title() -> String:
@@ -20,8 +33,9 @@ func panel_title() -> String:
 		return "💎 Jeweler"
 	var total := 0
 	for g in GameState.gems:
-		total += int(GameState.gems[g])
-	return "💎 Gems (%d)" % total
+		if SocketRune.is_rune(g) == (kind == "runes"):
+			total += int(GameState.gems[g])
+	return "🔷 Runes (%d)" % total if kind == "runes" else "💎 Gems (%d)" % total
 
 
 func refresh() -> void:
@@ -113,17 +127,61 @@ func _gem_card(v: VBoxContainer, gid: String) -> void:
 
 # ---------- the shared gems (at the stash or the Jeweler) ----------
 
-const POOL_COLS := 8
+const POOL_GAP := 6.0
+const RUNE_COLS := 11  # the rune ladder, El to Zod: three rows of eleven
+const ROW_LABEL := 84.0  # a gem type's name, left of its row
+const MIN_POOL_CELL := 40.0
+const MAX_POOL_CELL := 72.0
 
 
+## The pool's cell size: as wide as fit a gem row (its tiers and its label) or a rune row across the panel.
+func pool_cell(gems: bool) -> float:
+	var w := (size.x if size.x > 0.0 else 600.0) - 40.0
+	var c := (w - ROW_LABEL - POOL_GAP * GemDef.MAX_TIER) / GemDef.MAX_TIER if gems else (w - POOL_GAP * (RUNE_COLS - 1)) / RUNE_COLS
+	return clampf(floorf(c), MIN_POOL_CELL, MAX_POOL_CELL)
+
+
+## The shared gems and runes as Path of Exile lays out its stash tabs: every one has its own fixed place whether
+## you own it or not (the ones you don't are faint). Gems: a row for each type, its tiers along it, Chipped
+## first. Runes: the ladder in order, El first.
 func _add_pool() -> void:
+	if kind != "runes":
+		_add_gem_grid()
+	if kind != "gems":
+		_add_rune_grid()
+
+
+func _add_gem_grid() -> void:
 	var sec := UIKit.section(self, "SHARED SOCKET GEMS")
-	var grid := UIKit.grid(POOL_COLS)
+	var cell := pool_cell(true)
+	_px = cell
+	var grid := GridContainer.new()
+	grid.columns = GemDef.MAX_TIER + 1
+	grid.add_theme_constant_override("h_separation", int(POOL_GAP))
+	grid.add_theme_constant_override("v_separation", int(POOL_GAP))
 	sec.add_child(grid)
-	var ids := owned_gems()
-	var total := maxi(POOL_COLS, int(ceil(float(ids.size() + 1) / POOL_COLS)) * POOL_COLS)
-	for i in total:
-		grid.add_child(pouch_cell(menu, ids[i] if i < ids.size() else "", Vector2(54, 54), self))
+	for type in GemDef.TYPES:
+		var t: Dictionary = GemDef.TYPES[type]
+		var lbl := UIKit.label(String(t.name), 15, Color(t.color).lightened(0.2))
+		lbl.custom_minimum_size = Vector2(ROW_LABEL, cell)
+		lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		grid.add_child(lbl)
+		for tier in range(1, GemDef.MAX_TIER + 1):
+			grid.add_child(pouch_cell(menu, GemDef.make_id(type, tier), Vector2(cell, cell), self))
+
+
+func _add_rune_grid() -> void:
+	var sec := UIKit.section(self, "SHARED RUNES   El to Zod")
+	var cell := pool_cell(false)
+	if kind == "runes":
+		_px = cell
+	var grid := GridContainer.new()
+	grid.columns = RUNE_COLS
+	grid.add_theme_constant_override("h_separation", int(POOL_GAP))
+	grid.add_theme_constant_override("v_separation", int(POOL_GAP))
+	sec.add_child(grid)
+	for rid in SocketRune.all_ids():
+		grid.add_child(pouch_cell(menu, rid, Vector2(cell, cell), self))
 
 ## Owned item gems, in catalogue order.
 static func owned_gems() -> Array[String]:
@@ -142,15 +200,22 @@ static func pouch_cell(m: GameMenu, gid: String, sz: Vector2, owner: GemsPanel =
 		var g := GemDef.info(gid)
 		var gp_now := owner if owner != null else m.current_panel() as GemsPanel
 		var sel := gp_now != null and gp_now._sel_gem == gid
-		cell.setup(GemDef.icon(gid), Color.WHITE if sel else g.color, Color(g.color).darkened(0.82), GameState.gem_count(gid))
-		cell.payload = {"kind": "gem", "from": "pouch", "gem_id": gid}
+		var n := GameState.gem_count(gid)
+		cell.count_top_left()
+		cell.inset_icon()
+		cell.setup(GemDef.icon(gid), Color.WHITE if sel else g.color, Color(g.color).darkened(0.82), n, "", String(g.name))
+		if n > 0:
+			cell.payload = {"kind": "gem", "from": "pouch", "gem_id": gid}  # one you own can be dragged out
+		else:
+			cell.modulate = Color(1, 1, 1, 0.28)  # none: its place, faint
 		cell.clicked.connect(func():
 			var gp := owner if owner != null else m.current_panel() as GemsPanel
 			if gp == null:
 				m.show_panel("gems")
 				gp = m.current_panel() as GemsPanel
 			gp._sel_gem = gid
-			gp._combine_gem = gid
+			if n > 0:
+				gp._combine_gem = gid
 			m.refresh()
 			gp.show_gem_tip(gid)
 		)

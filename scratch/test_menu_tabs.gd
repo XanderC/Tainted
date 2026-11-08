@@ -1,7 +1,7 @@
 extends Node2D
 ## Checks the menu's left side: opened as the inventory it is the bag alone (no left window, no tabs);
 ## the hireling's portrait opens its page and Back returns to the bag alone; Stats show the left
-## window; the Skills tab is only at the Jeweler; the stash has Items, Currency, Gems and Hireling; the
+## window; the Skills tab is only at the Jeweler; the stash has Items, Currency, Gems and Runes; the
 ## merchant and blacksmith only their own.
 ## With a window (--out=<folder>) it saves menu_bag.png and menu_jeweler.png.
 ##   godot --headless --path . res://scratch/test_menu_tabs.tscn
@@ -52,7 +52,7 @@ func _ready() -> void:
 	menu.open_vendor("stash")
 	await get_tree().process_frame
 	var st := _tabs(menu)
-	check(st.size() == 3 and not st.any(func(t): return "Skills" in t or "Hireling" in t), "the stash: Items, Currency, Gems (%s)" % [st])
+	check(st.size() == 4 and st.any(func(t): return "Runes" in t) and not st.any(func(t): return "Skills" in t or "Hireling" in t), "the stash: Items, Currency, Gems, Runes (%s)" % [st])
 	menu.close()
 	menu.open_vendor("shop")
 	await get_tree().process_frame

@@ -713,9 +713,14 @@ account, not a character (`GameState.SHARED_KEYS`, saved in the account file). T
 in tabs: **Items** (the grid), **Currency** and **Gems**. The inventory keeps only
 Equipment and Consumables.
 - Skill gems are set only at the Jeweler (its Skills tab). Socket gems and runes go into items at
-  the stash (its Gems tab) or the Jeweler (`GameState.gem_station`): drag one onto an item, and take
+  the stash (its Gems and Runes tabs) or the Jeweler (`GameState.gem_station`): drag one onto an item, and take
   them out with the button on the item's card. Gem levels and what each character has socketed stay
   that character's.
+- The Gems and Runes tabs are laid out like Path of Exile's: every gem and rune has its own fixed place whether you own
+  it or not (faint if you don't), with its count at the top left. Gems: a row per type (Ruby, Topaz, Emerald, Amethyst,
+  Diamond) with the eight tiers along it, Chipped first. Runes: the ladder, El to Zod, in rows of eleven. A gem or rune
+  you own is dragged out of its place; tapping any shows its card. The Jeweler shows both. `GemsPanel.kind` is "gems",
+  "runes" or "" (both). Test: `scratch/test_stash_gems_runes.tscn`.
 - Currency is used only in the stash's Currency tab: tap an item (bag, worn or stashed), then tap
   an orb; or drag an orb onto worn gear. The item details and the Blacksmith no longer use orbs.
 - The Currency tab lays the orbs out like Path of Exile's currency tab: every orb has its own fixed place in a group

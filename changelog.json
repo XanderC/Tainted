@@ -1,6 +1,14 @@
 [
 	{
 		"build": 0,
+		"title": "Gems and runes in their places",
+		"notes": [
+			"The stash's Gems tab now has a fixed place for every gem: a row for each type (Ruby, Topaz, Emerald, Amethyst, Diamond) with its eight tiers along it, Chipped first. The ones you don't have are faint, and the count is at the top left of each.",
+			"Runes have a tab of their own, the whole ladder from El to Zod laid out in order, in the same way. The Jeweler shows both."
+		]
+	},
+	{
+		"build": 0,
 		"title": "A currency tab like Path of Exile's",
 		"notes": [
 			"The stash's Currency tab now gives every orb its own fixed place, in groups side by side (Basics, Rares and Special), with the count at the top left of each. An orb you have none of keeps its place as a faint slot, so you always know where to look.",
