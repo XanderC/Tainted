@@ -551,10 +551,17 @@ that is never used up: drink it from a flask slot and it goes on cooldown.
 
 ### Camera zoom and monster density
 - **Camera** (`GameCamera`): every world scene (rift, zone, town, tutorial) makes its camera with
-  `GameCamera.make()`, zoom `GameCamera.ZOOM` = 0.75 (a third more of the map each way than the
-  engine's default). World-space text (name plates, damage numbers, NPC and exit labels, ground item
-  plates) shrinks with it, so it is sized with `GameCamera.text(px)`: use that for any new label
-  that lives in the world rather than the HUD.
+  `GameCamera.make()`, at `GameCamera.zoom()`: 0.75 by default (a third more of the map each way than
+  the engine's default), 0.5 to 1.0 as the player chooses. World-space text (name plates, damage
+  numbers, NPC and exit labels, ground item plates) shrinks with it, so it is sized with
+  `GameCamera.text(px)`: use that for any new label that lives in the world rather than the HUD (text
+  already on screen keeps its size until the next area).
+- **Options window** (`OptionsUI`): the OPTIONS button under BAG (made by `GameMenu`, hidden while
+  another window has the game paused) opens a window on the right with a View distance slider and
+  - / + buttons (steps of 0.05), Reset and Done; Escape closes it. The game is paused while it is open
+  and the camera zooms as the slider moves. Settings are per device, not per character, in
+  `user://options.cfg` (`Options.get_value` / `set_value`); add a setting there and a row in
+  `OptionsUI._build`. Test: `scratch/test_options.tscn` (windowed; takes `scratch/options.png`).
 - **Monster packs** (`PackSpots.for_map(maze, cells_per_pack, seed)`): a map's hand-placed "pack"
   objects, plus small extra packs (2-4 monsters) across the floor, about one pack per
   `cells_per_pack` floor cells (rifts `CELLS_PER_PACK` 8 in `main.gd`, zones `CELLS_PER_PACK` 10 in `zone.gd`). They
@@ -564,7 +571,7 @@ that is never used up: drink it from a flask slot and it goes on cooldown.
   (it used to pick 6). The Bone Labyrinth went from 27-45 monsters to 79-149, the Ashwood from 72-117
   to 226-425 (about six packs on one screen at the 0.75 zoom). On a fast PC both still hold 60 fps
   (draw calls about 2.5x: ~725 in a rift); phones are untested. `KILL_TARGET` is unchanged, so a rift's boss comes after the first 30 kills.
-- **Cost of a crowd**: a sleeping monster more than `Enemy.REST_RANGE` (1600 px) from you stops
+- **Cost of a crowd**: a sleeping monster more than `Enemy.REST_RANGE` / zoom (1600 px at 0.75) from you stops
   animating until it wakes, and a party host sends sleeping monsters in the snapshots once a second
   instead of 12 times (`Coop`). Measure with `scratch/measure_density.tscn` (build time, frame time
   and a screenshot of a zone and a rift) and `scratch/count_packs.gd` (packs per map).

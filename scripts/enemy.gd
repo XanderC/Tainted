@@ -365,11 +365,12 @@ func taunt(by: Node2D, seconds: float) -> void:
 ## Start hunting the player, and wake the rest of the pack.
 ## A sleeping monster this far from you is long off screen: its animation stops until it wakes (or
 ## you come back). A dense map has hundreds, and animating all of them costs a phone real frame time.
-const REST_RANGE := 1600.0
+## The range is for the default zoom (1600 px at 0.75) and grows as the player zooms out.
+const REST_RANGE := 1200.0
 
 
 func _rest_when_far(dist: float) -> void:
-	var far := dist > REST_RANGE
+	var far := dist > REST_RANGE / GameCamera.zoom()
 	if rig != null and rig.is_processing() == far:
 		rig.set_process(not far)
 
@@ -545,7 +546,7 @@ func _draw() -> void:
 	if _dead or is_boss:
 		return
 	var top := -112.0 * size_mult
-	var zk := 1.0 / GameCamera.ZOOM  # the world is drawn zoomed out: plates are sized up to stay readable
+	var zk := 1.0 / GameCamera.zoom()  # the world is drawn zoomed out: plates are sized up to stay readable
 	if tier != MonsterAffix.Tier.NORMAL:
 		var tc: Color = MonsterAffix.TIERS[tier].color
 		# Glowing ring under elites, shield bubble, molten heat

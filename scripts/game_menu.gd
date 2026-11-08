@@ -17,6 +17,7 @@ var selected: ItemInstance = null  ## item picked in the character panel (bag or
 
 var _root: Control
 var _open_btn: Button
+var _options_btn: Button
 var _left_frame: PanelContainer
 var _left_body: VBoxContainer
 var _left_title: Label
@@ -58,6 +59,7 @@ func _process(_delta: float) -> void:
 	# Other full-screen windows (skill tree) pause the game too; keep the HUD button out of their way
 	if _open_btn != null:
 		_open_btn.visible = not get_tree().paused
+		_options_btn.visible = _open_btn.visible
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -386,6 +388,17 @@ func _build() -> void:
 	_open_btn.offset_right = -16.0
 	_open_btn.offset_top = 16.0
 	_open_btn.offset_bottom = 72.0
+
+	# Under BAG: the Options window (zoom). Like BAG, it goes while another window has the game paused.
+	_options_btn = UIKit.stone_button("⚙ OPTIONS", Vector2(110, 44), 15)
+	_options_btn.pressed.connect(func(): OptionsUI.open(self))
+	add_child(_options_btn)
+	_options_btn.anchor_left = 1.0
+	_options_btn.anchor_right = 1.0
+	_options_btn.offset_left = -126.0
+	_options_btn.offset_right = -16.0
+	_options_btn.offset_top = 80.0
+	_options_btn.offset_bottom = 124.0
 
 	_root = Control.new()
 	_root.visible = false
