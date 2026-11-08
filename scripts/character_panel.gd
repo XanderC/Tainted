@@ -42,7 +42,6 @@ var player: Player
 var _level_lbl: Label
 var _class_lbl: Label
 var _doll: Control  # the equipment and flask slots, each placed at its spot (DOLL)
-var _set_row: HBoxContainer  # the weapon set switch, in the header
 var _bag_view: ItemGridView  # the bag, as a grid: all gear, flasks included
 var _stats_btn: Button  # says how many attribute points there are to add
 
@@ -77,9 +76,6 @@ func _ready() -> void:
 	_class_lbl = UIKit.label("", 20, UIKit.GOLD)
 	_class_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	header.add_child(_class_lbl)
-	_set_row = HBoxContainer.new()
-	_set_row.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	header.add_child(_set_row)
 	_stats_btn = UIKit.button("📜 Stats", Color(0.16, 0.12, 0.10), Color(0.75, 0.58, 0.30), Vector2(100, 43), 16)
 	_stats_btn.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	_stats_btn.pressed.connect(func(): menu.toggle_stats())
@@ -114,8 +110,6 @@ func refresh() -> void:
 	_stats_btn.add_theme_color_override("font_color", Color(1.0, 0.85, 0.35) if pts > 0 else Color(0.95, 0.90, 0.80))
 	_stats_btn.tooltip_text = ("%d attribute point%s to add" % [pts, "" if pts == 1 else "s"]) if pts > 0 else "Character stats"
 
-	UIKit.clear(_set_row)
-	_set_row.add_child(_set_toggle())
 	UIKit.clear(_doll)
 	for slot in DOLL:
 		var r := doll_rect(slot)
@@ -284,25 +278,3 @@ func _flask_cell(i: int) -> DragSlot:
 			menu.feedback("No room in the bag for the flask it replaces.")
 			menu.refresh()
 	return cell
-
-
-## "I | II" switch in the header: shows which weapon set is active and swaps sets.
-## The hand slots always show (and equip into) the active set.
-func _set_toggle() -> HBoxContainer:
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 3)
-	for i in 2:
-		var active := player.active_set == i
-		var b := UIKit.button(["I", "II"][i], Color(0.24, 0.18, 0.10) if active else Color(0.11, 0.10, 0.13),
-			Color(0.95, 0.82, 0.40) if active else Color(0.35, 0.28, 0.20), Vector2(40, 40), 16)
-		var alt_names := []
-		for s in player.alt_set:
-			alt_names.append(player.alt_set[s].display_name)
-		b.tooltip_text = "Weapon Set %d%s" % [i + 1, "" if active else (": " + (", ".join(alt_names) if not alt_names.is_empty() else "empty"))]
-		if not active:
-			b.pressed.connect(func():
-				player.swap_weapon_set()
-				menu.refresh()
-			)
-		row.add_child(b)
-	return row

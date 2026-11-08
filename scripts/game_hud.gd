@@ -1,6 +1,6 @@
 class_name GameHud
 extends RefCounted
-## The fighting HUD for a scene with a player: joystick, skill buttons, flask row, weapon swap, the
+## The fighting HUD for a scene with a player: joystick, skill buttons, flask row, the
 ## life and resource orbs and the experience bar. Returns the CanvasLayer it all sits on.
 
 
@@ -24,10 +24,6 @@ static func build(scene: Node, player: Player) -> CanvasLayer:
 	var flasks := FlaskBar.new()
 	flasks.player = player
 	layer.add_child(flasks)
-	var swap := WeaponSwapButton.new()
-	swap.player = player
-	swap.position = Vector2(-137, -358)
-	pad.add_child(swap)
 	var bars := HudBars.new()
 	bars.player = player
 	layer.add_child(bars)

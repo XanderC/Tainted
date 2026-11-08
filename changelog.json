@@ -1,5 +1,12 @@
 [
 	{
+		"build": 0,
+		"title": "No more weapon sets",
+		"notes": [
+			"The weapon swap is gone: the button above the skills, the I / II switch on the character panel and the X key. If you had a second weapon set, its weapons are now in your bag."
+		]
+	},
+	{
 		"build": 202611081643,
 		"title": "Skill buttons in town",
 		"notes": [

@@ -19,10 +19,6 @@ const NO_BELT_FLASKS := 1
 const FLASK_KEYS := [KEY_Q, KEY_E, KEY_R, KEY_T, KEY_F]
 ## Slots that change how the character looks (see RigSprite.GEAR_LAYERS).
 const VISIBLE_SLOTS := ["weapon", "helmet", "shoulders", "chest", "gloves", "boots"]
-## Slots that belong to a weapon set. Only the active set is in `equipment` (and gives stats);
-## the other set waits in `alt_set` until swap_weapon_set().
-const SET_SLOTS := ["weapon", "offhand"]
-const SWAP_COOLDOWN := 0.5
 const ATTACK_ANIMS := ["Slashing", "Run Slashing", "Slashing in The Air"]
 const HIT_DELAY := 0.12  # seconds into the swing animation when the blow lands
 
@@ -44,9 +40,6 @@ var _flask_cd_max: Array[float] = [1.0, 1.0, 1.0, 1.0, 1.0]
 ## Flasks in effect: {source, t, life_rate, power_rate, warding}. Their buffs are StatBlock mods
 ## under `source`, removed when t runs out.
 var _flask_effects: Array[Dictionary] = []
-var active_set := 0  # 0 = Set 1, 1 = Set 2
-var alt_set := {}    # inactive weapon set: slot -> ItemInstance
-var _swap_cd := 0.0
 var _hit_power_cd := 0.0  # flat resource-on-hit at most every 0.5s
 var _slow_t := 0.0  # Frozen elites: move 40% slower while > 0
 var dead := false
@@ -152,7 +145,6 @@ func _unhandled_input(event: InputEvent) -> void:
 			KEY_3: use_skill(3)
 			KEY_4: use_skill(4)
 			KEY_5: use_skill(5)
-			KEY_X: swap_weapon_set()
 			_:
 				var fi := FLASK_KEYS.find(event.keycode)
 				if fi != -1:
@@ -186,7 +178,6 @@ func _physics_process(delta: float) -> void:
 	_whirlwind_t = maxf(_whirlwind_t - delta, 0.0)
 	_hurt_cd = maxf(_hurt_cd - delta, 0.0)
 	_process_flasks(delta)
-	_swap_cd = maxf(_swap_cd - delta, 0.0)
 	_slow_t = maxf(_slow_t - delta, 0.0)
 	_hit_power_cd = maxf(_hit_power_cd - delta, 0.0)
 
@@ -936,31 +927,6 @@ func unequip_flask(i: int) -> bool:
 		return false
 	var at := bag.find_free(it)
 	return at != ItemGrid.NONE and unequip_flask_to(i, at)
-
-
-## Switch between weapon Set 1 and Set 2: the worn main / off hand go into the inactive set and
-## the other set's weapons come out (only the active set counts for stats).
-func swap_weapon_set() -> bool:
-	if dead or (_swap_cd > 0.0 and not get_tree().paused):  # no cooldown while in the menu
-		return false
-	var old_max := stats.get_stat("max_life")
-	var outgoing := {}
-	for s in SET_SLOTS:
-		if equipment.has(s):
-			outgoing[s] = equipment[s]
-			equipment[s].remove_from(stats)
-			equipment.erase(s)
-	for s in alt_set:
-		equipment[s] = alt_set[s]
-		alt_set[s].apply_to(stats)
-	alt_set = outgoing
-	active_set = 1 - active_set
-	var new_max := stats.get_stat("max_life")
-	hp = clampf(hp * new_max / maxf(old_max, 1.0), 1.0, new_max)
-	_swap_cd = SWAP_COOLDOWN
-	_sync_gear_visuals()
-	inventory_changed.emit()
-	return true
 
 
 # ---------- passives (PassiveTree nodes, see GameState.passive_value) ----------

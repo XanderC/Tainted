@@ -69,10 +69,6 @@ func _ready() -> void:
 	var flasks := FlaskBar.new()
 	flasks.player = player
 	layer.add_child(flasks)
-	var swap := WeaponSwapButton.new()
-	swap.player = player
-	swap.position = Vector2(-137, -358)
-	pad.add_child(swap)
 
 	var bars := HudBars.new()
 	bars.player = player

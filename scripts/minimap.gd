@@ -10,7 +10,7 @@ extends Control
 
 const VIEW_CELLS := 36.0  ## cells across the small map
 const REVEAL := 12  ## cells round the player that are explored
-const BIG := Vector2(480, 280)  ## the whole-map view: under the row of buttons, above the weapon swap
+const BIG := Vector2(480, 280)  ## the whole-map view: under the row of buttons
 const FLOOR := Color(0.60, 0.53, 0.38, 0.9)
 const WALL := Color(0.17, 0.14, 0.12, 0.95)
 

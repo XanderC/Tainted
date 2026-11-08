@@ -113,8 +113,7 @@ var _pending_loose_flasks: Array[ItemInstance] = []
 
 var _pending_inventory: Array = []
 var _pending_equipment := {}
-var _pending_alt_set := {}      # inactive weapon set: slot -> item dict
-var _pending_active_set := 0
+var _pending_alt_set := {}      # the second weapon set an older save has (there is no set switch now): into the bag
 var _restoring := false
 var _save_queued := false
 
@@ -152,7 +151,6 @@ func _new_game() -> void:
 	_pending_inventory.clear()
 	_pending_equipment.clear()
 	_pending_alt_set.clear()
-	_pending_active_set = 0
 
 	# Every character starts with a Small Life Flask in the first flask slot
 	_pending_flasks = [_new_flask("small_life_flask").to_dict()]
@@ -1186,11 +1184,17 @@ func attach_player(p: Player) -> void:
 	if not homeless.is_empty():
 		_keep(homeless)
 		_save_account()
+	# The weapon set switch is gone: what an older save kept in its second set goes to the bag, or the stash
+	var spare: Array[ItemInstance] = []
 	for slot in _pending_alt_set:
 		var alt := ItemInstance.from_dict(_pending_alt_set[slot])
-		if alt != null and slot in Player.SET_SLOTS:
-			p.alt_set[slot] = alt
-	p.active_set = _pending_active_set
+		if alt != null and not p.bag.add(alt):
+			spare.append(alt)
+	if not _pending_alt_set.is_empty():
+		_pending_alt_set = {}
+		if not spare.is_empty():
+			_keep(spare)
+		_save_account()
 	p.flasks = [null, null, null, null, null]
 	for i in mini(_pending_flasks.size(), Player.FLASK_SLOTS):
 		if _pending_flasks[i] is Dictionary:
@@ -1287,11 +1291,7 @@ func save() -> void:
 			eq[slot] = player.equipment[slot].to_dict()
 		_pending_inventory = inv
 		_pending_equipment = eq
-		_pending_alt_set = {}
 		_pending_flasks = player.flasks.map(func(f): return f.to_dict() if f != null else null)
-		for slot in player.alt_set:
-			_pending_alt_set[slot] = player.alt_set[slot].to_dict()
-		_pending_active_set = player.active_set
 	else:
 		inv = _pending_inventory
 		eq = _pending_equipment
@@ -1304,7 +1304,6 @@ func save() -> void:
 		"tp_scrolls": tp_scrolls, "pet": pet, "left_loot": left_loot,
 		"gamble": {"at": gamble_at, "items": gamble_stock.map(func(i): return i.to_dict())},
 		"inventory": inv, "equipment": eq,
-		"alt_weapon_set": _pending_alt_set, "active_weapon_set": _pending_active_set,
 		# Skills & Runes
 		"skill_points": skill_points,
 		"level": level,
@@ -1675,7 +1674,6 @@ func _apply_save(data: Dictionary) -> void:
 	_pending_inventory = data.get("inventory", [])
 	_pending_equipment = data.get("equipment", {})
 	_pending_alt_set = data.get("alt_weapon_set", {})
-	_pending_active_set = int(data.get("active_weapon_set", 0))
 
 	# Skills & Runes
 	skill_points = int(data.get("skill_points", 3))
