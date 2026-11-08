@@ -1,6 +1,6 @@
 [
 	{
-		"build": 0,
+		"build": 202611081831,
 		"title": "Vesh can be hurt",
 		"notes": [
 			"Fixed: Vesh, and every boss with a fight of its own, stayed untouchable after his intro, so every attack said Immune. His protection now wears off by itself after the intro and each roar, as it was meant to.",
