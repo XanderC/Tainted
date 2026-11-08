@@ -87,6 +87,7 @@ const SLAM_RADIUS := 150.0
 
 func _ready() -> void:
 	add_to_group("enemies")
+	collision_mask |= BossArena.LAYER  # a boss's ring of fire stops monsters too
 	hp = max_hp
 	_shape = CollisionShape2D.new()
 	var circle := CircleShape2D.new()

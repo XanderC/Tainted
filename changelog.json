@@ -1,5 +1,12 @@
 [
 	{
+		"build": 0,
+		"title": "Hirelings and pets cross the boss ring",
+		"notes": [
+			"The ring of fire round a boss fight no longer blocks your hireling, pet or allies: they walk through it, so one left outside can no longer get stuck there. It still seals you and the monsters in until the boss falls."
+		]
+	},
+	{
 		"build": 202611081753,
 		"title": "Bosses to farm",
 		"notes": [

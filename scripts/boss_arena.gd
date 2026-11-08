@@ -1,12 +1,14 @@
 class_name BossArena
 extends Node2D
 ## The ring of fire that seals round a boss fight: once the boss is awake and the player is inside it,
-## nobody gets in or out (the monsters, the hireling and the players are stopped by it as by a wall)
-## until the boss is dead. It reads the boss's own `_aggro`, so every game in a party seals it the same way
+## the monsters and the players can't get in or out (they are stopped by it as by a wall) until the boss is
+## dead. Your hireling, pet and allies walk straight through it, so one left outside is never stuck. It reads the boss's own `_aggro`, so every game in a party seals it the same way
 ## (a follower's copy of the boss reports it too), and a player who dies is back at the waypoint with the
 ## zone made again, the boss at full life.
-## The ring is drawn here and its collision is a row of circles on the walls' layer. Your pet is stopped
-## by it too; one left outside catches up through Pet's warp.
+## The ring is drawn here and its collision is a row of circles on its own physics layer (LAYER), which the
+## players and the monsters collide with (Player, Enemy add it to their masks) and the followers don't.
+
+const LAYER := 2  ## the ring's physics layer (bit 2; walls are bit 1)
 
 static var current: BossArena = null  ## the one sealed now, if any
 
@@ -49,6 +51,8 @@ func _seal() -> void:
 	sealed = true
 	current = self
 	_body = StaticBody2D.new()
+	_body.collision_layer = LAYER
+	_body.collision_mask = 0
 	add_child(_body)
 	var n := int(ceil(TAU * radius / 56.0))
 	for i in n:

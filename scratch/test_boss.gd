@@ -105,6 +105,33 @@ func _ready() -> void:
 		player.move_and_slide()
 		await get_tree().physics_frame
 	check(player.global_position.distance_to(home) < BossArena.current.radius + 10.0, "the ring stops the player leaving (%.0f of %.0f)" % [player.global_position.distance_to(home), BossArena.current.radius])
+	# ... but a hireling, a pet or an ally walks through it (a CharacterBody2D as theirs: layer 0, mask walls only)
+	var follower := CharacterBody2D.new()
+	follower.collision_layer = 0
+	follower.collision_mask = 1
+	var fs := CollisionShape2D.new()
+	var fc := CircleShape2D.new()
+	fc.radius = 20.0
+	fs.shape = fc
+	follower.add_child(fs)
+	zone.add_child(follower)
+	# (some way round the ring there are real walls too: look where the camp is open, i.e. where the follower is free)
+	var crossed := 0
+	var stopped := 0
+	for k in 16:
+		var dir := Vector2.from_angle(TAU * k / 16.0)
+		var out_at := home + dir * (BossArena.current.radius + 60.0)
+		follower.global_position = out_at
+		var free := not follower.test_move(follower.global_transform, -dir * 120.0)
+		player.global_position = out_at
+		var blocked := player.test_move(player.global_transform, -dir * 120.0)
+		if free:
+			crossed += 1
+			if blocked:
+				stopped += 1
+	check(crossed > 0, "a hireling or pet crosses the ring (%d of 16 ways round)" % crossed)
+	check(stopped == crossed and crossed > 0, "where the player and the monsters can't (%d of %d)" % [stopped, crossed])
+	follower.queue_free()
 	player.global_position = home + Vector2(-380, 40)
 
 	# His intro ends and he fights: each move in turn

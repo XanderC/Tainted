@@ -99,6 +99,7 @@ func _ready() -> void:
 	if class_def == null:
 		class_def = ClassLibrary.adventurer()
 	add_to_group("player")
+	collision_mask |= BossArena.LAYER  # a boss's ring of fire stops you
 	for k in class_def.base_stats:
 		stats.set_base(String(k), class_def.base_stats[k])
 

@@ -647,8 +647,9 @@ that is never used up: drink it from a flask slot and it goes on cooldown.
   `enrage` seconds it is faster, harder and quicker for good.
 - **Every attack is warned of** (`BossTelegraph`: a circle, cone or line that fills in red over the windup) and
   hurts whoever stands in that spot when the warning ends: you, your hireling and the others in a party.
-- **`BossArena`**: once the boss is awake and the player inside, a ring of fire seals round it (walls' layer:
-  nobody gets in or out, the monsters and hireling included) until it dies. It reads the boss's `_aggro`, so a
+- **`BossArena`**: once the boss is awake and the player inside, a ring of fire seals round it (its own physics
+  layer, `BossArena.LAYER`, which `Player` and `Enemy` add to their masks: players and monsters can't get in or out; your
+  hireling, pet and allies walk through, so one left outside is never stuck) until it dies. It reads the boss's `_aggro`, so a
   party's games all seal it the same way. The zone leaves ordinary packs out of an arena and `ARENA_CLEAR` (400 px)
   past it while its boss is alive (`_in_boss_arena`). Die and you are at the waypoint with the zone made again,
   the boss at full life.
