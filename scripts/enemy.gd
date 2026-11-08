@@ -149,7 +149,7 @@ func _physics_process(delta: float) -> void:
 		return
 
 	# Calculate current movement speed (slowed if chilled)
-	var cur_speed := speed
+	var cur_speed := speed * MazeMap.slow_at(global_position)  # mire slows it as it does you
 	if _chill_t > 0.0:
 		cur_speed *= 0.60
 

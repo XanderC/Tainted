@@ -104,7 +104,7 @@ func _pick(o: Dictionary) -> void:
 			Quests.notify("talk", _npc)
 			_show(String(o["text"]))
 		"turn_in":
-			var got := Quests.turn_in(String(o["quest"]), player)
+			var got := Quests.turn_in(String(o["quest"]), player, int(o.get("choice", -1)))
 			var t := String(o["text"])
 			if not got.is_empty():
 				t += "\n\n[color=#ffd54a]Quest complete: %s[/color]\n[color=#9be39b]%s[/color]" % [q["name"], "\n".join(got)]

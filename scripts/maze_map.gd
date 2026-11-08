@@ -23,7 +23,10 @@ var markers := {}  # marker id -> Array of positions (e.g. the tutorial's "A")
 var portals: Array = []  # portal objects ({x, y, target})
 
 var _grid: Array[String] = []
-var _water: Array = []  # the "water" layer rows: "." none, "~" river (a wall cell), "=" bridge (a floor cell over the river)
+var _has_mire := false
+static var current: MazeMap = null  ## the map in play (the last one built): MazeMap.slow_at asks it
+const MIRE_SLOW := 0.55  ## movement on mire cells
+var _water: Array = []  # the "water" layer rows: "." none, "~" river (a wall cell), "=" bridge (floor over the river), "," mire (floor in shallows: slows)
 var _terrace_cells := {}  # Vector2i -> true: cells of terraces' footprints (raised ground: Terraces)
 var _astar := AStarGrid2D.new()
 var _rng := RandomNumberGenerator.new()
@@ -38,6 +41,10 @@ func setup(id: String) -> void:
 	dir = MapTheme.dir(theme)
 	_grid.assign(data.get("grid", ["#"]))
 	_water = data.get("water", [])
+	current = self
+	for row in _water:
+		if String(row).contains(","):
+			_has_mire = true
 	for t in MapData.objects_of(data, "terrace"):
 		for ty in int(t.h):
 			for tx in int(t.w):
@@ -99,6 +106,18 @@ func is_wall(c: Vector2i) -> bool:
 ## Whether a cell is river (a wall: nothing crosses it but at a bridge).
 func is_water(c: Vector2i) -> bool:
 	return _water_at(c) == "~"
+
+
+## Whether a cell is mire: shallow, boggy ground you can walk but slowly (Fen's drowned woods).
+func is_mire(c: Vector2i) -> bool:
+	return _water_at(c) == ","
+
+
+## How fast things move at a world position: MIRE_SLOW on mire, otherwise 1 (and 1 on any map with no mire).
+static func slow_at(pos: Vector2) -> float:
+	if current == null or not is_instance_valid(current) or not current._has_mire:
+		return 1.0
+	return MIRE_SLOW if current.is_mire(current.world_to_cell(pos)) else 1.0
 
 
 ## Whether a cell is a bridge: floor over the river.
@@ -304,10 +323,14 @@ func _prop(name_: String, pos: Vector2, sc := 0.5) -> void:
 func _add_rivers() -> void:
 	if _water.is_empty():
 		return
-	var wet := func(c: Vector2i) -> bool: return _water_at(c) != "."
+	var tint: Color = MapTheme.data(theme).get("water_tint", Color.WHITE)
+	var wet := func(c: Vector2i) -> bool: return _water_at(c) == "~" or _water_at(c) == "="
 	for y in _water.size():
 		for x in String(_water[y]).length():
 			var c := Vector2i(x, y)
+			if _water_at(c) == ",":
+				_add_mire(c)
+				continue
 			if not wet.call(c):
 				continue
 			var n: bool = wet.call(c + Vector2i(0, -1))
@@ -337,9 +360,28 @@ func _add_rivers() -> void:
 			sp.rotation_degrees = turn
 			sp.position = cell_center(c)
 			sp.z_index = -58
+			sp.modulate = tint
 			add_child(sp)
 			if _water_at(c) == "=":
 				_add_bridge_deck(c, piece == "river" and turn == 0.0)
+
+
+## A mire cell: shallow murky water over the ground, the middle of a river piece (its water, without its banks) stretched
+## over the cell and tinted, so neighbouring cells run together into one boggy patch; walkable.
+func _add_mire(c: Vector2i) -> void:
+	var tex := MapTheme.load_sprite(theme, "river")
+	if tex == null:
+		return
+	var sp := Sprite2D.new()
+	sp.texture = tex
+	sp.region_enabled = true
+	sp.region_rect = Rect2(0, 86, 256, 84)  # the water band of the 256 px piece
+	sp.scale = Vector2(0.5, 128.0 / 84.0)
+	sp.flip_h = ((c.x * 3 + c.y * 5) % 2) == 1
+	sp.position = cell_center(c)
+	sp.z_index = -59
+	sp.modulate = Color(0.50, 0.58, 0.40, 0.9)
+	add_child(sp)
 
 
 ## The cobbled deck of a bridge cell: a strip across the river (the river runs left to right when `flows_h`).

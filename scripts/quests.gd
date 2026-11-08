@@ -102,7 +102,11 @@ static func npc_options(npc_id: String) -> Array:
 		var q := QuestDB.quest(id)
 		var st := state(id)
 		if st == READY and q.get("turn_in", "") == npc_id:
-			out.append({"label": "✔ " + String(q["name"]), "quest": id, "action": "turn_in", "text": q.get("complete", "")})
+			var picks: Array = q.get("rewards", {}).get("choose", [])
+			if picks.is_empty():
+				out.append({"label": "✔ " + String(q["name"]), "quest": id, "action": "turn_in", "text": q.get("complete", ""), "choice": -1})
+			for i in picks.size():  # a reward to pick from: one choice each
+				out.append({"label": "✔ %s: %s" % [q["name"], picks[i].label], "quest": id, "action": "turn_in", "text": q.get("complete", ""), "choice": i})
 		elif st == "" and q.get("giver", "") == npc_id and available(id):
 			out.append({"label": "! " + String(q["name"]), "quest": id, "action": "offer", "text": q.get("offer", "")})
 		elif st == ACTIVE:
@@ -140,17 +144,32 @@ static func available(id: String) -> bool:
 
 
 ## Hand a READY quest in: rewards it and marks it DONE. Returns the rewards as lines of text.
-static func turn_in(id: String, player: Player) -> Array:
+static func turn_in(id: String, player: Player, choice := -1) -> Array:
 	if state(id) != READY:
 		return []
-	var r: Dictionary = QuestDB.quest(id).get("rewards", {})
+	var r: Dictionary = QuestDB.quest(id).get("rewards", {}).duplicate()
 	var got: Array = []
+	var picks: Array = r.get("choose", [])
+	if not picks.is_empty():  # one of these, the player's pick
+		if choice < 0 or choice >= picks.size():
+			return []
+		for k in picks[choice]:
+			if k != "label":
+				r[k] = picks[choice][k]
+		got.append(String(picks[choice].label))
 	if r.has("xp"):
 		GameState.add_xp(float(r["xp"]))
 		got.append("+%d experience" % int(r["xp"]))
 	for orb in r.get("orbs", {}):
 		GameState.add_orb(orb, int(r["orbs"][orb]))
 		got.append("%d × %s" % [int(r["orbs"][orb]), Currency.orb_name(orb)])
+	if int(r.get("attr_points", 0)) > 0:
+		GameState.attr_points += int(r["attr_points"])
+		got.append("+%d attribute points" % int(r["attr_points"]))
+	for i in int(r.get("skill_rune", 0)):
+		var rune_id: String = RuneDef.DB.random_drop(maxi(GameState.level / 3, 1))
+		GameState.add_rune(rune_id, 1)
+		got.append("a rune")
 	for gem in r.get("gems", {}):
 		GameState.add_gem(gem, int(r["gems"][gem]))
 		got.append("%d × %s" % [int(r["gems"][gem]), GemDef.info(gem).get("name", gem)])

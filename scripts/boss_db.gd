@@ -30,6 +30,29 @@ extends RefCounted
 ## ground first (BossTelegraph), so a player can step out of it.
 
 const BOSSES := {
+	# Chapter 2 of Act I: the guardian of the Brood Cyst in the Weeping Hollow
+	"matron_vhol": {
+		"title": "Skittering Matron", "hp": 2.2,
+		"arena": 560.0, "intro": 1.8, "enrage": 150.0, "max_adds": 6,
+		"lines": {"intro": "The brood remembers the light.", "enrage": "Feed. Feed. FEED."},
+		"moves": {
+			"skitter": {"kind": "charge", "windup": 0.8, "cd": 4.0, "range": [160.0, 700.0], "weight": 4, "length": 560.0,
+				"width": 80.0, "speed": 1250.0, "dmg": 1.4, "recover": 0.7},
+			"lash": {"kind": "sweep", "windup": 0.7, "cd": 3.0, "range": [0.0, 240.0], "weight": 5, "r": 240.0, "arc": 2.2,
+				"dmg": 1.2, "recover": 0.5},
+			"spit": {"kind": "rain", "windup": 1.2, "cd": 7.0, "range": [0.0, 900.0], "weight": 3, "count": 5, "r": 105.0,
+				"dmg": 1.3, "recover": 0.7},
+			"brood": {"kind": "summon", "windup": 1.0, "cd": 12.0, "range": [0.0, 900.0], "weight": 2, "recover": 0.6},
+		},
+		"phases": [
+			{"at": 1.0, "moves": ["skitter", "lash", "spit"]},
+			{"at": 0.6, "say": "Little ones, eat!", "moves": ["skitter", "lash", "spit", "brood"],
+				"adds": [{"kind": "cave_skitterer", "n": 3}], "speed": 1.1},
+			{"at": 0.3, "say": "The cyst bleeds for me!", "moves": ["skitter", "lash", "spit", "brood"],
+				"adds": [{"kind": "cave_skitterer", "n": 3}], "speed": 1.2, "dmg": 1.15, "cd": 0.8},
+		],
+		"loot": {"rares": 2, "magics": 2, "orbs": {"alteration": 2, "augment": 2, "alchemy": 1}, "scrolls": 2},
+	},
 	# Chapter 1 of Act I: the pack leader that has Scout Captain Dennis pinned in the hunting lodge
 	"briar_alpha": {
 		"title": "Tainted Briarwolf", "hp": 1.4,

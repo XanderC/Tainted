@@ -159,6 +159,7 @@ func suspend() -> void:
 ## triggers armed again, the screen made again. `entry` is how they came (GameState.zone_entry's values).
 func resume(entry: String) -> void:
 	_leaving = false
+	MazeMap.current = maze  # (another zone may have been built since)
 	GameState.current_zone = zone_id
 	GameState.zone_entry = entry
 	get_tree().paused = false

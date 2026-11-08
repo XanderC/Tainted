@@ -13,6 +13,10 @@ const TOWN_NAME := "Oakhaven Outpost"
 const ZONES := {
 	"dune_wastes": {"name": "Blackroot Wilds", "act": 1, "map": "dune_wastes", "area_level": 2,
 		"kinds": ["briarwolf", "villager", "ghoul", "zombie", "skeleton"]},
+	"weeping_hollow": {"name": "The Weeping Hollow", "act": 1, "map": "weeping_hollow", "area_level": 4,
+		"kinds": ["cave_skitterer", "blind_crawler", "ghoul", "skeleton"]},
+	"sunken_fen": {"name": "Sunken Fen", "act": 1, "map": "sunken_fen", "area_level": 4,
+		"kinds": ["rot_bloat", "leechfiend", "fen_crawler", "villager", "zombie"]},
 }
 
 

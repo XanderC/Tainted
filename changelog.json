@@ -1,5 +1,15 @@
 [
 	{
+		"build": 0,
+		"title": "Act I phase 2: the Weeping Hollow and the Sunken Fen",
+		"notes": [
+			"Two new zones off the Blackroot Wilds: the Weeping Hollow, caves under the Wilds (a cave mouth east of the ruined manor), with a tainted river you cross by bridges, and the Sunken Fen, drowned woodland to the south, where patches of mire slow you and the monsters alike.",
+			"New main quest, Poisoning the Well: once the first chapter is done, High Priestess Althea sends you into the Hollow to find the Brood Cyst, slay its guardian Skittering Matron Vhol and plant the Alchemical Purge Ward. She is a real boss fight: she charges, lashes, spits and calls her brood.",
+			"New side quest, A Taste for Rot: Apothecary Voss hides in the Fen and wants the glands of three Fen Crawlers. He pays in a choice: his draught (+4 attribute points) or a rune.",
+			"The vine-choked gate at the far end of the Hollow stays shut until the Ashen Verge is built."
+		]
+	},
+	{
 		"build": 202611082037,
 		"title": "A new Oakhaven Outpost",
 		"notes": [

@@ -65,6 +65,18 @@ const THEMES := {
 			"stones_4": [0.5, 3, 0, 0.85], "stones_5": [0.5, 1, 30, 0.85], "stones_6": [0.5, 2, 16, 0.85],
 		},
 	},
+	# Act 1's caves and catacombs (the CraftPix 2D Top-Down Cave Tileset: stone-brick walls over dark void, a slime lake,
+	# crystals, mushrooms, bones; tools/import_cave.py). `water_tint` darkens its green lake into tainted water.
+	"hollow": {
+		"wall_props": [["crystal_1", 0.4], ["crystal_5", 0.4], ["crystal_9", 0.4], ["greenery_5", 0.45], ["greenery_6", 0.45],
+			["greenery_1", 0.4], ["greenery_2", 0.4], ["stones_1", 0.4], ["stones_4", 0.4]],
+		"floor_props": [["greenery_3", 0.4], ["greenery_4", 0.4], ["greenery_8", 0.4], ["stones_9", 0.4], ["stones_10", 0.4],
+			["bone_2", 0.4], ["bone_9", 0.4], ["bone_10", 0.4], ["crystal_2", 0.35]],
+		"plateau_props": [["stones_1", 0.4]],
+		"wall_chance": 0.22, "plateau_chance": 0.0,
+		"water_tint": Color(0.42, 0.34, 0.5),
+		"scatter": {},
+	},
 }
 
 

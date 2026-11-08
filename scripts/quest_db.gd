@@ -12,7 +12,8 @@ extends RefCounted
 ##   "kill"     - kill `count` monsters of MonsterKinds `key`
 ##   "kill_boss"- kill the quest boss `key` (a map "boss" object)
 ##   "use"      - use object `key` (a map "quest_object")
-## Rewards: {"xp", "orbs": {id: n}, "gems": {gem id: n}, "passive_points", "item": {"slot", "rarity"}}.
+## Rewards: {"xp", "orbs": {id: n}, "gems": {gem id: n}, "passive_points", "attr_points", "skill_rune": n, "item": {"slot", "rarity"}}.
+## "choose": [{"label", ...rewards}, ...] instead makes the player pick one of them when handing in (the others are lost).
 ##
 ## Act I is "The Bleeding Veil" (ACT1_DESIGN.md): Oakhaven Outpost and the zones round it.
 
@@ -35,6 +36,8 @@ const NPCS := {
 		"greeting": "Salt and fire keep the dark at the door. Keep the braziers fed, and bring me what the Wilds throws at you."},
 	"dennis": {"name": "Scout Captain Dennis", "title": "Scout", "skin": "forest_ranger_2",
 		"greeting": "Another hour in that lodge and the wolves would have had the door. I owe you."},
+	"voss": {"name": "Apothecary Voss", "title": "Cast out", "skin": "stash_keeper",
+		"greeting": "Oakhaven threw me out for what I brew. Funny, now it wants what I know."},
 	"corwin": {"name": "Merchant Corwin", "title": "In a hurry", "skin": "caravan_master",
 		"greeting": "Don't ask me what's in the lockbox. Fetch it, and the gem is yours."},
 }
@@ -57,6 +60,34 @@ const QUESTS := {
 		"lines": {
 			"dennis": {4: "I'm alive because you came. The big one was no wolf of any season I know. It wore that shard like a second heart. Take it to Althea, she will know what it is. I'll follow when my legs agree."},
 		},
+	},
+	"a1_poisoning_the_well": {
+		"name": "Poisoning the Well", "act": 1, "kind": "main", "giver": "althea", "turn_in": "althea", "requires": "a1_first_incursion",
+		"summary": "Oakhaven's well is turning black. Follow its tributary into the Weeping Hollow, slay what guards the Brood Cyst, and plant Althea's Alchemical Purge Ward.",
+		"offer": "The shard is only a splinter of it. The well is turning black, and the water comes from the caves under the [b]Weeping Hollow[/b], east of the Wilds. Something is feeding on it there: a cyst, I think, and a guardian. Take this Alchemical Purge Ward. Plant it at the cyst, and the water will clear, for a while.",
+		"progress": "The Weeping Hollow lies east of the Blackroot Wilds, a cave mouth past the ruined manor. The cyst is in the great cavern in the north-east, beyond the river.",
+		"complete": "The well runs clear. [i]For now.[/i] You said the dying thing screamed? Whispers, from the north? ...The ancestral tombs of Oakhaven lie that way, past the Ashen Verge, under the Ossuary. The Taint did not die in that cyst. It only let go of the water.",
+		"steps": [
+			{"type": "zone", "key": "weeping_hollow", "text": "Enter the Weeping Hollow"},
+			{"type": "reach", "key": "brood_cyst", "text": "Find the Brood Cyst in the north-east cavern"},
+			{"type": "kill_boss", "key": "matron_vhol", "text": "Slay Skittering Matron Vhol"},
+			{"type": "use", "key": "purge_ward", "text": "Plant the Alchemical Purge Ward at the cyst"},
+		],
+		"rewards": {"xp": 420, "orbs": {"alteration": 3, "augment": 2, "alchemy": 1}, "passive_points": 1, "item": {"slot": "", "rarity": 2}},
+	},
+	"a1_taste_for_rot": {
+		"name": "A Taste for Rot", "act": 1, "kind": "side", "giver": "voss", "turn_in": "voss",
+		"summary": "Apothecary Voss, cast out of Oakhaven, hides in a hovel in the Sunken Fen. He needs the glands of three Fen Crawlers for a mutagenic draught.",
+		"offer": "You've the look of someone who doesn't ask what a man brews. Good. I need the glands of three [b]Fen Crawlers[/b], fresh, out of the mire round here. Bring them and I'll make you something Oakhaven's physicians would burn me for: a draught for your body, or a rune from my stores. Your choice.",
+		"progress": "Fen Crawlers hunt the mire: pale, long and quick. Three glands, fresh.",
+		"complete": "Three glands, and still warm. Beautiful. Now: one thing I can make, or one thing I already have. Which will it be?",
+		"steps": [
+			{"type": "kill", "key": "fen_crawler", "count": 3, "text": "Harvest the glands of 3 Fen Crawlers"},
+		],
+		"rewards": {"xp": 300, "choose": [
+			{"label": "The draught: +4 attribute points", "attr_points": 4},
+			{"label": "A rune from his stores", "skill_rune": 1},
+		]},
 	},
 	"a1_lost_heirloom": {
 		"name": "The Lost Heirloom", "act": 1, "kind": "side", "giver": "corwin", "turn_in": "corwin",

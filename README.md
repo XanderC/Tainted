@@ -97,6 +97,19 @@ working; old quests are dropped when a character loads, and finishing the old fi
 its replacement (`Quests.migrate`), which keeps the hirelings they unlocked. The Wilds' own monsters come from the
 zone's `kinds` in `ActDB.ZONES`. Tests: `scratch/test_wilds.tscn` (the map, the chapter played through in the
 real zone, the town), `scratch/test_quests.tscn`.
+**Phase 2 (built):** the **Weeping Hollow** (caves under the Wilds, reached by a cave mouth east of the ruined manor: a
+tainted river through a wide gallery with two bridges, skitterers, blind crawlers and ghouls, spider nests, a mushroom
+grotto, a vine-choked gate to the Ashen Verge that stays shut until phase 3, and in the north-east the Brood Cyst
+cavern), the **Sunken Fen** (drowned woodland south of the Wilds: patches of mire that slow you, rot-bloat zombies,
+leechfiends and Fen Crawlers, dry dirt roads, and Voss's hovel), the main quest **Poisoning the Well** (Althea, after
+Chapter 1: enter the Hollow, find the cyst, slay Skittering Matron Vhol, plant the Alchemical Purge Ward, hand in to
+Althea) and the side quest **A Taste for Rot** (Apothecary Voss in the Fen: the glands of three Fen Crawlers, paid in
+a choice of +4 attribute points or a rune). The Hollow's look is its own theme (`hollow`, `tools/import_cave.py`: the
+cave pack's stone-brick walls over void, its slime lake tinted dark as the tainted river). Mire is the water layer's
+`,` (floor in shallows): `MazeMap.slow_at(pos)` gives 0.55 on it, which `Player` and `Enemy` apply to their speed.
+Quests can now make you choose a reward (`"choose": [{label, ...rewards}]`, one dialogue option each) and pay
+`attr_points` and `skill_rune`. Test: `scratch/test_hollow.tscn`. Art notes: there is no spider or matron art, so the
+skitterers and Fen monsters reuse the goblin, ghoul, mummy and villager characters and Vhol is a big ghoul.
 Zone maps come from `tools/gen_zones.py`; tweak them in the map editor (rerunning the script
 overwrites them).
 

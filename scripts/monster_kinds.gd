@@ -15,6 +15,11 @@ const KINDS := {
 	"goblin": {"name": "Goblin", "skins": ["goblin", "goblin_1", "goblin_2", "goblin_3"], "min_level": 1, "hp": 0.7, "speed": 1.3, "damage": 0.8},
 	# Act I's own (a map or a zone's `kinds` asks for them; min_level keeps them out of rifts)
 	"briarwolf": {"name": "Tainted Briarwolf", "skin": "gnoll", "min_level": 99, "hp": 0.8, "speed": 1.5, "damage": 0.95},
+	"cave_skitterer": {"name": "Cave Skitterer", "skin": "goblin", "min_level": 99, "hp": 0.7, "speed": 1.6, "damage": 0.9},
+	"blind_crawler": {"name": "Blind Crawler", "skin": "ghoul", "min_level": 99, "hp": 1.0, "speed": 1.25, "damage": 1.05},
+	"rot_bloat": {"name": "Rot-Bloat Zombie", "skins": ["zombie_villager_1", "zombie_villager_2", "zombie_villager_3"], "min_level": 99, "hp": 1.7, "speed": 0.7, "damage": 1.0, "element": "chaos"},
+	"leechfiend": {"name": "Leechfiend", "skin": "mummy", "min_level": 99, "hp": 1.1, "speed": 1.0, "damage": 1.15, "element": "chaos"},
+	"fen_crawler": {"name": "Fen Crawler", "skin": "ghoul", "min_level": 99, "hp": 1.2, "speed": 1.1, "damage": 1.0, "element": "chaos"},
 	"ghoul": {"name": "Ghoul", "skin": "ghoul", "min_level": 2, "hp": 0.9, "speed": 1.35, "damage": 1.0},
 	"mummy": {"name": "Mummy", "skin": "mummy", "min_level": 2, "hp": 1.4, "speed": 0.8, "damage": 1.1, "element": "chaos"},
 	"skeleton_warrior": {"name": "Skeleton Warrior", "skins": ["skeleton_warrior_1", "skeleton_warrior_2"], "min_level": 3, "hp": 1.15, "speed": 1.0, "damage": 1.15},

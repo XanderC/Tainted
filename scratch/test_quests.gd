@@ -75,7 +75,7 @@ func _ready() -> void:
 	check(GameState.skill_points >= points + 1, "a passive point")
 	check(got.size() >= 3, "the rewards are listed (%s)" % [got])
 	check(Quests.turn_in(q, p).is_empty(), "it can't be handed in twice")
-	check(Quests.npc_marker("althea") == "", "nothing more from Althea")
+	check(Quests.npc_marker("althea") == "!", "but Althea now has the next chapter (Poisoning the Well)")
 	check(Quests.boss_alive("briar_alpha"), "and the Alpha is back for good, to farm")
 
 	# The Lost Heirloom: the lockbox, then Corwin's gem
@@ -112,7 +112,11 @@ func _ready() -> void:
 	check(zn._waypoint != null and zn._exits.size() >= 1, "the zone has its waypoint and exit")
 	check(get_tree().get_nodes_in_group("enemies").size() > 40, "the zone is full of monsters (%d)" % get_tree().get_nodes_in_group("enemies").size())
 	check(zn._boss != null, "once the quest is handed in, its boss is back to fight again")
-	check(zn.player.global_position.distance_to(zn._exits[0]["node"].global_position) < 300, "arriving from town puts you by the road back")
+	var town_exit: Node2D = null
+	for ex in zn._exits:
+		if ex["target"] == "town":
+			town_exit = ex["node"]
+	check(town_exit != null and zn.player.global_position.distance_to(town_exit.global_position) < 300, "arriving from town puts you by the road back")
 
 	# Saved with the character
 	var data: Dictionary = JSON.parse_string(JSON.stringify(GameState.quests))

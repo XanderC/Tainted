@@ -218,7 +218,7 @@ func _physics_process(delta: float) -> void:
 	if dir == Vector2.ZERO and not Net.chat_typing:
 		dir = Input.get_vector("ui_left", "ui_right", "ui_up", "ui_down")  # keyboard for desktop testing
 	dir = _walk_step(dir, delta)
-	velocity = dir * stats.get_stat("move_speed") * (0.6 if _slow_t > 0.0 else 1.0)
+	velocity = dir * stats.get_stat("move_speed") * (0.6 if _slow_t > 0.0 else 1.0) * MazeMap.slow_at(global_position)  # (mire: slower)
 	move_and_slide()
 	if dir.length() > 0.1:
 		facing = dir.normalized()

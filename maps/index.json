@@ -20,6 +20,10 @@
 			"kind": "rift",
 			"name": "Sunken Courtyards"
 		},
+		"sunken_fen": {
+			"kind": "story",
+			"name": "Sunken Fen"
+		},
 		"tutorial": {
 			"kind": "special",
 			"name": "Tutorial"
@@ -27,6 +31,10 @@
 		"twin_oasis": {
 			"kind": "rift",
 			"name": "Twin Oasis"
+		},
+		"weeping_hollow": {
+			"kind": "story",
+			"name": "The Weeping Hollow"
 		}
 	}
 }

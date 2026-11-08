@@ -154,12 +154,35 @@ class Zone:
             self.roads[y][x] = "."
         return cells
 
-    def bridge_near(self, cells, wanted):
+    def fill(self):
+        """Solid rock everywhere: carve chambers (clear) and tunnels (road) out of it."""
+        self.wall = [[True] * self.cols for _ in range(self.rows)]
+
+    def mire(self, c, r, wobble=0.35):
+        """Boggy shallows (the water layer's \",\"): floor you can walk, slowly, in a rough circle."""
+        for y in range(c[1] - r - 1, c[1] + r + 2):
+            for x in range(c[0] - r - 1, c[0] + r + 2):
+                if 2 <= x < self.cols - 2 and 2 <= y < self.rows - 2 and not self.wall[y][x] and self.water[y][x] == "." and self.roads[y][x] == ".":
+                    if math.dist((x, y), c) < r * (1.0 + self.rng.uniform(-wobble, wobble)):
+                        self.water[y][x] = ","
+
+    def exit_near(self, target, wanted, label_prop=None):
+        """An exit to the zone `target` on the open floor nearest `wanted`; returns its cell."""
+        best = None
+        for y in range(2, self.rows - 2):
+            for x in range(2, self.cols - 2):
+                if self.open_around((x, y), 1) and self.water[y][x] == ".":
+                    if best is None or math.dist((x, y), wanted) < math.dist(best, wanted):
+                        best = (x, y)
+        self.add("portal", best, target=target)
+        return best
+
+    def bridge_near(self, cells, wanted, reach=3):
         """Makes a bridge of the river cell nearest `wanted` (col, row) where open ground lies on both banks, two cells deep, so
         a road already carved there leads onto it. Returns the cell."""
         best = None
         for x, y in cells:
-            if 3 <= x < self.cols - 3 and not self.wall[y][x - 1] and not self.wall[y][x + 1] and not self.wall[y][x - 2] and not self.wall[y][x + 2] and not self.wall[y][x - 3] and not self.wall[y][x + 3]:
+            if 3 <= x < self.cols - 3 and all(not self.wall[y][x + d] for d in range(-reach, reach + 1) if d != 0):
                 if self.wall[y - 1][x] and self.wall[y + 1][x] and self.water[y - 1][x] == "~" and self.water[y + 1][x] == "~":
                     if best is None or math.dist((x, y), wanted) < math.dist(best, wanted):
                         best = (x, y)
@@ -318,10 +341,18 @@ def dune_wastes():
     bridge_b = z.bridge_near(river, (38, 31))
     z.reachable_only(start)
 
+    # The ways on: east into the Weeping Hollow's cave mouth, south down into the Sunken Fen
+    hollow_exit = z.exit_near("weeping_hollow", (62, 22))
+    fen_exit = z.exit_near("sunken_fen", (46, 41))
+    z.prop("desert/decor_6", (hollow_exit[0] + 1, hollow_exit[1] - 1), scale=0.4)
+    z.prop("stones_1", (hollow_exit[0] + 1, hollow_exit[1] + 1), scale=0.5)
+    z.prop("tree_12", (fen_exit[0] - 1, fen_exit[1] + 1), scale=0.7)
+    z.prop("decor_14", (fen_exit[0] + 1, fen_exit[1] - 1), scale=0.4)
+
     # The paths on the ground: one dirt road network (shared where it heads the same way), cobblestone where it
     # reaches somewhere: the gate, the waypoint, the lodge's yard and the manor's forecourt
     for a, b in [(start, waypoint), (waypoint, gate_c), (gate_c, glade), (glade, manor), (glade, lodge),
-                 (waypoint, gate_a), (waypoint, gate_b), (lodge, fungus)]:
+                 (waypoint, gate_a), (waypoint, gate_b), (lodge, fungus), (manor, hollow_exit), (manor, fen_exit)]:
         z.route(a, b, "d")
     z.plaza(start, 1)
     z.plaza(waypoint, 1)
@@ -394,10 +425,6 @@ def dune_wastes():
         z.prop("decor_14", (fungus[0] + dx, fungus[1] + dy), scale=0.4)  # fungal blooms
     z.prop("tree_13", (fungus[0] + 1, fungus[1]), scale=0.55)
     # The paths on are choked with thorn barricades (the Weeping Hollow and the Sunken Fen come later)
-    for dy in range(-1, 2):
-        z.prop("decor_15", (66, 22 + dy), scale=0.5, solid=True)
-    for dx in range(-1, 2):
-        z.prop("decor_15", (46 + dx, 42), scale=0.5, solid=True)
 
     themes = [(gate_a, 6, "briarwolf"), (gate_b, 6, "briarwolf"), (gate_c, 6, "briarwolf"), (lodge, 13, "briarwolf"),
               (manor, 10, "ghoul"), (glade, 8, "villager"), (fungus, 7, "zombie")]
@@ -512,6 +539,138 @@ def oakhaven():
     z.save("special")
 
 
+def weeping_hollow():
+    """The Weeping Hollow (Act I, Chapter 2): limestone caves under the Blackroot Wilds, bioluminescent and wet, a tainted river
+    through a wide gallery with two bridges, nests of skitterers and a mushroom grotto, and the Brood Cyst's great cavern in
+    the north-east where Skittering Matron Vhol guards it. Theme "hollow" (stone-brick walls over void; tools/import_cave.py)."""
+    z = Zone("weeping_hollow", "The Weeping Hollow", 60, 44, seed=3301, theme="hollow")
+    z.fill()
+    chambers = {"entry": ((6, 22), 4), "a": ((18, 22), 5), "b": ((14, 9), 4), "c": ((16, 36), 4),
+                "d": ((46, 24), 5), "e": ((50, 10), 7), "f": ((50, 36), 4)}
+    for c, r in chambers.values():
+        z.clear(c, r)
+    # The river gallery: a canyon down the middle, the river along it
+    river_path = [(33, 2), (33, 16), (36, 16), (36, 41)]
+    cells = []
+    for a, b in zip(river_path, river_path[1:]):
+        x, y = a
+        while (x, y) != b:
+            cells.append((x, y))
+            x += (b[0] > x) - (b[0] < x)
+            y += (b[1] > y) - (b[1] < y)
+    cells.append(river_path[-1])
+    for c in cells:
+        z.clear(c, 3)
+    # Tunnels between the chambers and out to the banks
+    for a, b in [(chambers["entry"][0], chambers["a"][0]), (chambers["a"][0], chambers["b"][0]), (chambers["a"][0], chambers["c"][0]),
+                 (chambers["a"][0], (30, 22)), ((40, 22), chambers["d"][0]), (chambers["b"][0], (30, 9)), ((38, 9), chambers["e"][0]),
+                 (chambers["d"][0], chambers["e"][0]), (chambers["d"][0], chambers["f"][0]), ((30, 33), chambers["c"][0])]:
+        z.road(a, b, 1)
+    river = z.river(river_path)
+    z.bridge_near(river, (36, 22), reach=2)
+    z.bridge_near(river, (33, 9), reach=2)
+    start = (6, 22)
+    z.reachable_only(start)
+
+    z.add("start", start)
+    z.add("portal", (3, 22), target="dune_wastes")
+    z.clear((3, 22), 1)
+    z.add("waypoint", (19, 24))
+    z.prop("decor_16", (16, 20), dx=0.5, scale=0.5, solid=True)  # a gargoyle on its plinth over the first cavern
+
+    # The Brood Cyst: a fleshy mass anchored in the north-east cavern, its guardian beside it, and the ward to plant
+    e = chambers["e"][0]
+    z.add("trigger", e, radius=560, id="brood_cyst", text="The water here runs black. Something vast pulses in the dark ahead.")
+    for dx, dy, sp, sc in [(2, -3, "greenery_8", 1.5), (4, -2, "greenery_9", 1.3), (3, -4, "greenery_10", 1.2), (5, -4, "greenery_8", 1.0)]:
+        z.prop(sp, (e[0] + dx, e[1] + dy), scale=sc, solid=True)
+    z.prop("crystal_2", (e[0] + 3, e[1] - 2), scale=0.7)
+    z.add("boss", (e[0], e[1] + 1), id="matron_vhol", name="Skittering Matron Vhol", kind="blind_crawler", skin="ghoul", hp=12.0, size=1.9)
+    z.add("quest_object", (e[0] - 2, e[1] + 3), id="purge_ward", sprite="", prompt="Plant the Alchemical Purge Ward",
+          text="You set the ward in the cyst's wake. The water clears for a moment, then the dead mass bursts, and its blood runs "
+               "into the stone and screams: whispers, from the north, from the ancestral tombs.")
+    for dx, dy in [(-4, -2), (-5, 2), (4, 4)]:
+        z.prop("bone_" + str(z.rng.choice([1, 4, 5, 6])), (e[0] + dx, e[1] + dy), scale=0.5)
+    z.prop("decor_11", (e[0] - 3, e[1] - 4), scale=0.55)  # a spider in its web
+    z.prop("decor_10", (e[0] - 3, e[1] - 3), scale=0.6)
+
+    # Spider nest B, the mushroom grotto C, the bank of the gallery: webs, bones, mushrooms, crystals
+    b = chambers["b"][0]
+    z.prop("decor_10", (b[0] - 1, b[1] - 2), scale=0.6)
+    z.prop("decor_11", (b[0] - 1, b[1] - 2), dx=0.4, dy=0.7, scale=0.5)
+    for dx, dy in [(2, 1), (-2, 2), (1, -2)]:
+        z.prop("bone_" + str(z.rng.choice([2, 8, 9, 10])), (b[0] + dx, b[1] + dy), scale=0.5)
+    c_ = chambers["c"][0]
+    for dx, dy in [(-2, -1), (2, -1), (0, 2), (-3, 1)]:
+        z.prop("greenery_1" if (dx + dy) % 2 else "greenery_2", (c_[0] + dx, c_[1] + dy), scale=0.7, solid=False)
+    z.prop("crystal_7", (c_[0] + 1, c_[1] - 2), scale=0.6)
+    d = chambers["d"][0]
+    z.prop("crystal_5", (d[0] - 2, d[1] - 1), scale=0.6)
+    z.prop("crystal_10", (d[0] + 2, d[1] + 1), scale=0.6)
+    f = chambers["f"][0]
+    z.prop("decor_13", (f[0] + 4, f[1]), dx=0.2, dy=0.95, scale=0.55, solid=True)  # a vine-choked iron gate: the way on to the Ashen Verge, shut for now
+    z.prop("decor_6", (f[0] + 2, f[1] + 1), scale=0.4)
+
+    themes = [(b, 7, "cave_skitterer"), (c_, 6, "blind_crawler"), (d, 6, "ghoul"), (chambers["a"][0], 6, "blind_crawler")]
+    avoid = [(start, 7), ((19, 24), 4), (e, 9), ((3, 22), 3)]
+    z.packs(26, avoid, themes, min_gap=6, start=start, min_start=8)
+    z.save("story")
+
+
+def sunken_fen():
+    """The Sunken Fen (Act I): drowned woodland south of the Blackroot Wilds. Wide stretches of mire that slow you and the things
+    that hunt you, dead trees, rot-bloat zombies, leechfiends and Fen Crawlers, and the apothecary Voss in a stone hovel at the
+    far side (A Taste for Rot). Its way on to the Ashen Verge is shut for now."""
+    z = Zone("sunken_fen", "Sunken Fen", 60, 44, seed=4417, theme="woodland")
+    start = (30, 4)
+    voss = (50, 34)
+    waypoint = (28, 8)
+    z.outcrops(60, 1.5, 3.5)
+    z.border(2)
+    z.smooth(2)
+    for c, r in [(start, 4), (waypoint, 3), (voss, 5), ((10, 34), 4), ((12, 14), 4), ((50, 12), 4)]:
+        z.clear(c, r)
+    z.road(start, waypoint, 1)
+    z.road(waypoint, (12, 14), 1)
+    z.road(waypoint, (50, 12), 1)
+    z.road(waypoint, (30, 24), 1)
+    z.road((30, 24), voss, 1)
+    z.road((30, 24), (10, 34), 1)
+    z.reachable_only(start)
+    # The dry way: a dirt road to each part, and mire (slow ground) over the rest of the low places
+    for a_, b_ in [(start, waypoint), (waypoint, (12, 14)), (waypoint, (50, 12)), (waypoint, (30, 24)), ((30, 24), voss), ((30, 24), (10, 34))]:
+        z.route(a_, b_, "d")
+    z.lamps(every=7)
+    for c in [(20, 22), (40, 20), (24, 34), (42, 40), (14, 26), (36, 30), (22, 10), (46, 24), (8, 40)]:
+        z.mire(c, z.rng.randint(3, 5))
+    z.add("start", start)
+    z.add("portal", (start[0], 2), target="dune_wastes")
+    z.clear((start[0], 2), 1)
+    z.add("waypoint", waypoint)
+    z.prop("decor_9", (start[0] + 2, start[1] + 1), scale=0.5)
+    # The hovel: a stone hut with a log roof, a cauldron's smoke of lamps and bottles, and Voss
+    z.prop("hollow/decor_17", (voss[0], voss[1] - 3), dy=0.95, scale=0.5, solid=True)
+    z.prop("decor_10", (voss[0] - 3, voss[1] - 1), scale=0.45, solid=True)
+    z.prop("decor_10", (voss[0] + 3, voss[1] - 1), scale=0.45, solid=True)
+    z.prop("hollow/decor_8", (voss[0] - 2, voss[1] + 1), scale=0.5)
+    z.prop("decor_4", (voss[0] + 2, voss[1] + 1), scale=0.45)
+    z.add("npc", (voss[0], voss[1] - 1), id="voss", facing=-1)
+    z.add("trigger", voss, radius=420, id="voss_hovel", text="A stone hovel half sunk in the mire. Smoke, and a smell of something boiled too long.")
+    # Dead trees, stumps and the odd bloom on the dry ground; the paths on are choked with thorns
+    for _ in range(46):
+        c = (z.rng.randrange(3, z.cols - 3), z.rng.randrange(3, z.rows - 3))
+        if z.open_around(c, 1) and math.dist(c, start) > 5 and math.dist(c, voss) > 5 and math.dist(c, waypoint) > 3:
+            z.prop("tree_" + str(z.rng.choice([11, 12, 11, 12, 13, 14, 5])), c, dx=z.rng.uniform(0.3, 0.7), dy=z.rng.uniform(0.6, 0.95), scale=0.62)
+    for dx in range(-1, 2):
+        z.prop("decor_15", (56 + dx * 0, 20 + dx), scale=0.5, solid=True)  # the east: choked, for now
+    themes = [(voss, 9, "fen_crawler"), ((24, 34), 8, "leechfiend"), ((40, 20), 8, "rot_bloat"), ((12, 14), 7, "fen_crawler"),
+              ((10, 34), 7, "rot_bloat")]
+    avoid = [(start, 8), (waypoint, 4), (voss, 4)]
+    z.packs(28, avoid, themes, min_gap=6, start=start, min_start=9)
+    z.save("story")
+
+
 if __name__ == "__main__":
     dune_wastes()
     oakhaven()
+    weeping_hollow()
+    sunken_fen()
