@@ -516,6 +516,7 @@ func _drop_boss_loot(at: Vector2, boss_id := "") -> void:
 func _drop_item(item: ItemInstance, at: Vector2) -> void:
 	if item == null:
 		return
+	item.unidentify()  # Magic and better: a scroll or the Sage reveals it
 	var pk := LootPickup.new()
 	pk.item = item
 	pk.delay = 0.4

@@ -1,6 +1,14 @@
 [
 	{
 		"build": 0,
+		"title": "Loot on the ground",
+		"notes": [
+			"Items on the ground are now just their picture, without the dark box and coloured border; the name above still shows the colour.",
+			"Magic and better items dropped by monsters, bosses and encounters now lie unidentified, as they do from a rift boss: their modifiers are hidden until you read a Scroll of Identify or visit the Sage."
+		]
+	},
+	{
+		"build": 0,
 		"title": "A minimap",
 		"notes": [
 			"A minimap in the top right corner shows where you've been, with you, the exits, the waypoint, people to talk to, things to use and the boss marked on it, and the monsters near you. Tap it (or press M) to see the whole map.",

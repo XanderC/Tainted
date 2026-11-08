@@ -121,7 +121,7 @@ func _bind(maze) -> void:
 		_mem = null
 		_tex = null
 		return
-	var kept = scene.get_meta("minimap", null)
+	var kept = scene.get_meta("minimap") if scene.has_meta("minimap") else null
 	if kept is Memory and kept.maze == maze:
 		_mem = kept
 	else:

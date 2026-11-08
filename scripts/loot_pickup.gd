@@ -147,13 +147,11 @@ func _draw() -> void:
 		draw_set_transform(Vector2(0, -6), 0.0, Vector2(1.0, 0.35))
 		draw_circle(Vector2.ZERO, 40.0, Color(col, 0.30 * pulse))
 		draw_set_transform(Vector2.ZERO)
-	var box := Rect2(-22, -34, 44, 44)
-	draw_rect(box, Color(0, 0, 0, 0.55))
+	# Just the icon on the ground: no frame or backing (the plate above carries the rarity colour)
 	if item.base.icon != null:
 		draw_texture_rect(item.base.icon, Rect2(-20, -32, 40, 40), false)
 	else:
 		draw_rect(Rect2(-9, -18, 18, 18), item.base.color)
-	draw_rect(box, col, false, 3.0)
 	if _msg_t > 0.0:
 		var f := ThemeDB.fallback_font
 		draw_string_outline(f, Vector2(-80, 30), _msg, HORIZONTAL_ALIGNMENT_CENTER, 160, 15, 4, Color.BLACK)
