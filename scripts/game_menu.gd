@@ -387,14 +387,14 @@ func _build_tabs() -> void:
 
 func _build() -> void:
 	# Icons, left of the minimap (HudLayout): the bag, then Options (zoom and your pet)
-	_open_btn = UIKit.stone_button("🎒", Vector2(48, 48), 26)
+	_open_btn = HudLayout.icon_button("🎒", 26)
 	_open_btn.tooltip_text = "Bag (I)"
 	_open_btn.pressed.connect(open)
 	add_child(_open_btn)
 	HudLayout.place(_open_btn, "bag")
 
 	# Like the bag, it goes while another window has the game paused.
-	_options_btn = UIKit.stone_button("⚙", Vector2(48, 48), 28)
+	_options_btn = HudLayout.icon_button("⚙", 28)
 	_options_btn.tooltip_text = "Options"
 	_options_btn.pressed.connect(func(): OptionsUI.open(self))
 	add_child(_options_btn)

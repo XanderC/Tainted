@@ -136,11 +136,11 @@ func _ready() -> void:
 	tracker.open_log.connect(func(): quest_log.open())
 	info.add_child(tracker)
 
-	_chars_btn = UIKit.stone_button("👥", Vector2(88, 48), 22)
+	_chars_btn = HudLayout.icon_button("👥", 24)
 	_chars_btn.tooltip_text = "Character select"
 	_chars_btn.pressed.connect(_to_character_select)
 	layer.add_child(_chars_btn)
-	HudLayout.place(_chars_btn, "scroll")  # (where a zone has the town portal scroll)
+	HudLayout.place(_chars_btn, "characters")  # (last in the row of icons)
 
 	_talk_btn = UIKit.stone_button("", Vector2(0, 0), 22)
 	_talk_btn.visible = false

@@ -586,11 +586,13 @@ that is never used up: drink it from a flask slot and it goes on cooldown.
   and a screenshot of a zone and a rift) and `scratch/count_packs.gd` (packs per map).
 
 ### Minimap and the top of the screen
-- **Layout** (`HudLayout`): the minimap is in the top right corner (168 px square). Left of it, in one row
-  and in this order, are the bag and options as icon buttons (🎒 ⚙, `GameMenu`), then ✦ PASSIVES (`SkillTreeUI`),
-  then the town portal scroll (`TownPortals.add_button`; the 👥 character screen button in town). Put a control in
-  the row with `HudLayout.place(control, slot)`; anything else that sits at the right starts under
-  `HudLayout.BELOW_MAP` (the upgrade popup does).
+- **Layout** (`HudLayout`): the minimap is in the top right corner (168 px square). Left of it is one row of icon
+  buttons, all `HudLayout.ICON` (48 px) square (`HudLayout.icon_button`: the glyph can't make one bigger), in this
+  order: the bag 🎒 and options ⚙ (`GameMenu`), the passive tree ✦ (`SkillTreeUI`), and in town the 👥 character screen.
+  The town portal scroll button is not in the row: it is an icon of the same size just right of the mana globe
+  (`HudLayout.place_by_mana`, made by `TownPortals.add_button`), its count in the corner. Put a control in the row with
+  `HudLayout.place(control, slot)`; anything else that sits at the right starts under `HudLayout.BELOW_MAP` (the
+  upgrade popup does).
 - **`Minimap`** (made by each scene's HUD with `Minimap.add(layer, scene)`; zones, rifts, the tutorial and town):
   shows the map around the player, drawn only where they have been (cells within 12 of them are explored; what is
   seen is kept on the scene as `meta "minimap"`, so a kept zone is as explored as you left it, and a rift's new maze

@@ -34,6 +34,34 @@ func button_with(from: Node, text_part: String) -> Button:
 	return null
 
 
+## The row's buttons are icons only and all the same size.
+func check_icons(row: Dictionary) -> void:
+	for n in ["bag", "options", "passives"]:
+		var b: Button = row[n]
+		check(b != null and b.size.is_equal_approx(Vector2(HudLayout.ICON, HudLayout.ICON)), "%s is a %d px square (%s)" % [n, int(HudLayout.ICON), str(b.size) if b != null else "-"])
+		check(b != null and b.text.length() <= 2, "%s is an icon only (%s)" % [n, b.text if b != null else "-"])
+
+
+## The town portal scroll: an icon, just right of the mana globe, clear of the skill buttons and the top row.
+func check_scroll_by_mana(label: String, scene: Node) -> void:
+	var btn := button_with(scene, "🌀")
+	check(btn != null and btn.text == "🌀", "%s: the scroll is an icon" % label)
+	if btn == null:
+		return
+	var screen := get_viewport().get_visible_rect()
+	var orb := HudBars.orb_centre(screen.size, true)
+	var r := btn.get_global_rect()
+	check(r.size.is_equal_approx(Vector2(HudLayout.ICON, HudLayout.ICON)), "%s: the scroll is the same size (%s)" % [label, str(r.size)])
+	check(r.position.x >= orb.x + HudBars.ORB_R and r.position.x <= orb.x + HudBars.ORB_R + 30.0, "%s: just right of the mana globe (%d from its edge)" % [label, int(r.position.x - orb.x - HudBars.ORB_R)])
+	check(r.position.y < orb.y and r.end.y > orb.y, "%s: level with the globe" % label)
+	check(screen.encloses(r), "%s: the scroll is on screen" % label)
+	for sb in scene.find_children("*", "SkillButton", true, false):
+		var sr := Rect2((sb as Control).global_position, (sb as Control).size)
+		check(not r.intersects(sr), "%s: the scroll doesn't touch skill button %d" % [label, sb.index])
+	var top := button_with(scene.get("menu") if scene.get("menu") != null else scene, "🎒")
+	check(top == null or not r.intersects(top.get_global_rect()), "%s: nor the top row" % label)
+
+
 func check_row(label: String, controls: Dictionary) -> void:
 	var screen := get_viewport().get_visible_rect()
 	var names: Array = controls.keys()
@@ -74,9 +102,10 @@ func _ready() -> void:
 		"bag": button_with(zone.menu, "🎒"),
 		"options": button_with(zone.menu, "⚙"),
 		"passives": button_with(zone.skill_tree_ui, "✦"),
-		"scroll": button_with(zone, "🌀"),
 	}
 	check_row("zone", row)
+	check_icons(row)
+	check_scroll_by_mana("zone", zone)
 	var bag: Control = row.bag
 	var opts: Control = row.options
 	check(bag != null and opts != null and mm != null and bag.get_global_rect().end.x <= mm.get_global_rect().position.x, "the bag is left of the minimap")
@@ -182,8 +211,8 @@ func _ready() -> void:
 		"bag": button_with(rift.menu, "🎒"),
 		"options": button_with(rift.menu, "⚙"),
 		"passives": button_with(rift.skill_tree_ui, "✦"),
-		"scroll": button_with(rift, "🌀"),
 	})
+	check_scroll_by_mana("rift", rift)
 	var m1: Minimap.Memory = rift.get_meta("minimap", null)
 	check(m1 != null and m1.maze == rift.maze, "it knows the rift's maze")
 	shot("minimap_rift.png")

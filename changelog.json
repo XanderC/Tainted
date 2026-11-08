@@ -1,5 +1,13 @@
 [
 	{
+		"build": 0,
+		"title": "Tidier buttons",
+		"notes": [
+			"The bag, options and passive tree buttons are now all icons of the same size.",
+			"The town portal scroll is an icon too, now just to the right of the mana globe at the bottom, with how many scrolls you have in its corner."
+		]
+	},
+	{
 		"build": 202611081831,
 		"title": "Vesh can be hurt",
 		"notes": [

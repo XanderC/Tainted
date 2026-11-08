@@ -68,7 +68,8 @@ func toggle() -> void:
 
 
 func _build_ui() -> void:
-	_btn_open = UIKit.stone_button("✦ PASSIVES", Vector2(108, 48), 15)
+	_btn_open = HudLayout.icon_button("✦", 28)
+	_btn_open.tooltip_text = "Passive tree"
 	_btn_open.pressed.connect(open)
 	add_child(_btn_open)
 	HudLayout.place(_btn_open, "passives")
