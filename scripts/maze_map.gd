@@ -68,6 +68,7 @@ func _ready() -> void:
 	y_sort_enabled = true
 	texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 	_add_ground()
+	_add_roads()
 	_add_walls()
 	_add_wall_collision()
 	if data.get("auto_decorate", true):
@@ -260,6 +261,44 @@ func _prop(name_: String, pos: Vector2, sc := 0.5) -> void:
 	s.position = pos
 	add_child(s)
 	PropFader.attach(self, s)  # see-through with the player behind it
+
+
+## The map's "roads" layer (optional: rows of characters, "." none, "d" dirt path, "s" cobblestone; see RoadTiles):
+## paths on the ground, drawn a quarter of a cell at a time from the theme's road_N pieces, over the ground and under the
+## walls and everything that stands.
+func _add_roads() -> void:
+	var rows_: Array = data.get("roads", [])
+	if rows_.is_empty():
+		return
+	var kind := func(c: Vector2i) -> String:
+		if c.y < 0 or c.y >= rows_.size() or c.x < 0 or c.x >= String(rows_[c.y]).length():
+			return "."
+		return String(rows_[c.y])[c.x]
+	var is_road := func(c: Vector2i) -> bool: return kind.call(c) != "."
+	var layer := TileMapLayer.new()
+	layer.tile_set = TileSet.new()
+	layer.tile_set.tile_size = Vector2i(64, 64)
+	layer.z_index = -60
+	add_child(layer)
+	var sources := {}  # road piece number -> atlas source id
+	for y in rows_.size():
+		for x in String(rows_[y]).length():
+			var c := Vector2i(x, y)
+			if not is_road.call(c):
+				continue
+			var pieces := RoadTiles.pick(is_road, c, kind.call(c) == "s")
+			for q in 4:
+				var n: int = pieces[q]
+				if not sources.has(n):
+					var tex := MapTheme.load_sprite(theme, "road_%d" % n)
+					if tex == null:
+						continue
+					var src := TileSetAtlasSource.new()
+					src.texture = tex
+					src.texture_region_size = Vector2i(64, 64)
+					src.create_tile(Vector2i(0, 0))
+					sources[n] = layer.tile_set.add_source(src)
+				layer.set_cell(Vector2i(x * 2 + (q % 2), y * 2 + (q >> 1)), sources[n], Vector2i(0, 0))
 
 
 ## Walls: raised plateaus with rock cliffs facing the floor, drawn a quarter cell at a time (WallTiles

@@ -6,6 +6,7 @@ extends RefCounted
 ##   "format": 1, "id": "tutorial", "name": "Tutorial", "kind": "rift" | "story" | "special",
 ##   "theme": "desert", "cell": 128, "auto_decorate": true,
 ##   "grid": ["#####", "#...#", ...],          # "#" wall, "." floor; every row the same width
+##   "roads": ["..dd.", ...],                 # optional, same size: paths on the ground (RoadTiles): "d" dirt, "s" cobblestone
 ##   "objects": [                               # x, y in world pixels
 ##     {"type": "start", "x", "y"},             # where the player appears
 ##     {"type": "portal", "x", "y", "target"},  # rift: "" = next random maze; story: a map id or "town"

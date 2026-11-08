@@ -28,6 +28,8 @@ class Zone:
         self.wall = [[False] * cols for _ in range(rows)]
         self.objects = []
         self.keep_clear = []  # (cell, radius): no outcrops here
+        self.roads = [["."] * cols for _ in range(rows)]  # the roads layer: "." none, "d" dirt path, "s" cobblestone
+        self.lamp_cells = []  # cells of painted paths, in order, for lamp posts along them
 
     # ---- terrain ----
     def outcrops(self, count, rmin, rmax):
@@ -66,8 +68,60 @@ class Zone:
                 if 1 <= x < self.cols - 1 and 1 <= y < self.rows - 1 and (x - c[0]) ** 2 + (y - c[1]) ** 2 <= r * r + 1:
                     self.wall[y][x] = False
 
+    def paint(self, c, ch):
+        if 0 <= c[0] < self.cols and 0 <= c[1] < self.rows and not self.wall[c[1]][c[0]]:
+            self.roads[c[1]][c[0]] = ch
+
+    def plaza(self, c, r, ch="s"):
+        """A square of paving (cobblestone by default), `r` cells to each side of c."""
+        for y in range(c[1] - r, c[1] + r + 1):
+            for x in range(c[0] - r, c[0] + r + 1):
+                self.paint((x, y), ch)
+
+    def route(self, a, b, ch="d"):
+        """Lays a path on the ground (the roads layer) from a to b over open floor: the shortest way with few turns,
+        and a cheap one over a path already laid, so paths that head the same way share their line and the network
+        reads as roads, not a tangle. Call it once the terrain is final."""
+        import heapq
+        start, goal = tuple(a), tuple(b)
+        best = {(start, None): 0.0}
+        prev = {}
+        heap = [(0.0, start, None)]
+        end = None
+        while heap:
+            cost, cur, d = heapq.heappop(heap)
+            if cost > best.get((cur, d), 1e9):
+                continue
+            if cur == goal:
+                end = (cur, d)
+                break
+            for nd in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                nx, ny = cur[0] + nd[0], cur[1] + nd[1]
+                if not (1 <= nx < self.cols - 1 and 1 <= ny < self.rows - 1) or self.wall[ny][nx]:
+                    continue
+                step = 0.35 if self.roads[ny][nx] != "." else 1.0
+                if d is not None and nd != d:
+                    step += 0.9  # a turn
+                nc = cost + step
+                if nc < best.get(((nx, ny), nd), 1e9):
+                    best[((nx, ny), nd)] = nc
+                    prev[((nx, ny), nd)] = (cur, d)
+                    heapq.heappush(heap, (nc, (nx, ny), nd))
+        trail = []
+        node = end
+        while node is not None:
+            trail.append(node[0])
+            node = prev.get(node)
+        trail.reverse()
+        for c in trail:
+            if self.roads[c[1]][c[0]] == ".":
+                self.paint(c, ch)
+        self.lamp_cells.append(trail)
+        return trail
+
     def road(self, a, b, width=1):
-        """A wandering road from a to b (cells), `width` cells to each side of its middle."""
+        """A wandering road from a to b (cells), `width` cells to each side of its middle: the corridor is cleared of
+        outcrops (the path itself is laid by route() afterwards)."""
         x, y = a
         while (x, y) != tuple(b):
             self.clear((x, y), width)
@@ -81,6 +135,17 @@ class Zone:
             x = min(max(x + step[0], 2), self.cols - 3)
             y = min(max(y + step[1], 2), self.rows - 3)
         self.clear(b, width)
+
+    def lamps(self, every=6, scale=0.45, sprite="decor_4"):
+        """A lamp post at the edge of each painted path, every `every` cells along it, on whichever side is open."""
+        for trail in self.lamp_cells:
+            for i in range(3, len(trail), every):
+                x, y = trail[i]
+                for dx, dy in ((0, -1), (0, 1), (1, 0), (-1, 0)):
+                    nx, ny = x + dx, y + dy
+                    if 1 <= nx < self.cols - 1 and 1 <= ny < self.rows - 1 and not self.wall[ny][nx] and self.roads[ny][nx] == ".":
+                        self.prop(sprite, (nx, ny), dx=0.5 + dx * 0.0, dy=0.9, scale=scale)
+                        break
 
     def reachable_only(self, start):
         seen = [[False] * self.cols for _ in range(self.rows)]
@@ -143,6 +208,8 @@ class Zone:
         grid = ["".join("#" if w else "." for w in row) for row in self.wall]
         data = {"format": 1, "id": self.id, "name": self.name, "kind": area_name_kind, "theme": self.theme,
                 "cell": CELL, "auto_decorate": True, "grid": grid, "objects": self.objects}
+        if any(ch != "." for row in self.roads for ch in row):
+            data["roads"] = ["".join(row) for row in self.roads]
         with open(os.path.join(MAPS, self.id + ".json"), "w") as f:
             json.dump(data, f, indent="\t")
         idx_path = os.path.join(MAPS, "index.json")
@@ -185,6 +252,17 @@ def dune_wastes():
     z.road(lodge, fungus, 1)
     z.reachable_only(start)
 
+    # The paths on the ground: one dirt road network (shared where it heads the same way), cobblestone where it
+    # reaches somewhere: the gate, the waypoint, the lodge's yard and the manor's forecourt
+    for a, b in [(start, waypoint), (waypoint, gate_c), (gate_c, glade), (glade, manor), (glade, lodge),
+                 (waypoint, gate_a), (waypoint, gate_b), (lodge, fungus)]:
+        z.route(a, b, "d")
+    z.plaza(start, 1)
+    z.plaza(waypoint, 1)
+    z.plaza((lodge[0], lodge[1] + 1), 2)
+    z.plaza((manor[0], manor[1] + 1), 2)
+    z.lamps()
+
     # The road from Oakhaven comes in on the west edge
     z.add("start", start)
     z.add("portal", (start[0] - 2, start[1]), target="town")
@@ -192,6 +270,10 @@ def dune_wastes():
     z.add("waypoint", waypoint)
     z.prop("decor_9", (start[0] + 2, start[1] - 2), scale=0.5)  # signpost
     z.prop("decor_15", (start[0] + 2, start[1] + 2), scale=0.5, solid=True)  # the gate's last palisade
+    z.prop("decor_4", (start[0] + 1, start[1] - 1), dx=0.2, scale=0.45)  # lamp posts at the gate and the waypoint
+    z.prop("decor_4", (start[0] + 1, start[1] + 1), dx=0.2, scale=0.45)
+    z.prop("decor_4", (waypoint[0] - 1, waypoint[1] - 1), dx=0.3, scale=0.45)
+    z.prop("decor_4", (waypoint[0] + 1, waypoint[1] + 1), dx=0.7, scale=0.45)
 
     # The hunting lodge: Dennis pinned inside, the alpha and its pack round it, the rift shard where it falls
     z.add("trigger", lodge, radius=420, id="hunting_lodge",
@@ -200,6 +282,7 @@ def dune_wastes():
     z.prop("decor_15", (lodge[0] - 4, lodge[1] - 1), scale=0.5, solid=True)  # thorn barricade across the path
     z.prop("decor_15", (lodge[0] + 3, lodge[1] - 1), scale=0.5, solid=True)
     z.prop("decor_8", (lodge[0] + 4, lodge[1] - 3), scale=0.45, solid=True)  # woodpile
+    z.prop("decor_1", (lodge[0] - 2, lodge[1] - 2), scale=0.45)  # a hanging lantern at the door
     z.prop("decor_5", (lodge[0], lodge[1] + 2), scale=0.5)  # tainted pool
     z.prop("tree_11", (lodge[0] - 5, lodge[1] - 3), scale=0.7)
     z.prop("tree_12", (lodge[0] + 5, lodge[1] + 1), scale=0.7)
@@ -221,6 +304,8 @@ def dune_wastes():
     z.prop("building_4", (manor[0] + 4, manor[1] - 2), scale=0.5, solid=True)  # its tower
     z.prop("decor_15", (manor[0] - 4, manor[1] + 1), scale=0.5, solid=True)
     z.prop("decor_16", (manor[0] - 2, manor[1] + 2), scale=0.5)  # scarecrow
+    z.prop("decor_4", (manor[0] - 1, manor[1] + 3), dx=0.2, scale=0.45)  # the forecourt's lamp posts, one still lit
+    z.prop("decor_4", (manor[0] + 2, manor[1] + 3), dx=0.8, scale=0.45)
     z.prop("decor_7", (manor[0] + 1, manor[1] + 1), scale=0.5)
     z.prop("tree_12", (manor[0] - 5, manor[1] - 2), scale=0.7)
     z.prop("tree_11", (manor[0] + 6, manor[1] + 2), scale=0.7)

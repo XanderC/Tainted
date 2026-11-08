@@ -1,6 +1,14 @@
 [
 	{
 		"build": 0,
+		"title": "Roads and lamp posts in the Wilds",
+		"notes": [
+			"The Blackroot Wilds now has dirt roads leading from the gate to the waypoint, the glade, the hunting lodge and the ruined manor, cobblestone where they arrive, and lamp posts along them.",
+			"Maps can now carry paths on the ground, so the next zones will have them too."
+		]
+	},
+	{
+		"build": 0,
 		"title": "Act I: The Bleeding Veil begins",
 		"notes": [
 			"Act I is being rewritten as The Bleeding Veil. The outpost is now Oakhaven Outpost, and the first zone is the Blackroot Wilds: mist-choked woodland full of briarwolves, rotting villagers, ghouls, zombies and skeletons, with a hunting lodge and a ruined manor to find.",

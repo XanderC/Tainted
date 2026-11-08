@@ -910,6 +910,16 @@ join up; `MazeMap` draws them as a tile layer. The packs are drawn for single sq
 inner corners, and each piece's surface a little different), so `tools/import_tilesets.py` remakes
 the pieces on one surface and adds the missing ones in `assets/tiles/<theme>/walls/`.
 
+**Roads and paths** are a map's optional `"roads"` layer: rows of characters the size of the grid, `.` none,
+`d` dirt path, `s` cobblestone (`MazeMap._add_roads`). `scripts/road_tiles.gd` picks each quarter of a road cell from
+its neighbours the same way, from the theme's `road_1` ... `road_26` (64 px: two sets of 13, dirt then cobblestone: the
+corners, edges, middle and four inner corners), so paths of any shape join up, with the border the art draws round
+them. `tools/gen_zones.py` lays them with `Zone.route` (the shortest way over open floor with few turns, cheap over a
+path already laid so routes share their line), `Zone.plaza` for cobbled squares and `Zone.lamps` for lamp posts along
+the paths. Roads are only on the ground: they don't block anything. The pack has more that is not used yet: river
+pieces (`river`, `river_2`), stairs and plateau pieces (`land_4`, `land_8`, `land_13`) for raised areas, and
+`greenery_N` plants.
+
 The packs are on the NAS (Tainted > assets > maps). To add a theme, put its zip in `THEMES` in
 `tools/import_tilesets.py` and run `python tools/import_tilesets.py <theme>`, then give it an entry in
 `MapTheme.THEMES` and the map editor's `THEMES`. All the "2D RPG" packs (desert, autumn, winter,

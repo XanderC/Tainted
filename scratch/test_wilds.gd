@@ -52,6 +52,30 @@ func _ready() -> void:
 	for want in ["npc:dennis", "boss:briar_alpha", "quest_object:rift_shard", "quest_object:lockbox", "trigger:hunting_lodge", "trigger:ruined_manor", "waypoint:", "portal:"]:
 		check(ids.has(want), "the map has %s" % want)
 
+	# Roads: the autotiler picks each quarter's piece, and the map lays its paths on open ground
+	var alone := func(cells: Array) -> Callable:
+		return func(c: Vector2i) -> bool: return cells.has(c)
+	check(Array(RoadTiles.pick(alone.call([Vector2i(5, 5)]), Vector2i(5, 5))) == [1, 3, 7, 9], "a lone path cell is four outer corners")
+	var row: Array = [Vector2i(4, 5), Vector2i(5, 5), Vector2i(6, 5)]
+	check(Array(RoadTiles.pick(alone.call(row), Vector2i(5, 5))) == [2, 2, 8, 8], "the middle of a horizontal path is top and bottom edges")
+	check(Array(RoadTiles.pick(alone.call(row), Vector2i(4, 5))) == [1, 2, 7, 8], "its end turns the corners")
+	var col: Array = [Vector2i(5, 4), Vector2i(5, 5), Vector2i(5, 6)]
+	check(Array(RoadTiles.pick(alone.call(col), Vector2i(5, 5))) == [4, 6, 4, 6], "the middle of a vertical path is left and right edges")
+	var plus: Array = [Vector2i(5, 5), Vector2i(4, 5), Vector2i(6, 5), Vector2i(5, 4), Vector2i(5, 6)]
+	check(Array(RoadTiles.pick(alone.call(plus), Vector2i(5, 5))) == [13, 12, 11, 10], "a crossing has inner corners")
+	check(RoadTiles.pick(alone.call([Vector2i(5, 5)]), Vector2i(5, 5), true)[0] == 14, "cobblestone is the second set (14 ...)")
+	var roads: Array = data.get("roads", [])
+	check(roads.size() == grid.size() and String(roads[0]).length() == String(grid[0]).length(), "the map has a roads layer the size of its grid")
+	var on_wall := 0
+	var road_cells := 0
+	for y in roads.size():
+		for x in String(roads[y]).length():
+			if String(roads[y])[x] != ".":
+				road_cells += 1
+				if String(grid[y])[x] == "#":
+					on_wall += 1
+	check(road_cells > 100 and on_wall == 0, "paths lie on open ground (%d cells, %d on walls)" % [road_cells, on_wall])
+
 	GameState.current_zone = "dune_wastes"
 	GameState.zone_entry = "town"
 	var zone = load("res://scenes/zone.tscn").instantiate()
@@ -63,7 +87,7 @@ func _ready() -> void:
 	var allowed: Array = ActDB.zone("dune_wastes").kinds
 	var foreign := 0
 	for e in _enemies(zone):
-		if not e.is_boss and not (e.kind in allowed):
+		if not e.is_boss and String(e.pack).begins_with("zpack_") and not (e.kind in allowed):  # (a random encounter brings its own: cultists, a cottage's zombies)
 			foreign += 1
 	check(foreign == 0, "no monsters but the Wilds' own kinds (%d others)" % foreign)
 	check(_enemies(zone, "briarwolf").size() >= 20, "briarwolves hunt the Wilds (%d)" % _enemies(zone, "briarwolf").size())
