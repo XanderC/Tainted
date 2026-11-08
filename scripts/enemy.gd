@@ -161,6 +161,7 @@ func _physics_process(delta: float) -> void:
 		else:
 			velocity = Vector2.ZERO
 			rig.play_loop("Idle")
+			_rest_when_far(to_player.length())
 			return
 
 	if tier != MonsterAffix.Tier.NORMAL:
@@ -362,11 +363,24 @@ func taunt(by: Node2D, seconds: float) -> void:
 
 
 ## Start hunting the player, and wake the rest of the pack.
+## A sleeping monster this far from you is long off screen: its animation stops until it wakes (or
+## you come back). A dense map has hundreds, and animating all of them costs a phone real frame time.
+const REST_RANGE := 1600.0
+
+
+func _rest_when_far(dist: float) -> void:
+	var far := dist > REST_RANGE
+	if rig != null and rig.is_processing() == far:
+		rig.set_process(not far)
+
+
 func wake() -> void:
 	if _aggro:
 		return
 	_aggro = true
 	_path_t = 0.0
+	if rig != null:
+		rig.set_process(true)
 	if pack != "":
 		for e in get_tree().get_nodes_in_group(pack):
 			if e != self and is_instance_valid(e):
@@ -459,6 +473,7 @@ func _die() -> void:
 	if has_affix("molten"):
 		_molten_explosion()
 	rig.modulate = _tint
+	rig.set_process(true)  # it may have been resting, far off (_rest_when_far)
 	rig.play_once("Dying", 1.0, true)
 	queue_redraw()
 	var t := create_tween()
@@ -504,13 +519,13 @@ func _spawn_number(amount: float, crit: bool, dtype: RuneDef.DamageType = RuneDe
 
 	if crit:
 		col = Color(1.0, 0.85, 0.1)
-		l.add_theme_font_size_override("font_size", 22)
+		l.add_theme_font_size_override("font_size", GameCamera.text(22))
 	else:
-		l.add_theme_font_size_override("font_size", 16)
+		l.add_theme_font_size_override("font_size", GameCamera.text(16))
 
 	l.add_theme_color_override("font_color", col)
 	l.add_theme_color_override("font_outline_color", Color.BLACK)
-	l.add_theme_constant_override("outline_size", 5)
+	l.add_theme_constant_override("outline_size", GameCamera.text(5))
 	l.z_index = 10
 	get_parent().add_child(l)
 	l.position = global_position + Vector2(-12, -118 * size_mult)
@@ -530,6 +545,7 @@ func _draw() -> void:
 	if _dead or is_boss:
 		return
 	var top := -112.0 * size_mult
+	var zk := 1.0 / GameCamera.ZOOM  # the world is drawn zoomed out: plates are sized up to stay readable
 	if tier != MonsterAffix.Tier.NORMAL:
 		var tc: Color = MonsterAffix.TIERS[tier].color
 		# Glowing ring under elites, shield bubble, molten heat
@@ -541,17 +557,17 @@ func _draw() -> void:
 			draw_arc(Vector2(0, -50 * size_mult), 55.0 * size_mult, 0.0, TAU, 40, Color(0.9, 0.95, 1.0, 0.8), 3.0)
 		# Name plate: name in tier colour, affixes underneath
 		var font := ThemeDB.fallback_font
-		draw_string_outline(font, Vector2(-120, top - 26), display_name, HORIZONTAL_ALIGNMENT_CENTER, 240, 15, 5, Color.BLACK)
-		draw_string(font, Vector2(-120, top - 26), display_name, HORIZONTAL_ALIGNMENT_CENTER, 240, 15, tc)
+		draw_string_outline(font, Vector2(-160, top - 26 * zk), display_name, HORIZONTAL_ALIGNMENT_CENTER, 320, GameCamera.text(15), GameCamera.text(5), Color.BLACK)
+		draw_string(font, Vector2(-160, top - 26 * zk), display_name, HORIZONTAL_ALIGNMENT_CENTER, 320, GameCamera.text(15), tc)
 		var names: Array = affixes.map(func(a): return MonsterAffix.AFFIXES[a].name)
 		var line := "  ".join(PackedStringArray(names))
-		draw_string_outline(font, Vector2(-120, top - 10), line, HORIZONTAL_ALIGNMENT_CENTER, 240, 12, 4, Color.BLACK)
-		draw_string(font, Vector2(-120, top - 10), line, HORIZONTAL_ALIGNMENT_CENTER, 240, 12, Color(0.92, 0.88, 0.80))
-		draw_rect(Rect2(-32, top, 64, 7), Color(0, 0, 0, 0.6))
-		draw_rect(Rect2(-32, top, 64.0 * clampf(hp / max_hp, 0.0, 1.0), 7), tc.darkened(0.15))
+		draw_string_outline(font, Vector2(-160, top - 10 * zk), line, HORIZONTAL_ALIGNMENT_CENTER, 320, GameCamera.text(12), GameCamera.text(4), Color.BLACK)
+		draw_string(font, Vector2(-160, top - 10 * zk), line, HORIZONTAL_ALIGNMENT_CENTER, 320, GameCamera.text(12), Color(0.92, 0.88, 0.80))
+		draw_rect(Rect2(-32 * zk, top, 64 * zk, 7 * zk), Color(0, 0, 0, 0.6))
+		draw_rect(Rect2(-32 * zk, top, 64.0 * zk * clampf(hp / max_hp, 0.0, 1.0), 7 * zk), tc.darkened(0.15))
 		return
-	draw_rect(Rect2(-18, top, 36, 5), Color(0, 0, 0, 0.6))
-	draw_rect(Rect2(-18, top, 36.0 * clampf(hp / max_hp, 0.0, 1.0), 5), Color(0.9, 0.15, 0.15))
+	draw_rect(Rect2(-18 * zk, top, 36 * zk, 5 * zk), Color(0, 0, 0, 0.6))
+	draw_rect(Rect2(-18 * zk, top, 36.0 * zk * clampf(hp / max_hp, 0.0, 1.0), 5 * zk), Color(0.9, 0.15, 0.15))
 
 
 # ---------- party play: a follower's copy ----------
@@ -593,6 +609,11 @@ func _remote_step(delta: float) -> void:
 		global_position = _net_pos  # a teleport, or far behind
 	else:
 		global_position = global_position.lerp(_net_pos, 1.0 - exp(-14.0 * delta))
+	if _aggro:
+		if rig != null and not rig.is_processing():
+			rig.set_process(true)
+	elif _alive(target):
+		_rest_when_far(global_position.distance_to(target.global_position))
 	if _net_anim != "" and rig != null:
 		if _net_anim in ["Walking", "Idle", "Idle Blinking", "Running"]:
 			rig.play_loop(_net_anim)
@@ -859,10 +880,10 @@ func _flash_ring(at: Vector2, radius: float, col: Color) -> void:
 func _spawn_text(text: String, col: Color) -> void:
 	var l := Label.new()
 	l.text = text
-	l.add_theme_font_size_override("font_size", 15)
+	l.add_theme_font_size_override("font_size", GameCamera.text(15))
 	l.add_theme_color_override("font_color", col)
 	l.add_theme_color_override("font_outline_color", Color.BLACK)
-	l.add_theme_constant_override("outline_size", 5)
+	l.add_theme_constant_override("outline_size", GameCamera.text(5))
 	l.z_index = 10
 	get_parent().add_child(l)
 	l.position = global_position + Vector2(-22, -118 * size_mult)

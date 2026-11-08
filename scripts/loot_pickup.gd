@@ -38,7 +38,7 @@ static func make_plate(text: String, col: Color, on_press: Callable) -> Button:
 	var plate := Button.new()
 	plate.text = text
 	plate.focus_mode = Control.FOCUS_NONE
-	plate.add_theme_font_size_override("font_size", PLATE_FONT)
+	plate.add_theme_font_size_override("font_size", GameCamera.text(PLATE_FONT))  # it lives in the world, which is zoomed out
 	for st in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color"]:
 		plate.add_theme_color_override(st, col)
 	plate.add_theme_color_override("font_hover_color", col.lightened(0.35))

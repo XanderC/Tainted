@@ -94,6 +94,16 @@ func cell_center(c: Vector2i) -> Vector2:
 	return Vector2((c.x + 0.5) * CELL, (c.y + 0.5) * CELL)
 
 
+## Every cell that isn't a wall.
+func floor_cells() -> Array[Vector2i]:
+	var out: Array[Vector2i] = []
+	for y in rows:
+		for x in cols:
+			if _grid[y][x] != "#":
+				out.append(Vector2i(x, y))
+	return out
+
+
 ## Whether a straight line from `from` to `to` crosses no wall (an archer's clear shot).
 func line_clear(from: Vector2, to: Vector2) -> bool:
 	var steps := int(from.distance_to(to) / (CELL * 0.25)) + 1

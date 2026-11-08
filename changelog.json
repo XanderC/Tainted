@@ -1,5 +1,14 @@
 [
 	{
+		"build": 0,
+		"title": "More monsters, a wider view",
+		"notes": [
+			"The camera is zoomed out a third, so you see more of the map around you.",
+			"Maps are much fuller: rifts and the Ashwood now have around three times the monsters, spread right across the map, so there's something to fight in every stretch. More packs also means more Elites and Legendaries to hunt.",
+			"A rift's packs sit in different places each run."
+		]
+	},
+	{
 		"build": 202611050858,
 		"title": "Password reset in Tainted's own words",
 		"notes": [

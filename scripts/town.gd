@@ -51,7 +51,7 @@ func _ready() -> void:
 	player.position = _arrival()
 	add_child(player)
 	player.item_dropped.connect(_on_item_dropped)
-	var cam := Camera2D.new()
+	var cam := GameCamera.make()
 	cam.limit_left = int(TownMap.CAM_LIMIT.position.x)
 	cam.limit_right = int(TownMap.CAM_LIMIT.end.x)
 	cam.limit_top = int(TownMap.CAM_LIMIT.position.y)
@@ -356,12 +356,12 @@ func _add_npc(title: String, subtitle: String, pos: Vector2, skin: String, promp
 	var name_l := Label.new()
 	name_l.text = "%s\n%s" % [title, subtitle]
 	name_l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	name_l.add_theme_font_size_override("font_size", 16)
+	name_l.add_theme_font_size_override("font_size", GameCamera.text(16))
 	name_l.add_theme_color_override("font_color", Color(1.0, 0.9, 0.5))
 	name_l.add_theme_color_override("font_outline_color", Color.BLACK)
-	name_l.add_theme_constant_override("outline_size", 6)
-	name_l.custom_minimum_size = Vector2(160, 0)
-	name_l.position = Vector2(-80, -150)
+	name_l.add_theme_constant_override("outline_size", GameCamera.text(6))
+	name_l.custom_minimum_size = Vector2(260, 0)
+	name_l.position = Vector2(-130, -150 - GameCamera.text(16) * 0.5)
 	name_l.z_index = 5
 	npc.add_child(name_l)
 
@@ -383,10 +383,10 @@ func _add_exit(pos: Vector2, target: String, entry: String, text: String) -> voi
 	var l := Label.new()
 	l.text = text
 	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	l.add_theme_font_size_override("font_size", 16)
+	l.add_theme_font_size_override("font_size", GameCamera.text(16))
 	l.add_theme_color_override("font_color", Color(0.85, 0.7, 1.0))
 	l.add_theme_color_override("font_outline_color", Color.BLACK)
-	l.add_theme_constant_override("outline_size", 6)
+	l.add_theme_constant_override("outline_size", GameCamera.text(6))
 	l.size = Vector2(300, 24)
 	l.position = Vector2(-150, -110)
 	p.add_child(l)
@@ -449,11 +449,11 @@ func _add_gate(pos: Vector2) -> void:
 	var l := Label.new()
 	l.text = "Rift Gate"
 	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	l.add_theme_font_size_override("font_size", 18)
+	l.add_theme_font_size_override("font_size", GameCamera.text(18))
 	l.add_theme_color_override("font_color", Color(0.85, 0.6, 1.0))
 	l.add_theme_color_override("font_outline_color", Color.BLACK)
-	l.add_theme_constant_override("outline_size", 6)
-	l.custom_minimum_size = Vector2(160, 0)
-	l.position = Vector2(-80, -150)
+	l.add_theme_constant_override("outline_size", GameCamera.text(6))
+	l.custom_minimum_size = Vector2(260, 0)
+	l.position = Vector2(-130, -150)
 	l.z_index = 5
 	gate.add_child(l)

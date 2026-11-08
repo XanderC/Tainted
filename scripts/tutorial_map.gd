@@ -64,7 +64,7 @@ func _ready() -> void:
 	player.class_def = ClassLibrary.get_class_def(GameState.char_class)
 	player.position = maze.start_pos
 	add_child(player)
-	var cam := Camera2D.new()
+	var cam := GameCamera.make()
 	cam.limit_left = 0
 	cam.limit_top = 0
 	cam.limit_right = int(maze.cols * MazeMap.CELL)
@@ -196,12 +196,12 @@ func _add_altar(pos: Vector2) -> void:
 	tick.autostart = true
 	tick.timeout.connect(_altar.queue_redraw)
 	_altar.add_child(tick)
-	var l := UIKit.label("Altar of First Steps", 16, Color(0.6, 0.85, 1.0))
+	var l := UIKit.label("Altar of First Steps", GameCamera.text(16), Color(0.6, 0.85, 1.0))
 	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	l.add_theme_color_override("font_outline_color", Color.BLACK)
-	l.add_theme_constant_override("outline_size", 6)
-	l.custom_minimum_size = Vector2(200, 0)
-	l.position = Vector2(-100, -150)
+	l.add_theme_constant_override("outline_size", GameCamera.text(6))
+	l.custom_minimum_size = Vector2(300, 0)
+	l.position = Vector2(-150, -150)
 	_altar.add_child(l)
 
 

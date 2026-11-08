@@ -38,6 +38,7 @@ var _hits: Array = []
 var _hurt := {}  # host: damage to other players, gathered and sent every HURT_EVERY (peer -> {element: amount})
 var _hurt_t := 0.0
 var _snap_t := 0.0
+var _snap_n := 0
 var _run_t := 0.0
 var _resync := false  # the connection dropped: start again from the host's when back
 var travel_asked := false  ## a follower asked the host to go through the portal (reset each maze)
@@ -212,10 +213,14 @@ func _physics_process(delta: float) -> void:
 		_snap_t -= delta
 		if _snap_t <= 0.0:
 			_snap_t = 1.0 / SNAP_HZ
+			# A monster still asleep stands where it was: with a map full of them, that is most of the list,
+			# so they go once a second (enough for a hit's life change), the awake ones every time.
+			_snap_n += 1
+			var with_sleepers := _snap_n % int(SNAP_HZ) == 0
 			var snaps: Array = []
 			for id in _enemies:
 				var e: Enemy = _enemies[id]
-				if is_instance_valid(e) and not e._dead:
+				if is_instance_valid(e) and not e._dead and (e._aggro or with_sleepers):
 					snaps.append(e.snapshot())
 			if not snaps.is_empty():
 				Net.send_event(0, "snap", snaps)

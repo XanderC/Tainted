@@ -549,6 +549,26 @@ that is never used up: drink it from a flask slot and it goes on cooldown.
 - Test: `godot --headless --path . res://scratch/test_flasks.tscn`;
   `res://scratch/capture_flasks.tscn` for screenshots.
 
+### Camera zoom and monster density
+- **Camera** (`GameCamera`): every world scene (rift, zone, town, tutorial) makes its camera with
+  `GameCamera.make()`, zoom `GameCamera.ZOOM` = 0.75 (a third more of the map each way than the
+  engine's default). World-space text (name plates, damage numbers, NPC and exit labels, ground item
+  plates) shrinks with it, so it is sized with `GameCamera.text(px)`: use that for any new label
+  that lives in the world rather than the HUD.
+- **Monster packs** (`PackSpots.for_map(maze, cells_per_pack, seed)`): a map's hand-placed "pack"
+  objects, plus small extra packs (2-4 monsters) across the floor, about one pack per
+  `cells_per_pack` floor cells (rifts `CELLS_PER_PACK` 8 in `main.gd`, zones `CELLS_PER_PACK` 10 in `zone.gd`). They
+  keep `SPACING` (400 px, under a pack's 520 px wake-up range, so a fight sometimes pulls in a neighbour) from every other pack and 650 px from the start, and stay clear of exits,
+  waypoints, NPCs, quest objects and bosses (`KEEP_CLEAR`). A zone's extras are the same every visit
+  (seeded by the map id); a rift's differ every run. Every maze now gets all of its hand-placed packs
+  (it used to pick 6). The Bone Labyrinth went from 27-45 monsters to 79-149, the Ashwood from 72-117
+  to 226-425 (about six packs on one screen at the 0.75 zoom). On a fast PC both still hold 60 fps
+  (draw calls about 2.5x: ~725 in a rift); phones are untested. `KILL_TARGET` is unchanged, so a rift's boss comes after the first 30 kills.
+- **Cost of a crowd**: a sleeping monster more than `Enemy.REST_RANGE` (1600 px) from you stops
+  animating until it wakes, and a party host sends sleeping monsters in the snapshots once a second
+  instead of 12 times (`Coop`). Measure with `scratch/measure_density.tscn` (build time, frame time
+  and a screenshot of a zone and a rift) and `scratch/count_packs.gd` (packs per map).
+
 ### Random encounters, currency piles, see-through scenery
 - **Random encounters** (`ZoneEncounters`): entering a campaign zone solo has a 45% chance of one,
   somewhere on open floor away from the start, exits and NPCs and reachable from the start

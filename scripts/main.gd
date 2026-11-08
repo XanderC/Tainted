@@ -9,7 +9,7 @@ extends Node2D
 ## its portal (snapshot) and carried on with coming back (_restore); a party's waits on the server
 ## when the last one out leaves while a portal leads into it (Net.save_rift).
 
-const PACKS_PER_MAZE := 6        # how many of a maze's "m" spots get a monster pack
+const CELLS_PER_PACK := 8.0    # a maze gets about one monster pack per this many floor cells (PackSpots)
 const PACK_SIZE := Vector2i(3, 5)
 const PACK_AGGRO := 520.0        # packs wake when you come this close (or when one is hit)
 const PORTAL_REACH := 70.0
@@ -43,7 +43,7 @@ func _ready() -> void:
 	player = Player.new()
 	player.class_def = ClassLibrary.get_class_def(GameState.char_class)
 	add_child(player)
-	_cam = Camera2D.new()
+	_cam = GameCamera.make()
 	player.add_child(_cam)
 
 	var layer := CanvasLayer.new()
@@ -404,10 +404,11 @@ func _load_maze(map := "", spawn := true) -> void:
 	if not spawn:
 		run.announce("%s  —  maze %d" % [maze.map_name, mazes_visited], Color(0.85, 0.7, 1.0))
 		return
-	# Monster packs on some of the maze's "m" spots (never right next to the start)
-	var spots := maze.packs.filter(func(o): return Vector2(o.x, o.y).distance_to(maze.start_pos) > 450.0)
-	spots.shuffle()
-	for i in mini(PACKS_PER_MAZE, spots.size()):
+	# Monster packs on the maze's pack spots and on more across its floor (PackSpots; a different layout
+	# of the extras each run), never right next to the start
+	var spots := PackSpots.for_map(maze, CELLS_PER_PACK, randi()).filter(
+		func(o): return Vector2(o.x, o.y).distance_to(maze.start_pos) > 450.0)
+	for i in spots.size():
 		var o: Dictionary = spots[i]
 		var n := randi_range(int(o.get("min", PACK_SIZE.x)), int(o.get("max", PACK_SIZE.y))) + int(run.level / 5.0)
 		var at := Vector2(float(o.x), float(o.y))

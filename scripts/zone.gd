@@ -7,6 +7,7 @@ extends Node2D
 
 const SCENE := "res://scenes/zone.tscn"
 const PACK_AGGRO := 520.0
+const CELLS_PER_PACK := 10.0 # a zone gets about one monster pack per this many floor cells (PackSpots)
 const EXIT_REACH := 70.0
 const WAYPOINT_REACH := 110.0
 const ITEM_DROP_CHANCE := 0.10  # a normal monster's chance to drop an item (elites always do)
@@ -56,7 +57,7 @@ func _ready() -> void:
 	player = Player.new()
 	player.class_def = ClassLibrary.get_class_def(GameState.char_class)
 	add_child(player)
-	_cam = Camera2D.new()
+	_cam = GameCamera.make()
 	_cam.limit_left = 0
 	_cam.limit_top = 0
 	_cam.limit_right = int(maze.cols * MazeMap.CELL)
@@ -276,10 +277,10 @@ func _label(parent: Node2D, text: String, col: Color, y := -110.0) -> void:
 	var l := Label.new()
 	l.text = text
 	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	l.add_theme_font_size_override("font_size", 16)
+	l.add_theme_font_size_override("font_size", GameCamera.text(16))
 	l.add_theme_color_override("font_color", col)
 	l.add_theme_color_override("font_outline_color", Color.BLACK)
-	l.add_theme_constant_override("outline_size", 6)
+	l.add_theme_constant_override("outline_size", GameCamera.text(6))
 	l.size = Vector2(260, 24)
 	l.position = Vector2(-130, y)
 	parent.add_child(l)
@@ -291,8 +292,10 @@ func _spawn_packs() -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash(zone_id)  # the same kind at the same spot every visit
 	var pool := MonsterKinds.pool(area_level)
-	for i in maze.packs.size():
-		var o: Dictionary = maze.packs[i]
+	# The map's own packs, then more across the floor (PackSpots: the same ones every visit)
+	var spots := PackSpots.for_map(maze, CELLS_PER_PACK)
+	for i in spots.size():
+		var o: Dictionary = spots[i]
 		var kind := String(o.get("kind", ""))
 		if not MonsterKinds.KINDS.has(kind):
 			kind = pool[rng.randi() % pool.size()]
