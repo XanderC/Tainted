@@ -1,6 +1,14 @@
 [
 	{
 		"build": 0,
+		"title": "Pets",
+		"notes": [
+			"Choose a pet in Options (the button under BAG): a hedgehog, snail, turtle, boar, monkey, mouse, crab, bee or bird. It trots along beside you and picks up the currency lying about, so you don't have to walk over and tap each pile.",
+			"It leaves your gear for you to pick, and it can't fight or be hurt, it's just company. Each character has their own."
+		]
+	},
+	{
+		"build": 0,
 		"title": "More monsters, a wider view",
 		"notes": [
 			"The camera is zoomed out a third, so you see more of the map around you. The new OPTIONS button under BAG opens a window where you can slide the view distance anywhere from far to close, and see it change as you move the slider.",

@@ -128,6 +128,8 @@ func _ready() -> void:
 	_sync_gear_visuals()
 	GameState.attach_player(self)  # restore saved gear, bag and skills
 	Hirelings.spawn(self)  # your hireling comes along, if you have one standing
+	PetDB.spawn(self)  # and your pet, if you have chosen one (Options)
+	PetDB.follow_choice(self)
 
 
 func sync_skills_from_state() -> void:

@@ -576,6 +576,25 @@ that is never used up: drink it from a flask slot and it goes on cooldown.
   instead of 12 times (`Coop`). Measure with `scratch/measure_density.tscn` (build time, frame time
   and a screenshot of a zone and a rift) and `scratch/count_packs.gd` (packs per map).
 
+### Pets
+- **A pet** (`Pet`, `PetDB`) is a small animal that trots beside you (a hedgehog, snail, turtle, boar,
+  monkey, mouse, crab, bee or bird) and fetches the currency lying near you: every `CurrencyPickup`
+  within `Pet.SEEK` (750 px) of you (orbs, shards, plans, runes, gems, skill gems, and the piles of
+  them), as a tap would, into the stash; the toast says "Boar fetched ...". It leaves gear (`LootPickup`)
+  for you to choose, whatever lies further from you than that, and Town Portal scrolls while you carry
+  `MAX_SCROLLS` (`CurrencyPickup.pet_can_take`). One it can't reach in 5 s it leaves alone for 25 s.
+  It has no life, no attack and no collision with enemies (walls only), so it is just for show and for
+  fetching. Others in a party do not see it yet (it is not in `NetPresence`).
+- **Choosing one**: the Pet row of the Options window steps through `PetDB.ORDER` (none first).
+  `GameState.pet` holds it, is saved with the character and `GameState.set_pet` swaps the one beside
+  you at once (`pet_changed`). Not in the tutorial.
+- **Art**: `tools/import_pets.py <folder>` turns the CraftPix animal packs (hedgehog/snail/turtle,
+  boar/monkey/mouse/piranha, bee/crab/bird) into `assets/pets/<id>/idle.png`, `walk.png`, `run.png`
+  (one row of frames each, cropped to one box per animal, longer side 160 px) and `meta.json`. An animal
+  with no walk (bee, bird) hovers and bobs; one with no run (all but the boar) walks faster to fetch.
+  Add a pet: a line in the tool's table and run it, then a line in `PetDB.PETS` and `ORDER` (size on
+  screen, speed, `hover`). Test: `scratch/test_pet.tscn` (windowed; takes `scratch/pets.png`).
+
 ### Random encounters, currency piles, see-through scenery
 - **Random encounters** (`ZoneEncounters`): entering a campaign zone solo has a 45% chance of one,
   somewhere on open floor away from the start, exits and NPCs and reachable from the start

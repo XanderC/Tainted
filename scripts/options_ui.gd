@@ -2,13 +2,14 @@ class_name OptionsUI
 extends CanvasLayer
 ## The Options window, opened by the OPTIONS button the GameMenu puts under BAG. It sits to one side
 ## so the world stays in view while you change something, and the game is paused while it is open.
-## Today: how far the camera is zoomed out (GameCamera), which changes the view as the slider moves.
-## Settings live in Options.
+## How far the camera is zoomed out (GameCamera), which changes the view as the slider moves, and which
+## pet the character has (PetDB). The zoom is kept on the device (Options), the pet with the character.
 
 var _slider: HSlider
 var _value: Label
 var _less: Button
 var _more: Button
+var _pet: Label
 var _was_paused := false
 
 
@@ -105,6 +106,24 @@ func _build() -> void:
 	box.add_child(_value)
 	box.add_child(UIKit.label("Name plates and labels already on screen catch up in the next area.", 13, UIKit.TEXT_DIM, true))
 
+	# This character's pet: it trots beside you and fetches the currency you leave lying (it can't fight)
+	box.add_child(UIKit.label("Pet", 20, UIKit.GOLD))
+	var prow := HBoxContainer.new()
+	prow.add_theme_constant_override("separation", 10)
+	box.add_child(prow)
+	var prev := UIKit.stone_button("◀", Vector2(56, 48), 20)
+	prev.pressed.connect(func(): _pick_pet(-1))
+	prow.add_child(prev)
+	_pet = UIKit.label("", 19, Color(1.0, 0.85, 0.40))
+	_pet.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_pet.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_pet.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	prow.add_child(_pet)
+	var next := UIKit.stone_button("▶", Vector2(56, 48), 20)
+	next.pressed.connect(func(): _pick_pet(1))
+	prow.add_child(next)
+	box.add_child(UIKit.label("A pet follows you and picks up the currency lying about. It doesn't fight.", 13, UIKit.TEXT_DIM, true))
+
 	var buttons := HBoxContainer.new()
 	buttons.add_theme_constant_override("separation", 10)
 	box.add_child(buttons)
@@ -120,6 +139,11 @@ func _build() -> void:
 	buttons.add_child(done)
 
 
+func _pick_pet(by: int) -> void:
+	GameState.set_pet(PetDB.step(GameState.pet, by))
+	_sync()
+
+
 func _nudge(by: float) -> void:
 	GameCamera.set_zoom(GameCamera.zoom() + by)
 	_sync()
@@ -133,6 +157,7 @@ func _sync(move := true) -> void:
 	_value.text = "Zoom %d%%%s" % [int(round(z * 100.0)), "   (default)" if is_equal_approx(z, GameCamera.DEFAULT_ZOOM) else ""]
 	_less.disabled = z <= GameCamera.MIN_ZOOM + 0.001
 	_more.disabled = z >= GameCamera.MAX_ZOOM - 0.001
+	_pet.text = PetDB.name_of(GameState.pet)
 
 
 ## A thin gold track and a round knob a thumb can hold (the engine's slider is a hair line).

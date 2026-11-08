@@ -9,6 +9,7 @@ signal skills_changed
 signal leveled_up(level: int)
 signal quests_changed
 signal scrolls_changed  ## tp_scrolls changed
+signal pet_changed  ## the character's pet was chosen (set_pet)
 signal town_portal_changed  ## a town portal of yours opened or closed (town_portal)
 signal looks_unlocked(looks: Array)  ## new armour looks for the Wardrobe: [[slot, look id], ...]
 
@@ -51,6 +52,8 @@ var waypoints: Array = []
 const START_SCROLLS := 3
 const MAX_SCROLLS := 40
 var tp_scrolls := START_SCROLLS
+## This character's pet (PetDB id, "" for none): follows you and fetches currency. Chosen in Options.
+var pet := ""
 var town_portal := {}
 var left_loot := {}
 ## The Gambler's stall (Gambler): its unidentified wares and when they were laid out (unix seconds)
@@ -138,6 +141,7 @@ func _new_game() -> void:
 	quests = {}
 	waypoints = []
 	tp_scrolls = START_SCROLLS
+	pet = ""
 	town_portal = {}
 	left_loot = {}
 	gamble_stock = []
@@ -1261,6 +1265,15 @@ func _queue_save() -> void:
 	save.call_deferred()
 
 
+## Gives the character this pet ("" for none): it appears beside them now, and is kept with the save.
+func set_pet(id: String) -> void:
+	if id == pet or (id != "" and not PetDB.PETS.has(id)):
+		return
+	pet = id
+	pet_changed.emit()
+	save()
+
+
 func save() -> void:
 	_save_queued = false
 	if char_id == "":
@@ -1287,7 +1300,7 @@ func save() -> void:
 		"recipes": known_recipes, "runs_cleared": runs_cleared,
 		"rift_unlocked": rift_unlocked, "rift_level": rift_level,
 		"quests": quests, "waypoints": waypoints, "town_portal": town_portal,
-		"tp_scrolls": tp_scrolls, "left_loot": left_loot,
+		"tp_scrolls": tp_scrolls, "pet": pet, "left_loot": left_loot,
 		"gamble": {"at": gamble_at, "items": gamble_stock.map(func(i): return i.to_dict())},
 		"inventory": inv, "equipment": eq,
 		"alt_weapon_set": _pending_alt_set, "active_weapon_set": _pending_active_set,
@@ -1644,6 +1657,9 @@ func _apply_save(data: Dictionary) -> void:
 		town_portal = {"id": 1, "kind": "zone", "zone": String(town_portal.get("zone", "")), "inst": "",
 			"x": float(town_portal.get("x", 0.0)), "y": float(town_portal.get("y", 0.0))}
 	tp_scrolls = clampi(int(data.get("tp_scrolls", START_SCROLLS)), 0, MAX_SCROLLS)
+	pet = String(data.get("pet", ""))
+	if not PetDB.PETS.has(pet):
+		pet = ""  # none, or one that has been removed
 	left_loot = data.get("left_loot", {})
 	var gamble: Dictionary = data.get("gamble", {}) if data.get("gamble", {}) is Dictionary else {}
 	gamble_at = int(gamble.get("at", 0))

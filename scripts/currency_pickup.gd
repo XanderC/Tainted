@@ -123,9 +123,22 @@ func request_pickup() -> void:
 		)
 
 
-func _take() -> void:
+## Whether a pet may fetch it: everything but Town Portal scrolls you cannot carry any more of
+## (tapping those only says so, and leaves them lying).
+func pet_can_take() -> bool:
+	return not (kind == "scroll" and GameState.tp_scrolls >= GameState.MAX_SCROLLS)
+
+
+## Your pet (Pet) reached it: taken as by a tap, and the toast says who fetched it.
+func take_by_pet(pet_name: String) -> void:
+	_take(pet_name)
+
+
+func _take(by := "") -> void:
 	var full := kind == "scroll" and GameState.tp_scrolls >= GameState.MAX_SCROLLS
 	var text := "You carry all the scrolls you can (%d)" % GameState.MAX_SCROLLS if full else collect()
+	if by != "" and not full:
+		text = "%s fetched  %s" % [by, text.trim_prefix("+ ").trim_prefix("+")]
 	var n := get_parent()
 	while n != null and not n.has_method("currency_taken"):
 		n = n.get_parent()
