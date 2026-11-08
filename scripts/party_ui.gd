@@ -1,8 +1,9 @@
 class_name PartyUI
 extends Node
 ## Parties on screen, wherever you are (Net owns it, so it lasts across scenes):
-##  - the party list, top right under the menu buttons: each other member's name, level, life and
-##    whereabouts, the leader crowned; tap one for their card. "Leave" under it.
+##  - the party list, top left under the hireling's portrait: each other member's name, level, life and
+##    whereabouts, the leader crowned; tap one for their card. "Leave" under it. A scene's left column
+##    makes room for it with dock(): a spacer under the portrait that the list stands on.
 ##  - an invite: "Brom invites you to their party", Join / No (it lapses after Net.INVITE_TIMEOUT).
 ##  - a party rift opened by a member: "Brom opened Rift 3", Join / Not now; while it's open the
 ##    party list has a Join button too, for whoever said not now or came later.
@@ -19,6 +20,7 @@ const LIFE := Color(0.85, 0.18, 0.15)
 var _frame_layer: CanvasLayer
 var _pop_layer: CanvasLayer
 var _frame: VBoxContainer
+var _dock: Control = null  # a scene's spacer under the hireling's portrait (dock), which the list stands on
 var _rows := {}  # member id -> {"life": ColorRect, "where": Label, "dead": Label}
 var _invite_box: PanelContainer
 var _invites: Array = []  # [{"id", "name", "at"}], [{"portal": {...}, "at"}] or [{"friend": id, "name", "at"}]
@@ -38,12 +40,8 @@ func _ready() -> void:
 
 	_frame = VBoxContainer.new()
 	_frame.add_theme_constant_override("separation", 4)
-	_frame.anchor_left = 1.0
-	_frame.anchor_right = 1.0
-	_frame.offset_left = -ROW_W - 16.0
-	_frame.offset_right = -16.0
-	_frame.offset_top = 84.0
-	_frame.grow_horizontal = Control.GROW_DIRECTION_BEGIN  # anything wider grows leftwards, onto the screen
+	_frame.offset_left = 16.0  # (stands under the hireling's portrait; _place moves it to a dock)
+	_frame.offset_top = 82.0
 	_frame_layer.add_child(_frame)
 
 	_toast = UIKit.label("", 16, Color(0.85, 0.95, 1.0))
@@ -96,6 +94,7 @@ func _process(_delta: float) -> void:
 	var show := Net.online() and scene != null and not scene is CharacterSelect
 	_frame_layer.visible = show
 	_pop_layer.visible = show
+	_place()
 	# A rift you're in already needs no asking
 	if not _invites.is_empty() and _invites[0].has("portal") and Net.instance == String(_invites[0].portal.inst):
 		_drop_portal_asks()
@@ -103,6 +102,33 @@ func _process(_delta: float) -> void:
 	if not _invites.is_empty() and Time.get_ticks_msec() - int(_invites[0].at) > Net.INVITE_TIMEOUT * 1000.0:
 		_invites.pop_front()
 		_show_invite()
+
+
+## A scene's left column (a VBox with the hireling's portrait first) makes room for the list: a spacer goes in
+## at `index` and the list stands on it, growing it to the list's height so what comes after moves down. A scene
+## with no column leaves the list where it starts, under the portrait's place.
+func dock(column: Container, index := 1) -> void:
+	if is_instance_valid(_dock):
+		_dock.queue_free()
+	_dock = Control.new()
+	_dock.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_dock.custom_minimum_size = Vector2(ROW_W, 0)
+	column.add_child(_dock)
+	column.move_child(_dock, mini(index, column.get_child_count() - 1))
+
+
+func _place() -> void:
+	_frame.visible = _frame.get_child_count() > 0
+	if is_instance_valid(_dock) and _dock.is_inside_tree():
+		var h := _frame.get_combined_minimum_size().y if _frame.visible else 0.0
+		if not is_equal_approx(_dock.custom_minimum_size.y, h):
+			_dock.custom_minimum_size.y = h
+		var at := _dock.global_position
+		_frame.offset_left = at.x
+		_frame.offset_top = at.y
+	else:
+		_frame.offset_left = 16.0
+		_frame.offset_top = 82.0
 
 
 ## A short line at the top of the screen for a few seconds.

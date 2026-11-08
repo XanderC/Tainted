@@ -9,6 +9,7 @@ var active := true
 
 
 func _ready() -> void:
+	add_to_group("rift_portals")  # (the minimap shows them)
 	z_index = -1  # flat on the ground, under characters
 
 

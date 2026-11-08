@@ -379,26 +379,19 @@ func _build_tabs() -> void:
 
 
 func _build() -> void:
-	_open_btn = UIKit.stone_button("🎒 BAG", Vector2(110, 56), 20)
+	# Icons, left of the minimap (HudLayout): the bag, then Options (zoom and your pet)
+	_open_btn = UIKit.stone_button("🎒", Vector2(48, 48), 26)
+	_open_btn.tooltip_text = "Bag (I)"
 	_open_btn.pressed.connect(open)
 	add_child(_open_btn)
-	_open_btn.anchor_left = 1.0
-	_open_btn.anchor_right = 1.0
-	_open_btn.offset_left = -126.0
-	_open_btn.offset_right = -16.0
-	_open_btn.offset_top = 16.0
-	_open_btn.offset_bottom = 72.0
+	HudLayout.place(_open_btn, "bag")
 
-	# Under BAG: the Options window (zoom). Like BAG, it goes while another window has the game paused.
-	_options_btn = UIKit.stone_button("⚙ OPTIONS", Vector2(110, 44), 15)
+	# Like the bag, it goes while another window has the game paused.
+	_options_btn = UIKit.stone_button("⚙", Vector2(48, 48), 28)
+	_options_btn.tooltip_text = "Options"
 	_options_btn.pressed.connect(func(): OptionsUI.open(self))
 	add_child(_options_btn)
-	_options_btn.anchor_left = 1.0
-	_options_btn.anchor_right = 1.0
-	_options_btn.offset_left = -126.0
-	_options_btn.offset_right = -16.0
-	_options_btn.offset_top = 80.0
-	_options_btn.offset_bottom = 124.0
+	HudLayout.place(_options_btn, "options")
 
 	_root = Control.new()
 	_root.visible = false

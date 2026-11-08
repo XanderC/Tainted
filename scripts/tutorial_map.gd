@@ -354,6 +354,7 @@ func _gem_card(id: String) -> Control:
 func _build_hud() -> void:
 	var layer := CanvasLayer.new()
 	add_child(layer)
+	Minimap.add(layer, self)
 	var joy := VirtualJoystick.new()
 	layer.add_child(joy)
 	joy.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)

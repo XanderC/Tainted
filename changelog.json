@@ -1,6 +1,15 @@
 [
 	{
 		"build": 0,
+		"title": "A minimap",
+		"notes": [
+			"A minimap in the top right corner shows where you've been, with you, the exits, the waypoint, people to talk to, things to use and the boss marked on it, and the monsters near you. Tap it (or press M) to see the whole map.",
+			"The bag and options are now icon buttons, to the left of the minimap, with the passives and town portal scroll beside them.",
+			"The party list is now on the left, under your hireling."
+		]
+	},
+	{
+		"build": 0,
 		"title": "Areas stay as you left them",
 		"notes": [
 			"When you leave an area by an exit, a waypoint or a town portal, it is still there when you come back: the monsters you killed stay dead and whatever lay on the ground is still lying there. An area only starts over when you leave the game.",

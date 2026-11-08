@@ -99,15 +99,15 @@ func _build_ui() -> void:
 	_window.custom_minimum_size = Vector2(370, 142)
 	_root.add_child(_window)
 
-	# Anchored to top-right, cleanly beneath the persistent BAG button (Y: 16-72)
+	# Anchored to top-right, cleanly beneath the minimap (HudLayout.BELOW_MAP)
 	_window.anchor_left = 1.0
 	_window.anchor_top = 0.0
 	_window.anchor_right = 1.0
 	_window.anchor_bottom = 0.0
 	_window.offset_left = -388
 	_window.offset_right = -16
-	_window.offset_top = 82
-	_window.offset_bottom = 228
+	_window.offset_top = HudLayout.BELOW_MAP
+	_window.offset_bottom = HudLayout.BELOW_MAP + 146
 
 	var win_sb := UIKit.window_box(14, Color(0.75, 1.0, 0.8))
 	_window.add_theme_stylebox_override("panel", win_sb)

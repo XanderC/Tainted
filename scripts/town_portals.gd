@@ -88,17 +88,12 @@ func refresh() -> void:
 ## A 🌀 button (top right of the screen, left of the menu's) reading a scroll in `scene`, with how
 ## many you have. G reads one too.
 static func add_button(layer: CanvasLayer, scene: Node) -> Button:
-	var b := UIKit.stone_button("", Vector2(120, 56), 18)
+	var b := UIKit.stone_button("", Vector2(88, 48), 17)
 	b.tooltip_text = "Read a Scroll of Town Portal (G): a portal to town opens where you stand, and your party can use it too"
 	b.focus_mode = Control.FOCUS_NONE
 	b.pressed.connect(func(): read_scroll(scene))
 	layer.add_child(b)
-	b.anchor_left = 1.0
-	b.anchor_right = 1.0
-	b.offset_left = -396.0
-	b.offset_right = -276.0
-	b.offset_top = 16.0
-	b.offset_bottom = 72.0
+	HudLayout.place(b, "scroll")
 	var count := func():
 		b.text = "🌀 ×%d" % GameState.tp_scrolls
 		b.modulate = Color.WHITE if GameState.tp_scrolls > 0 else Color(1, 1, 1, 0.55)

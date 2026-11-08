@@ -578,6 +578,26 @@ that is never used up: drink it from a flask slot and it goes on cooldown.
   instead of 12 times (`Coop`). Measure with `scratch/measure_density.tscn` (build time, frame time
   and a screenshot of a zone and a rift) and `scratch/count_packs.gd` (packs per map).
 
+### Minimap and the top of the screen
+- **Layout** (`HudLayout`): the minimap is in the top right corner (168 px square). Left of it, in one row
+  and in this order, are the bag and options as icon buttons (🎒 ⚙, `GameMenu`), then ✦ PASSIVES (`SkillTreeUI`),
+  then the town portal scroll (`TownPortals.add_button`; the 👥 character screen button in town). Put a control in
+  the row with `HudLayout.place(control, slot)`; anything else that sits at the right starts under
+  `HudLayout.BELOW_MAP` (the upgrade popup does).
+- **`Minimap`** (made by each scene's HUD with `Minimap.add(layer, scene)`; zones, rifts, the tutorial and town):
+  shows the map around the player, drawn only where they have been (cells within 12 of them are explored; what is
+  seen is kept on the scene as `meta "minimap"`, so a kept zone is as explored as you left it, and a rift's new maze
+  starts blank). Markers: the player's arrow, exits (purple rings), the waypoint (cyan diamond), people (yellow
+  dots), things to use (gold squares), town portals (blue rings), the boss (red) and the monsters near (small
+  red dots), each shown only once its place is explored. Tap it, or press M, for the whole map (opens under the button
+  row). Town has no maze: it shows the town's area and its people.
+- **The party list** (`PartyUI`) is on the left, under the hireling's portrait. A scene's left column (a VBox with the
+  portrait first) calls `Net.party_ui.dock(column)`: a spacer goes in under the portrait, the list stands on it and
+  the spacer grows to the list's height, so the zone title and quest tracker (rift: stats) move down. With no hireling
+  the list starts at the top of the column.
+- Test: `scratch/test_minimap.tscn` (windowed; checks nothing overlaps and all is on screen, exploring, the big map and
+  the party list's place; takes `scratch/minimap_*.png`).
+
 ### Kept zones
 - **A solo zone is kept as you leave it** (`ZoneInstances`, in memory only): leaving the Ashwood by an exit, a
   waypoint, a town portal or death takes the `Zone` scene out of the tree with its monsters, loot, bosses,

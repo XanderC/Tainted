@@ -27,7 +27,7 @@ func _ready() -> void:
 	var town = load("res://scenes/town.tscn").instantiate()
 	add_child(town)
 	await settle(0.6)
-	var btn := _find_button(town.menu, "OPTIONS")
+	var btn := _find_button(town.menu, "⚙")
 	btn.pressed.emit()
 	await settle(0.4)
 	var ui: Node = null

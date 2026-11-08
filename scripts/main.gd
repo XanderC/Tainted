@@ -78,19 +78,24 @@ func _ready() -> void:
 	bars.player = player
 	layer.add_child(bars)
 
-	var portrait := HirelingPortrait.new()  # your hireling, top left: tap for its equipment
-	portrait.position = Vector2(16, 10)
+	# The left column: your hireling, the party list under it (PartyUI.dock), then your stats and what you picked up
+	var left := VBoxContainer.new()
+	left.position = Vector2(16, 10)
+	left.add_theme_constant_override("separation", 6)
+	layer.add_child(left)
+	var portrait := HirelingPortrait.new()  # tap for its equipment
 	portrait.on_open = func(): menu.open("hireling")
-	layer.add_child(portrait)
+	left.add_child(portrait)
+	if Net.party_ui != null:
+		Net.party_ui.dock(left)
 	TownPortals.add_button(layer, self)
+	Minimap.add(layer, self)
 
 	hud = Label.new()
-	hud.position = Vector2(16, 80)
-	layer.add_child(hud)
+	left.add_child(hud)
 
 	drop_label = Label.new()
-	drop_label.position = Vector2(16, 190)
-	layer.add_child(drop_label)
+	left.add_child(drop_label)
 
 	death_label = Label.new()
 	death_label.text = "YOU DIED\nTap or press any key to return to town"

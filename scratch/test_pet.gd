@@ -102,7 +102,7 @@ func _ready() -> void:
 	check(GameState.pet == "bee", "an unknown pet is refused")
 
 	# The Options window steps through them
-	var btn := _find_button(zone.menu, "OPTIONS")
+	var btn := _find_button(zone.menu, "⚙")
 	btn.pressed.emit()
 	await settle(0.3)
 	var ui: Node = null

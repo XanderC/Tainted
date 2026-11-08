@@ -68,15 +68,10 @@ func toggle() -> void:
 
 
 func _build_ui() -> void:
-	_btn_open = UIKit.stone_button("✦ PASSIVES", Vector2(120, 56), 17)
+	_btn_open = UIKit.stone_button("✦ PASSIVES", Vector2(108, 48), 15)
 	_btn_open.pressed.connect(open)
 	add_child(_btn_open)
-	_btn_open.anchor_left = 1.0
-	_btn_open.anchor_right = 1.0
-	_btn_open.offset_left = -256.0
-	_btn_open.offset_right = -136.0
-	_btn_open.offset_top = 16.0
-	_btn_open.offset_bottom = 72.0
+	HudLayout.place(_btn_open, "passives")
 
 	_root = Control.new()
 	_root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)

@@ -120,6 +120,9 @@ func _ready() -> void:
 	var portrait := HirelingPortrait.new()  # your hireling, top left: tap for its equipment
 	portrait.on_open = func(): menu.open("hireling")
 	info.add_child(portrait)
+	if Net.party_ui != null:
+		Net.party_ui.dock(info)  # the party list stands under the portrait
+	Minimap.add(layer, self)
 	_hud = Label.new()
 	_hud.add_theme_font_size_override("font_size", 20)
 	_hud.add_theme_color_override("font_outline_color", Color.BLACK)
@@ -129,16 +132,11 @@ func _ready() -> void:
 	tracker.open_log.connect(func(): quest_log.open())
 	info.add_child(tracker)
 
-	_chars_btn = UIKit.stone_button("👥", Vector2(64, 56), 22)
+	_chars_btn = UIKit.stone_button("👥", Vector2(88, 48), 22)
 	_chars_btn.tooltip_text = "Character select"
 	_chars_btn.pressed.connect(_to_character_select)
 	layer.add_child(_chars_btn)
-	_chars_btn.anchor_left = 1.0
-	_chars_btn.anchor_right = 1.0
-	_chars_btn.offset_left = -336.0
-	_chars_btn.offset_right = -272.0
-	_chars_btn.offset_top = 16.0
-	_chars_btn.offset_bottom = 72.0
+	HudLayout.place(_chars_btn, "scroll")  # (where a zone has the town portal scroll)
 
 	_talk_btn = UIKit.stone_button("", Vector2(0, 0), 22)
 	_talk_btn.visible = false

@@ -31,7 +31,7 @@ func _ready() -> void:
 	check(is_equal_approx(cam.zoom.x, 0.75), "the camera starts at the saved zoom (%.2f)" % cam.zoom.x)
 
 	# The button under BAG
-	var btn := _find_button(town.menu, "OPTIONS")
+	var btn := _find_button(town.menu, "⚙")
 	check(btn != null and btn.visible, "an Options button is on screen")
 	btn.pressed.emit()
 	await settle()

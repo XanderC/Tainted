@@ -665,6 +665,9 @@ func _build_hud() -> void:
 	var portrait := HirelingPortrait.new()  # your hireling, top left: tap for its equipment
 	portrait.on_open = func(): menu.open("hireling")
 	info.add_child(portrait)
+	if Net.party_ui != null:
+		Net.party_ui.dock(info)  # the party list stands under the portrait
+	Minimap.add(layer, self)
 	var title := UIKit.label("%s   •   Area level %d" % [ActDB.zone_name(zone_id), area_level], 19, Color(1.0, 0.9, 0.6))
 	title.add_theme_color_override("font_outline_color", Color.BLACK)
 	title.add_theme_constant_override("outline_size", 6)
