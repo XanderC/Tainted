@@ -30,6 +30,7 @@ class Zone:
         self.keep_clear = []  # (cell, radius): no outcrops here
         self.roads = [["."] * cols for _ in range(rows)]  # the roads layer: "." none, "d" dirt path, "s" cobblestone
         self.lamp_cells = []  # cells of painted paths, in order, for lamp posts along them
+        self.water = [["."] * cols for _ in range(rows)]  # the water layer: "." none, "~" river, "=" bridge
 
     # ---- terrain ----
     def outcrops(self, count, rmin, rmax):
@@ -136,6 +137,65 @@ class Zone:
             y = min(max(y + step[1], 2), self.rows - 3)
         self.clear(b, width)
 
+    def river(self, points):
+        """A river a cell wide along straight segments between the (col, row) `points`, edge to edge for a map: its
+        cells are water in the water layer and walls in the grid (a bridge() makes a crossing)."""
+        cells = []
+        for a, b in zip(points, points[1:]):
+            x, y = a
+            while (x, y) != tuple(b):
+                cells.append((x, y))
+                x += (b[0] > x) - (b[0] < x)
+                y += (b[1] > y) - (b[1] < y)
+        cells.append(tuple(points[-1]))
+        for x, y in cells:
+            self.wall[y][x] = True
+            self.water[y][x] = "~"
+            self.roads[y][x] = "."
+        return cells
+
+    def bridge_near(self, cells, wanted):
+        """Makes a bridge of the river cell nearest `wanted` (col, row) where open ground lies on both banks, two cells deep, so
+        a road already carved there leads onto it. Returns the cell."""
+        best = None
+        for x, y in cells:
+            if 3 <= x < self.cols - 3 and not self.wall[y][x - 1] and not self.wall[y][x + 1] and not self.wall[y][x - 2] and not self.wall[y][x + 2] and not self.wall[y][x - 3] and not self.wall[y][x + 3]:
+                if self.wall[y - 1][x] and self.wall[y + 1][x] and self.water[y - 1][x] == "~" and self.water[y + 1][x] == "~":
+                    if best is None or math.dist((x, y), wanted) < math.dist(best, wanted):
+                        best = (x, y)
+        assert best is not None, "no place for a bridge near %s" % (wanted,)
+        self.bridge(best)
+        return best
+
+    def bridge(self, c):
+        """A river cell made a bridge: floor you can cross, with a deck over the water."""
+        assert self.water[c[1]][c[0]] == "~", c
+        self.wall[c[1]][c[0]] = False
+        self.water[c[1]][c[0]] = "="
+
+    def terrace(self, c, w, h, stairs, trees=True):
+        """Raised ground you can walk on (MazeMap._add_terraces): a footprint of w x h cells from c, a ring of wall (left,
+        right, top) round the floor, its bottom row the cliff face, with the columns `stairs` (counted from the footprint's
+        left) as steps down. The ring is lined with trees and rocks, so you see why you can't walk off the edge."""
+        x0, y0 = c
+        for y in range(y0, y0 + h):
+            for x in range(x0, x0 + w):
+                self.wall[y][x] = True
+                self.roads[y][x] = "."
+        for y in range(y0 + 1, y0 + h - 1):
+            for x in range(x0 + 1, x0 + w - 1):
+                self.wall[y][x] = False
+        for s in stairs:
+            self.wall[y0 + h - 1][x0 + s] = False
+        self.objects.append({"type": "terrace", "x": x0, "y": y0, "w": w, "h": h, "stairs": list(stairs)})
+        if trees:
+            ring = [(x, y0) for x in range(x0, x0 + w)] + [(x0, y) for y in range(y0 + 1, y0 + h - 1)] + [(x0 + w - 1, y) for y in range(y0 + 1, y0 + h - 1)]
+            for i, (x, y) in enumerate(ring):
+                if i % 2 == 0 or y == y0:
+                    self.prop("tree_" + str(self.rng.choice([1, 2, 3, 4, 6, 7, 8, 9, 10])), (x, y), dx=self.rng.uniform(0.3, 0.7), dy=self.rng.uniform(0.6, 0.95), scale=self.rng.uniform(0.5, 0.65))
+                else:
+                    self.prop("stones_" + str(self.rng.choice([1, 2, 3, 4, 5, 6])), (x, y), dx=0.5, dy=0.8, scale=0.45)
+
     def lamps(self, every=6, scale=0.45, sprite="decor_4"):
         """A lamp post at the edge of each painted path, every `every` cells along it, on whichever side is open."""
         for trail in self.lamp_cells:
@@ -210,6 +270,8 @@ class Zone:
                 "cell": CELL, "auto_decorate": True, "grid": grid, "objects": self.objects}
         if any(ch != "." for row in self.roads for ch in row):
             data["roads"] = ["".join(row) for row in self.roads]
+        if any(ch != "." for row in self.water for ch in row):
+            data["water"] = ["".join(row) for row in self.water]
         with open(os.path.join(MAPS, self.id + ".json"), "w") as f:
             json.dump(data, f, indent="\t")
         idx_path = os.path.join(MAPS, "index.json")
@@ -230,7 +292,7 @@ def dune_wastes():
     z = Zone("dune_wastes", "Blackroot Wilds", 70, 46, seed=2207, theme="woodland")
     start = (4, 23)
     waypoint = (16, 25)
-    lodge = (42, 11)
+    lodge = (46, 11)
     manor = (53, 34)
     gate_a, gate_b, gate_c = (10, 17), (11, 30), (17, 21)  # the packs by the road from the outpost (Chapter 1: clear the gate)
     glade = (30, 27)
@@ -250,6 +312,10 @@ def dune_wastes():
     z.road(waypoint, gate_a, 1)
     z.road(waypoint, gate_b, 1)
     z.road(lodge, fungus, 1)
+    # A river down the Wilds between the glade and the lodge and manor, crossed by two bridges (the roads use them)
+    river = z.river([(36, 0), (36, 20), (38, 20), (38, 45)])
+    bridge_a = z.bridge_near(river, (36, 14))
+    bridge_b = z.bridge_near(river, (38, 31))
     z.reachable_only(start)
 
     # The paths on the ground: one dirt road network (shared where it heads the same way), cobblestone where it
@@ -259,8 +325,8 @@ def dune_wastes():
         z.route(a, b, "d")
     z.plaza(start, 1)
     z.plaza(waypoint, 1)
-    z.plaza((lodge[0], lodge[1] + 1), 2)
-    z.plaza((manor[0], manor[1] + 1), 2)
+    z.plaza((lodge[0], lodge[1] + 1), 1)
+    z.plaza((manor[0], manor[1] + 1), 1)
     z.lamps()
 
     # The road from Oakhaven comes in on the west edge
@@ -270,6 +336,10 @@ def dune_wastes():
     z.add("waypoint", waypoint)
     z.prop("decor_9", (start[0] + 2, start[1] - 2), scale=0.5)  # signpost
     z.prop("decor_15", (start[0] + 2, start[1] + 2), scale=0.5, solid=True)  # the gate's last palisade
+    z.prop("decor_12", (36, 6), dx=0.5, dy=0.7, scale=0.4)  # a rotting boat on the river, and signposts at its bridges
+    z.prop("decor_12", (38, 38), dx=0.5, dy=0.7, scale=0.4)
+    z.prop("decor_9", (35, 14), dx=0.5, scale=0.5)
+    z.prop("decor_9", (37, 31), dx=0.5, scale=0.5)
     z.prop("decor_4", (start[0] + 1, start[1] - 1), dx=0.2, scale=0.45)  # lamp posts at the gate and the waypoint
     z.prop("decor_4", (start[0] + 1, start[1] + 1), dx=0.2, scale=0.45)
     z.prop("decor_4", (waypoint[0] - 1, waypoint[1] - 1), dx=0.3, scale=0.45)
@@ -338,5 +408,110 @@ def dune_wastes():
     z.save()
 
 
+def oakhaven():
+    """Oakhaven Outpost, the town (maps/oakhaven.json, read by scripts/town.gd): spread out, with room between its people.
+    A cobbled square in the middle with the campfire and the waypoint, dirt roads to each part: the west gate (the road
+    to the Blackroot Wilds), the smith, the sage and the dyer in the west, the market and the shrine between the square
+    and the river, a raised terrace in the north (up its stairs: the Battlemaster, the stash and the jeweler), and across
+    the river by the bridge the Rift Gate and the captain. The NPCs and the exits are markers (town.gd makes them); the
+    houses, lamps, trees and the rest are props. No monsters."""
+    z = Zone("oakhaven", "Oakhaven Outpost", 40, 30, seed=7123, theme="woodland")
+    spawn = (17, 21)
+    plaza = (17, 17)
+    z.border(2)
+    z.smooth(1)
+    z.clear((3, 17), 2)  # the west gate
+    for c, r in [(plaza, 6), (spawn, 3), (( 8, 14), 3), ((8, 22), 3), ((12, 25), 3), ((26, 14), 3), ((25, 21), 3), ((25, 26), 3),
+                 ((35, 15), 4), ((18, 7), 2), ((6, 18), 2)]:
+        z.clear(c, r)
+    # The river, edge to edge, with two bridges; the terrace in the north
+    z.river([(29, 0), (29, 13), (31, 13), (31, 29)])
+    z.bridge((31, 17))
+    z.terrace((11, 3), 15, 8, stairs=[6, 7])  # footprint x 11..25, y 3..10; steps at (17, 10) and (18, 10)
+    z.reachable_only(spawn)
+
+    # Roads and paths: dirt between the parts of the town, cobblestone where people stand
+    for a, b in [((3, 17), (13, 17)), ((20, 17), (30, 17)), ((32, 17), (34, 17)), ((34, 17), (35, 14)), ((17, 14), (17, 9)),
+                 ((17, 20), (17, 21)), ((10, 17), (8, 14)), ((10, 17), (8, 22)), ((10, 22), (12, 25)), ((23, 17), (26, 14)),
+                 ((22, 18), (25, 21)), ((22, 20), (25, 26)), ((17, 9), (13, 8)), ((17, 9), (23, 8)), ((29, 17), (31, 17))]:
+        z.route(a, b, "d")
+    z.plaza(plaza, 2)  # the square: 5 x 5 cobblestones, the rest dirt
+    z.plaza((35, 14), 1)  # the Rift Gate
+    z.plaza((3, 17), 1)  # the west gate
+    z.lamps(every=5)
+
+    # Markers: where the town's people stand and its exits (town.gd makes them)
+    for name, c in [("spawn", spawn), ("west_exit", (3, 17)), ("waypoint", (22, 18)), ("tp", (14, 21)), ("gate", (35, 14)),
+                    ("npc_blacksmith", (8, 14)), ("npc_dyer", (8, 22)), ("npc_sage", (12, 25)), ("npc_corwin", (7, 18)),
+                    ("npc_merchant", (26, 14)), ("npc_gambler", (25, 21)), ("npc_althea", (25, 26)),
+                    ("npc_stash", (18, 8)), ("npc_brom", (13, 8)), ("npc_jeweler", (23, 8)), ("npc_captain", (34, 17))]:
+        z.add("marker", c, id=name)
+
+    # The square: the fire, the banner, a signpost, lamps at the corners
+    z.prop("desert/decor_7", plaza, scale=0.6)
+    z.prop("decor_3", (15, 15), dx=0.3, scale=0.5)
+    z.prop("decor_9", (19, 20), scale=0.5)
+    z.prop("decor_10", (20, 15), dx=0.7, scale=0.42)
+    for c in [(13, 14), (21, 14), (13, 20), (21, 20)]:
+        z.prop("decor_4", c, dx=0.5, scale=0.45)
+    # The north terrace: the stash keeper's house, the jeweler's cottage, the Battlemaster's banner and a woodpile
+    z.prop("building_3", (18, 5), dy=0.95, scale=0.55, solid=True)
+    z.prop("building_6", (23, 5), dy=0.95, scale=0.45, solid=True)
+    z.prop("decor_3", (13, 6), dx=0.3, scale=0.5)
+    z.prop("decor_8", (14, 5), dx=0.6, scale=0.42, solid=True)
+    z.prop("decor_1", (16, 7), dx=0.5, scale=0.45)
+    z.prop("decor_1", (20, 7), dx=0.5, scale=0.45)
+    # The west: the smithy and its forge, a woodpile and rocks; the wagon by the gate road; the well and the pond
+    z.prop("building_5", (7, 12), dy=0.95, scale=0.55, solid=True)
+    z.prop("desert/decor_7", (10, 14), scale=0.45)
+    z.prop("decor_8", (5, 13), dx=0.5, scale=0.42, solid=True)
+    z.prop("stones_1", (5, 15), dx=0.5, scale=0.45)
+    z.prop("desert/decor_8", (6, 19), dx=0.5, scale=0.45, solid=True)
+    z.prop("decor_10", (8, 19), dx=0.3, scale=0.42)
+    z.prop("decor_10", (10, 23), dx=0.5, scale=0.4)
+    z.prop("building_7", (14, 26), dx=0.5, scale=0.5, solid=True)
+    z.prop("desert/lake", (4, 25), scale=0.75)
+    for dx, dy in [(-2, -1), (2, -1), (-1, 2), (3, 1)]:
+        z.prop("tree_" + str(z.rng.choice([2, 3, 5, 9])), (4 + dx, 25 + dy), scale=0.55)
+    # Between the square and the river: the merchant's house and stall, the gambler's tent, Althea's shrine of braziers
+    z.prop("building_1", (26, 11), dy=0.95, scale=0.5, solid=True)
+    z.prop("desert/decor_2", (23, 14), scale=0.42, solid=True)
+    z.prop("decor_4", (28, 15), dx=0.5, scale=0.45)
+    z.prop("desert/decor_2", (27, 22), scale=0.45, solid=True)
+    z.prop("desert/decor_8", (23, 23), scale=0.42, solid=True)
+    for dx, dy in [(-2, -1), (2, -1), (-2, 1), (2, 1)]:
+        z.prop("decor_4", (25 + dx, 26 + dy), dx=0.5, scale=0.45)
+    z.prop("stones_2", (25, 28), scale=0.5)
+    # Across the river: the watchtower by the Rift Gate, and lamps
+    z.prop("building_4", (37, 12), dy=0.95, scale=0.45, solid=True)
+    z.prop("decor_4", (33, 15), dx=0.5, scale=0.45)
+    z.prop("decor_4", (37, 16), dx=0.5, scale=0.45)
+    # Boats on the river, a signpost at the bridge, a few trees and rocks on the open ground (room to walk, not a thicket)
+    z.prop("decor_12", (29, 4), dx=0.5, dy=0.7, scale=0.4)
+    z.prop("decor_12", (31, 24), dx=0.5, dy=0.7, scale=0.4)
+    z.prop("decor_9", (32, 16), dx=0.4, scale=0.5)
+    keep = [plaza, spawn, (8, 14), (8, 22), (12, 25), (26, 14), (25, 21), (25, 26), (35, 14), (3, 17), (18, 8), (13, 8), (23, 8),
+            (7, 18), (22, 18), (14, 21), (34, 17), (4, 25), (7, 12), (26, 11), (37, 12)]
+    placed = 0
+    tries = 0
+    while placed < 34 and tries < 4000:
+        tries += 1
+        c = (z.rng.randrange(3, z.cols - 3), z.rng.randrange(3, z.rows - 3))
+        if not z.open_around(c, 1) or z.roads[c[1]][c[0]] != "." or z.water[c[1]][c[0]] != ".":
+            continue
+        if any(math.dist(c, k) < 5.5 for k in keep) or any(math.dist(c, (t["x"] // CELL, t["y"] // CELL)) < 1.2 for t in z.objects if t["type"] == "prop"):
+            continue
+        if any(t["type"] == "terrace" and t["x"] - 1 <= c[0] <= t["x"] + t["w"] and t["y"] - 1 <= c[1] <= t["y"] + t["h"] for t in z.objects):
+            continue
+        if z.rng.random() < 0.65:
+            z.prop("tree_" + str(z.rng.choice([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])), c, dx=z.rng.uniform(0.3, 0.7), dy=z.rng.uniform(0.6, 0.95), scale=0.6)
+        else:
+            z.prop("stones_" + str(z.rng.choice([1, 2, 3, 4, 5, 6])), c, dx=0.5, dy=0.8, scale=0.45)
+        placed += 1
+    z.add("start", spawn)
+    z.save("special")
+
+
 if __name__ == "__main__":
     dune_wastes()
+    oakhaven()

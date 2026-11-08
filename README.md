@@ -718,8 +718,8 @@ that is never used up: drink it from a flask slot and it goes on cooldown.
   lower than they were (zone shard chance 0.09, `CraftingDB.monster_drops` and `boss_drops`,
   the rift's horde chances).
 - **See-through scenery** (`PropFader`): a prop at least 60 x 90 px as drawn fades to 35% while the
-  player is behind it (above its base line and inside its picture). `SceneryMap` and `MazeMap`
-  register their props; register anything else with `PropFader.attach(parent, sprite)`.
+  player is behind it (above its base line and inside its picture). `MazeMap`
+  registers its props; register anything else with `PropFader.attach(parent, sprite)`.
 
 ### Socket gems and runes
 **Gems** are Diablo 3 style: five kinds (Ruby: Max Life, Topaz: Damage, Emerald: Attack Speed, Amethyst:
@@ -926,9 +926,21 @@ The packs are on the NAS (Tainted > assets > maps). To add a theme, put its zip 
 tropical) share one layout, so they work as they are; the dungeon, cave and city packs are drawn
 differently and would need their own wall pieces.
 
-`scripts/town_map.gd` (on `scripts/scenery_map.gd`) lays out Oakhaven by hand with the theme's
-pictures and scatters scenery round it (fixed seed); trunks and big rocks block movement, grass
-doesn't, and props are y-sorted with the characters.
+**Rivers and bridges** are a map's optional `"water"` layer (`.` none, `~` river, `=` bridge; `MazeMap._add_rivers`):
+a river a cell wide, drawn from the pack's two river pieces (`river`, a straight one flowing left to right, and
+`river_2`, a bend) turned to join the river cells beside each cell. River cells are walls in the grid, so nothing
+walks across them, monsters path round them and the minimap shows them blue, but a river does not stop an arrow
+(`line_clear`); a bridge cell is floor with a cobbled deck and rails across the river. `Zone.river`,
+`Zone.bridge_near` (a bridge where roads already cross the river) in `tools/gen_zones.py`.
+
+**Terraces** are raised ground you can walk on (`"terrace"` objects: x, y, w, h in cells, `stairs`: the columns of the
+bottom row that are steps; `MazeMap._add_terraces`). The grid makes them: a footprint of wall cells round the floor
+(left, right, top; the bottom row is the cliff face) with the steps' cells left as floor, so you can only climb by the
+steps. They are drawn with the plateau pieces undarkened (`assets/tiles/<theme>/terrace/`, made by
+`tools/import_tilesets.py` beside `walls/`), by `WallTiles` as a wall is, with the pack's stairs piece (`land_13`) in the
+gaps; `Zone.terrace` lines the ring with trees and rocks so it is plain why you can't step off. Walls, decoration and
+the minimap treat them as the grid says. Test: `scratch/test_terrain.tscn`.
+
 Licence: `assets/tiles/<theme>/LICENSE_craftpix.txt`; check craftpix.net/file-licenses.
 
 ## Dungeon instance (scripts/dungeon_run.gd)
@@ -974,7 +986,7 @@ A **Scroll of Identify** (a currency in the stash, dropped by monsters and bosse
 Merchant) identifies one item, anywhere: tap the item and press Identify on its card. The **Sage** in town identifies
 everything in your bag and stash at once, free. Flasks and Normal items are always identified.
 
-## Town: Oakhaven Outpost (scenes/town.tscn, scripts/town.gd, town_map.gd)
+## Town: Oakhaven Outpost (scenes/town.tscn, scripts/town.gd, maps/oakhaven.json)
 
 The game starts here, and you return here after a dungeon (leaving, or dying). Walk up to an NPC
 and tap the Talk button at the bottom (or press E):
@@ -986,5 +998,13 @@ and tap the Talk button at the bottom (or press E):
 - **Dungeon Gate** (east, by the pyramid): starts a dungeon instance.
 
 You can't fight in town (`player.can_fight = false`). To add an NPC, add a `_add_npc(...)` line in `town.gd`
-with a position, the gear it wears, and what it opens. To change the layout, edit `_layout()` in `town_map.gd`.
+with a position, the gear it wears, and what it opens. The town is a map like the zones (`maps/oakhaven.json`, made by `oakhaven()` in `tools/gen_zones.py`, drawn by `MazeMap`):
+spread out, with at least four cells (512 px) between any two people. A cobbled square in the middle with the
+campfire, banner and waypoint; dirt roads and lamp posts to each part; the smith, the sage, the dyer and Corwin in the
+west; the merchant, the gambler and Althea's lamp-ringed shrine between the square and the river; a raised terrace in
+the north, up its stairs, for the Battlemaster, the stash and the jeweler; and across the river by the bridge the Rift
+Gate and Captain Rourke. The people and exits are `marker` objects (`npc_blacksmith`, `waypoint`, `gate`, `west_exit`,
+`tp` for the town portal, `spawn`, ...) that `town.gd` reads with `spot(id)`, so to move someone edit the generator and
+run `python tools/gen_zones.py` (rerunning it rewrites the Blackroot Wilds too: edits made in the map editor are lost).
+The minimap shows the whole town (`reveal_all`).
 Crafting and stash screens are only reachable from these NPCs.

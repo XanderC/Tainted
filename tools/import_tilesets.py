@@ -150,8 +150,10 @@ def tinted(a, tint):
     return out
 
 
-def make_walls(folder, tint):
-    out_dir = os.path.join(folder, "walls")
+def make_walls(folder, tint, set_name="walls"):
+    """The wall pieces in `folder/<set_name>/`: the plateau darkened by `tint` (walls: out of bounds), or with tint (1, 1, 1)
+    in `terrace` (raised ground you can walk on: MazeMap's terraces)."""
+    out_dir = os.path.join(folder, set_name)
     os.makedirs(out_dir, exist_ok=True)
     middle = arr(folder, "land_6")
     p = {name: on_surface(arr(folder, src), middle, sides) for name, (src, sides) in PLATEAU.items()}
@@ -189,7 +191,7 @@ def make_walls(folder, tint):
         ledge[:h, :, 3] = np.maximum(strip[..., 3], c[:h, :, 3])
         ledge[:STRIP_TOP, :, 3] = strip[:STRIP_TOP, :, 3]  # open floor above the strip's outline
         save(ledge, os.path.join(out_dir, "ledge" + end + ".png"))
-    print("  walls/: edges top %.0f, left %.0f, right %.0f, lip %.0f px in" % (t, lft, rgt, b))
+    print("  %s/: edges top %.0f, left %.0f, right %.0f, lip %.0f px in" % (set_name, t, lft, rgt, b))
 
 
 def main():
@@ -203,6 +205,7 @@ def main():
         print(theme)
         extract(os.path.join(args.src, zip_name), out)
         make_walls(out, tint)
+        make_walls(out, (1.0, 1.0, 1.0), "terrace")  # the same pieces undarkened, for terraces you can stand on
 
 
 if __name__ == "__main__":

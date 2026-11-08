@@ -1,6 +1,16 @@
 [
 	{
 		"build": 0,
+		"title": "A new Oakhaven Outpost",
+		"notes": [
+			"Oakhaven Outpost is rebuilt and much less crowded: a cobbled square with the campfire and the waypoint, dirt roads and lamp posts to each part of the town, and room around everyone. The smith, the sage, the dyer and Corwin are in the west, the merchant, the gambler and Althea between the square and the river, and the Rift Gate and Captain Rourke are across the river by the bridge.",
+			"A river now runs through the town, and a raised terrace in the north holds the Battlemaster, the Stash Keeper and the Jeweler: climb the steps to reach them.",
+			"The Blackroot Wilds gets a river too, with two bridges, one of them on the way to the hunting lodge.",
+			"Maps can now have rivers with bridges, and raised terraces with stairs, so the next zones can have more depth."
+		]
+	},
+	{
+		"build": 0,
 		"title": "Roads and lamp posts in the Wilds",
 		"notes": [
 			"The Blackroot Wilds now has dirt roads leading from the gate to the waypoint, the glade, the hunting lodge and the ruined manor, cobblestone where they arrive, and lamp posts along them.",

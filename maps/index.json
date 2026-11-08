@@ -8,6 +8,10 @@
 			"kind": "story",
 			"name": "Blackroot Wilds"
 		},
+		"oakhaven": {
+			"kind": "special",
+			"name": "Oakhaven Outpost"
+		},
 		"scorched_halls": {
 			"kind": "rift",
 			"name": "Scorched Halls"

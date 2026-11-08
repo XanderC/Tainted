@@ -33,13 +33,9 @@ func _ready() -> void:
 	for i in SHOTS.size():
 		var s: Array = SHOTS[i]
 		var m: Node2D
-		if s[0] == "town":
-			m = TownMap.new()
-			cam.position = s[1] * 128.0
-		else:
-			m = MazeMap.new()
-			m.setup(s[0])
-			cam.position = s[1] * MazeMap.CELL
+		m = MazeMap.new()
+		m.setup("oakhaven" if s[0] == "town" else s[0])
+		cam.position = s[1] * MazeMap.CELL
 		add_child(m)
 		cam.zoom = Vector2(s[2], s[2])
 		for f in 6:

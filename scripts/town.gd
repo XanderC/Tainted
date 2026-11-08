@@ -9,18 +9,23 @@ extends Node2D
 ## and your party's) stand by the square, back to where they were read.
 
 const DUNGEON_SCENE := "res://scenes/main.tscn"
-const SPAWN := Vector2(0, 360)
-const WEST_EXIT := Vector2(-940, 620)  # the road out to the Blackroot Wilds
-const WEST_EXIT_ZONE := "dune_wastes"
-const WAYPOINT := Vector2(260, 300)
-const PORTAL := Vector2(-80, 470)  # where an open town portal stands
-const DYER := Vector2(-410, 40)  # the Dyer, between the Blacksmith's and the Sage's
-const CAPTAIN := Vector2(560, 120)
-const GAMBLER := Vector2(390, 30)  # Lucky Mott, between the Jeweler and the Captain  # the Mercenary Captain, by the road east to the Rift Gate
+const MAP := "oakhaven"  # the town's map (maps/oakhaven.json, from tools/gen_zones.py): its markers say where everything stands
+const WEST_EXIT_ZONE := "dune_wastes"  # the road out of the west gate: the Blackroot Wilds
 const EXIT_REACH := 70.0
 
 const UpgradePopupUIScript = preload("res://scripts/upgrade_popup_ui.gd")
 
+var maze: MazeMap  # the town's ground, river, terrace and walls
+var reveal_all := true  # the minimap shows the whole town (Minimap)
+# Where things stand (the map's markers, in world px)
+var spawn := Vector2.ZERO
+var west_exit := Vector2.ZERO  # the road out to the Blackroot Wilds
+var waypoint := Vector2.ZERO
+var portal := Vector2.ZERO  # where an open town portal stands
+var dyer := Vector2.ZERO
+var captain := Vector2.ZERO
+var gambler := Vector2.ZERO
+var gate := Vector2.ZERO  # the Rift Gate
 var player: Player
 var menu: GameMenu  # character screen + inventory / vendor panels
 var skill_tree_ui: SkillTreeUI
@@ -42,7 +47,17 @@ var _leaving := false
 
 func _ready() -> void:
 	y_sort_enabled = true
-	add_child(TownMap.new())
+	maze = MazeMap.new()
+	maze.setup(MAP)
+	add_child(maze)
+	spawn = spot("spawn")
+	west_exit = spot("west_exit")
+	waypoint = spot("waypoint")
+	portal = spot("tp")
+	dyer = spot("npc_dyer")
+	captain = spot("npc_captain")
+	gambler = spot("npc_gambler")
+	gate = spot("gate")
 	add_child(NetPresence.new())  # online: everyone else in town (Net.TOWN)
 
 	player = Player.new()
@@ -52,46 +67,46 @@ func _ready() -> void:
 	add_child(player)
 	player.item_dropped.connect(_on_item_dropped)
 	var cam := GameCamera.make()
-	cam.limit_left = int(TownMap.CAM_LIMIT.position.x)
-	cam.limit_right = int(TownMap.CAM_LIMIT.end.x)
-	cam.limit_top = int(TownMap.CAM_LIMIT.position.y)
-	cam.limit_bottom = int(TownMap.CAM_LIMIT.end.y)
+	cam.limit_left = 0
+	cam.limit_right = int(maze.cols * MazeMap.CELL)
+	cam.limit_top = 0
+	cam.limit_bottom = int(maze.rows * MazeMap.CELL)
 	player.add_child(cam)
 
-	_add_npc("Blacksmith", "Craft", Vector2(-560, -205), "blacksmith", "Talk to the Blacksmith", func(): menu.open_vendor("smith"))
-	_add_npc("Merchant", "Buy & Sell", Vector2(580, -185), "merchant", "Talk to the Merchant", func(): menu.open_vendor("shop"))
-	_add_npc("Stash Keeper", "Shared Storage", Vector2(0, -270), "stash_keeper", "Open the Stash", func(): menu.open_vendor("stash"))
-	_add_npc("Battlemaster Brom", "Passive Tree", Vector2(-240, -160), "battlemaster", "Open the Passive Tree", func(): skill_tree_ui.open())
-	_add_npc("Jeweler", "Skills & Gems", Vector2(280, -175), "jeweler", "Talk to the Jeweler", func(): menu.open_vendor("jeweler"))
-	_add_npc("Sage Aldous", "Identify", Vector2(-600, 150), "sage", "Talk to the Sage", _identify_all)
-	_add_npc("Merchant Corwin", "In a hurry", Vector2(-330, 250), "caravan_master", "Talk to Corwin",
+	_add_npc("Blacksmith", "Craft", spot("npc_blacksmith"), "blacksmith", "Talk to the Blacksmith", func(): menu.open_vendor("smith"))
+	_add_npc("Merchant", "Buy & Sell", spot("npc_merchant"), "merchant", "Talk to the Merchant", func(): menu.open_vendor("shop"))
+	_add_npc("Stash Keeper", "Shared Storage", spot("npc_stash"), "stash_keeper", "Open the Stash", func(): menu.open_vendor("stash"))
+	_add_npc("Battlemaster Brom", "Passive Tree", spot("npc_brom"), "battlemaster", "Open the Passive Tree", func(): skill_tree_ui.open())
+	_add_npc("Jeweler", "Skills & Gems", spot("npc_jeweler"), "jeweler", "Talk to the Jeweler", func(): menu.open_vendor("jeweler"))
+	_add_npc("Sage Aldous", "Identify", spot("npc_sage"), "sage", "Talk to the Sage", _identify_all)
+	_add_npc("Merchant Corwin", "In a hurry", spot("npc_corwin"), "caravan_master", "Talk to Corwin",
 		func(): dialogue.open("corwin"), "corwin")
 	var althea_look := Appearance.default_look("female")
 	althea_look["hair_color"] = "white"
-	_add_npc("High Priestess Althea", "Wards", Vector2(430, 270), "", "Talk to Althea", func(): dialogue.open("althea"), "althea",
+	_add_npc("High Priestess Althea", "Wards", spot("npc_althea"), "", "Talk to Althea", func(): dialogue.open("althea"), "althea",
 		{"helmet": ["leather_cap", "ivory"], "chest": ["padded_vest", "ivory"]}, althea_look)
-	_add_npc("Captain Rourke", "Hirelings", CAPTAIN, "", "Talk to the Captain", func(): hire_ui.open(), "captain",
+	_add_npc("Captain Rourke", "Hirelings", captain, "", "Talk to the Captain", func(): hire_ui.open(), "captain",
 		{"weapon": "war_sword", "helmet": "iron_helm", "chest": "chain_mail", "offhand": "kite_shield"})
 	var dyer_look := Appearance.default_look("female")
 	dyer_look["hair_color"] = "ginger"
-	_add_npc("Dyer Calla", "Dyes & Looks", DYER, "", "Talk to the Dyer", func(): dye_ui.open(), "dyer",
+	_add_npc("Dyer Calla", "Dyes & Looks", dyer, "", "Talk to the Dyer", func(): dye_ui.open(), "dyer",
 		{"helmet": ["leather_cap", "teal"], "chest": ["padded_vest", "rose"]}, dyer_look)
 	var gambler_look := Appearance.default_look("male")
 	gambler_look["hair_color"] = "black"
 	gambler_look["beard"] = "thick"
 	gambler_look["beard_color"] = "black"
-	_add_npc("Lucky Mott", "Gambler", GAMBLER, "", "Talk to the Gambler", func(): menu.open_vendor("gamble"), "gambler",
+	_add_npc("Lucky Mott", "Gambler", gambler, "", "Talk to the Gambler", func(): menu.open_vendor("gamble"), "gambler",
 		{"helmet": "wide_brim_hat", "chest": ["medieval_king_armour", "blood"], "shoulders": "gilded_pauldrons"}, gambler_look)
-	_add_gate(Vector2(820, 220))
-	_add_exit(WEST_EXIT, WEST_EXIT_ZONE, "town", "→ " + ActDB.zone_name(WEST_EXIT_ZONE))
+	_add_gate(gate)
+	_add_exit(west_exit, WEST_EXIT_ZONE, "town", "→ " + ActDB.zone_name(WEST_EXIT_ZONE))
 	if String(GameState.town_portal.get("kind", "")) == "rift" and String(GameState.town_portal.get("inst", "")) == "" \
 			and not TownPortals.leads_back(GameState.town_portal):
 		TownPortals.close_mine()  # a solo rift's, not gone back to before it ended
 	var portals := TownPortals.new()
 	portals.place = {"kind": "town"}
-	portals.town_at = PORTAL
+	portals.town_at = portal
 	add_child(portals)
-	_add_waypoint(WAYPOINT)
+	_add_waypoint(waypoint)
 
 	var layer := CanvasLayer.new()
 	add_child(layer)
@@ -393,13 +408,22 @@ func _add_npc(title: String, subtitle: String, pos: Vector2, skin: String, promp
 	npc.add_child(name_l)
 
 
+## Where a marker of the town's map stands (world px).
+func spot(id: String) -> Vector2:
+	var spots: Array = maze.markers.get(id, [])
+	if spots.is_empty():
+		push_error("the town's map has no marker " + id)
+		return maze.start_pos
+	return spots[0]
+
+
 ## Where you appear: at the waypoint, the town portal, the road back from a zone, or the usual spot.
 func _arrival() -> Vector2:
 	match GameState.zone_entry:
-		"waypoint": return WAYPOINT + Vector2(0, 90)
-		"portal": return PORTAL + Vector2(0, -110)
-		WEST_EXIT_ZONE: return WEST_EXIT + Vector2(150, 0)
-	return SPAWN
+		"waypoint": return waypoint + Vector2(0, 90)
+		"portal": return portal + Vector2(0, -110)
+		WEST_EXIT_ZONE: return west_exit + Vector2(150, 0)
+	return spawn
 
 
 ## A way out of town: walk into it (target zone, and where to arrive there).

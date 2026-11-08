@@ -13,6 +13,7 @@ const REVEAL := 12  ## cells round the player that are explored
 const BIG := Vector2(480, 280)  ## the whole-map view: under the row of buttons
 const FLOOR := Color(0.60, 0.53, 0.38, 0.9)
 const WALL := Color(0.17, 0.14, 0.12, 0.95)
+const WATER := Color(0.25, 0.48, 0.80, 0.95)
 
 ## What has been seen of one maze (kept on the scene).
 class Memory:
@@ -109,7 +110,7 @@ func _refresh() -> void:
 			var i: int = y * maze.cols + x
 			if _mem.seen[i] == 0:
 				_mem.seen[i] = 1
-				_mem.img.set_pixel(x, y, WALL if maze.is_wall(Vector2i(x, y)) else FLOOR)
+				_mem.img.set_pixel(x, y, _cell_color(maze, x, y))
 				changed = true
 	if changed:
 		_tex.update(_mem.img)
@@ -129,8 +130,18 @@ func _bind(maze) -> void:
 		_mem.maze = maze
 		_mem.seen.resize(maze.cols * maze.rows)
 		_mem.img = Image.create(maze.cols, maze.rows, false, Image.FORMAT_RGBA8)
+		if scene.get("reveal_all") == true:  # the town: all of it is known
+			_mem.seen.fill(1)
+			for y in maze.rows:
+				for x in maze.cols:
+					_mem.img.set_pixel(x, y, _cell_color(maze, x, y))
 		scene.set_meta("minimap", _mem)
 	_tex = ImageTexture.create_from_image(_mem.img)
+
+
+func _cell_color(maze: MazeMap, x: int, y: int) -> Color:
+	var c := Vector2i(x, y)
+	return WATER if maze.is_water(c) else (WALL if maze.is_wall(c) else FLOOR)
 
 
 func _seen_at(pos: Vector2) -> bool:
@@ -162,9 +173,8 @@ func _set_view(p: Node2D) -> void:
 			_k = s / cell
 			_origin = size * 0.5 - p.global_position * _k
 	else:
-		var r := TownMap.CAM_LIMIT
-		_k = minf(size.x / r.size.x, size.y / r.size.y) * 0.92
-		_origin = size * 0.5 - (r.position + r.size * 0.5) * _k
+		_k = 0.05
+		_origin = size * 0.5 - p.global_position * _k
 
 
 func _draw() -> void:
@@ -174,9 +184,6 @@ func _draw() -> void:
 		_set_view(p)
 		if _mem != null and _tex != null:
 			draw_texture_rect(_tex, Rect2(_origin, Vector2(_mem.maze.cols, _mem.maze.rows) * MazeMap.CELL * _k), false)
-		elif _mem == null:
-			var r := TownMap.CAM_LIMIT
-			draw_rect(Rect2(_w2m(r.position), r.size * _k), Color(0.30, 0.36, 0.20, 0.55))
 		_draw_markers(p)
 		_draw_player(p)
 	var edge := Color(0.78, 0.62, 0.34, 0.95)

@@ -6,6 +6,7 @@ extends RefCounted
 ##   "format": 1, "id": "tutorial", "name": "Tutorial", "kind": "rift" | "story" | "special",
 ##   "theme": "desert", "cell": 128, "auto_decorate": true,
 ##   "grid": ["#####", "#...#", ...],          # "#" wall, "." floor; every row the same width
+##   "water": ["..~..", ...],                 # optional, same size: "~" river (also "#" in the grid), "=" bridge (floor): MazeMap draws it
 ##   "roads": ["..dd.", ...],                 # optional, same size: paths on the ground (RoadTiles): "d" dirt, "s" cobblestone
 ##   "objects": [                               # x, y in world pixels
 ##     {"type": "start", "x", "y"},             # where the player appears
@@ -18,6 +19,7 @@ extends RefCounted
 ##     {"type": "trigger", "x", "y", "radius", "id", "text"},   # a story event when the player walks in
 ##     {"type": "waypoint", "x", "y"},                           # story zones: the zone's waypoint
 ##     {"type": "boss", "x", "y", "id", "name", "kind", "skin", "hp", "size"},  # a quest boss
+##     {"type": "terrace", "x", "y", "w", "h", "stairs": [col, ...]},  # raised walkable ground: cells, see MazeMap._add_terraces
 ##     {"type": "quest_object", "x", "y", "id", "sprite", "scale", "prompt", "text"}  # used for a quest
 ##   ]
 ## }
@@ -25,7 +27,7 @@ extends RefCounted
 const DIR := "res://maps/"
 const FORMAT := 1
 const KINDS := ["rift", "story", "special"]
-const OBJECT_TYPES := ["start", "portal", "pack", "marker", "prop", "tile", "npc", "trigger", "waypoint", "boss", "quest_object"]
+const OBJECT_TYPES := ["start", "portal", "pack", "marker", "prop", "tile", "npc", "trigger", "waypoint", "boss", "quest_object", "terrace"]
 
 static var _cache := {}
 

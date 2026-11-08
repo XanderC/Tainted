@@ -11,7 +11,7 @@ func _ready() -> void:
 	var town = load("res://scenes/town.tscn").instantiate()
 	add_child(town)
 	await get_tree().process_frame
-	town.player.global_position = town.GAMBLER + Vector2(-150, 60)
+	town.player.global_position = town.gambler + Vector2(-150, 60)
 	for i in 20:
 		await get_tree().process_frame
 	get_viewport().get_texture().get_image().save_png(out + "gambler_npc.png")

@@ -27,7 +27,7 @@ func _ready() -> void:
 	p.equip_to(item("chain_mail"), "chest", true)
 	p.inventory_changed.emit()
 
-	p.global_position = town.DYER + Vector2(110, 70)
+	p.global_position = town.dyer + Vector2(110, 70)
 	await _shot("dyer")
 
 	town.dye_ui.open()

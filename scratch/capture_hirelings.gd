@@ -36,7 +36,7 @@ func _ready() -> void:
 	p.inventory_changed.emit()
 
 	# The Captain in town
-	p.global_position = town.CAPTAIN + Vector2(-120, 60)
+	p.global_position = town.captain + Vector2(-120, 60)
 	await _shot("captain")
 
 	# Hiring
