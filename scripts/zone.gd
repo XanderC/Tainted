@@ -8,6 +8,7 @@ extends Node2D
 const SCENE := "res://scenes/zone.tscn"
 const PACK_AGGRO := 520.0
 const CELLS_PER_PACK := 10.0 # a zone gets about one monster pack per this many floor cells (PackSpots)
+const ARENA_CLEAR := 400.0  # no ordinary pack within this beyond a boss arena's ring (see _in_boss_arena)
 const EXIT_REACH := 70.0
 const WAYPOINT_REACH := 110.0
 const ITEM_DROP_CHANCE := 0.10  # a normal monster's chance to drop an item (elites always do)
@@ -33,6 +34,7 @@ var _waypoint: Interactable = null
 var _triggers: Array = []  # trigger objects not yet walked into this visit
 var _quest_objects: Array = []  # [{"node", "id"}]
 var _boss: Enemy = null
+var _boss_bar: BossBar  ## its name, health and what it shouts (BossBar), for a boss with an entry in BossDB
 var _talk_btn: Button
 var _toast: Label
 var _boss_lbl: Label
@@ -174,7 +176,7 @@ func coop_copy(e: Enemy, _d: Dictionary) -> void:
 	var boss_id := String(e.get_meta("boss_id", ""))
 	if e.is_boss and boss_id != "":
 		e.died.connect(func(at: Vector2): _on_boss_died(e, boss_id, at))
-		_boss = e
+		_setup_boss(e, boss_id)
 	else:
 		e.died.connect(func(at: Vector2): _on_monster_died(e, at))
 
@@ -300,7 +302,7 @@ func _spawn_packs() -> void:
 		if not MonsterKinds.KINDS.has(kind):
 			kind = pool[rng.randi() % pool.size()]
 		var at := Vector2(float(o.x), float(o.y))
-		if at.distance_to(maze.start_pos) < 400.0:
+		if at.distance_to(maze.start_pos) < 400.0 or _in_boss_arena(at):
 			continue
 		var n := randi_range(int(o.get("min", 3)), int(o.get("max", 5)))
 		var lead := MonsterAffix.roll_tier(area_level)
@@ -308,6 +310,18 @@ func _spawn_packs() -> void:
 		for j in n:
 			_spawn_enemy(at + Vector2(randf_range(-50, 50), randf_range(-50, 50)), pack, kind,
 				lead if j == 0 else MonsterAffix.Tier.NORMAL)
+
+
+## Whether `at` is in (or close enough to wake into) the arena of a boss still to be fought: its fight is
+## its own, without the ordinary packs round it joining in from the ring's edge.
+func _in_boss_arena(at: Vector2) -> bool:
+	for o in MapData.objects_of(maze.data, "boss"):
+		var id := String(o.get("id", ""))
+		if BossDB.has(id) and Quests.boss_alive(id):
+			var reach := float(BossDB.def(id).get("arena", 560.0)) + ARENA_CLEAR
+			if at.distance_to(Vector2(float(o.x), float(o.y))) < reach:
+				return true
+	return false
 
 
 func _spawn_enemy(pos: Vector2, pack: String, kind: String, tier: int) -> Enemy:
@@ -335,7 +349,9 @@ func _spawn_boss(o: Dictionary) -> void:
 	b.position = Vector2(float(o.x), float(o.y))
 	b.target = player
 	b.maze = maze
-	b.aggro_range = 600.0
+	var boss_id := String(o.get("id", ""))
+	# A boss with a fight of its own wakes inside its arena: at four fifths of the ring's radius
+	b.aggro_range = float(BossDB.def(boss_id).get("arena", 750.0)) * 0.8 if BossDB.has(boss_id) else 600.0
 	b.is_boss = true
 	b.size_mult = float(o.get("size", 1.5))
 	b.max_hp = 25.0 * DungeonRun.hp_mult(area_level)
@@ -343,20 +359,54 @@ func _spawn_boss(o: Dictionary) -> void:
 	b.speed *= DungeonRun.speed_mult(area_level)
 	b.set_kind(String(o.get("kind", "zombie")))
 	b.max_hp *= float(o.get("hp", 8.0))
+	if BossDB.has(boss_id):
+		b.max_hp *= float(BossDB.def(boss_id).get("hp", 1.0))
 	b.touch_damage *= 1.4
 	b.display_name = String(o.get("name", "Boss"))
 	if o.has("skin"):
 		b.skin = String(o["skin"])
-	var boss_id := String(o.get("id", ""))
 	b.set_meta("boss_id", boss_id)  # a party's copies know which quest boss it is
 	b.died.connect(func(at: Vector2): _on_boss_died(b, boss_id, at))
 	add_child(b)
+	_setup_boss(b, boss_id)
+	BossBrain.attach(b, boss_id)  # (nothing for a boss with no entry in BossDB: it keeps its slam)
+
+
+## Makes `b` this zone's boss: its health bar, and for one with a fight of its own the ring that seals
+## round it. Both the real boss and a party's copy of it come here; only the real one gets a brain.
+func _setup_boss(b: Enemy, boss_id: String) -> void:
 	_boss = b
+	_attach_boss_bar()
+	if not BossDB.has(boss_id):
+		return
+	var home := b.global_position
+	for o in MapData.objects_of(maze.data, "boss"):
+		if String(o.get("id", "")) == boss_id:
+			home = Vector2(float(o.x), float(o.y))  # where it stands asleep, whenever this copy was made
+	var arena := BossArena.new()
+	arena.boss = b
+	arena.player = player
+	arena.radius = float(BossDB.def(boss_id).get("arena", 560.0))
+	arena.position = home
+	add_child(arena)
+
+
+func _attach_boss_bar() -> void:
+	if _boss_bar != null and is_instance_valid(_boss):
+		_boss_bar.setup(_boss, String(_boss.get_meta("boss_id", "")))
+
+
+## One of a boss's adds (BossBrain): a monster of `kind` at this zone's area level, awake at once.
+func spawn_add(kind: String, at: Vector2) -> Enemy:
+	var e := _spawn_enemy(at, "bossadd", kind if MonsterKinds.KINDS.has(kind) else "zombie", MonsterAffix.Tier.NORMAL)
+	e.add_to_group("boss_adds")
+	e.wake()
+	return e
 
 
 func _on_boss_died(b: Enemy, boss_id: String, at: Vector2) -> void:
 	Quests.notify("kill_boss", boss_id)
-	_drop_boss_loot(at)
+	_drop_boss_loot(at, boss_id)
 	_flash("%s is slain!" % b.display_name, Color(1.0, 0.6, 0.4))
 
 
@@ -373,12 +423,22 @@ func _on_monster_died(e: Enemy, at: Vector2) -> void:
 		spawn_currency("scroll", "town_portal", 1, at)
 
 
-func _drop_boss_loot(at: Vector2) -> void:
-	_drop_item(LootGenerator.roll_item(area_level + 2, ItemInstance.Rarity.RARE), at)
-	_drop_item(LootGenerator.roll_item(area_level + 2, ItemInstance.Rarity.MAGIC), at + Vector2(50, 20))
-	CurrencyPickup.add_to_bundle(self, "Currency", ["orb", "alteration", 1], at)
-	CurrencyPickup.add_to_bundle(self, "Currency", ["orb", "transmute", 2], at)
-	spawn_currency("scroll", "town_portal", 2, at)
+func _drop_boss_loot(at: Vector2, boss_id := "") -> void:
+	var loot: Dictionary = BossDB.def(boss_id).get("loot", {}) if BossDB.has(boss_id) else {}
+	if loot.is_empty():
+		loot = {"rares": 1, "magics": 1, "orbs": {"alteration": 1, "transmute": 2}, "scrolls": 2}
+	var n := 0
+	for i in int(loot.get("rares", 1)):
+		_drop_item(LootGenerator.roll_item(area_level + 2, ItemInstance.Rarity.RARE), at + Vector2.from_angle(TAU * n / 5.0) * 40.0)
+		n += 1
+	for i in int(loot.get("magics", 1)):
+		_drop_item(LootGenerator.roll_item(area_level + 2, ItemInstance.Rarity.MAGIC), at + Vector2.from_angle(TAU * n / 5.0) * 40.0)
+		n += 1
+	var orbs: Dictionary = loot.get("orbs", {})
+	for orb_id in orbs:
+		CurrencyPickup.add_to_bundle(self, "Currency", ["orb", orb_id, int(orbs[orb_id])], at)
+	if int(loot.get("scrolls", 0)) > 0:
+		spawn_currency("scroll", "town_portal", int(loot.scrolls), at)
 
 
 func _drop_item(item: ItemInstance, at: Vector2) -> void:
@@ -464,7 +524,9 @@ func _process(_delta: float) -> void:
 	_talk_btn.visible = _near != null and not get_tree().paused
 	if _near != null:
 		_talk_btn.text = _near.prompt
-	_boss_lbl.visible = is_instance_valid(_boss) and not _boss._dead and _boss._aggro
+	# (a boss with its own health bar, BossBar, needs no plain label)
+	var plain := is_instance_valid(_boss) and not BossDB.has(String(_boss.get_meta("boss_id", "")))
+	_boss_lbl.visible = plain and not _boss._dead and _boss._aggro
 	if _boss_lbl.visible:
 		_boss_lbl.text = "%s   %d%%" % [_boss.display_name, int(100.0 * _boss.hp / maxf(_boss.max_hp, 1.0))]
 
@@ -554,6 +616,9 @@ func _build_hud() -> void:
 	_boss_lbl.offset_top = 14
 	_boss_lbl.visible = false
 	layer.add_child(_boss_lbl)
+	_boss_bar = BossBar.new()
+	layer.add_child(_boss_bar)
+	_attach_boss_bar()  # (a boss made before the HUD was)
 
 	_toast = UIKit.label("", 26, Color.WHITE)
 	_toast.add_theme_color_override("font_outline_color", Color.BLACK)

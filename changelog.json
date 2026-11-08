@@ -1,6 +1,17 @@
 [
 	{
 		"build": 0,
+		"title": "Boss fights",
+		"notes": [
+			"Vesh, the Raider Captain, is now a proper boss fight. When he wakes he roars, a ring of fire seals round the camp, and his name and a health bar come up on screen.",
+			"His attacks are all shown on the ground first, so you can step out of the way: volleys of arrows, a long heavy shot, and rains of arrows landing around you. Stand in a warning and it hurts.",
+			"He fights in phases: at two-thirds and one-third of his life he roars (and can't be hurt for a moment), shouts, and calls his raiders. Take too long and he goes into a rage.",
+			"The ring opens when he falls, his raiders fall with him, and he drops better rewards. The camp has no ordinary monsters in it, so the fight is just him.",
+			"If you die, you wake at the waypoint and he's back at full life."
+		]
+	},
+	{
+		"build": 0,
 		"title": "Pets",
 		"notes": [
 			"Choose a pet in Options (the button under BAG): a hedgehog, snail, turtle, boar, monkey, mouse, crab, bee or bird. It trots along beside you and picks up the currency lying about, so you don't have to walk over and tap each pile.",

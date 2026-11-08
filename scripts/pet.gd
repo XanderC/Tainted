@@ -148,6 +148,11 @@ func _fetch(delta: float) -> void:
 
 
 func _follow() -> void:
+	# A boss's ring has sealed with you inside and the pet out (or the other way round): it comes to you
+	var arena := BossArena.current
+	if arena != null and is_instance_valid(arena) and \
+			(global_position.distance_to(arena.global_position) > arena.radius) != (owner_player.global_position.distance_to(arena.global_position) > arena.radius):
+		global_position = owner_player.global_position
 	var goal := owner_player.global_position + Vector2(FOLLOW_DIST * 0.6, FOLLOW_DIST * 0.4)
 	var d := global_position.distance_to(goal)
 	if d < 40.0:

@@ -13,6 +13,9 @@ var speed := 110.0
 var touch_damage := 8.0
 var rig: RigSprite
 var is_boss := false
+## A boss with an entry in BossDB fights through this (moves, phases, adds: BossBrain); only on the game
+## that runs the monster.
+var brain: BossBrain = null
 var size_mult := 1.0  # boss = 2.0
 var display_name := "Zombie"
 var kind := "zombie"  # MonsterKinds id (set_kind)
@@ -169,6 +172,9 @@ func _physics_process(delta: float) -> void:
 		if _dead:
 			return
 
+	if brain != null and brain.control(delta):  # a boss mid-move: a warning, a dash, a roar
+		return
+
 	if ranged and _ranged_step(delta, to_player, cur_speed):
 		return
 
@@ -188,7 +194,7 @@ func _physics_process(delta: float) -> void:
 	rig.play_loop("Walking")
 
 	_touch_cd -= delta
-	if is_boss:
+	if is_boss and brain == null:  # (a boss with a brain has its own moves)
 		_slam_cd -= delta
 		if _slam_cd <= 0.0 and to_player.length() < SLAM_RADIUS * 1.6:
 			_slam_cd = 5.0
@@ -641,6 +647,8 @@ func take_over(you: Player) -> void:
 	target = you
 	if _net_pos != Vector2.ZERO:
 		global_position = _net_pos
+	if is_boss and brain == null and BossDB.has(String(get_meta("boss_id", ""))):
+		BossBrain.attach(self, String(get_meta("boss_id")), true)  # carries on the fight, without its intro
 
 
 # ---------- Elite / Legendary ----------

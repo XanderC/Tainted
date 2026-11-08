@@ -558,8 +558,10 @@ that is never used up: drink it from a flask slot and it goes on cooldown.
   already on screen keeps its size until the next area).
 - **Options window** (`OptionsUI`): the OPTIONS button under BAG (made by `GameMenu`, hidden while
   another window has the game paused) opens a window on the right with a View distance slider and
-  - / + buttons (steps of 0.05), Reset and Done; Escape closes it. The game is paused while it is open
-  and the camera zooms as the slider moves. Settings are per device, not per character, in
+  - / + buttons (steps of 0.05), a Pet row, Reset and Done; Escape closes it. The game is NOT paused
+  while it is open (a paused world looked like a frozen game: a pet you chose seemed stuck): the camera
+  zooms as the slider moves and a pet appears and trots about at once; taps outside the window reach
+  the game. Settings are per device, not per character, in
   `user://options.cfg` (`Options.get_value` / `set_value`); add a setting there and a row in
   `OptionsUI._build`. Test: `scratch/test_options.tscn` (windowed; takes `scratch/options.png`).
 - **Monster packs** (`PackSpots.for_map(maze, cells_per_pack, seed)`): a map's hand-placed "pack"
@@ -575,6 +577,44 @@ that is never used up: drink it from a flask slot and it goes on cooldown.
   animating until it wakes, and a party host sends sleeping monsters in the snapshots once a second
   instead of 12 times (`Coop`). Measure with `scratch/measure_density.tscn` (build time, frame time
   and a screenshot of a zone and a rift) and `scratch/count_packs.gd` (packs per map).
+
+### Boss fights
+- **What a quest boss is**: a map "boss" object (id, name, kind, skin, size, hp) in a zone. One with an
+  entry in `BossDB` (by that id) gets a real fight; one without keeps the plain tough monster with a
+  ground slam (all the rift bosses still do: `DungeonRun`). Today `raider_captain`, Vesh, in the Ashwood.
+- **`BossDB`** holds an entry per boss: `title`, `hp` (times the map's), `arena` radius, `intro`, `enrage`
+  seconds, `max_adds`, `moves`, `phases`, `lines` and `loot` (the fields are documented at its top).
+  Moves: `slam` (circle on the boss), `sweep` (cone), `charge` (a dash along a line, then it stands winded),
+  `volley` (a fan of arrows: a cone), `pin` (one heavy arrow down a line), `rain` (circles on each player and
+  about them), `backstep` (leaps away) and `summon`. Each has a `windup`, `cd`, `range` to its foe and
+  `weight`; `dmg` is a share of the boss's own hit.
+- **`BossBrain`** (a child of the boss, made by `BossBrain.attach`, only in the game that runs the monster)
+  drives it: the monster asks `control()` each physics frame and, while that is true, does nothing else
+  (a warning showing, a dash, a roar); between moves it fights as any monster of its kind does (an archer
+  keeps its distance and shoots). States: intro (roars, untouchable, the arena seals, the name card shows),
+  idle (picks a move by weight among the phase's moves that are off cooldown and in range), windup (the
+  warning), dash, recover, roar. Phases start when its life falls to a phase's `at`: it roars (the shield
+  monsters have: `_shield_t`), says its line, calls the phase's adds (`spawn_add` on the scene, at most
+  `max_adds` alive, all killed with it) and the phase can speed it up, hit harder and shorten cooldowns. After
+  `enrage` seconds it is faster, harder and quicker for good.
+- **Every attack is warned of** (`BossTelegraph`: a circle, cone or line that fills in red over the windup) and
+  hurts whoever stands in that spot when the warning ends: you, your hireling and the others in a party.
+- **`BossArena`**: once the boss is awake and the player inside, a ring of fire seals round it (walls' layer:
+  nobody gets in or out, the monsters and hireling included) until it dies. It reads the boss's `_aggro`, so a
+  party's games all seal it the same way. The zone leaves ordinary packs out of an arena and `ARENA_CLEAR` (400 px)
+  past it while its boss is alive (`_in_boss_arena`). Die and you are at the waypoint with the zone made again,
+  the boss at full life.
+- **`BossBar`**: name, title, a health bar with a notch where each phase starts, what it shouts, and the name
+  card in the middle of the screen when it wakes.
+- **Party play**: the host runs the brain; followers get the boss as a copy (no brain) with the same ring and
+  bar, and see the warnings and the boss's lines through `Coop.host_fx` ("tele", "say"); the host does the
+  hurting. If the host leaves, the copy that takes over gets a brain and carries on (no intro).
+- **Add a boss**: put a "boss" object in the map, add an entry to `BossDB.BOSSES` under its id (copy
+  `raider_captain`), and a phase's `adds` are monsters of `MonsterKinds`. Tests: `scratch/test_boss.tscn`
+  (windowed; takes `scratch/boss_*.png`).
+- **Vesh, the Raider Captain**: an archer. Volleys (a cone of five arrows), pin shots (a long line), backsteps
+  when you close in. At 65% he calls two bandit archers and two goblins and starts raining arrows; at 30%
+  two more archers, faster and harder; enraged after 150 s. Rewards: two rares, a magic, orbs and scrolls.
 
 ### Pets
 - **A pet** (`Pet`, `PetDB`) is a small animal that trots beside you (a hedgehog, snail, turtle, boar,

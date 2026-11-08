@@ -391,6 +391,12 @@ func _fx(kind: String, d) -> void:
 	if kind == "frost_orb" and is_instance_valid(who):
 		who._frost_orb(Vector2(float(d.x), float(d.y)), false)
 		return
+	if kind == "tele":  # a boss's warning on the ground (BossTelegraph): the host does the hurting
+		BossTelegraph.make(main, d)
+		return
+	if kind == "say":  # what a boss shouts (BossBar)
+		get_tree().call_group("boss_bar", "say", String(d.get("name", "")), String(d.get("text", "")).left(120))
+		return
 	if kind == "ring":
 		var ring := Node2D.new()
 		main.add_child(ring)
