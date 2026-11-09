@@ -163,6 +163,8 @@ static func turn_in(id: String, player: Player, choice := -1) -> Array:
 	for orb in r.get("orbs", {}):
 		GameState.add_orb(orb, int(r["orbs"][orb]))
 		got.append("%d × %s" % [int(r["orbs"][orb]), Currency.orb_name(orb)])
+	for note in r.get("notes", []):
+		got.append(String(note))
 	if int(r.get("attr_points", 0)) > 0:
 		GameState.attr_points += int(r["attr_points"])
 		got.append("+%d attribute points" % int(r["attr_points"]))

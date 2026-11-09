@@ -1,5 +1,15 @@
 [
 	{
+		"build": 0,
+		"title": "Act I phase 3: the Ashen Verge",
+		"notes": [
+			"A new zone: the Ashen Verge, the autumn woods burnt out to ash, with graveyards, outer ruins, Bleed Rifts that spill armoured fiends, and a mausoleum on raised ground. The gate at the far end of the Weeping Hollow now opens onto it, and so does the road east out of the Sunken Fen.",
+			"New main quest, Breaking the Seal: High Priestess Althea needs the two halves of the Warded Keystone. One is held by the Maddened Grave Warden, who raises the dead; the other by the Rift Golem, which tears the rift open to bring fiends through. Join them at the sealed mausoleum. Both are boss fights you can repeat once the quest is done.",
+			"New side quest, The Last Watch: Scout Captain Dennis lost three scouts in the Verge. Put down the two the Taint twisted and find the one who is still alive in the watchtower. The reward includes a key to a vault, kept for later.",
+			"The Ossuary's gates open at the end of Breaking the Seal, onto a stair into the dark. What lies below comes in the next update."
+		]
+	},
+	{
 		"build": 202611082221,
 		"title": "Act I phase 2: the Weeping Hollow and the Sunken Fen",
 		"notes": [

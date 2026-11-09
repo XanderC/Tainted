@@ -196,7 +196,7 @@ class Zone:
         self.wall[c[1]][c[0]] = False
         self.water[c[1]][c[0]] = "="
 
-    def terrace(self, c, w, h, stairs, trees=True):
+    def terrace(self, c, w, h, stairs, trees=True, tree_ids=(1, 2, 3, 4, 6, 7, 8, 9, 10)):
         """Raised ground you can walk on (MazeMap._add_terraces): a footprint of w x h cells from c, a ring of wall (left,
         right, top) round the floor, its bottom row the cliff face, with the columns `stairs` (counted from the footprint's
         left) as steps down. The ring is lined with trees and rocks, so you see why you can't walk off the edge."""
@@ -215,7 +215,7 @@ class Zone:
             ring = [(x, y0) for x in range(x0, x0 + w)] + [(x0, y) for y in range(y0 + 1, y0 + h - 1)] + [(x0 + w - 1, y) for y in range(y0 + 1, y0 + h - 1)]
             for i, (x, y) in enumerate(ring):
                 if i % 2 == 0 or y == y0:
-                    self.prop("tree_" + str(self.rng.choice([1, 2, 3, 4, 6, 7, 8, 9, 10])), (x, y), dx=self.rng.uniform(0.3, 0.7), dy=self.rng.uniform(0.6, 0.95), scale=self.rng.uniform(0.5, 0.65))
+                    self.prop("tree_" + str(self.rng.choice(list(tree_ids))), (x, y), dx=self.rng.uniform(0.3, 0.7), dy=self.rng.uniform(0.6, 0.95), scale=self.rng.uniform(0.5, 0.65))
                 else:
                     self.prop("stones_" + str(self.rng.choice([1, 2, 3, 4, 5, 6])), (x, y), dx=0.5, dy=0.8, scale=0.45)
 
@@ -607,7 +607,8 @@ def weeping_hollow():
     z.prop("crystal_5", (d[0] - 2, d[1] - 1), scale=0.6)
     z.prop("crystal_10", (d[0] + 2, d[1] + 1), scale=0.6)
     f = chambers["f"][0]
-    z.prop("decor_13", (f[0] + 4, f[1]), dx=0.2, dy=0.95, scale=0.55, solid=True)  # a vine-choked iron gate: the way on to the Ashen Verge, shut for now
+    verge_exit = z.exit_near("ashen_verge", (f[0] + 4, f[1]))  # the vine-choked iron gate: the way on to the Ashen Verge
+    z.prop("decor_13", (verge_exit[0], verge_exit[1] - 1), dx=0.5, dy=0.95, scale=0.5)
     z.prop("decor_6", (f[0] + 2, f[1] + 1), scale=0.4)
 
     themes = [(b, 7, "cave_skitterer"), (c_, 6, "blind_crawler"), (d, 6, "ghoul"), (chambers["a"][0], 6, "blind_crawler")]
@@ -619,7 +620,7 @@ def weeping_hollow():
 def sunken_fen():
     """The Sunken Fen (Act I): drowned woodland south of the Blackroot Wilds. Wide stretches of mire that slow you and the things
     that hunt you, dead trees, rot-bloat zombies, leechfiends and Fen Crawlers, and the apothecary Voss in a stone hovel at the
-    far side (A Taste for Rot). Its way on to the Ashen Verge is shut for now."""
+    far side (A Taste for Rot). A road out of its east edge leads on to the Ashen Verge."""
     z = Zone("sunken_fen", "Sunken Fen", 60, 44, seed=4417, theme="woodland")
     start = (30, 4)
     voss = (50, 34)
@@ -636,8 +637,10 @@ def sunken_fen():
     z.road((30, 24), voss, 1)
     z.road((30, 24), (10, 34), 1)
     z.reachable_only(start)
+    verge_exit = z.exit_near("ashen_verge", (56, 20))
     # The dry way: a dirt road to each part, and mire (slow ground) over the rest of the low places
-    for a_, b_ in [(start, waypoint), (waypoint, (12, 14)), (waypoint, (50, 12)), (waypoint, (30, 24)), ((30, 24), voss), ((30, 24), (10, 34))]:
+    for a_, b_ in [(start, waypoint), (waypoint, (12, 14)), (waypoint, (50, 12)), (waypoint, (30, 24)), ((30, 24), voss), ((30, 24), (10, 34)),
+                   ((50, 12), verge_exit)]:
         z.route(a_, b_, "d")
     z.lamps(every=7)
     for c in [(20, 22), (40, 20), (24, 34), (42, 40), (14, 26), (36, 30), (22, 10), (46, 24), (8, 40)]:
@@ -660,12 +663,146 @@ def sunken_fen():
         c = (z.rng.randrange(3, z.cols - 3), z.rng.randrange(3, z.rows - 3))
         if z.open_around(c, 1) and math.dist(c, start) > 5 and math.dist(c, voss) > 5 and math.dist(c, waypoint) > 3:
             z.prop("tree_" + str(z.rng.choice([11, 12, 11, 12, 13, 14, 5])), c, dx=z.rng.uniform(0.3, 0.7), dy=z.rng.uniform(0.6, 0.95), scale=0.62)
-    for dx in range(-1, 2):
-        z.prop("decor_15", (56 + dx * 0, 20 + dx), scale=0.5, solid=True)  # the east: choked, for now
+    z.prop("decor_9", (verge_exit[0] - 1, verge_exit[1] - 1), scale=0.5)  # a signpost where the road leaves the Fen
+    z.prop("tree_12", (verge_exit[0] - 1, verge_exit[1] + 2), scale=0.7)
     themes = [(voss, 9, "fen_crawler"), ((24, 34), 8, "leechfiend"), ((40, 20), 8, "rot_bloat"), ((12, 14), 7, "fen_crawler"),
               ((10, 34), 7, "rot_bloat")]
     avoid = [(start, 8), (waypoint, 4), (voss, 4)]
     z.packs(28, avoid, themes, min_gap=6, start=start, min_start=9)
+    z.save("story")
+
+
+def ashen_verge():
+    """The Ashen Verge (Act I, Chapter 3: Breaking the Seal): the autumn woods burnt out, petrified trees and desecrated headstones,
+    active Bleed Rifts spawning armoured fiends, and outer ruins. Two ways in (from the Weeping Hollow and the Sunken Fen) in the
+    west; a graveyard in the north where the Maddened Grave Warden holds half the Warded Keystone; a Bleed Rift in the south where
+    the Rift Golem holds the other half; a watchtower in the south-east where the last scout holds out (The Last Watch); and on
+    raised ground in the east, up stairs, the sealed mausoleum: the Ossuary's iron gates, opened with the joined keystone.
+    Theme "ashen": the woodland art burnt dark."""
+    z = Zone("ashen_verge", "Ashen Verge", 72, 48, seed=5519, theme="ashen")
+    start = (8, 25)
+    waypoint = (16, 25)
+    grave = (33, 12)
+    chapel = (52, 9)
+    rift = (31, 37)
+    tower = (49, 39)
+    s1, s2 = (21, 9), (19, 41)  # the two mutated scouts
+    foot = (62, 31)  # the foot of the mausoleum's stairs
+    hollow_gate, fen_gate = (5, 17), (5, 33)
+    terr = (56, 19, 12, 10)  # x, y, w, h: the mausoleum's raised ground
+    minor_rifts = [(42, 26), (24, 24), (59, 41)]
+    paths = [(start, waypoint), (start, hollow_gate), (start, fen_gate), (waypoint, grave), (waypoint, rift), (grave, chapel),
+             (grave, rift), (rift, tower), (chapel, foot), (tower, foot), (grave, s1), (rift, s2), (waypoint, minor_rifts[1]),
+             (minor_rifts[0], foot), (tower, minor_rifts[2])]
+
+    z.outcrops(70, 1.5, 4.0)
+    z.border(2)
+    z.smooth(2)
+    for c, r in [(start, 4), (waypoint, 3), (grave, 7), (chapel, 5), (rift, 8), (tower, 5), (s1, 2), (s2, 2), (foot, 3),
+                 (hollow_gate, 2), (fen_gate, 2), ((terr[0] + 6, terr[1] + 5), 8)] + [(c, 2) for c in minor_rifts]:
+        z.clear(c, r)
+    for a, b in paths:
+        z.road(a, b, 1)
+    z.terrace((terr[0], terr[1]), terr[2], terr[3], [5, 6], tree_ids=[11, 12])
+    z.reachable_only(start)
+
+    hollow_exit = z.exit_near("weeping_hollow", (3, 17))
+    fen_exit = z.exit_near("sunken_fen", (3, 33))
+    # Ash roads: dirt, with cobblestone at the places that matter
+    for a, b in paths:
+        z.route(a if a != hollow_gate else a, hollow_exit if b == hollow_gate else (fen_exit if b == fen_gate else b), "d")
+    z.plaza(waypoint, 1)
+    z.plaza(foot, 1)
+    z.plaza((tower[0], tower[1] + 1), 1)
+    z.lamps(every=9)
+
+    z.add("start", start)
+    z.add("waypoint", waypoint)
+    z.prop("decor_9", (start[0] + 2, start[1] - 2), scale=0.5)  # signpost where the roads from the Hollow and the Fen meet
+    z.prop("decor_4", (waypoint[0] - 1, waypoint[1] - 1), dx=0.3, scale=0.45)
+    z.prop("decor_4", (waypoint[0] + 1, waypoint[1] + 1), dx=0.7, scale=0.45)
+    z.prop("tree_12", (hollow_exit[0] + 1, hollow_exit[1] + 1), scale=0.7)
+    z.prop("tree_11", (fen_exit[0] + 1, fen_exit[1] - 1), scale=0.7)
+
+    # The graveyard: rows of split headstones and rune stones, dead branches, and the warden among them, holding half the keystone
+    z.add("trigger", grave, radius=560, id="grave_field", text="A graveyard, its headstones split and sooty. Something among them is digging.")
+    for dy in (-4, -2, 2, 4):
+        for dx in range(-6, 7, 2):
+            c = (grave[0] + dx + (1 if dy % 4 == 0 else 0), grave[1] + dy)
+            if z.open_around(c, 0) and math.dist(c, grave) > 2.5:
+                z.prop("crypt/decor_1", c, dx=z.rng.uniform(0.3, 0.7), dy=z.rng.uniform(0.7, 0.95), scale=0.28)
+    for dx, dy in [(-5, 0), (5, 1), (0, -6), (-3, 5)]:
+        z.prop("hollow/rune_" + str(z.rng.choice([1, 2, 3, 4, 5, 6, 7])), (grave[0] + dx, grave[1] + dy), scale=0.45)
+    for dx, dy in [(-4, -3), (4, -3), (3, 4), (-2, 3)]:
+        z.prop("crypt/decor_14", (grave[0] + dx, grave[1] + dy), scale=0.5)
+    z.prop("decor_8", (grave[0] + 7, grave[1] - 2), scale=0.45, solid=True)  # the warden's woodpile
+    z.add("boss", (grave[0], grave[1] + 1), id="grave_warden", name="The Maddened Grave Warden", kind="zombie",
+          skin="zombie_villager_3", hp=10.0, size=1.7)
+    z.add("quest_object", (grave[0] + 2, grave[1] + 2), id="warden_half", sprite="crypt/decor_34", scale=0.6,
+          prompt="Take the first half of the Warded Keystone",
+          text="You take the first half of the Warded Keystone from the warden's fist. It is carved with a stair going down, and it is warm.")
+
+    # The outer ruins: a roofless chapel, broken walls
+    z.add("trigger", chapel, radius=420, id="outer_ruins", text="The outer ruins: a chapel of the old Oakhaven, roofless and sooted black.")
+    z.prop("hollow/decor_20", (chapel[0], chapel[1] - 2), dy=0.95, scale=0.55, solid=True)
+    z.prop("crypt/decor_12", (chapel[0] - 5, chapel[1] - 1), dy=0.95, scale=0.4, solid=True)
+    z.prop("crypt/decor_11", (chapel[0] + 5, chapel[1] - 1), dy=0.95, scale=0.4, solid=True)
+    z.prop("hollow/decor_14", (chapel[0] - 2, chapel[1] + 2), scale=0.5)
+    z.prop("hollow/decor_15", (chapel[0] + 2, chapel[1] + 2), scale=0.5)
+    z.prop("tree_12", (chapel[0] - 6, chapel[1] + 2), scale=0.7)
+
+    # Bleed Rifts: a ring of crystals and horns round a tear in the air; the big one in the south holds the golem
+    def rift_site(c, big):
+        n = 8 if big else 5
+        for i in range(n):
+            ang = i * math.tau / n
+            rc = (round(c[0] + math.cos(ang) * (3.2 if big else 2.0)), round(c[1] + math.sin(ang) * (2.6 if big else 1.6)))
+            if z.open_around(rc, 0):
+                z.prop("crypt/rift_" + str(z.rng.choice([1, 2, 3])), rc, dy=0.8, scale=0.6 if big else 0.5)
+        z.prop("hollow/decor_4", c, dy=0.95, scale=0.7 if big else 0.5)
+        z.prop("crypt/blood_" + str(z.rng.choice([1, 2, 3])), (c[0], c[1] + 1), scale=0.9 if big else 0.6)
+    rift_site(rift, True)
+    for c in minor_rifts:
+        rift_site(c, False)
+        z.add("pack", c, min=3, max=4, kind="bleed_fiend")
+    z.add("trigger", rift, radius=600, id="bleed_rift", text="A Bleed Rift, a wound in the air that bleeds red light. Something lumbers inside it.")
+    z.add("boss", (rift[0], rift[1] + 1), id="rift_golem", name="The Rift Golem", kind="rot_bloat", skin="golem", hp=12.0, size=2.0)
+    z.add("quest_object", (rift[0] + 3, rift[1] + 3), id="golem_half", sprite="crypt/decor_34", scale=0.6,
+          prompt="Take the second half of the Warded Keystone",
+          text="You pull the second half of the Warded Keystone from the golem's broken chest. It fits the first one's edge as a key fits a lock.")
+
+    # The watchtower: the last scout holds out inside its barricade (The Last Watch)
+    z.add("trigger", tower, radius=420, id="last_watch_tower", text="A watchtower, its beacon cold. Someone has barricaded the door from inside.")
+    z.prop("building_4", (tower[0], tower[1] - 2), dy=0.95, scale=0.5, solid=True)
+    for dx, dy in [(-3, 0), (3, 0), (0, 2)]:
+        z.prop("decor_15", (tower[0] + dx, tower[1] + dy), scale=0.45, solid=True)
+    z.prop("decor_4", (tower[0] - 1, tower[1] + 1), dx=0.2, scale=0.45)
+    z.prop("desert/decor_6", (tower[0] + 2, tower[1] + 2), scale=0.4)
+    z.add("npc", (tower[0], tower[1] + 1), id="mara", facing=-1)
+    for c in (s1, s2):  # the scouts the Taint twisted
+        z.add("pack", c, min=1, max=1, kind="mutated_scout")
+        z.prop("desert/decor_6", (c[0] + 1, c[1] + 1), scale=0.4)
+        z.prop("decor_6", (c[0] - 1, c[1] + 1), scale=0.45)
+
+    # The sealed mausoleum on the raised ground: the Ossuary's gates, flanked by gargoyles, and the plinth for the keystone
+    tx, ty, tw, th = terr
+    mid = tx + tw // 2
+    z.add("trigger", (mid, ty + 5), radius=480, id="mausoleum", text="The Ossuary's iron gates: sealed in two pieces. Before them, a plinth shaped for a keystone.")
+    z.prop("hollow/decor_19", (mid - 1, ty + 3), dy=0.95, scale=0.7, solid=True)
+    z.prop("hollow/decor_16", (mid - 4, ty + 4), scale=0.4, solid=True)
+    z.prop("hollow/decor_16", (mid + 3, ty + 4), scale=0.4, solid=True)
+    z.prop("hollow/decor_13", (mid + 1, ty + 3), dx=0.5, dy=0.95, scale=0.4, solid=True)
+    z.prop("decor_4", (mid - 2, ty + 6), dx=0.5, scale=0.45)
+    z.prop("decor_4", (mid + 2, ty + 6), dx=0.5, scale=0.45)
+    z.prop("crypt/decor_14", (mid - 3, ty + 7), scale=0.5)
+    z.add("quest_object", (mid, ty + 6), id="mausoleum_seal", sprite="hollow/rune_1", scale=0.6, prompt="Join the halves of the Warded Keystone",
+          text="You set the two halves into the plinth, and they meet with a sound like a bell. The seal on the Ossuary's gates cracks "
+               "and falls away, and the iron swings inward onto a stair into the dark. The whispers are loud now.")
+
+    themes = [(grave, 9, "skeleton"), (chapel, 7, "ghoul"), (rift, 9, "bleed_fiend"), (tower, 7, "skeleton_warrior")]
+    avoid = [(start, 9), (waypoint, 4), (grave, 3), (rift, 3), (tower, 3), (foot, 3), ((mid, ty + 5), 7), (s1, 3), (s2, 3),
+             (hollow_exit, 4), (fen_exit, 4)]
+    z.packs(30, avoid, themes, min_gap=7, start=start, min_start=9)
     z.save("story")
 
 
@@ -674,3 +811,4 @@ if __name__ == "__main__":
     oakhaven()
     weeping_hollow()
     sunken_fen()
+    ashen_verge()

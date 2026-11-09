@@ -12,7 +12,8 @@ extends RefCounted
 ##   "kill"     - kill `count` monsters of MonsterKinds `key`
 ##   "kill_boss"- kill the quest boss `key` (a map "boss" object)
 ##   "use"      - use object `key` (a map "quest_object")
-## Rewards: {"xp", "orbs": {id: n}, "gems": {gem id: n}, "passive_points", "attr_points", "skill_rune": n, "item": {"slot", "rarity"}}.
+## Rewards: {"xp", "orbs": {id: n}, "gems": {gem id: n}, "passive_points", "attr_points", "skill_rune": n, "item": {"slot", "rarity"},
+## "notes": [lines listed with the rewards, for what the story gives that is not an item]}.
 ## "choose": [{"label", ...rewards}, ...] instead makes the player pick one of them when handing in (the others are lost).
 ##
 ## Act I is "The Bleeding Veil" (ACT1_DESIGN.md): Oakhaven Outpost and the zones round it.
@@ -38,6 +39,8 @@ const NPCS := {
 		"greeting": "Another hour in that lodge and the wolves would have had the door. I owe you."},
 	"voss": {"name": "Apothecary Voss", "title": "Cast out", "skin": "stash_keeper",
 		"greeting": "Oakhaven threw me out for what I brew. Funny, now it wants what I know."},
+	"mara": {"name": "Scout Mara", "title": "Last of the Watch", "skin": "forest_ranger_3",
+		"greeting": "Don't stand in the doorway. They remember where the door is."},
 	"corwin": {"name": "Merchant Corwin", "title": "In a hurry", "skin": "caravan_master",
 		"greeting": "Don't ask me what's in the lockbox. Fetch it, and the gem is yours."},
 }
@@ -74,6 +77,38 @@ const QUESTS := {
 			{"type": "use", "key": "purge_ward", "text": "Plant the Alchemical Purge Ward at the cyst"},
 		],
 		"rewards": {"xp": 420, "orbs": {"alteration": 3, "augment": 2, "alchemy": 1}, "passive_points": 1, "item": {"slot": "", "rarity": 2}},
+	},
+	"a1_breaking_the_seal": {
+		"name": "Breaking the Seal", "act": 1, "kind": "main", "giver": "althea", "turn_in": "althea", "requires": "a1_poisoning_the_well",
+		"summary": "The whispers come from the Grand Ossuary, past the Ashen Verge, behind iron gates sealed with a Warded Keystone that was broken in two. Take the halves from the grave warden and from the golem a Bleed Rift animated, and join them at the mausoleum.",
+		"offer": "The Ossuary's gates were sealed three centuries ago with a [b]Warded Keystone[/b], and the seal was broken in two so that no one man could open it. One half went to the grave warden of the [b]Ashen Verge[/b]. I hear he drank what the Taint offered him. The other was lodged in a golem the old priests made, and the rift has woken it. Bring me both, and we open the gates ourselves, before something on the other side does.",
+		"progress": "The Ashen Verge lies past the Weeping Hollow's far gate, or by the road out of the Sunken Fen. The warden haunts the graveyard in the north; the golem stands in a Bleed Rift in the south. The sealed mausoleum is on the raised ground to the east.",
+		"complete": "Both halves, and the seal sings. The gates are open: a stair into the dark, and the whispers rise from it like heat. I will give you what blessing I have left. Whatever waits below is what the Taint has been reaching for.",
+		"steps": [
+			{"type": "zone", "key": "ashen_verge", "text": "Cross into the Ashen Verge"},
+			{"type": "kill_boss", "key": "grave_warden", "text": "Slay the Maddened Grave Warden"},
+			{"type": "use", "key": "warden_half", "text": "Take the first half of the Warded Keystone"},
+			{"type": "kill_boss", "key": "rift_golem", "text": "Destroy the Bleed-Rift Golem"},
+			{"type": "use", "key": "golem_half", "text": "Take the second half of the Warded Keystone"},
+			{"type": "use", "key": "mausoleum_seal", "text": "Join the halves at the sealed mausoleum"},
+		],
+		"rewards": {"xp": 650, "orbs": {"alteration": 3, "augment": 2, "alchemy": 2, "chaos": 1}, "passive_points": 1, "item": {"slot": "", "rarity": 2}},
+	},
+	"a1_the_last_watch": {
+		"name": "The Last Watch", "act": 1, "kind": "side", "giver": "dennis", "turn_in": "dennis", "requires": "a1_poisoning_the_well",
+		"summary": "Scout Captain Dennis sent three scouts to the Ashen Verge to watch the Ossuary and none came back. Find them: two have been twisted by the Taint and must be put down, and one holds out in a ruined watchtower.",
+		"offer": "I sent three of mine to watch the [b]Ashen Verge[/b] before the howling began. They had a beacon in the old watchtower, and they were to light it if the Ossuary stirred. It has been dark for weeks. Find them, if you can. If the Taint has them, you will know, and you will do what a captain would do, and I will not ask how.",
+		"progress": "The scouts went into the Ashen Verge. Two have been twisted and must be put down; the third was last seen at the watchtower in the south-east, and may yet be alive.",
+		"complete": "Mara. Alive. And the key she kept, the armory vault's, from the Ossuary's old guardroom. A rusted thing, but the lock will remember it. Keep it: a vault behind a wall that will not stay up if you press it, she says. Thank you. Tell the others they stood the watch to the last.",
+		"steps": [
+			{"type": "kill", "key": "mutated_scout", "count": 2, "text": "Put down the 2 scouts the Taint twisted"},
+			{"type": "talk", "key": "mara", "text": "Find the surviving scout at the watchtower"},
+		],
+		"rewards": {"xp": 480, "orbs": {"alteration": 2, "chaos": 1}, "item": {"slot": "", "rarity": 2},
+			"notes": ["the Rusted Armory Key (for a vault in the Ossuary)"]},
+		"lines": {
+			"mara": {1: "Dennis sent you? Thank the gods. Jorin and Tess went down to the gates for a closer look... and came back wrong. I couldn't. Here: the armory key, from the guardroom. There's a vault behind a collapsible wall in the Ossuary's first hall. Take it to Dennis, and tell him the beacon's dry."},
+		},
 	},
 	"a1_taste_for_rot": {
 		"name": "A Taste for Rot", "act": 1, "kind": "side", "giver": "voss", "turn_in": "voss",

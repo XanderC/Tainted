@@ -3,6 +3,8 @@ extends RefCounted
 ## The looks a map can have (a map file's "theme"): the CraftPix 2D RPG tilesets imported into
 ## assets/tiles/<theme>/ by tools/import_tilesets.py, with the wall pieces it makes in walls/, and
 ## which of the theme's pictures dress a map.
+## A theme with an "art" falls back on that theme's folder for any picture its own folder lacks ("ashen" has its own ground,
+## paths, walls and terraces: the woodland's, drained to ash by tools/import_ashen.py, and borrows the rest).
 ## A prop or tile sprite is a picture name in the map's theme ("tree_3"), or "<theme>/<name>" to
 ## borrow one from another theme ("desert/decor_8", the covered wagon).
 
@@ -65,6 +67,18 @@ const THEMES := {
 			"stones_4": [0.5, 3, 0, 0.85], "stones_5": [0.5, 1, 30, 0.85], "stones_6": [0.5, 2, 16, 0.85],
 		},
 	},
+	# Act 1's Ashen Verge: the autumn woods burnt out. Only the woodland's dead trees, stumps and stones, and the crypt pack's
+	# dead branches (assets/tiles/crypt, tools/import_crypt.py).
+	"ashen": {
+		"art": "woodland",
+		"wall_props": [["tree_11", 0.55], ["tree_12", 0.55], ["tree_11", 0.6], ["tree_12", 0.6], ["stones_1", 0.5], ["stones_6", 0.5],
+			["crypt/decor_14", 0.5], ["tree_14", 0.5]],
+		"floor_props": [["crypt/decor_15", 0.5], ["crypt/decor_14", 0.4], ["tree_14", 0.42], ["crypt/decor_10", 0.4],
+			["stones_4", 0.4], ["stones_1", 0.4], ["decor_5", 0.4], ["decor_6", 0.4]],
+		"plateau_props": [["tree_11", 0.6], ["tree_12", 0.6], ["stones_5", 0.5]],
+		"wall_chance": 0.55, "plateau_chance": 0.35,
+		"scatter": {},
+	},
 	# Act 1's caves and catacombs (the CraftPix 2D Top-Down Cave Tileset: stone-brick walls over dark void, a slime lake,
 	# crystals, mushrooms, bones; tools/import_cave.py). `water_tint` darkens its green lake into tainted water.
 	"hollow": {
@@ -93,7 +107,11 @@ static func dir(theme: String) -> String:
 static func sprite_path(theme: String, sprite: String) -> String:
 	if "/" in sprite:
 		return ROOT + sprite + ".png"
-	return dir(theme) + sprite + ".png"
+	var own := dir(theme) + sprite + ".png"
+	var art: String = String(data(theme).get("art", ""))
+	if art != "" and not ResourceLoader.exists(own):
+		return ROOT + art + "/" + sprite + ".png"
+	return own
 
 
 static func load_sprite(theme: String, sprite: String) -> Texture2D:

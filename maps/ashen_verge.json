@@ -1,0 +1,1766 @@
+{
+	"format": 1,
+	"id": "ashen_verge",
+	"name": "Ashen Verge",
+	"kind": "story",
+	"theme": "ashen",
+	"cell": 128,
+	"auto_decorate": true,
+	"grid": [
+		"########################################################################",
+		"########################################################################",
+		"##########....########...#...#####.#..####..#..############..###...#####",
+		"#########.......#####.........####..............##########...........###",
+		"#########........####.........######.............##...###.............##",
+		"#########.........###........###...######...............#.............##",
+		"#########.........##........##.......######..........................###",
+		"##########.............................####...........................##",
+		"##############.............#...........###............................##",
+		"###############......................................................###",
+		"###############.......................................................##",
+		"###....##..####.......................................................##",
+		"##..........###.....#................................................###",
+		"##.........#####....###..#...............................####....#######",
+		"##..........###.....###..##..............................#####..########",
+		"##..................##...##.................####.....#...#####...#######",
+		"##......................##..................####.....##.#####.....######",
+		"##....................###...................####.....#####.........#####",
+		"##...................###...............##...........#####...........####",
+		"###..................##......##....##.####..............############.###",
+		"##..................##......###...####.##...............#..........#..##",
+		"##..................##.....####...###..##.......#.......#..........#..##",
+		"###........................####...###..###......##......#..........#..##",
+		"####.......................####...###..###..............#..........#...#",
+		"####........................###...#...###...####........#..........#...#",
+		"####.........................##........#................#..........#...#",
+		"###...........................#........#................#..........#..##",
+		"##......................###.......##....................#..........#..##",
+		"##.........###...........##.......###..............###..#####..#####..##",
+		"##.........##.............##......###..............#####.............###",
+		"##.........#........................#...............#####...........####",
+		"##...........................................##.......####...........###",
+		"##.........................................#####.......###...........###",
+		"##.........................................#####.......##............###",
+		"###........##...............................####.....................###",
+		"###.......###........................................................###",
+		"###.......###...........................##............................##",
+		"########..###.........................................................##",
+		"#########.###........................................................###",
+		"#########..#..................................................##.....###",
+		"#########...............................####..................###....###",
+		"####.###.................................####.................##......##",
+		"###......................................####.........................##",
+		"###.............##.......................#####........................##",
+		"###............######...................########.....................###",
+		"####...#..############..#####....##....##################..#..#..#######",
+		"########################################################################",
+		"########################################################################"
+	],
+	"objects": [
+		{
+			"type": "terrace",
+			"x": 56,
+			"y": 19,
+			"w": 12,
+			"h": 10,
+			"stairs": [
+				5,
+				6
+			]
+		},
+		{
+			"type": "prop",
+			"x": 7254,
+			"y": 2516,
+			"sprite": "tree_12",
+			"scale": 0.5380948427882086,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 7355,
+			"y": 2513,
+			"sprite": "tree_11",
+			"scale": 0.6473329633988807,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 7508,
+			"y": 2550,
+			"sprite": "tree_12",
+			"scale": 0.6328618908619643,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 7594,
+			"y": 2530,
+			"sprite": "tree_12",
+			"scale": 0.5849774002964286,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 7733,
+			"y": 2526,
+			"sprite": "tree_12",
+			"scale": 0.6002992509832464,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 7869,
+			"y": 2550,
+			"sprite": "tree_12",
+			"scale": 0.5952016096991152,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 8003,
+			"y": 2519,
+			"sprite": "tree_11",
+			"scale": 0.5779620237637383,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 8132,
+			"y": 2522,
+			"sprite": "tree_11",
+			"scale": 0.5869443348838106,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 8280,
+			"y": 2552,
+			"sprite": "tree_11",
+			"scale": 0.5040115551399411,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 8377,
+			"y": 2513,
+			"sprite": "tree_12",
+			"scale": 0.6247444316544274,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 8523,
+			"y": 2552,
+			"sprite": "tree_12",
+			"scale": 0.5239531927896671,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 8664,
+			"y": 2518,
+			"sprite": "tree_12",
+			"scale": 0.6057548484437106,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 7217,
+			"y": 2680,
+			"sprite": "tree_11",
+			"scale": 0.585758693163246,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 7232,
+			"y": 2790,
+			"sprite": "stones_1",
+			"scale": 0.45,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 7257,
+			"y": 2905,
+			"sprite": "tree_12",
+			"scale": 0.6267701258966725,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 7232,
+			"y": 3046,
+			"sprite": "stones_1",
+			"scale": 0.45,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 7229,
+			"y": 3163,
+			"sprite": "tree_12",
+			"scale": 0.6198015680849245,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 7232,
+			"y": 3302,
+			"sprite": "stones_1",
+			"scale": 0.45,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 7218,
+			"y": 3438,
+			"sprite": "tree_11",
+			"scale": 0.6283070723162144,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 7232,
+			"y": 3558,
+			"sprite": "stones_5",
+			"scale": 0.45,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 8623,
+			"y": 2654,
+			"sprite": "tree_11",
+			"scale": 0.6337190346480728,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 8640,
+			"y": 2790,
+			"sprite": "stones_6",
+			"scale": 0.45,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 8619,
+			"y": 2897,
+			"sprite": "tree_11",
+			"scale": 0.5932851983699173,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 8640,
+			"y": 3046,
+			"sprite": "stones_2",
+			"scale": 0.45,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 8629,
+			"y": 3185,
+			"sprite": "tree_12",
+			"scale": 0.6154546500425743,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 8640,
+			"y": 3302,
+			"sprite": "stones_2",
+			"scale": 0.45,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 8626,
+			"y": 3438,
+			"sprite": "tree_12",
+			"scale": 0.5302546742064835,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 8640,
+			"y": 3558,
+			"sprite": "stones_3",
+			"scale": 0.45,
+			"solid": false
+		},
+		{
+			"type": "portal",
+			"x": 448,
+			"y": 2240,
+			"target": "weeping_hollow"
+		},
+		{
+			"type": "portal",
+			"x": 448,
+			"y": 4160,
+			"target": "sunken_fen"
+		},
+		{
+			"type": "prop",
+			"x": 1472,
+			"y": 3187,
+			"sprite": "decor_4",
+			"scale": 0.45,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 1216,
+			"y": 2931,
+			"sprite": "decor_4",
+			"scale": 0.45,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 576,
+			"y": 2163,
+			"sprite": "decor_4",
+			"scale": 0.45,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 1216,
+			"y": 3699,
+			"sprite": "decor_4",
+			"scale": 0.45,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 448,
+			"y": 4083,
+			"sprite": "decor_4",
+			"scale": 0.45,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 2496,
+			"y": 3187,
+			"sprite": "decor_4",
+			"scale": 0.45,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 3264,
+			"y": 3059,
+			"sprite": "decor_4",
+			"scale": 0.45,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 3648,
+			"y": 2035,
+			"sprite": "decor_4",
+			"scale": 0.45,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 4160,
+			"y": 1651,
+			"sprite": "decor_4",
+			"scale": 0.45,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 2496,
+			"y": 3187,
+			"sprite": "decor_4",
+			"scale": 0.45,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 3776,
+			"y": 4467,
+			"sprite": "decor_4",
+			"scale": 0.45,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 4672,
+			"y": 1523,
+			"sprite": "decor_4",
+			"scale": 0.45,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 5824,
+			"y": 1523,
+			"sprite": "decor_4",
+			"scale": 0.45,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 6848,
+			"y": 1395,
+			"sprite": "decor_4",
+			"scale": 0.45,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 4416,
+			"y": 2035,
+			"sprite": "decor_4",
+			"scale": 0.45,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 3520,
+			"y": 2291,
+			"sprite": "decor_4",
+			"scale": 0.45,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 3520,
+			"y": 3187,
+			"sprite": "decor_4",
+			"scale": 0.45,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 3776,
+			"y": 4339,
+			"sprite": "decor_4",
+			"scale": 0.45,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 4416,
+			"y": 4723,
+			"sprite": "decor_4",
+			"scale": 0.45,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 5568,
+			"y": 4723,
+			"sprite": "decor_4",
+			"scale": 0.45,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 6720,
+			"y": 1779,
+			"sprite": "decor_4",
+			"scale": 0.45,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 6592,
+			"y": 2547,
+			"sprite": "decor_4",
+			"scale": 0.45,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 6336,
+			"y": 3699,
+			"sprite": "decor_4",
+			"scale": 0.45,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 6848,
+			"y": 4339,
+			"sprite": "decor_4",
+			"scale": 0.45,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 8000,
+			"y": 4595,
+			"sprite": "decor_4",
+			"scale": 0.45,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 6464,
+			"y": 4723,
+			"sprite": "decor_4",
+			"scale": 0.45,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 7232,
+			"y": 4595,
+			"sprite": "decor_4",
+			"scale": 0.45,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 4288,
+			"y": 1139,
+			"sprite": "decor_4",
+			"scale": 0.45,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 3136,
+			"y": 1139,
+			"sprite": "decor_4",
+			"scale": 0.45,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 3648,
+			"y": 4979,
+			"sprite": "decor_4",
+			"scale": 0.45,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 2496,
+			"y": 4723,
+			"sprite": "decor_4",
+			"scale": 0.45,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 2496,
+			"y": 3187,
+			"sprite": "decor_4",
+			"scale": 0.45,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 5824,
+			"y": 3315,
+			"sprite": "decor_4",
+			"scale": 0.45,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 6592,
+			"y": 3955,
+			"sprite": "decor_4",
+			"scale": 0.45,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 7104,
+			"y": 4595,
+			"sprite": "decor_4",
+			"scale": 0.45,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 6720,
+			"y": 4979,
+			"sprite": "decor_4",
+			"scale": 0.45,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 7616,
+			"y": 5491,
+			"sprite": "decor_4",
+			"scale": 0.45,
+			"solid": false
+		},
+		{
+			"type": "start",
+			"x": 1088,
+			"y": 3264
+		},
+		{
+			"type": "waypoint",
+			"x": 2112,
+			"y": 3264
+		},
+		{
+			"type": "prop",
+			"x": 1344,
+			"y": 3008,
+			"sprite": "decor_9",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 1958,
+			"y": 3136,
+			"sprite": "decor_4",
+			"scale": 0.45,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 2265,
+			"y": 3392,
+			"sprite": "decor_4",
+			"scale": 0.45,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 576,
+			"y": 2368,
+			"sprite": "tree_12",
+			"scale": 0.7,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 576,
+			"y": 4032,
+			"sprite": "tree_11",
+			"scale": 0.7,
+			"solid": false
+		},
+		{
+			"type": "trigger",
+			"x": 4288,
+			"y": 1600,
+			"radius": 560,
+			"id": "grave_field",
+			"text": "A graveyard, its headstones split and sooty. Something among them is digging."
+		},
+		{
+			"type": "prop",
+			"x": 3634,
+			"y": 1126,
+			"sprite": "crypt/decor_1",
+			"scale": 0.28,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 3927,
+			"y": 1116,
+			"sprite": "crypt/decor_1",
+			"scale": 0.28,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 4162,
+			"y": 1130,
+			"sprite": "crypt/decor_1",
+			"scale": 0.28,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 4392,
+			"y": 1114,
+			"sprite": "crypt/decor_1",
+			"scale": 0.28,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 4680,
+			"y": 1135,
+			"sprite": "crypt/decor_1",
+			"scale": 0.28,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 4920,
+			"y": 1125,
+			"sprite": "crypt/decor_1",
+			"scale": 0.28,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 3525,
+			"y": 1385,
+			"sprite": "crypt/decor_1",
+			"scale": 0.28,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 3771,
+			"y": 1374,
+			"sprite": "crypt/decor_1",
+			"scale": 0.28,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 4024,
+			"y": 1383,
+			"sprite": "crypt/decor_1",
+			"scale": 0.28,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 4527,
+			"y": 1389,
+			"sprite": "crypt/decor_1",
+			"scale": 0.28,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 4792,
+			"y": 1393,
+			"sprite": "crypt/decor_1",
+			"scale": 0.28,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 5031,
+			"y": 1372,
+			"sprite": "crypt/decor_1",
+			"scale": 0.28,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 3538,
+			"y": 1891,
+			"sprite": "crypt/decor_1",
+			"scale": 0.28,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 3795,
+			"y": 1895,
+			"sprite": "crypt/decor_1",
+			"scale": 0.28,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 4012,
+			"y": 1892,
+			"sprite": "crypt/decor_1",
+			"scale": 0.28,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 4523,
+			"y": 1900,
+			"sprite": "crypt/decor_1",
+			"scale": 0.28,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 4789,
+			"y": 1908,
+			"sprite": "crypt/decor_1",
+			"scale": 0.28,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 5034,
+			"y": 1898,
+			"sprite": "crypt/decor_1",
+			"scale": 0.28,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 3647,
+			"y": 2161,
+			"sprite": "crypt/decor_1",
+			"scale": 0.28,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 3878,
+			"y": 2167,
+			"sprite": "crypt/decor_1",
+			"scale": 0.28,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 4139,
+			"y": 2168,
+			"sprite": "crypt/decor_1",
+			"scale": 0.28,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 4439,
+			"y": 2146,
+			"sprite": "crypt/decor_1",
+			"scale": 0.28,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 4687,
+			"y": 2154,
+			"sprite": "crypt/decor_1",
+			"scale": 0.28,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 4912,
+			"y": 2162,
+			"sprite": "crypt/decor_1",
+			"scale": 0.28,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 5195,
+			"y": 2163,
+			"sprite": "crypt/decor_1",
+			"scale": 0.28,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 3648,
+			"y": 1600,
+			"sprite": "hollow/rune_4",
+			"scale": 0.45,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 4928,
+			"y": 1728,
+			"sprite": "hollow/rune_4",
+			"scale": 0.45,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 4288,
+			"y": 832,
+			"sprite": "hollow/rune_1",
+			"scale": 0.45,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 3904,
+			"y": 2240,
+			"sprite": "hollow/rune_3",
+			"scale": 0.45,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 3776,
+			"y": 1216,
+			"sprite": "crypt/decor_14",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 4800,
+			"y": 1216,
+			"sprite": "crypt/decor_14",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 4672,
+			"y": 2112,
+			"sprite": "crypt/decor_14",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 4032,
+			"y": 1984,
+			"sprite": "crypt/decor_14",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 5184,
+			"y": 1344,
+			"sprite": "decor_8",
+			"scale": 0.45,
+			"solid": true
+		},
+		{
+			"type": "boss",
+			"x": 4288,
+			"y": 1728,
+			"id": "grave_warden",
+			"name": "The Maddened Grave Warden",
+			"kind": "zombie",
+			"skin": "zombie_villager_3",
+			"hp": 10.0,
+			"size": 1.7
+		},
+		{
+			"type": "quest_object",
+			"x": 4544,
+			"y": 1856,
+			"id": "warden_half",
+			"sprite": "crypt/decor_34",
+			"scale": 0.6,
+			"prompt": "Take the first half of the Warded Keystone",
+			"text": "You take the first half of the Warded Keystone from the warden's fist. It is carved with a stair going down, and it is warm."
+		},
+		{
+			"type": "trigger",
+			"x": 6720,
+			"y": 1216,
+			"radius": 420,
+			"id": "outer_ruins",
+			"text": "The outer ruins: a chapel of the old Oakhaven, roofless and sooted black."
+		},
+		{
+			"type": "prop",
+			"x": 6720,
+			"y": 1017,
+			"sprite": "hollow/decor_20",
+			"scale": 0.55,
+			"solid": true
+		},
+		{
+			"type": "prop",
+			"x": 6080,
+			"y": 1145,
+			"sprite": "crypt/decor_12",
+			"scale": 0.4,
+			"solid": true
+		},
+		{
+			"type": "prop",
+			"x": 7360,
+			"y": 1145,
+			"sprite": "crypt/decor_11",
+			"scale": 0.4,
+			"solid": true
+		},
+		{
+			"type": "prop",
+			"x": 6464,
+			"y": 1472,
+			"sprite": "hollow/decor_14",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 6976,
+			"y": 1472,
+			"sprite": "hollow/decor_15",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 5952,
+			"y": 1472,
+			"sprite": "tree_12",
+			"scale": 0.7,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 4416,
+			"y": 4838,
+			"sprite": "crypt/rift_1",
+			"scale": 0.6,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 4288,
+			"y": 5094,
+			"sprite": "crypt/rift_2",
+			"scale": 0.6,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 4032,
+			"y": 5222,
+			"sprite": "crypt/rift_2",
+			"scale": 0.6,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 3776,
+			"y": 5094,
+			"sprite": "crypt/rift_1",
+			"scale": 0.6,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 3648,
+			"y": 4838,
+			"sprite": "crypt/rift_2",
+			"scale": 0.6,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 3776,
+			"y": 4582,
+			"sprite": "crypt/rift_1",
+			"scale": 0.6,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 4032,
+			"y": 4454,
+			"sprite": "crypt/rift_1",
+			"scale": 0.6,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 4288,
+			"y": 4582,
+			"sprite": "crypt/rift_2",
+			"scale": 0.6,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 4032,
+			"y": 4857,
+			"sprite": "hollow/decor_4",
+			"scale": 0.7,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 4032,
+			"y": 4928,
+			"sprite": "crypt/blood_1",
+			"scale": 0.9,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 5696,
+			"y": 3430,
+			"sprite": "crypt/rift_3",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 5568,
+			"y": 3686,
+			"sprite": "crypt/rift_1",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 5184,
+			"y": 3558,
+			"sprite": "crypt/rift_1",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 5184,
+			"y": 3302,
+			"sprite": "crypt/rift_2",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 5568,
+			"y": 3174,
+			"sprite": "crypt/rift_3",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 5440,
+			"y": 3449,
+			"sprite": "hollow/decor_4",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 5440,
+			"y": 3520,
+			"sprite": "crypt/blood_1",
+			"scale": 0.6,
+			"solid": false
+		},
+		{
+			"type": "pack",
+			"x": 5440,
+			"y": 3392,
+			"min": 3,
+			"max": 4,
+			"kind": "bleed_fiend"
+		},
+		{
+			"type": "prop",
+			"x": 3392,
+			"y": 3174,
+			"sprite": "crypt/rift_3",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 3264,
+			"y": 3430,
+			"sprite": "crypt/rift_3",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 2880,
+			"y": 3302,
+			"sprite": "crypt/rift_3",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 2880,
+			"y": 3046,
+			"sprite": "crypt/rift_2",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 3264,
+			"y": 2918,
+			"sprite": "crypt/rift_1",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 3136,
+			"y": 3193,
+			"sprite": "hollow/decor_4",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 3136,
+			"y": 3264,
+			"sprite": "crypt/blood_3",
+			"scale": 0.6,
+			"solid": false
+		},
+		{
+			"type": "pack",
+			"x": 3136,
+			"y": 3136,
+			"min": 3,
+			"max": 4,
+			"kind": "bleed_fiend"
+		},
+		{
+			"type": "prop",
+			"x": 7872,
+			"y": 5350,
+			"sprite": "crypt/rift_3",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 7744,
+			"y": 5606,
+			"sprite": "crypt/rift_2",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 7360,
+			"y": 5478,
+			"sprite": "crypt/rift_1",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 7360,
+			"y": 5222,
+			"sprite": "crypt/rift_3",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 7744,
+			"y": 5094,
+			"sprite": "crypt/rift_1",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 7616,
+			"y": 5369,
+			"sprite": "hollow/decor_4",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 7616,
+			"y": 5440,
+			"sprite": "crypt/blood_3",
+			"scale": 0.6,
+			"solid": false
+		},
+		{
+			"type": "pack",
+			"x": 7616,
+			"y": 5312,
+			"min": 3,
+			"max": 4,
+			"kind": "bleed_fiend"
+		},
+		{
+			"type": "trigger",
+			"x": 4032,
+			"y": 4800,
+			"radius": 600,
+			"id": "bleed_rift",
+			"text": "A Bleed Rift, a wound in the air that bleeds red light. Something lumbers inside it."
+		},
+		{
+			"type": "boss",
+			"x": 4032,
+			"y": 4928,
+			"id": "rift_golem",
+			"name": "The Rift Golem",
+			"kind": "rot_bloat",
+			"skin": "golem",
+			"hp": 12.0,
+			"size": 2.0
+		},
+		{
+			"type": "quest_object",
+			"x": 4416,
+			"y": 5184,
+			"id": "golem_half",
+			"sprite": "crypt/decor_34",
+			"scale": 0.6,
+			"prompt": "Take the second half of the Warded Keystone",
+			"text": "You pull the second half of the Warded Keystone from the golem's broken chest. It fits the first one's edge as a key fits a lock."
+		},
+		{
+			"type": "trigger",
+			"x": 6336,
+			"y": 5056,
+			"radius": 420,
+			"id": "last_watch_tower",
+			"text": "A watchtower, its beacon cold. Someone has barricaded the door from inside."
+		},
+		{
+			"type": "prop",
+			"x": 6336,
+			"y": 4857,
+			"sprite": "building_4",
+			"scale": 0.5,
+			"solid": true
+		},
+		{
+			"type": "prop",
+			"x": 5952,
+			"y": 5056,
+			"sprite": "decor_15",
+			"scale": 0.45,
+			"solid": true
+		},
+		{
+			"type": "prop",
+			"x": 6720,
+			"y": 5056,
+			"sprite": "decor_15",
+			"scale": 0.45,
+			"solid": true
+		},
+		{
+			"type": "prop",
+			"x": 6336,
+			"y": 5312,
+			"sprite": "decor_15",
+			"scale": 0.45,
+			"solid": true
+		},
+		{
+			"type": "prop",
+			"x": 6169,
+			"y": 5184,
+			"sprite": "decor_4",
+			"scale": 0.45,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 6592,
+			"y": 5312,
+			"sprite": "desert/decor_6",
+			"scale": 0.4,
+			"solid": false
+		},
+		{
+			"type": "npc",
+			"x": 6336,
+			"y": 5184,
+			"id": "mara",
+			"facing": -1
+		},
+		{
+			"type": "pack",
+			"x": 2752,
+			"y": 1216,
+			"min": 1,
+			"max": 1,
+			"kind": "mutated_scout"
+		},
+		{
+			"type": "prop",
+			"x": 2880,
+			"y": 1344,
+			"sprite": "desert/decor_6",
+			"scale": 0.4,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 2624,
+			"y": 1344,
+			"sprite": "decor_6",
+			"scale": 0.45,
+			"solid": false
+		},
+		{
+			"type": "pack",
+			"x": 2496,
+			"y": 5312,
+			"min": 1,
+			"max": 1,
+			"kind": "mutated_scout"
+		},
+		{
+			"type": "prop",
+			"x": 2624,
+			"y": 5440,
+			"sprite": "desert/decor_6",
+			"scale": 0.4,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 2368,
+			"y": 5440,
+			"sprite": "decor_6",
+			"scale": 0.45,
+			"solid": false
+		},
+		{
+			"type": "trigger",
+			"x": 8000,
+			"y": 3136,
+			"radius": 480,
+			"id": "mausoleum",
+			"text": "The Ossuary's iron gates: sealed in two pieces. Before them, a plinth shaped for a keystone."
+		},
+		{
+			"type": "prop",
+			"x": 7872,
+			"y": 2937,
+			"sprite": "hollow/decor_19",
+			"scale": 0.7,
+			"solid": true
+		},
+		{
+			"type": "prop",
+			"x": 7488,
+			"y": 3008,
+			"sprite": "hollow/decor_16",
+			"scale": 0.4,
+			"solid": true
+		},
+		{
+			"type": "prop",
+			"x": 8384,
+			"y": 3008,
+			"sprite": "hollow/decor_16",
+			"scale": 0.4,
+			"solid": true
+		},
+		{
+			"type": "prop",
+			"x": 8128,
+			"y": 2937,
+			"sprite": "hollow/decor_13",
+			"scale": 0.4,
+			"solid": true
+		},
+		{
+			"type": "prop",
+			"x": 7744,
+			"y": 3264,
+			"sprite": "decor_4",
+			"scale": 0.45,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 8256,
+			"y": 3264,
+			"sprite": "decor_4",
+			"scale": 0.45,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 7616,
+			"y": 3392,
+			"sprite": "crypt/decor_14",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "quest_object",
+			"x": 8000,
+			"y": 3264,
+			"id": "mausoleum_seal",
+			"sprite": "hollow/rune_1",
+			"scale": 0.6,
+			"prompt": "Join the halves of the Warded Keystone",
+			"text": "You set the two halves into the plinth, and they meet with a sound like a bell. The seal on the Ossuary's gates cracks and falls away, and the iron swings inward onto a stair into the dark. The whispers are loud now."
+		},
+		{
+			"type": "pack",
+			"x": 960,
+			"y": 1728,
+			"min": 3,
+			"max": 5
+		},
+		{
+			"type": "pack",
+			"x": 3648,
+			"y": 4032,
+			"min": 3,
+			"max": 5,
+			"kind": "bleed_fiend"
+		},
+		{
+			"type": "pack",
+			"x": 2240,
+			"y": 2496,
+			"min": 3,
+			"max": 5
+		},
+		{
+			"type": "pack",
+			"x": 5824,
+			"y": 3520,
+			"min": 3,
+			"max": 5
+		},
+		{
+			"type": "pack",
+			"x": 2624,
+			"y": 4416,
+			"min": 3,
+			"max": 5
+		},
+		{
+			"type": "pack",
+			"x": 8640,
+			"y": 4544,
+			"min": 3,
+			"max": 5
+		},
+		{
+			"type": "pack",
+			"x": 7488,
+			"y": 4800,
+			"min": 3,
+			"max": 5
+		},
+		{
+			"type": "pack",
+			"x": 5952,
+			"y": 4928,
+			"min": 3,
+			"max": 5,
+			"kind": "skeleton_warrior"
+		},
+		{
+			"type": "pack",
+			"x": 6848,
+			"y": 2752,
+			"min": 3,
+			"max": 5
+		},
+		{
+			"type": "pack",
+			"x": 2880,
+			"y": 5312,
+			"min": 3,
+			"max": 5
+		},
+		{
+			"type": "pack",
+			"x": 6080,
+			"y": 1344,
+			"min": 3,
+			"max": 5,
+			"kind": "ghoul"
+		},
+		{
+			"type": "pack",
+			"x": 3648,
+			"y": 1856,
+			"min": 3,
+			"max": 5,
+			"kind": "skeleton"
+		},
+		{
+			"type": "pack",
+			"x": 8384,
+			"y": 5440,
+			"min": 3,
+			"max": 5
+		},
+		{
+			"type": "pack",
+			"x": 8512,
+			"y": 1344,
+			"min": 3,
+			"max": 5
+		},
+		{
+			"type": "pack",
+			"x": 4928,
+			"y": 4672,
+			"min": 3,
+			"max": 5,
+			"kind": "bleed_fiend"
+		},
+		{
+			"type": "pack",
+			"x": 5696,
+			"y": 2624,
+			"min": 3,
+			"max": 5
+		},
+		{
+			"type": "pack",
+			"x": 5184,
+			"y": 1856,
+			"min": 3,
+			"max": 5,
+			"kind": "skeleton"
+		},
+		{
+			"type": "pack",
+			"x": 6976,
+			"y": 1472,
+			"min": 3,
+			"max": 5,
+			"kind": "ghoul"
+		},
+		{
+			"type": "pack",
+			"x": 2880,
+			"y": 576,
+			"min": 3,
+			"max": 5
+		},
+		{
+			"type": "pack",
+			"x": 3008,
+			"y": 3264,
+			"min": 3,
+			"max": 5
+		},
+		{
+			"type": "pack",
+			"x": 4672,
+			"y": 3264,
+			"min": 3,
+			"max": 5
+		},
+		{
+			"type": "pack",
+			"x": 1344,
+			"y": 5440,
+			"min": 3,
+			"max": 5
+		},
+		{
+			"type": "pack",
+			"x": 4288,
+			"y": 1216,
+			"min": 3,
+			"max": 5,
+			"kind": "skeleton"
+		},
+		{
+			"type": "pack",
+			"x": 4160,
+			"y": 5184,
+			"min": 3,
+			"max": 5,
+			"kind": "bleed_fiend"
+		},
+		{
+			"type": "pack",
+			"x": 2240,
+			"y": 1216,
+			"min": 3,
+			"max": 5
+		},
+		{
+			"type": "pack",
+			"x": 8128,
+			"y": 2240,
+			"min": 3,
+			"max": 5
+		},
+		{
+			"type": "pack",
+			"x": 6720,
+			"y": 4160,
+			"min": 3,
+			"max": 5
+		},
+		{
+			"type": "pack",
+			"x": 5440,
+			"y": 576,
+			"min": 3,
+			"max": 5
+		},
+		{
+			"type": "pack",
+			"x": 7744,
+			"y": 576,
+			"min": 3,
+			"max": 5
+		},
+		{
+			"type": "pack",
+			"x": 832,
+			"y": 4544,
+			"min": 3,
+			"max": 5
+		}
+	],
+	"roads": [
+		"........................................................................",
+		"........................................................................",
+		"........................................................................",
+		"........................................................................",
+		"........................................................................",
+		"........................................................................",
+		"........................................................................",
+		"........................................................................",
+		"........................................................................",
+		".....................ddddddddddddd..................d...................",
+		".................................d..................d...................",
+		".................................d..................d...................",
+		".................................dddddddddddddddddddd...................",
+		".................................d................d.....................",
+		".................................d................d.....................",
+		".................................d................d.....................",
+		"..........................dddddddd................d.....................",
+		"...dddddd.................d.......................d.....................",
+		"........d.................d.......................d.....................",
+		"........d.................d.......................d.....................",
+		"........d.................d.......................d.....................",
+		"........d.................d.......................d.....................",
+		"........d.................d.......................d.....................",
+		"........d.................d.......................d.....................",
+		"........d......sss......d.d.......................d.....................",
+		"........dddddddsssddddddddddd.....................d.....................",
+		"........d......sss..........d.............ddddddddd.....................",
+		"........d...................d.....................d.....................",
+		"........d...................d.....................d.....................",
+		"........d...................d.....................d.....................",
+		"........d...................d.....................d..........sss........",
+		"........d...................d.....................d..........sss........",
+		"...dddddd...................d.....................d..........sss........",
+		"............................d.....................d...........d.........",
+		"............................d....................dddddddddddddd.........",
+		"............................d....................d......................",
+		"............................d....................d......................",
+		"...................ddddddddddddddddddddddddddddddd......................",
+		"...................d.............................d......................",
+		"...................d............................sssddddddddd............",
+		"...................d............................sss........d............",
+		"...................d............................sss........d............",
+		"........................................................................",
+		"........................................................................",
+		"........................................................................",
+		"........................................................................",
+		"........................................................................",
+		"........................................................................"
+	]
+}

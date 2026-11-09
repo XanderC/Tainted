@@ -30,6 +30,45 @@ extends RefCounted
 ## ground first (BossTelegraph), so a player can step out of it.
 
 const BOSSES := {
+	# Chapter 3 of Act I: the grave warden of the Ashen Verge who drank the Taint, and holds half of the Warded Keystone
+	"grave_warden": {
+		"title": "Maddened Grave Warden", "hp": 2.0,
+		"arena": 560.0, "intro": 1.6, "enrage": 150.0, "max_adds": 6,
+		"lines": {"intro": "None disturb the dead. None.", "enrage": "Rest! REST!"},
+		"moves": {
+			"spade": {"kind": "slam", "windup": 0.7, "cd": 2.6, "range": [0.0, 190.0], "weight": 5, "r": 150.0, "dmg": 1.3, "recover": 0.5},
+			"reap": {"kind": "sweep", "windup": 0.8, "cd": 3.4, "range": [0.0, 280.0], "weight": 4, "r": 270.0, "arc": 2.4, "dmg": 1.2, "recover": 0.5},
+			"lurch": {"kind": "charge", "windup": 0.8, "cd": 5.0, "range": [200.0, 700.0], "weight": 3, "length": 520.0, "width": 90.0,
+				"speed": 1000.0, "dmg": 1.4, "recover": 0.8},
+			"raise": {"kind": "summon", "windup": 1.1, "cd": 12.0, "range": [0.0, 900.0], "weight": 2, "recover": 0.6},
+		},
+		"phases": [
+			{"at": 1.0, "moves": ["spade", "reap", "lurch"]},
+			{"at": 0.6, "say": "Up! Up, all of you!", "moves": ["spade", "reap", "lurch", "raise"],
+				"adds": [{"kind": "skeleton", "n": 3}], "speed": 1.1},
+			{"at": 0.3, "say": "The dead are mine to keep!", "moves": ["spade", "reap", "lurch", "raise"],
+				"adds": [{"kind": "skeleton_warrior", "n": 2}], "speed": 1.2, "dmg": 1.15, "cd": 0.85},
+		],
+		"loot": {"rares": 2, "magics": 2, "orbs": {"alteration": 2, "augment": 2, "alchemy": 1}, "scrolls": 2},
+	},
+	# Chapter 3 of Act I: the golem a Bleed Rift animated, with the other half of the Warded Keystone lodged in its chest
+	"rift_golem": {
+		"title": "Bleed-Rift Golem", "hp": 2.6,
+		"arena": 600.0, "intro": 2.0, "enrage": 170.0, "max_adds": 5,
+		"lines": {"intro": "The rift bleeds. The stone obeys.", "enrage": "The tear widens."},
+		"moves": {
+			"pound": {"kind": "slam", "windup": 0.9, "cd": 3.0, "range": [0.0, 230.0], "weight": 5, "r": 200.0, "dmg": 1.5, "recover": 0.8},
+			"quake": {"kind": "slam", "windup": 1.5, "cd": 9.0, "range": [0.0, 500.0], "weight": 2, "r": 340.0, "dmg": 1.7, "recover": 1.0},
+			"fling": {"kind": "rain", "windup": 1.2, "cd": 7.0, "range": [0.0, 900.0], "weight": 3, "count": 6, "r": 110.0, "dmg": 1.3, "recover": 0.7},
+			"tear": {"kind": "summon", "windup": 1.2, "cd": 14.0, "range": [0.0, 900.0], "weight": 2, "recover": 0.7},
+		},
+		"phases": [
+			{"at": 1.0, "moves": ["pound", "fling", "quake"]},
+			{"at": 0.65, "say": "", "moves": ["pound", "fling", "quake", "tear"], "adds": [{"kind": "bleed_fiend", "n": 2}], "speed": 1.1},
+			{"at": 0.3, "say": "", "moves": ["pound", "fling", "quake", "tear"], "adds": [{"kind": "bleed_fiend", "n": 2}], "speed": 1.2, "dmg": 1.15, "cd": 0.85},
+		],
+		"loot": {"rares": 2, "magics": 3, "orbs": {"alteration": 2, "augment": 2, "alchemy": 2}, "scrolls": 2},
+	},
 	# Chapter 2 of Act I: the guardian of the Brood Cyst in the Weeping Hollow
 	"matron_vhol": {
 		"title": "Skittering Matron", "hp": 2.2,

@@ -33,7 +33,8 @@ var _exits: Array = []  # [{"node", "target"}]
 var _waypoint: Interactable = null
 var _triggers: Array = []  # trigger objects not yet walked into this visit
 var _quest_objects: Array = []  # [{"node", "id"}]
-var _boss: Enemy = null
+var _boss: Enemy = null  ## the boss in the fight (or, before one wakes, the last made)
+var _bosses: Array = []  ## every boss in this zone (a map can have more than one: Chapter 3's warden and golem)
 var _boss_bar: BossBar  ## its name, health and what it shouts (BossBar), for a boss with an entry in BossDB
 var _talk_btn: Button
 var _toast: Label
@@ -176,15 +177,15 @@ func resume(entry: String) -> void:
 
 ## Puts a boss fight that was begun back to the start: the boss is made again, asleep and at full life.
 func _reset_boss_fight() -> void:
-	if not is_instance_valid(_boss) or _boss._dead:
-		return
-	if not (_boss._aggro or (_boss.brain != null and _boss.brain.state != BossBrain.S.SLEEP)):
+	if not _fighting(_boss):
 		return
 	var id := String(_boss.get_meta("boss_id", ""))
-	for g in ["boss_adds", "boss_arena"]:
-		for n in get_tree().get_nodes_in_group(g):
-			if is_ancestor_of(n):
-				n.queue_free()
+	for n in get_tree().get_nodes_in_group("boss_adds"):
+		if is_ancestor_of(n):
+			n.queue_free()
+	for n in get_tree().get_nodes_in_group("boss_arena"):
+		if is_ancestor_of(n) and n.boss == _boss:  # (another boss still asleep keeps its own ring)
+			n.queue_free()
 	_boss.queue_free()
 	_boss = null
 	for o in MapData.objects_of(maze.data, "boss"):
@@ -385,6 +386,22 @@ func _spawn_packs() -> void:
 				lead if j == 0 else MonsterAffix.Tier.NORMAL)
 
 
+## Whether a boss is awake and alive: in its fight (BossBrain), or woken as a plain tough monster.
+func _fighting(b: Enemy) -> bool:
+	return is_instance_valid(b) and not b._dead and (b._aggro or (b.brain != null and b.brain.state != BossBrain.S.SLEEP))
+
+
+## The boss the screen follows (its health bar, the reset when you fall) is the one in a fight, when the zone has several.
+func _follow_awake_boss() -> void:
+	if _bosses.size() < 2 or _fighting(_boss):
+		return
+	for b in _bosses:
+		if _fighting(b):
+			_boss = b
+			_attach_boss_bar()
+			return
+
+
 ## Whether `at` is in (or close enough to wake into) the arena of a boss still to be fought: its fight is
 ## its own, without the ordinary packs round it joining in from the ring's edge.
 func _in_boss_arena(at: Vector2) -> bool:
@@ -449,6 +466,7 @@ func _spawn_boss(o: Dictionary) -> void:
 ## round it. Both the real boss and a party's copy of it come here; only the real one gets a brain.
 func _setup_boss(b: Enemy, boss_id: String) -> void:
 	_boss = b
+	_bosses.append(b)
 	_attach_boss_bar()
 	if not BossDB.has(boss_id):
 		return
@@ -599,6 +617,7 @@ func _process(_delta: float) -> void:
 	_talk_btn.visible = _near != null and not get_tree().paused
 	if _near != null:
 		_talk_btn.text = _near.prompt
+	_follow_awake_boss()
 	# (a boss with its own health bar, BossBar, needs no plain label)
 	var plain := is_instance_valid(_boss) and not BossDB.has(String(_boss.get_meta("boss_id", "")))
 	_boss_lbl.visible = plain and not _boss._dead and _boss._aggro

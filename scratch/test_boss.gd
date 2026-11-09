@@ -105,7 +105,7 @@ func _ready() -> void:
 	var obj := boss_object(zone)
 	check(not obj.is_empty(), "the Blackroot Wilds has its boss object")
 	var home := Vector2(float(obj.x), float(obj.y))
-	var reach: float = float(BossDB.def("raider_captain").arena) + Zone.ARENA_CLEAR
+	var reach: float = float(BossDB.def("briar_alpha").arena) + Zone.ARENA_CLEAR  # (the zone cleared the packs round the Wilds' real boss, before this test swapped Vesh in)
 	var camp_packs := 0
 	for e in get_tree().get_nodes_in_group("enemies"):
 		if is_instance_valid(e) and not e.is_boss and String(e.pack).begins_with("zpack_") and e.global_position.distance_to(home) < reach - 80.0:  # (a pack's members stand up to 70 px round its centre)

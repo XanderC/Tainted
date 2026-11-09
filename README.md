@@ -99,7 +99,7 @@ zone's `kinds` in `ActDB.ZONES`. Tests: `scratch/test_wilds.tscn` (the map, the 
 real zone, the town), `scratch/test_quests.tscn`.
 **Phase 2 (built):** the **Weeping Hollow** (caves under the Wilds, reached by a cave mouth east of the ruined manor: a
 tainted river through a wide gallery with two bridges, skitterers, blind crawlers and ghouls, spider nests, a mushroom
-grotto, a vine-choked gate to the Ashen Verge that stays shut until phase 3, and in the north-east the Brood Cyst
+grotto, a vine-choked gate that leads on to the Ashen Verge (open since phase 3), and in the north-east the Brood Cyst
 cavern), the **Sunken Fen** (drowned woodland south of the Wilds: patches of mire that slow you, rot-bloat zombies,
 leechfiends and Fen Crawlers, dry dirt roads, and Voss's hovel), the main quest **Poisoning the Well** (Althea, after
 Chapter 1: enter the Hollow, find the cyst, slay Skittering Matron Vhol, plant the Alchemical Purge Ward, hand in to
@@ -110,6 +110,22 @@ cave pack's stone-brick walls over void, its slime lake tinted dark as the taint
 Quests can now make you choose a reward (`"choose": [{label, ...rewards}]`, one dialogue option each) and pay
 `attr_points` and `skill_rune`. Test: `scratch/test_hollow.tscn`. Art notes: there is no spider or matron art, so the
 skitterers and Fen monsters reuse the goblin, ghoul, mummy and villager characters and Vhol is a big ghoul.
+**Phase 3 (built):** the **Ashen Verge** (72 x 48: the autumn woods burnt out; reached from the Hollow's far gate or by the
+road east out of the Fen, so each of those exits now leads on) and the main quest **Breaking the Seal** (Althea, after
+Chapter 2: take the first half of the Warded Keystone from the **Maddened Grave Warden** in the graveyard in the north,
+the second from the **Rift Golem** in the big Bleed Rift in the south, and join them at the sealed mausoleum, up stairs on
+raised ground in the east: the Ossuary's gates stand open on a stair into the dark, ready for phase 4). Both are boss
+fights in `BossDB` (`grave_warden`: spade, reap, lurch and raising the dead; `rift_golem`: pound, quake, flung rubble
+and tears in the rift that let fiends through); a zone can now have several bosses (`Zone._bosses`: the health bar and
+the reset follow the one in the fight). The side quest **The Last Watch** (Scout Captain Dennis, after Chapter 2): put
+down the two scouts the Taint twisted (`mutated_scout`), find Mara, the survivor, at the watchtower in the south-east,
+and take her word back to Dennis for the Rusted Armory Key (kept as the quest being done, for the vault in phase 4;
+rewards can list `notes`). The Verge's monsters are skeletons, skeleton warriors, zombies, ghouls and Bleed Fiends
+(`bleed_fiend`, round the rifts). Its look is the `ashen` theme: `tools/import_ashen.py` drains the woodland's ground,
+paths, walls and terraces to ash (`assets/tiles/ashen`; a theme's `art` is the folder it falls back on for the rest),
+`tools/import_crypt.py` brings the dungeon pack's props (`assets/tiles/crypt`: gravestones, dead branches, ruined walls,
+a key) and turns its green slime and the cave crystals blood-red for the rifts. Test: `scratch/test_verge.tscn`. Art
+notes: the golem is the ice golem character, the warden a big rotting villager, the mutated scouts a ranger.
 Zone maps come from `tools/gen_zones.py`; tweak them in the map editor (rerunning the script
 overwrites them).
 

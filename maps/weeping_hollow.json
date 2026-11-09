@@ -282,12 +282,18 @@
 			"solid": false
 		},
 		{
+			"type": "portal",
+			"x": 6848,
+			"y": 4672,
+			"target": "ashen_verge"
+		},
+		{
 			"type": "prop",
-			"x": 6937,
-			"y": 4729,
+			"x": 6848,
+			"y": 4601,
 			"sprite": "decor_13",
-			"scale": 0.55,
-			"solid": true
+			"scale": 0.5,
+			"solid": false
 		},
 		{
 			"type": "prop",

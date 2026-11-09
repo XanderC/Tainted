@@ -1,5 +1,9 @@
 {
 	"maps": {
+		"ashen_verge": {
+			"kind": "story",
+			"name": "Ashen Verge"
+		},
 		"bone_labyrinth": {
 			"kind": "rift",
 			"name": "Bone Labyrinth"

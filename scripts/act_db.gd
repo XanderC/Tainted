@@ -17,6 +17,8 @@ const ZONES := {
 		"kinds": ["cave_skitterer", "blind_crawler", "ghoul", "skeleton"]},
 	"sunken_fen": {"name": "Sunken Fen", "act": 1, "map": "sunken_fen", "area_level": 4,
 		"kinds": ["rot_bloat", "leechfiend", "fen_crawler", "villager", "zombie"]},
+	"ashen_verge": {"name": "Ashen Verge", "act": 1, "map": "ashen_verge", "area_level": 6,
+		"kinds": ["skeleton", "skeleton_warrior", "zombie", "ghoul", "bleed_fiend"]},
 }
 
 
