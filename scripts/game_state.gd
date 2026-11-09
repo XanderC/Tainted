@@ -46,6 +46,7 @@ var rift_level := 1     # level chosen at the rift gate for the next run
 ## The story (Quests, ActDB): quest id -> progress; zones whose waypoint you've touched
 var quests := {}
 var waypoints: Array = []
+var mini_origin := ""  # the zone a mini-dungeon was entered from (its exit leads back: MiniDungeons)
 var opened_vaults: Array = []  # the story's vaults (map "vault" objects) already broken into: they give their loot once
 ## Town portal scrolls (TownPortals): how many you carry, the portal you have open ({} for none; its
 ## fields: TownPortals) and what lay on the ground where you went through one. Arriving back through

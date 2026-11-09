@@ -23,6 +23,14 @@ const ZONES := {
 		"kinds": ["skeleton", "skeleton_warrior", "skeleton_vanguard", "skeleton_archer", "ghoul", "veil_cultist"]},
 	"grand_ossuary_2": {"name": "Lower Ossuary", "act": 1, "map": "grand_ossuary_2", "area_level": 8,
 		"kinds": ["skeleton_warrior", "skeleton_vanguard", "skeleton_hunter", "ghoul", "veil_cultist", "bleed_fiend"]},
+	# The spawning mini-dungeons (MiniDungeons: an entrance in an open zone, now and then, leads to one; "mini" names what happens in it
+	# (MiniDungeon), "packs" false: no ordinary monsters, "density": more of them)
+	"mini_cellar": {"name": "Rot-Damp Cellar", "act": 1, "map": "mini_cellar", "area_level": 3, "mini": "cellar", "density": 1.8, "kinds": ["blood_maggot", "ghoul"]},
+	"mini_bonepit": {"name": "Forgotten Bone Pit", "act": 1, "map": "mini_bonepit", "area_level": 3, "mini": "bonepit",
+		"kinds": ["skeleton", "skeleton_warrior", "skeleton_archer"]},
+	"mini_sanctum": {"name": "Hermit's Sanctum", "act": 1, "map": "mini_sanctum", "area_level": 3, "mini": "sanctum", "packs": false, "kinds": ["skeleton"]},
+	"mini_fissure": {"name": "Weeping Fissure", "act": 1, "map": "mini_fissure", "area_level": 3, "mini": "fissure", "density": 2.4,
+		"kinds": ["bleed_fiend", "ghoul", "veil_cultist", "blind_crawler"]},
 	"sepulcher_of_mourning": {"name": "Sepulcher of Mourning", "act": 1, "map": "sepulcher_of_mourning", "area_level": 9,
 		"kinds": ["skeleton_vanguard", "veil_cultist", "bleed_fiend", "skeleton_hunter", "ghoul"]},
 }

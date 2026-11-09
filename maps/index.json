@@ -20,6 +20,22 @@
 			"kind": "story",
 			"name": "The Lower Ossuary"
 		},
+		"mini_bonepit": {
+			"kind": "story",
+			"name": "Forgotten Bone Pit"
+		},
+		"mini_cellar": {
+			"kind": "story",
+			"name": "Rot-Damp Cellar"
+		},
+		"mini_fissure": {
+			"kind": "story",
+			"name": "Weeping Fissure"
+		},
+		"mini_sanctum": {
+			"kind": "story",
+			"name": "Hermit's Sanctum"
+		},
 		"oakhaven": {
 			"kind": "special",
 			"name": "Oakhaven Outpost"

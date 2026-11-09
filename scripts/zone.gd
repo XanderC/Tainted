@@ -46,6 +46,7 @@ var coop: Coop = null  ## the party's zone (Net.coop kind "zone"): shared with t
 var portals: TownPortals  ## the town portals open here, yours and your party's
 var _hud_layer: CanvasLayer
 var _inst := ""  # the party's instance of this zone ("" alone)
+var _mini_exit := Vector2(INF, INF)  # where you came back up out of a mini-dungeon (its entrance here): MiniDungeons
 
 
 func _ready() -> void:
@@ -54,6 +55,8 @@ func _ready() -> void:
 	zone_id = GameState.current_zone if ActDB.ZONES.has(GameState.current_zone) else ActDB.ZONES.keys()[0]
 	var z := ActDB.zone(zone_id)
 	area_level = int(z.get("area_level", 1))
+	if z.has("mini"):  # a mini-dungeon is as hard as the zone it hides in, and a little more
+		area_level = int(ActDB.zone(GameState.mini_origin).get("area_level", area_level)) + 1
 	maze = MazeMap.new()
 	maze.setup(String(z["map"]))
 	add_child(maze)
@@ -68,7 +71,10 @@ func _ready() -> void:
 	_place_objects(not party_zone)
 	if not party_zone:
 		_spawn_packs()
-		ZoneEncounters.roll(self)  # a cottage in the woods, a cult at its ritual: sometimes
+		var met := ZoneEncounters.roll(self)  # a cottage in the woods, a cult at its ritual, a cursed shrine: sometimes
+		MiniDungeons.roll(self, met.pos if met != null else Vector2(INF, INF))  # and a way down into the dark: sometimes
+		if z.has("mini"):
+			MiniDungeon.attach(self, String(z["mini"]))
 	_enter()
 
 
@@ -209,6 +215,8 @@ func _arrival() -> Vector2:
 		var at := TownPortals.take_arrival(portal_place())
 		if at.is_finite():
 			return at
+	if ActDB.zone(entry).has("mini") and _mini_exit.is_finite():  # up from a mini-dungeon: at its entrance
+		return _mini_exit
 	for e in _exits:
 		if e["target"] == entry:
 			var to_start: Vector2 = (maze.start_pos - e["node"].global_position).normalized()
@@ -224,6 +232,8 @@ func _place_objects(bosses := true) -> void:
 		var target := String(o.get("target", "town"))
 		if target == "":
 			target = ActDB.TOWN
+		if target == "$origin":  # a mini-dungeon's way up: to the zone it was entered from
+			target = GameState.mini_origin if ActDB.ZONES.has(GameState.mini_origin) else ActDB.TOWN
 		var p := RiftPortal.new()
 		p.position = Vector2(float(o.x), float(o.y))
 		add_child(p)
@@ -432,7 +442,9 @@ func _spawn_packs() -> void:
 	rng.seed = hash(zone_id)  # the same kind at the same spot every visit
 	var pool: Array = ActDB.zone(zone_id).get("kinds", MonsterKinds.pool(area_level))
 	# The map's own packs, then more across the floor (PackSpots: the same ones every visit)
-	var spots := PackSpots.for_map(maze, CELLS_PER_PACK)
+	if ActDB.zone(zone_id).get("packs", true) == false:
+		return  # (a hermit's sanctum is quiet)
+	var spots := PackSpots.for_map(maze, CELLS_PER_PACK / float(ActDB.zone(zone_id).get("density", 1.0)))
 	for i in spots.size():
 		var o: Dictionary = spots[i]
 		var kind := String(o.get("kind", ""))
@@ -712,7 +724,18 @@ func _respawn() -> void:
 
 func _leave(target: String, entry: String) -> void:
 	_leaving = true
-	ActDB.travel(get_tree(), target, entry, _stay)
+	# Up out of a mini-dungeon carries straight on in the zone above (no "continue or start over?")
+	ActDB.travel(get_tree(), target, entry, _stay, "continue" if ActDB.zone(zone_id).has("mini") and target != zone_id else "")
+
+
+## Down into a mini-dungeon (MiniDungeons): a new one each time, or the one you left if this is the same entrance.
+func enter_mini(dungeon: String, entrance_pos: Vector2, visited: bool) -> void:
+	if _leaving:
+		return
+	_leaving = true
+	_mini_exit = entrance_pos + Vector2(0, 110)
+	GameState.mini_origin = zone_id
+	ActDB.travel(get_tree(), dungeon, "start", _stay, "continue" if visited else "reset")
 
 
 ## You backed out of "carry on or start over?" at an exit: you are where you were, a step back from it.

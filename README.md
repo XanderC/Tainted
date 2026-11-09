@@ -155,6 +155,26 @@ destroy it and the dark lifts, to come again 24 seconds later. At 20% there are 
 the torn rift can be looked into, and Althea's hand-in ends Act I (she warns that the epicentre lies in the eastern wastes). Test:
 `scratch/test_sepulcher.tscn`. Limits: in a party only the host's screen dims (everyone takes the shadows' hits); the souls and
 Malaphax reuse the ghost knight and death/hell knight characters.
+**Phase 6 (built):** the four **dynamic world encounters** (`ZoneEncounters`, now six kinds with the old cottage and ritual; one is
+rolled per visit to a zone, a 50% chance, in a spot away from the start and the exits) and the four **spawning mini-dungeons**
+(`MiniDungeons` and `MiniDungeon`). Encounters: a **Cursed Shrine** (use the bleeding obelisk: three waves of fiends in 45 seconds,
+the last led by an elite; clearing them pays a cluster of loot and a two-minute blessing, `Player.bless`: +20% damage, +60 armour,
++10% to every resistance); **Tears in Reality** (a Bleed Rift opens when you come near and swells, pulling you in and vomiting out
+elites; destroy its three spires, `rift_spire` enemies that stand still, in 80 seconds to seal it, or a Rift Horror tears through);
+**The Dying Pilgrim** (a wounded paladin in a purification circle; four waves of rot fiends, and every one that reaches him tears at
+his life: keep him above half and a hidden consecrated reliquary opens); **Pyre of the Dead** (a heap of corpses starts changing as
+you near it, 40 seconds: light it and the swarm round it enrages, a dense horde inside a ring of fire that shuts you in, like a
+boss arena's; too slow and they rise anyway, with no ring). Mini-dungeons: an entrance (a trapdoor, cave mouth or stone grate)
+appears with a 40% chance in the Wilds, the Hollow, the Fen and the Verge, and leads to a zone of its own (`ActDB` `mini_*`: as
+hard as the zone above, plus one; its exit, the portal target `"$origin"`, leads back up to the entrance without the "continue or
+start over" question; a new one each time you go down, the same one if you go back through the same entrance). The **Rot-Damp
+Cellar** swarms with `blood_maggot`s and holds a chest that is a mimic on a hoard; the **Forgotten Bone Pit**'s middle shuts two
+portcullises when you step into it and sets an elite `skeleton_champion` on you; the **Hermit's Sanctum** is quiet, with an abandoned
+bench (`HermitBench`) that gives one free reroll of an item's modifiers or sockets, no orb spent (`Crafting.apply_orb` with
+`free`); the **Weeping Fissure** is dark (a shader over the screen, light only round you), crowded (`density` 2.4) and holds a
+Tainted Chest tethered to three elite guardians, opening when they are dead. Zone flags: `mini`, `packs` (false: no ordinary
+monsters), `density`. Tests: `scratch/test_world.tscn`; `scratch/capture_world.tscn` takes pictures. Limits: none of it in a party's
+zone yet; the entrances and the events are drawn with shapes, not art, and a mini-dungeon you quit inside returns you to town.
 Zone maps come from `tools/gen_zones.py`; tweak them in the map editor (rerunning the script
 overwrites them).
 

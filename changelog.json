@@ -1,5 +1,14 @@
 [
 	{
+		"build": 0,
+		"title": "Act I phase 6: world events and mini-dungeons",
+		"notes": [
+			"Four new events in the open zones: a Cursed Shrine (cleanse it against three waves of fiends for loot and a two-minute blessing), Tears in Reality (a rift that pulls you in and spews elites: destroy its three spires before it bursts), The Dying Pilgrim (keep the paladin above half his life against waves of rot fiends and a hidden reliquary opens) and the Pyre of the Dead (burn the corpses before they rise, and survive the horde that the fire enrages).",
+			"Mini-dungeons: now and then a trapdoor, cave mouth or stone grate appears in the Wilds, the Hollow, the Fen or the Verge. The Rot-Damp Cellar (maggots, and a mimic on a hoard), the Forgotten Bone Pit (step into the middle and the portcullises fall, and a skeleton champion comes for you), the Hermit's Sanctum (a quiet cave and a bench that gives one free reroll of an item's modifiers or sockets) and the Weeping Fissure (pitch dark, crowded, and a Tainted Chest tethered to three elite guardians).",
+			"This completes the Act I story and its side content."
+		]
+	},
+	{
 		"build": 202611091014,
 		"title": "Act I phase 5: the Sepulcher of Mourning and Lord Malaphax",
 		"notes": [

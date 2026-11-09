@@ -81,6 +81,7 @@ var _frenzy_stacks := 0
 var _frenzy_t := 0.0
 var _shield_slam_buff_t := 0.0
 var _shared_buffs := {}  # your hireling's war cries on you: buff id -> seconds left
+var blessing_t := 0.0  # seconds left of a Cursed Shrine's blessing (ZoneEncounters)
 
 # Drawing FX
 var _swing_t := 0.0
@@ -238,7 +239,20 @@ func _physics_process(delta: float) -> void:
 		rig.play_loop("Running", clampf(cur_speed / 220.0, 0.8, 1.4))
 
 
+## A cleansed shrine's blessing (ZoneEncounters): more damage, armour and every resistance, for `seconds`.
+func bless(seconds: float) -> void:
+	if blessing_t <= 0.0:
+		stats.add_mod("damage", StatBlock.ModType.MORE, 0.2, "shrine")
+		stats.add_mod("armor", StatBlock.ModType.FLAT, 60.0, "shrine")
+		stats.add_mod("res_all", StatBlock.ModType.FLAT, 0.1, "shrine")
+	blessing_t = seconds
+
+
 func _process_buffs(delta: float) -> void:
+	if blessing_t > 0.0:
+		blessing_t -= delta
+		if blessing_t <= 0.0:
+			stats.remove_source("shrine")
 	if _buff_active:
 		_buff_t -= delta
 		if _buff_t <= 0.0:

@@ -83,14 +83,15 @@ static func socket_cap(item: ItemInstance) -> int:
 	return item.base.max_sockets()
 
 
-## Spends one orb and applies it. Returns {"ok": bool, "msg": String}.
-static func apply_orb(player: Player, item: ItemInstance, orb: String) -> Dictionary:
+## Spends one orb and applies it (`free`: no orb needed, none spent: the Hermit's bench). Returns {"ok": bool, "msg": String}.
+static func apply_orb(player: Player, item: ItemInstance, orb: String, free := false) -> Dictionary:
 	var why := orb_block_reason(item, orb)
 	if why != "":
 		return {"ok": false, "msg": why}
-	if GameState.orb_count(orb) <= 0:
-		return {"ok": false, "msg": "You have none"}
-	GameState.add_orb(orb, -1)
+	if not free:
+		if GameState.orb_count(orb) <= 0:
+			return {"ok": false, "msg": "You have none"}
+		GameState.add_orb(orb, -1)
 	if orb == "mirror":
 		var copy := ItemInstance.from_dict(item.to_dict())
 		copy.uid = ItemInstance.new_uid()  # a copy is an item of its own

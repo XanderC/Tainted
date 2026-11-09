@@ -1207,6 +1207,125 @@ def sepulcher_of_mourning():
     z.save("story")
 
 
+def _mini_zone(zid, name, cols, rows, seed, theme, halls, start):
+    z = Zone(zid, name, cols, rows, seed=seed, theme=theme)
+    z.fill()
+    for h in halls:
+        z.hall(*h)
+    return z
+
+
+def mini_cellar():
+    """The Rot-Damp Cellar (a mini-dungeon, see MiniDungeons): one low room of rotted barrels and puddles, blood maggots in swarms, and
+    at the far end a chest on a hoard that is not what it seems (MiniDungeon). Theme "crypt"."""
+    room = (3, 3, 19, 10)
+    z = _mini_zone("mini_cellar", "Rot-Damp Cellar", 23, 14, 8801, "crypt", [room], (6, 6))
+    start = (6, 6)
+    z.reachable_only(start)
+    z.add("start", start)
+    z.add("portal", (4, 6), target="$origin")
+    z.prop("decor_7", (4, 4), scale=0.4)
+    for x in range(room[0] + 2, room[2], 4):
+        z.prop("torch_1", (x, room[1]), dy=0.35, scale=0.5)
+    for x, y in [(6, 4), (7, 4), (11, 4), (14, 9), (9, 9), (17, 4), (17, 9)]:
+        z.prop("decor_2" if (x + y) % 3 else "decor_17", (x, y), dx=z.rng.uniform(0.3, 0.7), scale=0.5, solid=True)
+    for x, y in [(8, 6), (12, 7), (15, 6), (10, 8), (13, 5)]:
+        z.prop("crypt/blood_" + str(z.rng.choice([1, 2, 3])), (x, y), scale=0.4)
+    for x, y in [(5, 8), (12, 4), (16, 8)]:
+        z.prop("decor_21", (x, y), dy=0.9, scale=0.45, solid=True)
+    z.add("marker", (17, 6), id="chest")
+    for c in [(9, 5), (12, 8), (14, 6), (8, 8)]:
+        z.add("pack", c, kind="blood_maggot", min=4, max=6)
+    z.save("story")
+
+
+def mini_bonepit():
+    """The Forgotten Bone Pit (a mini-dungeon): caverns littered with skeletal debris; the pit in the middle has a way in at each end,
+    and when you step into it iron portcullises slam over both (the "gate" markers), shutting you in with an elite Skeleton
+    Champion (MiniDungeon). Theme "hollow"."""
+    entry, ra, rb, pit = (3, 10, 9, 17), (14, 3, 20, 9), (14, 20, 20, 26), (26, 11, 36, 19)
+    z = _mini_zone("mini_bonepit", "Forgotten Bone Pit", 40, 30, 8802, "hollow", [entry, ra, rb, pit], (5, 13))
+    start = (5, 13)
+    z.hallway((9, 13), (17, 6), 2)
+    z.hallway((9, 14), (17, 23), 2)
+    z.hallway((17, 6), (31, 6), 2)
+    z.hallway((31, 6), (31, 11), 1, first="y")
+    z.hallway((17, 23), (31, 23), 2)
+    z.hallway((31, 23), (31, 19), 1, first="y")
+    z.reachable_only(start)
+    z.add("start", start)
+    z.add("portal", (4, 13), target="$origin")
+    z.add("marker", (31, 15), id="pit")
+    z.add("marker", (31, 8), id="gate")
+    z.add("marker", (31, 22), id="gate")
+    for _ in range(26):  # skeletal debris
+        c = (z.rng.randint(3, 38), z.rng.randint(3, 26))
+        if z.open_around(c, 0):
+            z.prop("hollow/bone_" + str(z.rng.randint(1, 10)), c, dx=z.rng.uniform(0.2, 0.8), dy=z.rng.uniform(0.3, 0.9), scale=z.rng.choice([0.5, 0.6, 0.8]))
+    for dx, dy in [(-3, -2), (3, -2), (-3, 2), (3, 2), (0, -3), (0, 3)]:  # the pit's rim of bones and old ribs
+        z.prop("hollow/bone_" + str(z.rng.choice([1, 4, 5, 6])), (31 + dx, 15 + dy), scale=0.9)
+    for c in [(17, 6), (17, 23), (7, 13)]:
+        z.prop("crypt/lantern_1", c, dy=0.9, scale=0.45)
+    z.add("trigger", (31, 15), radius=700, id="bone_pit", text="A pit of bones. Something tells you not to step in.")
+    for c in [(17, 5), (17, 24), (19, 7)]:
+        z.add("pack", c, kind="skeleton", min=3, max=4)
+    z.save("story")
+
+
+def mini_sanctum():
+    """The Secluded Hermit's Sanctum (a mini-dungeon): a quiet cave with a bed, lanterns, crystals and an abandoned crafting bench (the
+    "bench" marker: one free reroll, HermitBench). No monsters. Theme "hollow"."""
+    entry, mid_, den = (3, 9, 8, 14), (13, 3, 20, 10), (25, 9, 33, 18)
+    z = _mini_zone("mini_sanctum", "Hermit's Sanctum", 37, 22, 8803, "hollow", [entry, mid_, den], (5, 11))
+    start = (5, 11)
+    z.hallway((8, 11), (16, 6), 2)
+    z.hallway((16, 6), (29, 6), 2)
+    z.hallway((29, 6), (29, 9), 2, first="y")
+    z.reachable_only(start)
+    z.add("start", start)
+    z.add("portal", (4, 11), target="$origin")
+    z.add("marker", (29, 13), id="bench")
+    z.prop("decor_14", (27, 11), scale=0.5, solid=True)  # a bed of straw and furs
+    z.prop("decor_15", (31, 16), scale=0.5)
+    for c in [(26, 10), (32, 10), (26, 17), (32, 17), (16, 5), (6, 10)]:
+        z.prop("crypt/lantern_1", c, dy=0.9, scale=0.42)
+    for _ in range(16):
+        c = (z.rng.randint(3, 34), z.rng.randint(3, 19))
+        if z.open_around(c, 0):
+            z.prop("hollow/crystal_" + str(z.rng.choice([1, 2, 5, 9])), c, dx=z.rng.uniform(0.2, 0.8), scale=0.45)
+    z.add("trigger", (29, 13), radius=600, id="hermit_sanctum", text="A hermit's sanctum, quiet and long abandoned. A crafting bench stands against the wall, still sharp.")
+    z.save("story")
+
+
+def mini_fissure():
+    """The Weeping Fissure (a mini-dungeon): a pocket where the realm wall is almost shredded. Black but for a pool of light round you,
+    crowded with monsters, and in the middle a Tainted Chest tethered to three elite guardians (the "chest" and "guardian"
+    markers: it opens when they are dead, MiniDungeon). Theme "hollow"."""
+    entry, c1, c2, c3 = (3, 14, 8, 20), (14, 4, 22, 12), (14, 22, 22, 30), (27, 12, 37, 22)
+    z = _mini_zone("mini_fissure", "Weeping Fissure", 41, 34, 8804, "hollow", [entry, c1, c2, c3], (5, 17))
+    start = (5, 17)
+    z.hallway((8, 17), (18, 8), 2)
+    z.hallway((8, 18), (18, 26), 2)
+    z.hallway((18, 8), (32, 8), 2)
+    z.hallway((32, 8), (32, 12), 2, first="y")
+    z.hallway((18, 26), (32, 26), 2)
+    z.hallway((32, 26), (32, 22), 2, first="y")
+    z.reachable_only(start)
+    z.add("start", start)
+    z.add("portal", (4, 17), target="$origin")
+    z.add("marker", (32, 17), id="chest")
+    for c in [(29, 14), (35, 14), (32, 20)]:
+        z.add("marker", c, id="guardian")
+    for _ in range(30):
+        c = (z.rng.randint(3, 38), z.rng.randint(3, 30))
+        if z.open_around(c, 0):
+            z.prop("hollow/crystal_" + str(z.rng.randint(1, 10)), c, dx=z.rng.uniform(0.2, 0.8), dy=z.rng.uniform(0.4, 0.95), scale=z.rng.choice([0.5, 0.7]))
+    for c in [(19, 8), (19, 26), (6, 17)]:
+        z.prop("crypt/blood_" + str(z.rng.choice([1, 2, 3])), c, scale=0.5)
+    z.add("trigger", (32, 17), radius=700, id="weeping_fissure", text="The Weeping Fissure. The dark is thick here, and the wall between the worlds is almost gone.")
+    z.save("story")
+
+
 if __name__ == "__main__":
     dune_wastes()
     oakhaven()
@@ -1216,3 +1335,7 @@ if __name__ == "__main__":
     grand_ossuary_1()
     grand_ossuary_2()
     sepulcher_of_mourning()
+    mini_cellar()
+    mini_bonepit()
+    mini_sanctum()
+    mini_fissure()

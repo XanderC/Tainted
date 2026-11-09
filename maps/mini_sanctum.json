@@ -1,0 +1,180 @@
+{
+	"format": 1,
+	"id": "mini_sanctum",
+	"name": "Hermit's Sanctum",
+	"kind": "story",
+	"theme": "hollow",
+	"cell": 128,
+	"auto_decorate": true,
+	"grid": [
+		"#####################################",
+		"#####################################",
+		"#####################################",
+		"#############........################",
+		"#############........################",
+		"#############.................#######",
+		"#############.................#######",
+		"#############........#######..#######",
+		"#############........#######..#######",
+		"###......####........####.........###",
+		"###..................####.........###",
+		"###..............########.........###",
+		"###......################.........###",
+		"###......################.........###",
+		"###......################.........###",
+		"#########################.........###",
+		"#########################.........###",
+		"#########################.........###",
+		"#########################.........###",
+		"#####################################",
+		"#####################################",
+		"#####################################"
+	],
+	"objects": [
+		{
+			"type": "start",
+			"x": 704,
+			"y": 1472
+		},
+		{
+			"type": "portal",
+			"x": 576,
+			"y": 1472,
+			"target": "$origin"
+		},
+		{
+			"type": "marker",
+			"x": 3776,
+			"y": 1728,
+			"id": "bench"
+		},
+		{
+			"type": "prop",
+			"x": 3520,
+			"y": 1472,
+			"sprite": "decor_14",
+			"scale": 0.5,
+			"solid": true
+		},
+		{
+			"type": "prop",
+			"x": 4032,
+			"y": 2112,
+			"sprite": "decor_15",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 3392,
+			"y": 1395,
+			"sprite": "crypt/lantern_1",
+			"scale": 0.42,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 4160,
+			"y": 1395,
+			"sprite": "crypt/lantern_1",
+			"scale": 0.42,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 3392,
+			"y": 2291,
+			"sprite": "crypt/lantern_1",
+			"scale": 0.42,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 4160,
+			"y": 2291,
+			"sprite": "crypt/lantern_1",
+			"scale": 0.42,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 2112,
+			"y": 755,
+			"sprite": "crypt/lantern_1",
+			"scale": 0.42,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 832,
+			"y": 1395,
+			"sprite": "crypt/lantern_1",
+			"scale": 0.42,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 3256,
+			"y": 832,
+			"sprite": "hollow/crystal_1",
+			"scale": 0.45,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 1055,
+			"y": 1600,
+			"sprite": "hollow/crystal_5",
+			"scale": 0.45,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 1959,
+			"y": 704,
+			"sprite": "hollow/crystal_5",
+			"scale": 0.45,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 2237,
+			"y": 832,
+			"sprite": "hollow/crystal_5",
+			"scale": 0.45,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 3244,
+			"y": 832,
+			"sprite": "hollow/crystal_9",
+			"scale": 0.45,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 1572,
+			"y": 1344,
+			"sprite": "hollow/crystal_5",
+			"scale": 0.45,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 3528,
+			"y": 2112,
+			"sprite": "hollow/crystal_2",
+			"scale": 0.45,
+			"solid": false
+		},
+		{
+			"type": "trigger",
+			"x": 3776,
+			"y": 1728,
+			"radius": 600,
+			"id": "hermit_sanctum",
+			"text": "A hermit's sanctum, quiet and long abandoned. A crafting bench stands against the wall, still sharp."
+		}
+	]
+}

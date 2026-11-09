@@ -1,0 +1,236 @@
+{
+	"format": 1,
+	"id": "mini_cellar",
+	"name": "Rot-Damp Cellar",
+	"kind": "story",
+	"theme": "crypt",
+	"cell": 128,
+	"auto_decorate": true,
+	"grid": [
+		"#######################",
+		"#######################",
+		"#######################",
+		"###.................###",
+		"###.................###",
+		"###.................###",
+		"###.................###",
+		"###.................###",
+		"###.................###",
+		"###.................###",
+		"###.................###",
+		"#######################",
+		"#######################",
+		"#######################"
+	],
+	"objects": [
+		{
+			"type": "start",
+			"x": 832,
+			"y": 832
+		},
+		{
+			"type": "portal",
+			"x": 576,
+			"y": 832,
+			"target": "$origin"
+		},
+		{
+			"type": "prop",
+			"x": 576,
+			"y": 576,
+			"sprite": "decor_7",
+			"scale": 0.4,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 704,
+			"y": 428,
+			"sprite": "torch_1",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 1216,
+			"y": 428,
+			"sprite": "torch_1",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 1728,
+			"y": 428,
+			"sprite": "torch_1",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 2240,
+			"y": 428,
+			"sprite": "torch_1",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 844,
+			"y": 576,
+			"sprite": "decor_2",
+			"scale": 0.5,
+			"solid": true
+		},
+		{
+			"type": "prop",
+			"x": 983,
+			"y": 576,
+			"sprite": "decor_2",
+			"scale": 0.5,
+			"solid": true
+		},
+		{
+			"type": "prop",
+			"x": 1458,
+			"y": 576,
+			"sprite": "decor_17",
+			"scale": 0.5,
+			"solid": true
+		},
+		{
+			"type": "prop",
+			"x": 1866,
+			"y": 1216,
+			"sprite": "decor_2",
+			"scale": 0.5,
+			"solid": true
+		},
+		{
+			"type": "prop",
+			"x": 1200,
+			"y": 1216,
+			"sprite": "decor_17",
+			"scale": 0.5,
+			"solid": true
+		},
+		{
+			"type": "prop",
+			"x": 2254,
+			"y": 576,
+			"sprite": "decor_17",
+			"scale": 0.5,
+			"solid": true
+		},
+		{
+			"type": "prop",
+			"x": 2249,
+			"y": 1216,
+			"sprite": "decor_2",
+			"scale": 0.5,
+			"solid": true
+		},
+		{
+			"type": "prop",
+			"x": 1088,
+			"y": 832,
+			"sprite": "crypt/blood_2",
+			"scale": 0.4,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 1600,
+			"y": 960,
+			"sprite": "crypt/blood_1",
+			"scale": 0.4,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 1984,
+			"y": 832,
+			"sprite": "crypt/blood_2",
+			"scale": 0.4,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 1344,
+			"y": 1088,
+			"sprite": "crypt/blood_2",
+			"scale": 0.4,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 1728,
+			"y": 704,
+			"sprite": "crypt/blood_3",
+			"scale": 0.4,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 704,
+			"y": 1139,
+			"sprite": "decor_21",
+			"scale": 0.45,
+			"solid": true
+		},
+		{
+			"type": "prop",
+			"x": 1600,
+			"y": 627,
+			"sprite": "decor_21",
+			"scale": 0.45,
+			"solid": true
+		},
+		{
+			"type": "prop",
+			"x": 2112,
+			"y": 1139,
+			"sprite": "decor_21",
+			"scale": 0.45,
+			"solid": true
+		},
+		{
+			"type": "marker",
+			"x": 2240,
+			"y": 832,
+			"id": "chest"
+		},
+		{
+			"type": "pack",
+			"x": 1216,
+			"y": 704,
+			"kind": "blood_maggot",
+			"min": 4,
+			"max": 6
+		},
+		{
+			"type": "pack",
+			"x": 1600,
+			"y": 1088,
+			"kind": "blood_maggot",
+			"min": 4,
+			"max": 6
+		},
+		{
+			"type": "pack",
+			"x": 1856,
+			"y": 832,
+			"kind": "blood_maggot",
+			"min": 4,
+			"max": 6
+		},
+		{
+			"type": "pack",
+			"x": 1088,
+			"y": 1088,
+			"kind": "blood_maggot",
+			"min": 4,
+			"max": 6
+		}
+	]
+}
