@@ -141,6 +141,20 @@ The Last Watch is done, spilling three rare items once per character: `GameState
 and Veil Cultist. The Lower Ossuary ends at a great barred door to the Sepulcher of Mourning (phase 5). Test:
 `scratch/test_ossuary.tscn`. Art notes: no custom art for heralds (dark elves and a lich), the sarcophagi are the pack's stone
 and wooden chests.
+**Phase 5 (built):** the **Sepulcher of Mourning** (58 x 44, `sepulcher_of_mourning`, the act's boss arena) and the last main quest,
+**The Flesh-Torn** (Althea, after Chapter 4): the Lower Ossuary's great door now stands open (a portal with `"requires":
+"a1_descent_into_madness"`) onto a sunken cathedral in the crypt theme: a narthex, a nave of colonnades and broken pews whose floor is
+flooded under coagulated blood (mire: it slows you; `tools/import_crypt.py` recolours the cave pack's lake as `crypt/river`), two
+side chapels, and the apse, where an altar stands before the **massive torn veil rift** in the wall (`crypt/veil_rift`, drawn by the
+script, as are the broken stained-glass windows `crypt/glass_N` and their floor shards). **Lord Malaphax** (formerly Duke Edward of
+Oakhaven; `BossDB` `lord_malaphax`, death knight art) has three phases: iron, with sweeping cleaves, a crush and ground-tears of
+boiled blood (`rain`); at 50% he tears off the armour (his look changes: a phase can set a `skin`) and fights with wide scythes,
+erratic dashes, backsteps and ceiling-drops; and in that phase begins the **Veil Realm** (`VeilRealm`, a phase's `veil`): the screen
+dims, shadows tear at everyone in the fight every half second, and an ambient **Rift Soul** (`rift_soul`) drifts in the arena;
+destroy it and the dark lifts, to come again 24 seconds later. At 20% there are two souls at once, and it comes sooner. After him
+the torn rift can be looked into, and Althea's hand-in ends Act I (she warns that the epicentre lies in the eastern wastes). Test:
+`scratch/test_sepulcher.tscn`. Limits: in a party only the host's screen dims (everyone takes the shadows' hits); the souls and
+Malaphax reuse the ghost knight and death/hell knight characters.
 Zone maps come from `tools/gen_zones.py`; tweak them in the map editor (rerunning the script
 overwrites them).
 

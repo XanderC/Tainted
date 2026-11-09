@@ -13,7 +13,8 @@ extends RefCounted
 ##   max_adds - the most of its adds alive at once
 ##   moves    - id -> a move (see below)
 ##   phases   - from full health down: {at (share of its life it starts at), say, adds [{kind, n}],
-##              moves (ids it can use), speed, dmg, cd (multipliers; cd < 1 is faster)}
+##              moves (ids it can use), speed, dmg, cd (multipliers; cd < 1 is faster),
+##              skin (its look from here on), veil ({interval, tick, share, souls}: the Veil Realm, see VeilRealm)}
 ##   lines    - what it says: "intro", "enrage"
 ##   loot     - {rares, magics, orbs {id: n}, scrolls}
 ## A move: kind, windup (seconds of warning), cd (seconds before it can use it again), range [min, max]
@@ -68,6 +69,31 @@ const BOSSES := {
 			{"at": 0.3, "say": "", "moves": ["pound", "fling", "quake", "tear"], "adds": [{"kind": "bleed_fiend", "n": 2}], "speed": 1.2, "dmg": 1.15, "cd": 0.85},
 		],
 		"loot": {"rares": 2, "magics": 3, "orbs": {"alteration": 2, "augment": 2, "alchemy": 2}, "scrolls": 2},
+	},
+	# Chapter 5 of Act I, the act's end: the Flesh-Torn Lord Malaphax (Duke Edward of Oakhaven), in the Sepulcher of Mourning
+	"lord_malaphax": {
+		"title": "The Flesh-Torn", "hp": 4.6,
+		"arena": 700.0, "intro": 2.8, "enrage": 260.0, "max_adds": 6,
+		"lines": {"intro": "I walled myself in so that nothing could take me. Look what came to keep me company.", "enrage": "I will not die. I WILL NOT."},
+		"moves": {
+			"cleave": {"kind": "sweep", "windup": 0.95, "cd": 3.2, "range": [0.0, 340.0], "weight": 5, "r": 330.0, "arc": 2.2, "dmg": 1.5, "recover": 0.7},
+			"crush": {"kind": "slam", "windup": 1.1, "cd": 6.5, "range": [0.0, 280.0], "weight": 2, "r": 250.0, "dmg": 1.6, "recover": 0.9},
+			"tear": {"kind": "rain", "windup": 1.2, "cd": 7.5, "range": [0.0, 1000.0], "weight": 3, "count": 6, "r": 125.0, "dmg": 1.4, "recover": 0.7},
+			"scythes": {"kind": "sweep", "windup": 0.55, "cd": 2.4, "range": [0.0, 320.0], "weight": 5, "r": 300.0, "arc": 3.4, "dmg": 1.3, "recover": 0.4},
+			"dash": {"kind": "charge", "windup": 0.45, "cd": 3.2, "range": [150.0, 850.0], "weight": 4, "length": 580.0, "width": 100.0, "speed": 1350.0, "dmg": 1.4, "recover": 0.5},
+			"hop": {"kind": "backstep", "windup": 0.25, "cd": 5.0, "range": [0.0, 200.0], "weight": 2, "dist": 300.0, "speed": 1100.0, "recover": 0.2},
+			"drop": {"kind": "rain", "windup": 1.0, "cd": 6.5, "range": [0.0, 1000.0], "weight": 3, "count": 9, "r": 115.0, "dmg": 1.4, "recover": 0.6},
+		},
+		"phases": [
+			{"at": 1.0, "moves": ["cleave", "crush", "tear"]},
+			{"at": 0.5, "say": "Enough iron. Enough of it all.", "moves": ["scythes", "dash", "hop", "drop"],
+				"speed": 1.3, "dmg": 1.1, "cd": 0.85, "skin": "hell_knight",
+				"veil": {"interval": 24.0, "tick": 0.5, "share": 0.07, "souls": 1}},
+			{"at": 0.2, "say": "Hold the wall, Edward. HOLD IT.", "moves": ["scythes", "dash", "hop", "drop", "tear"],
+				"speed": 1.4, "dmg": 1.2, "cd": 0.75, "skin": "hell_knight",
+				"veil": {"interval": 18.0, "tick": 0.45, "share": 0.08, "souls": 2}},
+		],
+		"loot": {"rares": 4, "magics": 3, "orbs": {"alteration": 4, "augment": 3, "alchemy": 3, "chaos": 2}, "scrolls": 3},
 	},
 	# Chapter 4 of Act I: the three cultist heralds who channel the Veil Anchors in the Grand Ossuary
 	"herald_oren": {

@@ -1,0 +1,1431 @@
+{
+	"format": 1,
+	"id": "sepulcher_of_mourning",
+	"name": "Sepulcher of Mourning",
+	"kind": "story",
+	"theme": "crypt",
+	"cell": 128,
+	"auto_decorate": true,
+	"grid": [
+		"##########################################################",
+		"##########################################################",
+		"##########################################################",
+		"##########################################################",
+		"#################.............############################",
+		"#################.............############################",
+		"#################.............############################",
+		"#################.............############################",
+		"#################.............######...................###",
+		"#################.............######...................###",
+		"######################...###########...#...#...........###",
+		"######################...###########...................###",
+		"######################...###########...................###",
+		"##############....................##...................###",
+		"##############....................##...................###",
+		"##############..#..#..#..#..#..#..##...................###",
+		"###..........#....................##...................###",
+		"###..........#....................##...................###",
+		"###..........#....................##...................###",
+		"###..........#....................##...................###",
+		"###..........#.........................................###",
+		"###....................................................###",
+		"###....................................................###",
+		"###....................................................###",
+		"###..........#.........................................###",
+		"###..........#....................##...................###",
+		"###..........#....................##...................###",
+		"###..........#....................##...................###",
+		"###..........#....................##...................###",
+		"##############..#..#..#..#..#..#..##...................###",
+		"##############....................##...................###",
+		"##############....................##...................###",
+		"######################...###########...................###",
+		"######################...###########...................###",
+		"######################...###########...#...#...........###",
+		"#################.............######...................###",
+		"#################.............######...................###",
+		"#################.............############################",
+		"#################.............############################",
+		"#################.............############################",
+		"#################.............############################",
+		"##########################################################",
+		"##########################################################",
+		"##########################################################"
+	],
+	"objects": [
+		{
+			"type": "start",
+			"x": 832,
+			"y": 2880
+		},
+		{
+			"type": "portal",
+			"x": 576,
+			"y": 2880,
+			"target": "grand_ossuary_2"
+		},
+		{
+			"type": "waypoint",
+			"x": 1216,
+			"y": 2624
+		},
+		{
+			"type": "trigger",
+			"x": 960,
+			"y": 2880,
+			"radius": 520,
+			"id": "sepulcher_gate",
+			"text": "The Sepulcher of Mourning. A cathedral under the earth. The air is thick, and the floor is wet in a way that is not water."
+		},
+		{
+			"type": "prop",
+			"x": 422,
+			"y": 2681,
+			"sprite": "crypt/decor_13",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 832,
+			"y": 2675,
+			"sprite": "lantern_1",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 832,
+			"y": 3187,
+			"sprite": "lantern_1",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 704,
+			"y": 2067,
+			"sprite": "crypt/glass_2",
+			"scale": 0.55,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 682,
+			"y": 2228,
+			"sprite": "crypt/glass_shard_1",
+			"scale": 0.7,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 666,
+			"y": 2383,
+			"sprite": "crypt/glass_shard_2",
+			"scale": 0.7,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 1344,
+			"y": 2067,
+			"sprite": "crypt/glass_3",
+			"scale": 0.55,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 1490,
+			"y": 2263,
+			"sprite": "crypt/glass_shard_1",
+			"scale": 0.7,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 1379,
+			"y": 2388,
+			"sprite": "crypt/glass_shard_1",
+			"scale": 0.7,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 2112,
+			"y": 1683,
+			"sprite": "crypt/glass_1",
+			"scale": 0.55,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 1965,
+			"y": 1840,
+			"sprite": "crypt/glass_shard_2",
+			"scale": 0.7,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 2251,
+			"y": 1963,
+			"sprite": "crypt/glass_shard_2",
+			"scale": 0.7,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 2752,
+			"y": 1683,
+			"sprite": "crypt/glass_2",
+			"scale": 0.55,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 2912,
+			"y": 1890,
+			"sprite": "crypt/glass_shard_2",
+			"scale": 0.7,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 2844,
+			"y": 1966,
+			"sprite": "crypt/glass_shard_2",
+			"scale": 0.7,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 3392,
+			"y": 1683,
+			"sprite": "crypt/glass_3",
+			"scale": 0.55,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 3483,
+			"y": 1855,
+			"sprite": "crypt/glass_shard_2",
+			"scale": 0.7,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 3232,
+			"y": 2012,
+			"sprite": "crypt/glass_shard_2",
+			"scale": 0.7,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 4032,
+			"y": 1683,
+			"sprite": "crypt/glass_1",
+			"scale": 0.55,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 3890,
+			"y": 1859,
+			"sprite": "crypt/glass_shard_1",
+			"scale": 0.7,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 3886,
+			"y": 2007,
+			"sprite": "crypt/glass_shard_1",
+			"scale": 0.7,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 4928,
+			"y": 1043,
+			"sprite": "crypt/glass_2",
+			"scale": 0.55,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 4891,
+			"y": 1264,
+			"sprite": "crypt/glass_shard_2",
+			"scale": 0.7,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 4898,
+			"y": 1343,
+			"sprite": "crypt/glass_shard_1",
+			"scale": 0.7,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 5568,
+			"y": 1043,
+			"sprite": "crypt/glass_3",
+			"scale": 0.55,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 5457,
+			"y": 1260,
+			"sprite": "crypt/glass_shard_2",
+			"scale": 0.7,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 5732,
+			"y": 1326,
+			"sprite": "crypt/glass_shard_3",
+			"scale": 0.7,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 6208,
+			"y": 1043,
+			"sprite": "crypt/glass_1",
+			"scale": 0.55,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 6073,
+			"y": 1198,
+			"sprite": "crypt/glass_shard_2",
+			"scale": 0.7,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 6344,
+			"y": 1378,
+			"sprite": "crypt/glass_shard_1",
+			"scale": 0.7,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 2368,
+			"y": 4006,
+			"sprite": "torch_1",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 3008,
+			"y": 4006,
+			"sprite": "torch_1",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 3648,
+			"y": 4006,
+			"sprite": "torch_1",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 5184,
+			"y": 4646,
+			"sprite": "torch_1",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 5824,
+			"y": 4646,
+			"sprite": "torch_1",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 6464,
+			"y": 4646,
+			"sprite": "torch_1",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 3008,
+			"y": 1011,
+			"sprite": "lantern_1",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 3008,
+			"y": 4979,
+			"sprite": "lantern_1",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 2240,
+			"y": 2163,
+			"sprite": "decor_20",
+			"scale": 0.5,
+			"solid": true
+		},
+		{
+			"type": "prop",
+			"x": 2240,
+			"y": 3699,
+			"sprite": "decor_20",
+			"scale": 0.5,
+			"solid": true
+		},
+		{
+			"type": "prop",
+			"x": 2752,
+			"y": 2163,
+			"sprite": "decor_20",
+			"scale": 0.5,
+			"solid": true
+		},
+		{
+			"type": "prop",
+			"x": 2752,
+			"y": 3699,
+			"sprite": "decor_20",
+			"scale": 0.5,
+			"solid": true
+		},
+		{
+			"type": "prop",
+			"x": 3264,
+			"y": 2163,
+			"sprite": "decor_20",
+			"scale": 0.5,
+			"solid": true
+		},
+		{
+			"type": "prop",
+			"x": 3264,
+			"y": 3699,
+			"sprite": "decor_20",
+			"scale": 0.5,
+			"solid": true
+		},
+		{
+			"type": "prop",
+			"x": 3776,
+			"y": 2163,
+			"sprite": "decor_20",
+			"scale": 0.5,
+			"solid": true
+		},
+		{
+			"type": "prop",
+			"x": 3776,
+			"y": 3699,
+			"sprite": "decor_20",
+			"scale": 0.5,
+			"solid": true
+		},
+		{
+			"type": "prop",
+			"x": 4160,
+			"y": 1907,
+			"sprite": "decor_22",
+			"scale": 0.5,
+			"solid": true
+		},
+		{
+			"type": "trigger",
+			"x": 3008,
+			"y": 2880,
+			"radius": 700,
+			"id": "sepulcher_nave",
+			"text": "The nave: pews smashed, the colonnades hung with black ichor. Far ahead, behind the altar, the wall is torn open and glowing."
+		},
+		{
+			"type": "trigger",
+			"x": 6080,
+			"y": 2880,
+			"radius": 760,
+			"id": "sepulcher_apse",
+			"text": "The altar. Behind it the wall is torn from floor to vault, and the tear weeps red light. Something heavy stands before it, in armour."
+		},
+		{
+			"type": "prop",
+			"x": 7033,
+			"y": 2937,
+			"sprite": "crypt/veil_rift",
+			"scale": 1.4,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 6720,
+			"y": 2931,
+			"sprite": "decor_22",
+			"scale": 1.5,
+			"solid": true
+		},
+		{
+			"type": "prop",
+			"x": 6592,
+			"y": 2547,
+			"sprite": "lantern_1",
+			"scale": 0.55,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 6592,
+			"y": 3315,
+			"sprite": "lantern_1",
+			"scale": 0.55,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 6848,
+			"y": 2931,
+			"sprite": "crypt/rift_2",
+			"scale": 0.8831666354669244,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 6720,
+			"y": 3315,
+			"sprite": "crypt/rift_3",
+			"scale": 0.8193249508678003,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 6336,
+			"y": 3571,
+			"sprite": "crypt/rift_1",
+			"scale": 0.931593108869653,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 5824,
+			"y": 3571,
+			"sprite": "crypt/rift_1",
+			"scale": 0.7628477250739036,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 5440,
+			"y": 3315,
+			"sprite": "crypt/rift_2",
+			"scale": 0.9274361334804384,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 5312,
+			"y": 2931,
+			"sprite": "crypt/rift_3",
+			"scale": 0.7111860205292224,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 5440,
+			"y": 2547,
+			"sprite": "crypt/rift_3",
+			"scale": 0.7140726659240045,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 5824,
+			"y": 2291,
+			"sprite": "crypt/rift_1",
+			"scale": 0.7597523154421517,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 6336,
+			"y": 2291,
+			"sprite": "crypt/rift_1",
+			"scale": 0.9771333531516487,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 6720,
+			"y": 2547,
+			"sprite": "crypt/rift_2",
+			"scale": 0.7453763029620502,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 5696,
+			"y": 3008,
+			"sprite": "crypt/blood_1",
+			"scale": 0.6,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 6464,
+			"y": 2624,
+			"sprite": "crypt/blood_3",
+			"scale": 0.6,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 6080,
+			"y": 3264,
+			"sprite": "crypt/blood_1",
+			"scale": 0.6,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 5440,
+			"y": 2496,
+			"sprite": "crypt/blood_2",
+			"scale": 0.6,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 6592,
+			"y": 3392,
+			"sprite": "crypt/blood_2",
+			"scale": 0.6,
+			"solid": false
+		},
+		{
+			"type": "boss",
+			"x": 6080,
+			"y": 2880,
+			"id": "lord_malaphax",
+			"name": "Lord Malaphax, the Flesh-Torn",
+			"kind": "demon",
+			"skin": "death_knight",
+			"hp": 14.0,
+			"size": 2.1
+		},
+		{
+			"type": "quest_object",
+			"x": 6464,
+			"y": 2880,
+			"id": "rift_scar",
+			"sprite": "crypt/rift_2",
+			"scale": 1.2,
+			"prompt": "Look into the torn rift",
+			"text": "You look into the tear. It is a jagged, weeping scar in the air, and beyond it there is a great dark that is not looking at you, yet. The cold that comes through smells of dust and of a long road east."
+		},
+		{
+			"type": "prop",
+			"x": 2624,
+			"y": 883,
+			"sprite": "decor_22",
+			"scale": 0.5,
+			"solid": true
+		},
+		{
+			"type": "prop",
+			"x": 3008,
+			"y": 883,
+			"sprite": "decor_20",
+			"scale": 0.5,
+			"solid": true
+		},
+		{
+			"type": "prop",
+			"x": 3392,
+			"y": 883,
+			"sprite": "decor_22",
+			"scale": 0.5,
+			"solid": true
+		},
+		{
+			"type": "prop",
+			"x": 3136,
+			"y": 960,
+			"sprite": "hollow/bone_4",
+			"scale": 0.6,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 2624,
+			"y": 4851,
+			"sprite": "decor_22",
+			"scale": 0.5,
+			"solid": true
+		},
+		{
+			"type": "prop",
+			"x": 3008,
+			"y": 4851,
+			"sprite": "decor_20",
+			"scale": 0.5,
+			"solid": true
+		},
+		{
+			"type": "prop",
+			"x": 3392,
+			"y": 4851,
+			"sprite": "decor_22",
+			"scale": 0.5,
+			"solid": true
+		},
+		{
+			"type": "prop",
+			"x": 3136,
+			"y": 4928,
+			"sprite": "hollow/bone_4",
+			"scale": 0.6,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 2496,
+			"y": 556,
+			"sprite": "torch_1",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 3008,
+			"y": 556,
+			"sprite": "torch_1",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 3520,
+			"y": 556,
+			"sprite": "torch_1",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 2496,
+			"y": 4524,
+			"sprite": "torch_1",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 3008,
+			"y": 4524,
+			"sprite": "torch_1",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 3520,
+			"y": 4524,
+			"sprite": "torch_1",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 1331,
+			"y": 3023,
+			"sprite": "decor_14",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 1217,
+			"y": 3525,
+			"sprite": "hollow/bone_9",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 1367,
+			"y": 3024,
+			"sprite": "decor_2",
+			"scale": 0.45,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 949,
+			"y": 2628,
+			"sprite": "crypt/blood_1",
+			"scale": 0.3,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 4126,
+			"y": 3111,
+			"sprite": "hollow/bone_7",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 3229,
+			"y": 3134,
+			"sprite": "decor_4",
+			"scale": 0.45,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 2392,
+			"y": 2802,
+			"sprite": "stones_5",
+			"scale": 0.45,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 2462,
+			"y": 3949,
+			"sprite": "crypt/blood_3",
+			"scale": 0.3,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 3664,
+			"y": 3027,
+			"sprite": "crypt/decor_14",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 2234,
+			"y": 2374,
+			"sprite": "decor_2",
+			"scale": 0.45,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 4022,
+			"y": 2865,
+			"sprite": "decor_2",
+			"scale": 0.45,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 2523,
+			"y": 2865,
+			"sprite": "decor_14",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 2246,
+			"y": 3001,
+			"sprite": "stones_10",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 3099,
+			"y": 3133,
+			"sprite": "crypt/blood_3",
+			"scale": 0.3,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 2232,
+			"y": 2234,
+			"sprite": "decor_2",
+			"scale": 0.45,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 2982,
+			"y": 2987,
+			"sprite": "decor_4",
+			"scale": 0.45,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 2347,
+			"y": 2622,
+			"sprite": "crypt/blood_1",
+			"scale": 0.3,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 3548,
+			"y": 2919,
+			"sprite": "decor_4",
+			"scale": 0.45,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 3886,
+			"y": 2998,
+			"sprite": "stones_10",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 3269,
+			"y": 2997,
+			"sprite": "decor_2",
+			"scale": 0.45,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 3257,
+			"y": 2247,
+			"sprite": "hollow/bone_9",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 3143,
+			"y": 3551,
+			"sprite": "crypt/decor_15",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 3932,
+			"y": 2882,
+			"sprite": "decor_14",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 2899,
+			"y": 3508,
+			"sprite": "crypt/decor_15",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 3155,
+			"y": 3417,
+			"sprite": "decor_2",
+			"scale": 0.45,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 5672,
+			"y": 2637,
+			"sprite": "crypt/decor_14",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 6814,
+			"y": 1767,
+			"sprite": "stones_9",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 6487,
+			"y": 3644,
+			"sprite": "crypt/blood_3",
+			"scale": 0.3,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 6602,
+			"y": 4072,
+			"sprite": "crypt/blood_3",
+			"scale": 0.3,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 6092,
+			"y": 2155,
+			"sprite": "hollow/bone_10",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 6757,
+			"y": 1613,
+			"sprite": "crypt/decor_14",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 6443,
+			"y": 4390,
+			"sprite": "crypt/decor_15",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 4927,
+			"y": 3143,
+			"sprite": "decor_4",
+			"scale": 0.45,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 5338,
+			"y": 4521,
+			"sprite": "crypt/blood_1",
+			"scale": 0.3,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 4837,
+			"y": 2905,
+			"sprite": "hollow/bone_10",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 6215,
+			"y": 3685,
+			"sprite": "crypt/blood_3",
+			"scale": 0.3,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 5684,
+			"y": 1622,
+			"sprite": "hollow/bone_7",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 4814,
+			"y": 4026,
+			"sprite": "crypt/blood_1",
+			"scale": 0.3,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 5541,
+			"y": 4522,
+			"sprite": "hollow/bone_7",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 6875,
+			"y": 1979,
+			"sprite": "stones_5",
+			"scale": 0.45,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 5202,
+			"y": 3635,
+			"sprite": "crypt/decor_14",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 6431,
+			"y": 3524,
+			"sprite": "decor_4",
+			"scale": 0.45,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 6705,
+			"y": 2012,
+			"sprite": "hollow/bone_2",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 6837,
+			"y": 3679,
+			"sprite": "stones_9",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 5788,
+			"y": 3691,
+			"sprite": "hollow/bone_10",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 5323,
+			"y": 1598,
+			"sprite": "decor_14",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 6623,
+			"y": 1971,
+			"sprite": "stones_5",
+			"scale": 0.45,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 6626,
+			"y": 2490,
+			"sprite": "hollow/bone_9",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 5337,
+			"y": 1262,
+			"sprite": "decor_2",
+			"scale": 0.45,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 6878,
+			"y": 2861,
+			"sprite": "crypt/blood_3",
+			"scale": 0.3,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 5172,
+			"y": 1472,
+			"sprite": "crypt/blood_1",
+			"scale": 0.3,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 5427,
+			"y": 4421,
+			"sprite": "hollow/bone_9",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 5153,
+			"y": 2776,
+			"sprite": "crypt/blood_1",
+			"scale": 0.3,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 5924,
+			"y": 3117,
+			"sprite": "crypt/blood_1",
+			"scale": 0.3,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 6603,
+			"y": 2133,
+			"sprite": "stones_5",
+			"scale": 0.45,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 3532,
+			"y": 969,
+			"sprite": "crypt/decor_15",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 3413,
+			"y": 1096,
+			"sprite": "decor_14",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 3115,
+			"y": 730,
+			"sprite": "hollow/bone_10",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 2771,
+			"y": 4824,
+			"sprite": "stones_9",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 3002,
+			"y": 4829,
+			"sprite": "stones_5",
+			"scale": 0.45,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 2912,
+			"y": 4815,
+			"sprite": "decor_4",
+			"scale": 0.45,
+			"solid": false
+		},
+		{
+			"type": "pack",
+			"x": 3264,
+			"y": 4928,
+			"min": 3,
+			"max": 5,
+			"kind": "veil_cultist"
+		},
+		{
+			"type": "pack",
+			"x": 4544,
+			"y": 3008,
+			"min": 3,
+			"max": 5
+		},
+		{
+			"type": "pack",
+			"x": 2368,
+			"y": 2496,
+			"min": 3,
+			"max": 5,
+			"kind": "skeleton_vanguard"
+		},
+		{
+			"type": "pack",
+			"x": 6848,
+			"y": 1216,
+			"min": 3,
+			"max": 5
+		},
+		{
+			"type": "pack",
+			"x": 5824,
+			"y": 4288,
+			"min": 3,
+			"max": 5
+		},
+		{
+			"type": "pack",
+			"x": 3904,
+			"y": 2368,
+			"min": 3,
+			"max": 5
+		},
+		{
+			"type": "pack",
+			"x": 5824,
+			"y": 1600,
+			"min": 3,
+			"max": 5
+		},
+		{
+			"type": "pack",
+			"x": 3264,
+			"y": 1088,
+			"min": 3,
+			"max": 5,
+			"kind": "veil_cultist"
+		},
+		{
+			"type": "pack",
+			"x": 5056,
+			"y": 1600,
+			"min": 3,
+			"max": 5
+		},
+		{
+			"type": "pack",
+			"x": 2368,
+			"y": 960,
+			"min": 3,
+			"max": 5
+		},
+		{
+			"type": "pack",
+			"x": 1984,
+			"y": 3520,
+			"min": 3,
+			"max": 5
+		},
+		{
+			"type": "pack",
+			"x": 6848,
+			"y": 4544,
+			"min": 3,
+			"max": 5
+		},
+		{
+			"type": "pack",
+			"x": 4800,
+			"y": 3776,
+			"min": 3,
+			"max": 5
+		},
+		{
+			"type": "pack",
+			"x": 3264,
+			"y": 3392,
+			"min": 3,
+			"max": 5,
+			"kind": "skeleton_vanguard"
+		},
+		{
+			"type": "pack",
+			"x": 3136,
+			"y": 2240,
+			"min": 3,
+			"max": 5,
+			"kind": "skeleton_vanguard"
+		},
+		{
+			"type": "pack",
+			"x": 4800,
+			"y": 4544,
+			"min": 3,
+			"max": 5
+		},
+		{
+			"type": "pack",
+			"x": 2496,
+			"y": 4928,
+			"min": 3,
+			"max": 5,
+			"kind": "veil_cultist"
+		},
+		{
+			"type": "pack",
+			"x": 3008,
+			"y": 4160,
+			"min": 3,
+			"max": 5
+		},
+		{
+			"type": "pack",
+			"x": 6848,
+			"y": 1984,
+			"min": 3,
+			"max": 5
+		}
+	],
+	"water": [
+		"..........................................................",
+		"..........................................................",
+		"..........................................................",
+		"..........................................................",
+		"..........................................................",
+		"..........................................................",
+		"..........................................................",
+		"..........................................................",
+		"..........................................................",
+		"..........................................................",
+		"..........................................................",
+		"..........................................................",
+		"....................................,,,,..,...............",
+		"....................................,,,,,,,...............",
+		"....................................,,,,,,................",
+		"....................................,,,.,,,...............",
+		"....................................,,,,,,,...............",
+		"..........,,.........................,,,,.,...............",
+		"...........,,..,,....,..,,.,,.,,,...,.,,,,................",
+		"...........,,..,,.,..,,...,.,.,,,,...,,.,,,...............",
+		"...........,.....,,,,,,,,,,,,,,,,,..,,,.,.,...............",
+		"..........,....,,,,,,,,,,,,,,,,,,,..,.,,,,,...............",
+		"..........,.,..,.,,,,,,,,,,,,,,,,,..,.,,,.,...............",
+		"..........,,,..,,,,,,,,,,,,,,,,,.,..,,,,,.,...............",
+		"............,...,,,,,,,,,,,,,,,,.,...,,,,,................",
+		"..........,.,..,,,,,,,,,,,,,,,,,.,..,,,,,,,...............",
+		"...........,....,,,..,.,.,,,,,.,.,..,,,,,,,...............",
+		"..........,.,........................,,,.,,...............",
+		"....................................,,,,,,................",
+		"....................................,,.,,,,...............",
+		".....................................,,.,.,...............",
+		".....................................,,.,,,...............",
+		"....................................,..,,.,...............",
+		"..........................................................",
+		"..........................................................",
+		"..........................................................",
+		"..........................................................",
+		"..........................................................",
+		"..........................................................",
+		"..........................................................",
+		"..........................................................",
+		"..........................................................",
+		"..........................................................",
+		".........................................................."
+	]
+}

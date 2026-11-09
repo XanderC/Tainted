@@ -767,15 +767,22 @@
 			"y": 4544,
 			"radius": 520,
 			"id": "sepulcher_door",
-			"text": "A great door of black iron at the end of the choir: barred from the far side. The Sepulcher of Mourning lies beyond it. It will not yield yet."
+			"text": "A great door of black iron at the end of the choir, standing open at last. The Sepulcher of Mourning lies beyond it, and something in it is weeping."
 		},
 		{
 			"type": "prop",
 			"x": 7539,
-			"y": 4601,
+			"y": 4473,
 			"sprite": "crypt/decor_13",
 			"scale": 0.8,
 			"solid": false
+		},
+		{
+			"type": "portal",
+			"x": 7360,
+			"y": 4544,
+			"target": "sepulcher_of_mourning",
+			"requires": "a1_descent_into_madness"
 		},
 		{
 			"type": "prop",

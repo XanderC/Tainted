@@ -1089,8 +1089,9 @@ def grand_ossuary_2():
     z.add("trigger", mid(choir), radius=700, id="choir", text="The choir. A red spire hums in the floor, and a robed figure kneels at its foot, singing.")
     # The great door to the Sepulcher of Mourning, barred from the far side
     ac = mid(apse)
-    z.add("trigger", ac, radius=520, id="sepulcher_door", text="A great door of black iron at the end of the choir: barred from the far side. The Sepulcher of Mourning lies beyond it. It will not yield yet.")
-    z.prop("crypt/decor_13", (apse[2], ac[1]), dx=0.9, dy=0.95, scale=0.8)
+    z.add("trigger", ac, radius=520, id="sepulcher_door", text="A great door of black iron at the end of the choir, standing open at last. The Sepulcher of Mourning lies beyond it, and something in it is weeping.")
+    z.prop("crypt/decor_13", (apse[2], ac[1] - 1), dx=0.9, dy=0.95, scale=0.8)
+    z.add("portal", (apse[2] - 1, ac[1]), target="sepulcher_of_mourning", requires="a1_descent_into_madness")  # barred until the third anchor is broken
     for dy in (-2, 2):
         z.prop("lantern_1", (apse[2] - 1, ac[1] + dy), dy=0.9, scale=0.5)
 
@@ -1098,6 +1099,111 @@ def grand_ossuary_2():
     themes = [(bc, 8, "skeleton_vanguard"), (mid(cells), 7, "ghoul"), (mid(nave), 9, "skeleton_hunter"), (mid(choir), 9, "veil_cultist")]
     avoid = [(start, 8), (wp, 4), (morrow, 7), (anchor3, 4), ((4, 7), 3), (ac, 5)]
     z.packs(40, avoid, themes, min_gap=6, start=start, min_start=9)
+    z.save("story")
+
+
+def sepulcher_of_mourning():
+    """The Sepulcher of Mourning (Act I, Chapter 5: Lord Malaphax, The Flesh-Torn): a sunken cathedral at the bottom of the Ossuary,
+    the act's boss arena. A narthex in the west where the great door from the Lower Ossuary lets out, a long nave of colonnades and
+    broken pews with the floor flooded under coagulated blood (mire: it slows you), two side chapels, and in the east the apse:
+    an altar before a massive torn rift in the wall, where Lord Malaphax (formerly Duke Edward of Oakhaven) waits.
+    Broken stained glass hangs in the walls and lies on the floor. Theme "crypt"."""
+    z = Zone("sepulcher_of_mourning", "Sepulcher of Mourning", 58, 44, seed=7701, theme="crypt")
+    z.fill()
+    narthex, nave, apse = (3, 16, 12, 28), (14, 13, 33, 31), (36, 8, 54, 36)
+    chapel_n, chapel_s = (17, 4, 29, 9), (17, 35, 29, 40)
+    for h in (narthex, nave, apse, chapel_n, chapel_s):
+        z.hall(*h)
+    mid = _mid
+    start, wp = (6, 22), (9, 20)
+    z.hallway(mid(narthex), mid(nave), 3)
+    z.hallway(mid(nave), mid(apse), 5)
+    z.hallway((23, 13), (23, 7), 3, first="y")
+    z.hallway((23, 31), (23, 38), 3, first="y")
+    boss_at = (47, 22)
+    altar = (52, 22)
+    # The nave's colonnades: a row of pillars down each side, the central aisle open
+    for x in range(nave[0] + 2, nave[2] - 1, 3):
+        for y in (nave[1] + 2, nave[3] - 2):
+            z.wall[y][x] = True
+    for x in range(apse[0] + 3, apse[2] - 9, 4):
+        for y in (apse[1] + 2, apse[3] - 2):
+            z.wall[y][x] = True
+    z.reachable_only(start)
+
+    # The flooded floor: mire over the nave's middle and the apse's approach (coagulated blood: walkable, slow)
+    for x in range(nave[0] + 1, nave[2] + 1):
+        for y in range(nave[1] + 5, nave[3] - 4):
+            edge = x < nave[0] + 3 or x > nave[2] - 2 or y < nave[1] + 7 or y > nave[3] - 6
+            if not z.wall[y][x] and z.water[y][x] == "." and (not edge or z.rng.random() < 0.65):
+                z.water[y][x] = ","
+    for x in range(apse[0], apse[0] + 7):
+        for y in range(apse[1] + 4, apse[3] - 3):
+            if not z.wall[y][x] and z.water[y][x] == "." and z.rng.random() < 0.8:
+                z.water[y][x] = ","
+    for y in range(narthex[1] + 1, narthex[3]):
+        for x in range(narthex[2] - 2, narthex[2] + 1):
+            if z.rng.random() < 0.5 and not z.wall[y][x]:
+                z.water[y][x] = ","
+
+    z.add("start", start)
+    z.add("portal", (4, 22), target="grand_ossuary_2")
+    z.add("waypoint", wp)
+    z.add("trigger", (7, 22), radius=520, id="sepulcher_gate", text="The Sepulcher of Mourning. A cathedral under the earth. The air is thick, and the floor is wet in a way that is not water.")
+    z.prop("crypt/decor_13", (3, 20), dx=0.3, dy=0.95, scale=0.5)
+    for dy in (-2, 2):
+        z.prop("lantern_1", (6, 22 + dy), dy=0.9, scale=0.5)
+
+    # Stained glass in the walls, broken, and its shards on the floor beneath
+    gi = 0
+    for h in (narthex, nave, apse):
+        for x in range(h[0] + 2, h[2] - 1, 5):
+            gi += 1
+            z.prop("crypt/glass_%d" % (gi % 3 + 1), (x, h[1]), dx=0.5, dy=0.15, scale=0.55)
+            for k in range(2):
+                z.prop("crypt/glass_shard_%d" % z.rng.choice([1, 2, 3]), (x + z.rng.choice([-1, 0, 1]), h[1] + 1 + k), dx=z.rng.uniform(0.2, 0.8), dy=z.rng.uniform(0.3, 0.9), scale=0.7)
+    for h in (nave, apse):
+        for x in range(h[0] + 4, h[2] - 1, 5):
+            z.prop("torch_1", (x, h[3]), dx=0.5, dy=0.3, scale=0.5)
+    for key in [(23, 7), (23, 38)]:
+        z.prop("lantern_1", key, dy=0.9, scale=0.5)
+
+    # Broken pews along the nave
+    for x in range(nave[0] + 3, nave[2] - 2, 4):
+        for y in (nave[1] + 3, nave[3] - 3):
+            z.prop("decor_20", (x, y), dy=0.9, scale=0.5, solid=True)
+    z.prop("decor_22", (nave[2] - 1, nave[1] + 1), dy=0.9, scale=0.5, solid=True)
+
+    # The apse: the altar, the torn veil rift behind it, a ring of the red crystal, blood
+    z.add("trigger", mid(nave), radius=700, id="sepulcher_nave", text="The nave: pews smashed, the colonnades hung with black ichor. Far ahead, behind the altar, the wall is torn open and glowing.")
+    z.add("trigger", boss_at, radius=760, id="sepulcher_apse", text="The altar. Behind it the wall is torn from floor to vault, and the tear weeps red light. Something heavy stands before it, in armour.")
+    z.prop("crypt/veil_rift", (apse[2], altar[1]), dx=0.95, dy=0.95, scale=1.4)
+    z.prop("decor_22", altar, dx=0.5, dy=0.9, scale=1.5, solid=True)
+    for dy in (-3, 3):
+        z.prop("lantern_1", (altar[0] - 1, altar[1] + dy), dy=0.9, scale=0.55)
+    for i in range(10):
+        ang = i * math.tau / 10
+        rc = (round(boss_at[0] + math.cos(ang) * 6.0), round(boss_at[1] + math.sin(ang) * 4.8))
+        if z.open_around(rc, 0):
+            z.prop("crypt/rift_" + str(z.rng.choice([1, 2, 3])), rc, dx=0.5, dy=0.9, scale=0.7 + z.rng.random() * 0.3)
+    for dx, dy in [(-3, 1), (3, -2), (0, 3), (-5, -3), (4, 4)]:
+        z.prop("crypt/blood_" + str(z.rng.choice([1, 2, 3])), (boss_at[0] + dx, boss_at[1] + dy), scale=0.6)
+    z.add("boss", boss_at, id="lord_malaphax", name="Lord Malaphax, the Flesh-Torn", kind="demon", skin="death_knight", hp=14.0, size=2.1)
+    z.add("quest_object", (altar[0] - 2, altar[1]), id="rift_scar", sprite="crypt/rift_2", scale=1.2, prompt="Look into the torn rift",
+          text="You look into the tear. It is a jagged, weeping scar in the air, and beyond it there is a great dark that is not looking at you, yet. The cold that comes through smells of dust and of a long road east.")
+    # The side chapels: bones and urns, and a few of the cult
+    for c in (mid(chapel_n), mid(chapel_s)):
+        for dx in (-3, 0, 3):
+            z.prop("decor_22" if dx else "decor_20", (c[0] + dx, c[1]), dy=0.9, scale=0.5, solid=True)
+        z.prop("hollow/bone_" + str(z.rng.choice([1, 4, 5, 6])), (c[0] + 1, c[1] + 1), scale=0.6)
+    for h in (chapel_n, chapel_s):
+        for x in range(h[0] + 2, h[2], 4):
+            z.prop("torch_1", (x, h[1]), dy=0.35, scale=0.5)
+    _litter(z, [narthex, nave, apse, chapel_n, chapel_s])
+
+    themes = [(mid(nave), 8, "skeleton_vanguard"), (mid(chapel_n), 5, "veil_cultist"), (mid(chapel_s), 5, "veil_cultist"), (mid(apse), 8, "bleed_fiend")]
+    avoid = [(start, 8), (wp, 4), (boss_at, 9), ((4, 22), 3), (altar, 5)]
+    z.packs(24, avoid, themes, min_gap=6, start=start, min_start=9)
     z.save("story")
 
 
@@ -1109,3 +1215,4 @@ if __name__ == "__main__":
     ashen_verge()
     grand_ossuary_1()
     grand_ossuary_2()
+    sepulcher_of_mourning()

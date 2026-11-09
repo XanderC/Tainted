@@ -23,6 +23,8 @@ const ZONES := {
 		"kinds": ["skeleton", "skeleton_warrior", "skeleton_vanguard", "skeleton_archer", "ghoul", "veil_cultist"]},
 	"grand_ossuary_2": {"name": "Lower Ossuary", "act": 1, "map": "grand_ossuary_2", "area_level": 8,
 		"kinds": ["skeleton_warrior", "skeleton_vanguard", "skeleton_hunter", "ghoul", "veil_cultist", "bleed_fiend"]},
+	"sepulcher_of_mourning": {"name": "Sepulcher of Mourning", "act": 1, "map": "sepulcher_of_mourning", "area_level": 9,
+		"kinds": ["skeleton_vanguard", "veil_cultist", "bleed_fiend", "skeleton_hunter", "ghoul"]},
 }
 
 

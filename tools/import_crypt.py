@@ -10,7 +10,9 @@ a row of light cap stones over a cobble face, dark void behind), plus torch_1 an
 Usage:  python tools/import_crypt.py [--src <folder with the zip>]
 """
 import argparse
+import math
 import os
+import random
 import zipfile
 
 import numpy as np
@@ -104,6 +106,101 @@ def walls(z, out):
     print("crypt: floor and %d wall pieces" % len(pieces))
 
 
+def make_veil_rift(out):
+    """veil_rift.png: the great torn rift in the Sepulcher's altar wall: a jagged slit of black-violet with a blood-red edge and a glow."""
+    rng = random.Random(77)
+    w, h = 420, 640
+    cx = w // 2
+    left, right = [], []
+    for i in range(0, 33):
+        y = 30 + i * (h - 60) / 32.0
+        t = i / 32.0
+        width = 30 + 78 * math.sin(math.pi * t) ** 0.8
+        jag = rng.uniform(-14, 14)
+        left.append((cx - width / 2 + jag, y))
+        right.append((cx + width / 2 + rng.uniform(-14, 14), y))
+    poly = left + right[::-1]
+    glow = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+    ImageDraw.Draw(glow).polygon(poly, fill=(255, 40, 70, 255))
+    glow = glow.filter(ImageFilter.GaussianBlur(26))
+    glow.putalpha(glow.getchannel("A").point(lambda v: int(v * 0.8)))
+    img = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+    img.alpha_composite(glow)
+    d = ImageDraw.Draw(img)
+    d.polygon(poly, fill=(14, 0, 24, 255))
+    inner = [(cx + (x - cx) * 0.62, y) for x, y in poly]
+    d.polygon(inner, fill=(40, 4, 60, 255))
+    d.polygon([(cx + (x - cx) * 0.3, y) for x, y in poly], fill=(110, 12, 70, 255))
+    d.line(poly + [poly[0]], fill=(255, 90, 110, 255), width=5)
+    d.line(poly + [poly[0]], fill=(255, 220, 220, 255), width=1)
+    for _ in range(14):  # cracks running out of it
+        side = rng.choice([-1, 1])
+        y = rng.uniform(60, h - 60)
+        x = cx + side * rng.uniform(50, 70)
+        pts = [(x, y)]
+        for _ in range(4):
+            x += side * rng.uniform(12, 30)
+            y += rng.uniform(-22, 22)
+            pts.append((x, y))
+        d.line(pts, fill=(255, 70, 90, 220), width=2)
+    img.save(os.path.join(out, "veil_rift.png"))
+
+
+def make_glass(out):
+    """glass_1..3.png: tall stained-glass windows with panes missing, and glass_shard_1..3.png for the floor beneath them."""
+    palettes = [[(40, 80, 170), (150, 30, 40), (200, 150, 40)], [(150, 30, 40), (90, 40, 140), (40, 120, 110)],
+                [(200, 150, 40), (40, 80, 170), (150, 30, 40)]]
+    for n, pal in enumerate(palettes, 1):
+        rng = random.Random(n * 13)
+        w, h = 200, 330
+        img = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+        d = ImageDraw.Draw(img)
+        arch = [(x, h - 4) for x in (14, w - 14)]
+        d.rounded_rectangle((8, 8, w - 8, h - 2), radius=92, fill=(92, 92, 100, 255))
+        d.rounded_rectangle((22, 22, w - 22, h - 14), radius=78, fill=(22, 18, 26, 255))
+        cols, rows = 4, 7
+        cw, ch = (w - 48) / cols, (h - 52) / rows
+        for r in range(rows):
+            for c in range(cols):
+                x0, y0 = 24 + c * cw, 26 + r * ch
+                if rng.random() < 0.3:  # a pane gone: the dark shows through
+                    continue
+                col = rng.choice(pal)
+                shade = rng.uniform(0.6, 1.0)
+                col = tuple(int(v * shade) for v in col) + (255,)
+                if (x0 - w / 2 + cw / 2) ** 2 / (w / 2 - 26) ** 2 + (y0 - 100 + ch) ** 2 / 90 ** 2 > 1.0 and y0 < 100:
+                    continue  # out of the arch's curve
+                d.rectangle((x0 + 2, y0 + 2, x0 + cw - 2, y0 + ch - 2), fill=col)
+        for c in range(cols + 1):
+            d.line((24 + c * cw, 22, 24 + c * cw, h - 14), fill=(50, 50, 56, 255), width=3)
+        for r in range(rows + 1):
+            d.line((24, 26 + r * ch, w - 24, 26 + r * ch), fill=(50, 50, 56, 255), width=3)
+        d.rounded_rectangle((8, 8, w - 8, h - 2), radius=92, outline=(150, 150, 160, 255), width=4)
+        mask = Image.new("L", (w, h), 0)
+        ImageDraw.Draw(mask).rounded_rectangle((8, 8, w - 8, h - 2), radius=92, fill=255)
+        img.putalpha(Image.composite(img.getchannel("A"), Image.new("L", (w, h), 0), mask))
+        img.save(os.path.join(out, "glass_%d.png" % n))
+        shard = Image.new("RGBA", (40, 34), (0, 0, 0, 0))
+        sd = ImageDraw.Draw(shard)
+        for _ in range(5):
+            x, y = rng.randint(4, 30), rng.randint(4, 24)
+            col = rng.choice(pal) + (230,)
+            sd.polygon([(x, y), (x + rng.randint(5, 10), y + rng.randint(-3, 3)), (x + rng.randint(1, 6), y + rng.randint(5, 9))], fill=col)
+        shard.save(os.path.join(out, "glass_shard_%d.png" % n))
+
+
+def make_river(out):
+    """river.png and river_2.png: the cave pack's lake (assets/tiles/hollow) as coagulated blood, for the Sepulcher's flooded floor."""
+    hollow = os.path.join(HERE, "..", "assets", "tiles", "hollow")
+    for name in ("river", "river_2"):
+        src = os.path.join(hollow, name + ".png")
+        if os.path.exists(src):
+            im = red(Image.open(src), -72)
+            r, g, b, a = im.split()
+            r, g, b = (ch.point(lambda v: int(v * 0.62)) for ch in (r, g, b))
+            Image.merge("RGBA", (r, g, b, a)).save(os.path.join(out, name + ".png"))
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--src", default=SRC)
@@ -123,6 +220,9 @@ def main():
     print("imported", count, "pictures into", OUT)
     with zipfile.ZipFile(os.path.join(args.src, ZIP)) as z:
         walls(z, OUT)
+    make_veil_rift(OUT)
+    make_glass(OUT)
+    make_river(OUT)
     # Torches (orange) and soul lanterns (cold blue-white): the pack's holders, lit
     flame(Image.open(os.path.join(OUT, "decor_29.png")), (255, 236, 150), (255, 140, 40), (255, 150, 60)).save(os.path.join(OUT, "torch_1.png"))
     lantern = flame(red(Image.open(os.path.join(OUT, "decor_30.png")), 100), (230, 255, 255), (90, 200, 255), (80, 190, 255))

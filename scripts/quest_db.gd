@@ -131,6 +131,21 @@ const QUESTS := {
 		],
 		"rewards": {"xp": 1100, "orbs": {"alteration": 4, "augment": 3, "alchemy": 3, "chaos": 2}, "passive_points": 1, "item": {"slot": "", "rarity": 2}},
 	},
+	"a1_lord_malaphax": {
+		"name": "The Flesh-Torn", "act": 1, "kind": "main", "giver": "althea", "turn_in": "althea", "requires": "a1_descent_into_madness",
+		"summary": "The great door at the end of the Lower Ossuary stands open on the Sepulcher of Mourning, where the rift is torn widest. What waits before it is Lord Malaphax, once Duke Edward of Oakhaven, who walled himself into the crypt alive so that death could not find him. End him.",
+		"offer": "The door at the end of the choir is open now. The Sepulcher of Mourning lies behind it, a cathedral the old dukes built for their dead, and the rift is torn widest there, behind the altar. I know who stands before it. Duke Edward walled himself in alive when the Taint first came, so afraid of dying that he would rather be buried. The Taint found a man made entirely of fear, and made an engine of him. He calls himself [b]Lord Malaphax[/b] now. Put him down, and look at what he guards.",
+		"progress": "The Sepulcher of Mourning is behind the great door at the end of the Lower Ossuary. Lord Malaphax stands before the altar and the torn rift behind it. He has two faces: iron first, and then what is under it. When the dark takes you, find the soul that feeds it.",
+		"complete": "Edward. Poor, frightened Edward. You have done what the whole Outpost could not. I will ward the doorway myself: that scar will not heal, but it can be held. Hear me now, though, and do not let the cheering drown it: this was a symptom. Whatever tore the Veil here was reaching from far off, and the epicentre lies across the eastern mountain pass, in the barren wastes. When you are ready, that is where we go.",
+		"steps": [
+			{"type": "zone", "key": "sepulcher_of_mourning", "text": "Go through the great door into the Sepulcher of Mourning"},
+			{"type": "kill_boss", "key": "lord_malaphax", "text": "Slay Lord Malaphax, the Flesh-Torn"},
+			{"type": "use", "key": "rift_scar", "text": "Look into the torn rift behind the altar"},
+		],
+		"rewards": {"xp": 3000, "orbs": {"alteration": 5, "augment": 4, "alchemy": 4, "chaos": 3}, "passive_points": 2, "attr_points": 4,
+			"item": {"slot": "", "rarity": 2},
+			"notes": ["Act I is complete: the road east, over the mountain pass to the wastes, awaits in Act II"]},
+	},
 	"a1_restless_ancestors": {
 		"name": "Restless Ancestors", "act": 1, "kind": "side", "giver": "ancestor_spirit", "turn_in": "ancestor_spirit",
 		"summary": "A weeping spirit in the Grand Ossuary asks you to recover four desecrated burial urns from the crypt's sarcophagi and set them back on their sanctified pedestal.",

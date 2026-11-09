@@ -1,5 +1,14 @@
 [
 	{
+		"build": 0,
+		"title": "Act I phase 5: the Sepulcher of Mourning and Lord Malaphax",
+		"notes": [
+			"The great door at the end of the Lower Ossuary opens, once you have broken the third Veil Anchor, onto the Sepulcher of Mourning: a sunken cathedral with broken stained glass, a floor flooded under coagulated blood that slows you, and a massive torn rift in the altar wall.",
+			"New main quest, The Flesh-Torn: Lord Malaphax, once Duke Edward of Oakhaven, waits before the rift. His first face is iron: great cleaves, a crushing blow and ground-tears of boiled blood. At half his life he tears the armour off and fights with scythes, dashes and falling ceiling. Then the Veil Realm: the screen goes dark, shadows tear at you, and you must find and destroy the Rift Soul to end it. At a fifth of his life there are two souls at once.",
+			"Finishing the quest completes Act I. Lord Malaphax can be fought again afterwards for his drops."
+		]
+	},
+	{
 		"build": 202611090958,
 		"title": "Act I phase 4: the Grand Ossuary",
 		"notes": [

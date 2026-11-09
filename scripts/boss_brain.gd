@@ -48,6 +48,9 @@ var _phase_speed := 1.0
 var _phase_dmg := 1.0
 var _phase_cd := 1.0
 var _resume := false
+var _veil := {}  ## the phase's Veil Realm settings (VeilRealm), {} for none
+var _veil_t := 0.0
+var _realm: VeilRealm
 
 
 ## Puts a brain on `e` if the boss `id` has an entry (and `e` is the real monster, not a copy of the
@@ -92,6 +95,7 @@ func control(delta: float) -> bool:
 		fight_t += delta
 		if not enraged and fight_t >= float(def.get("enrage", 1e9)):
 			_enrage()
+		_veil_step(delta)
 
 	match state:
 		S.INTRO, S.ROAR:
@@ -169,12 +173,29 @@ func _load_phase(i: int) -> void:
 	_phase_speed = float(ph.get("speed", 1.0))
 	_phase_dmg = float(ph.get("dmg", 1.0))
 	_phase_cd = float(ph.get("cd", 1.0))
+	if ph.has("skin") and boss.rig != null:  # its look changes (Malaphax tears off his armour)
+		boss.skin = String(ph.skin)
+		boss.rig.set_part_overrides(RigSprite.skin_parts(boss.skin))
+	var veil: Dictionary = ph.get("veil", {})
+	if veil != _veil:
+		_veil = veil
+		_veil_t = 1.5
 	_apply_stats()
 
 
 func _apply_stats() -> void:
 	boss.speed = _base_speed * _phase_speed * (ENRAGE_SPEED if enraged else 1.0)
 	boss.touch_damage = _base_touch * _phase_dmg * (ENRAGE_DMG if enraged else 1.0)
+
+
+## A phase with a "veil" drags the fight into the Veil Realm now and then (VeilRealm): `interval` seconds after one lifts, the next.
+func _veil_step(delta: float) -> void:
+	if _veil.is_empty() or is_instance_valid(_realm) or state == S.ROAR:
+		return
+	_veil_t -= delta
+	if _veil_t <= 0.0:
+		_realm = VeilRealm.begin(self, _veil)
+		_realm.ended.connect(func(): _veil_t = float(_veil.get("interval", 26.0)))
 
 
 func _cd_mult() -> float:

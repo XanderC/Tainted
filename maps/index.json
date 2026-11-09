@@ -28,6 +28,10 @@
 			"kind": "rift",
 			"name": "Scorched Halls"
 		},
+		"sepulcher_of_mourning": {
+			"kind": "story",
+			"name": "Sepulcher of Mourning"
+		},
 		"sunken_courtyards": {
 			"kind": "rift",
 			"name": "Sunken Courtyards"

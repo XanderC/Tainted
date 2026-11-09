@@ -4,18 +4,12 @@ extends Node2D
 ##   godot --path . --resolution 1600x720 res://scratch/capture_maps.tscn -- --out=<folder>
 
 const SHOTS := [
-	["grand_ossuary_1", Vector2(33, 23), 0.2],
-	["grand_ossuary_1", Vector2(10, 23), 0.55],
-	["grand_ossuary_1", Vector2(22, 22), 0.55],
-	["grand_ossuary_1", Vector2(14, 8), 0.55],
-	["grand_ossuary_1", Vector2(40, 8), 0.55],
-	["grand_ossuary_1", Vector2(40, 18), 0.55],
-	["grand_ossuary_1", Vector2(58, 23), 0.55],
-	["grand_ossuary_2", Vector2(30, 23), 0.2],
-	["grand_ossuary_2", Vector2(10, 7), 0.55],
-	["grand_ossuary_2", Vector2(46, 34), 0.55],
-	["grand_ossuary_2", Vector2(48, 12), 0.55],
-	["ashen_verge", Vector2(62, 23), 0.55],
+	["sepulcher_of_mourning", Vector2(29, 22), 0.2],
+	["sepulcher_of_mourning", Vector2(8, 22), 0.55],
+	["sepulcher_of_mourning", Vector2(24, 22), 0.55],
+	["sepulcher_of_mourning", Vector2(46, 22), 0.55],
+	["sepulcher_of_mourning", Vector2(52, 20), 0.55],
+	["grand_ossuary_2", Vector2(54, 35), 0.55],
 ]
 
 
