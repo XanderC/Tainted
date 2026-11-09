@@ -11,6 +11,8 @@ var max_hp := 30.0
 var hp := 30.0
 var speed := 110.0
 var touch_damage := 8.0
+var xp_scale := 1.0  ## the experience of a kill as a share of the usual (a zone's `xp_scale` in ActDB: Act I is paced to end on levels 12 to 17)
+var xp_override := -1.0  ## a quest boss's own experience (BossDB "xp"), instead of what its life works out to
 var rig: RigSprite
 var is_boss := false
 ## A boss with an entry in BossDB fights through this (moves, phases, adds: BossBrain); only on the game
@@ -478,7 +480,8 @@ func _die() -> void:
 	died.emit(global_position)
 	if is_instance_valid(target):
 		target.on_enemy_killed(global_position)
-	GameState.add_xp(max_hp * (0.6 if is_boss else 0.4) * PartyScale.xp())
+	var worth := xp_override if xp_override >= 0.0 else max_hp * (0.6 if is_boss else 0.4) * xp_scale
+	GameState.add_xp(worth * PartyScale.xp())
 	if has_affix("molten"):
 		_molten_explosion()
 	rig.modulate = _tint

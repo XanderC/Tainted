@@ -462,19 +462,25 @@ func _spawn_packs() -> void:
 
 
 ## Whether a boss is awake and alive: in its fight (BossBrain), or woken as a plain tough monster.
-func _fighting(b: Enemy) -> bool:
+func _fighting(b) -> bool:  # (untyped: a boss that has been freed since it died is not an Enemy any more)
 	return is_instance_valid(b) and not b._dead and (b._aggro or (b.brain != null and b.brain.state != BossBrain.S.SLEEP))
 
 
-## The boss the screen follows (its health bar, the reset when you fall) is the one in a fight, when the zone has several.
+## The boss the screen follows (its health bar, the reset when you fall) is the one in a fight, when the zone has several. A boss that
+## has died is freed a moment later, so the list is kept to those still there, and the one followed is always one of them.
 func _follow_awake_boss() -> void:
-	if _bosses.size() < 2 or _fighting(_boss):
+	if _bosses.size() > 0 and _bosses.any(func(x): return not is_instance_valid(x)):
+		_bosses = _bosses.filter(func(x): return is_instance_valid(x))
+	if _bosses.is_empty() or _fighting(_boss):
 		return
 	for b in _bosses:
 		if _fighting(b):
 			_boss = b
 			_attach_boss_bar()
 			return
+	if _bosses.size() > 1 and not is_instance_valid(_boss):
+		_boss = _bosses[0]
+		_attach_boss_bar()
 
 
 ## Whether `at` is in (or close enough to wake into) the arena of a boss still to be fought: its fight is
@@ -499,6 +505,7 @@ func _spawn_enemy(pos: Vector2, pack: String, kind: String, tier: int) -> Enemy:
 	e.max_hp = 25.0 * DungeonRun.hp_mult(area_level)
 	e.touch_damage *= DungeonRun.damage_mult(area_level)
 	e.speed *= DungeonRun.speed_mult(area_level)
+	e.xp_scale = float(ActDB.zone(zone_id).get("xp_scale", 1.0))
 	e.set_kind(kind)
 	if tier != MonsterAffix.Tier.NORMAL:
 		e.make_elite(tier, MonsterAffix.roll_affixes(tier, area_level))
@@ -525,7 +532,14 @@ func _spawn_boss(o: Dictionary) -> void:
 	b.set_kind(String(o.get("kind", "zombie")))
 	b.max_hp *= float(o.get("hp", 8.0))
 	if BossDB.has(boss_id):
-		b.max_hp *= float(BossDB.def(boss_id).get("hp", 1.0))
+		var def := BossDB.def(boss_id)
+		b.max_hp *= float(def.get("hp", 1.0))
+		if def.has("life"):  # its life is set outright (what a character of its level takes a minute to get through)
+			b.max_hp = float(def.life)
+		if def.has("xp"):
+			b.xp_override = float(def.xp)
+		b.touch_damage *= float(def.get("power", 1.0))
+	b.xp_scale = float(ActDB.zone(zone_id).get("xp_scale", 1.0))
 	b.touch_damage *= 1.4
 	b.display_name = String(o.get("name", "Boss"))
 	if o.has("skin"):

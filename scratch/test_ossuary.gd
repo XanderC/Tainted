@@ -89,6 +89,11 @@ func _check_map(id: String) -> Dictionary:
 func _targets(data: Dictionary) -> Array:
 	return MapData.objects_of(data, "portal").map(func(o): return String(o.target))
 
+## The bosses hit as hard as they do for a character of the level the story has brought you to (BossDB "power"): this one has the life for it.
+func _tough(p: Player) -> void:
+	p.stats.add_mod("max_life", StatBlock.ModType.FLAT, 20000.0, "test")
+	p.hp = p.stats.get_stat("max_life")
+
 
 func _ready() -> void:
 	GameState.tutorial_stage = GameState.TUTORIAL_DONE
@@ -139,6 +144,7 @@ func _ready() -> void:
 	check(Quests.current_step(ch4).key == "grand_ossuary_1", "Chapter 4 starts at the gates")
 	zone = await _load_zone("grand_ossuary_1", "ashen_verge")
 	var player: Player = zone.player
+	_tough(player)
 	check(Quests.current_step(ch4).key == "herald_oren", "going in is the first step")
 	check(zone._bosses.size() == 2 and _boss(zone, "herald_oren") != null and _boss(zone, "herald_sable") != null, "two heralds wait on this level")
 	check(_enemies(zone).size() > 40, "the Ossuary's monsters (%d)" % _enemies(zone).size())
@@ -268,6 +274,7 @@ func _ready() -> void:
 	await settle(0.4)
 	zone = await _load_zone("grand_ossuary_2", "grand_ossuary_1")
 	player = zone.player
+	_tough(player)
 	check(Quests.current_step(ch4).key == "herald_morrow", "the stair down is the step")
 	check(zone._bosses.size() == 1 and _boss(zone, "herald_morrow") != null, "Herald Morrow waits in the choir")
 	check(_enemies(zone).size() > 40, "the Lower Ossuary's monsters (%d)" % _enemies(zone).size())

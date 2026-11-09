@@ -10,28 +10,31 @@ const TOWN_NAME := "Oakhaven Outpost"
 ## id: name, act, map (MapData id), area_level, and kinds (the MonsterKinds a zone's packs are made of; without it,
 ## whatever its area level allows). Act I is The Bleeding Veil (ACT1_DESIGN.md). The first zone keeps its old id
 ## "dune_wastes" (saved waypoints and zone ids use it): it is the Blackroot Wilds.
+## `xp_scale`: the experience of its monsters as a share of what their life works out to. Act I is paced so that a new character ends it
+## on levels 12 to 17: its quests and bosses (BossDB "xp") give about 13,000 experience, and its monsters 8,000 more if you clear them
+## (scratch/measure_xp.tscn adds it up).
 const ZONES := {
-	"dune_wastes": {"name": "Blackroot Wilds", "act": 1, "map": "dune_wastes", "area_level": 2,
+	"dune_wastes": {"name": "Blackroot Wilds", "act": 1, "map": "dune_wastes", "area_level": 2, "xp_scale": 0.097,
 		"kinds": ["briarwolf", "villager", "ghoul", "zombie", "skeleton"]},
-	"weeping_hollow": {"name": "The Weeping Hollow", "act": 1, "map": "weeping_hollow", "area_level": 4,
+	"weeping_hollow": {"name": "The Weeping Hollow", "act": 1, "map": "weeping_hollow", "area_level": 4, "xp_scale": 0.145,
 		"kinds": ["cave_skitterer", "blind_crawler", "ghoul", "skeleton"]},
-	"sunken_fen": {"name": "Sunken Fen", "act": 1, "map": "sunken_fen", "area_level": 4,
+	"sunken_fen": {"name": "Sunken Fen", "act": 1, "map": "sunken_fen", "area_level": 4, "xp_scale": 0.078,
 		"kinds": ["rot_bloat", "leechfiend", "fen_crawler", "villager", "zombie"]},
-	"ashen_verge": {"name": "Ashen Verge", "act": 1, "map": "ashen_verge", "area_level": 6,
+	"ashen_verge": {"name": "Ashen Verge", "act": 1, "map": "ashen_verge", "area_level": 6, "xp_scale": 0.076,
 		"kinds": ["skeleton", "skeleton_warrior", "zombie", "ghoul", "bleed_fiend"]},
-	"grand_ossuary_1": {"name": "Grand Ossuary", "act": 1, "map": "grand_ossuary_1", "area_level": 7,
+	"grand_ossuary_1": {"name": "Grand Ossuary", "act": 1, "map": "grand_ossuary_1", "area_level": 7, "xp_scale": 0.099,
 		"kinds": ["skeleton", "skeleton_warrior", "skeleton_vanguard", "skeleton_archer", "ghoul", "veil_cultist"]},
-	"grand_ossuary_2": {"name": "Lower Ossuary", "act": 1, "map": "grand_ossuary_2", "area_level": 8,
+	"grand_ossuary_2": {"name": "Lower Ossuary", "act": 1, "map": "grand_ossuary_2", "area_level": 8, "xp_scale": 0.07,
 		"kinds": ["skeleton_warrior", "skeleton_vanguard", "skeleton_hunter", "ghoul", "veil_cultist", "bleed_fiend"]},
 	# The spawning mini-dungeons (MiniDungeons: an entrance in an open zone, now and then, leads to one; "mini" names what happens in it
 	# (MiniDungeon), "packs" false: no ordinary monsters, "density": more of them)
-	"mini_cellar": {"name": "Rot-Damp Cellar", "act": 1, "map": "mini_cellar", "area_level": 3, "mini": "cellar", "density": 1.8, "kinds": ["blood_maggot", "ghoul"]},
-	"mini_bonepit": {"name": "Forgotten Bone Pit", "act": 1, "map": "mini_bonepit", "area_level": 3, "mini": "bonepit",
+	"mini_cellar": {"name": "Rot-Damp Cellar", "act": 1, "map": "mini_cellar", "area_level": 3, "xp_scale": 0.08, "mini": "cellar", "density": 1.8, "kinds": ["blood_maggot", "ghoul"]},
+	"mini_bonepit": {"name": "Forgotten Bone Pit", "act": 1, "map": "mini_bonepit", "area_level": 3, "xp_scale": 0.1, "mini": "bonepit",
 		"kinds": ["skeleton", "skeleton_warrior", "skeleton_archer"]},
-	"mini_sanctum": {"name": "Hermit's Sanctum", "act": 1, "map": "mini_sanctum", "area_level": 3, "mini": "sanctum", "packs": false, "kinds": ["skeleton"]},
-	"mini_fissure": {"name": "Weeping Fissure", "act": 1, "map": "mini_fissure", "area_level": 3, "mini": "fissure", "density": 2.4,
+	"mini_sanctum": {"name": "Hermit's Sanctum", "act": 1, "map": "mini_sanctum", "area_level": 3, "xp_scale": 0.1, "mini": "sanctum", "packs": false, "kinds": ["skeleton"]},
+	"mini_fissure": {"name": "Weeping Fissure", "act": 1, "map": "mini_fissure", "area_level": 3, "xp_scale": 0.06, "mini": "fissure", "density": 2.4,
 		"kinds": ["bleed_fiend", "ghoul", "veil_cultist", "blind_crawler"]},
-	"sepulcher_of_mourning": {"name": "Sepulcher of Mourning", "act": 1, "map": "sepulcher_of_mourning", "area_level": 9,
+	"sepulcher_of_mourning": {"name": "Sepulcher of Mourning", "act": 1, "map": "sepulcher_of_mourning", "area_level": 9, "xp_scale": 0.071,
 		"kinds": ["skeleton_vanguard", "veil_cultist", "bleed_fiend", "skeleton_hunter", "ghoul"]},
 }
 

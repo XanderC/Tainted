@@ -7,6 +7,10 @@ extends RefCounted
 ## An entry:
 ##   title    - under its name on the bar ("Raider Captain")
 ##   hp       - times the life the map gives it (the fight has roars and adds in it, so more than a plain monster)
+##   life     - its life outright (instead of hp's working-out): Act I's bosses are set to last about 30 seconds (the first) to two and a
+##              half minutes (Lord Malaphax) for a character of the level the story has brought you to (see ACT1_DESIGN.md)
+##   xp       - the experience it gives (instead of what its life works out to; the story's pacing: levels 12 to 17 at the act's end)
+##   power    - times the hit its zone's level gives it (a boss hits for a good part of a character's life, through their armour)
 ##   arena    - radius of the ring that seals round it when it wakes; it wakes at 80% of that
 ##   intro    - seconds it roars, untouchable, before it fights
 ##   enrage   - seconds into the fight after which it speeds up and hits harder, for good
@@ -34,6 +38,7 @@ const BOSSES := {
 	# Chapter 3 of Act I: the grave warden of the Ashen Verge who drank the Taint, and holds half of the Warded Keystone
 	"grave_warden": {
 		"title": "Maddened Grave Warden", "hp": 2.0,
+		"life": 16000, "xp": 650, "power": 3.6,
 		"arena": 560.0, "intro": 1.6, "enrage": 150.0, "max_adds": 6,
 		"lines": {"intro": "None disturb the dead. None.", "enrage": "Rest! REST!"},
 		"moves": {
@@ -55,6 +60,7 @@ const BOSSES := {
 	# Chapter 3 of Act I: the golem a Bleed Rift animated, with the other half of the Warded Keystone lodged in its chest
 	"rift_golem": {
 		"title": "Bleed-Rift Golem", "hp": 2.6,
+		"life": 19000, "xp": 750, "power": 3.6,
 		"arena": 600.0, "intro": 2.0, "enrage": 170.0, "max_adds": 5,
 		"lines": {"intro": "The rift bleeds. The stone obeys.", "enrage": "The tear widens."},
 		"moves": {
@@ -73,6 +79,7 @@ const BOSSES := {
 	# Chapter 5 of Act I, the act's end: the Flesh-Torn Lord Malaphax (Duke Edward of Oakhaven), in the Sepulcher of Mourning
 	"lord_malaphax": {
 		"title": "The Flesh-Torn", "hp": 4.6,
+		"life": 95000, "xp": 3000, "power": 2.0,
 		"arena": 700.0, "intro": 2.8, "enrage": 260.0, "max_adds": 6,
 		"lines": {"intro": "I walled myself in so that nothing could take me. Look what came to keep me company.", "enrage": "I will not die. I WILL NOT."},
 		"moves": {
@@ -98,6 +105,7 @@ const BOSSES := {
 	# Chapter 4 of Act I: the three cultist heralds who channel the Veil Anchors in the Grand Ossuary
 	"herald_oren": {
 		"title": "Herald Oren", "hp": 1.9,
+		"life": 19000, "xp": 700, "power": 3.7,
 		"arena": 520.0, "intro": 1.4, "enrage": 150.0, "max_adds": 5,
 		"lines": {"intro": "The first anchor is mine to keep. Look how it sings.", "enrage": "Burn, burn!"},
 		"moves": {
@@ -113,6 +121,7 @@ const BOSSES := {
 	},
 	"herald_sable": {
 		"title": "Herald Sable", "hp": 2.2,
+		"life": 23000, "xp": 800, "power": 3.7,
 		"arena": 540.0, "intro": 1.4, "enrage": 160.0, "max_adds": 5,
 		"lines": {"intro": "You break the first and think it a victory. It was a door.", "enrage": "Enough. Come to me."},
 		"moves": {
@@ -130,6 +139,7 @@ const BOSSES := {
 	},
 	"herald_morrow": {
 		"title": "Herald Morrow", "hp": 3.0,
+		"life": 32000, "xp": 1200, "power": 3.0,
 		"arena": 620.0, "intro": 1.8, "enrage": 180.0, "max_adds": 6,
 		"lines": {"intro": "Three anchors hold the wall up. When the last falls, so does it. Do you understand what you are asking?", "enrage": "Then fall with it!"},
 		"moves": {
@@ -149,6 +159,7 @@ const BOSSES := {
 	# Chapter 2 of Act I: the guardian of the Brood Cyst in the Weeping Hollow
 	"matron_vhol": {
 		"title": "Skittering Matron", "hp": 2.2,
+		"life": 7500, "xp": 350, "power": 4.0,
 		"arena": 560.0, "intro": 1.8, "enrage": 150.0, "max_adds": 6,
 		"lines": {"intro": "The brood remembers the light.", "enrage": "Feed. Feed. FEED."},
 		"moves": {
@@ -172,6 +183,7 @@ const BOSSES := {
 	# Chapter 1 of Act I: the pack leader that has Scout Captain Dennis pinned in the hunting lodge
 	"briar_alpha": {
 		"title": "Tainted Briarwolf", "hp": 1.4,
+		"life": 3600, "xp": 120, "power": 5.0,
 		"arena": 480.0, "intro": 1.4, "enrage": 120.0, "max_adds": 4,
 		"lines": {},
 		"moves": {

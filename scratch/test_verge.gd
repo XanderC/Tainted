@@ -78,6 +78,11 @@ func _targets(data: Dictionary) -> Array:
 			out.append(String(o.target))
 	return out
 
+## The bosses hit as hard as they do for a character of the level the story has brought you to (BossDB "power"): this one has the life for it.
+func _tough(p: Player) -> void:
+	p.stats.add_mod("max_life", StatBlock.ModType.FLAT, 20000.0, "test")
+	p.hp = p.stats.get_stat("max_life")
+
 
 func _ready() -> void:
 	GameState.tutorial_stage = GameState.TUTORIAL_DONE
@@ -128,6 +133,7 @@ func _ready() -> void:
 	add_child(zone)
 	await settle(1.2)
 	var player: Player = zone.player
+	_tough(player)
 	check(Quests.current_step(ch3).key == "grave_warden", "crossing in is the first step")
 	var foreign := 0
 	for e in _enemies(zone):

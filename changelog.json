@@ -1,5 +1,14 @@
 [
 	{
+		"build": 0,
+		"title": "Act I balance: levels and bosses",
+		"notes": [
+			"Act I now takes a new character to about level 12 to 17. Monsters in its zones give far less experience than they did, and its quests and bosses give a fixed amount, so the pace no longer runs away in the later zones.",
+			"The bosses of Act I are much tougher: they have many times the life, so a fight lasts from about half a minute to a couple of minutes (Lord Malaphax the longest), and they hit harder, so standing still will not win it. Their rewards are unchanged.",
+			"Fixed: in the Ashen Verge the boss health bar did not move to the Rift Golem once the Grave Warden had been slain and had faded away."
+		]
+	},
+	{
 		"build": 202611091135,
 		"title": "Act I phase 6: world events and mini-dungeons",
 		"notes": [

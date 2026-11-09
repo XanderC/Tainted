@@ -55,6 +55,12 @@ func check_map(id: String) -> Dictionary:
 	return data
 
 
+## The bosses hit as hard as they do for a character of the level the story has brought you to (BossDB "power"): this one has the life for it.
+func _tough(p: Player) -> void:
+	p.stats.add_mod("max_life", StatBlock.ModType.FLAT, 20000.0, "test")
+	p.hp = p.stats.get_stat("max_life")
+
+
 func _ready() -> void:
 	GameState.tutorial_stage = GameState.TUTORIAL_DONE
 	GameState.quests = {}
@@ -115,6 +121,7 @@ func _ready() -> void:
 	add_child(zone)
 	await settle(1.0)
 	var player: Player = zone.player
+	_tough(player)
 	check(Quests.current_step(ch2).key == "brood_cyst", "entering the Hollow is the first step")
 	var allowed: Array = ActDB.zone("weeping_hollow").kinds
 	var foreign := 0
@@ -171,6 +178,7 @@ func _ready() -> void:
 	add_child(zone)
 	await settle(1.0)
 	player = zone.player
+	_tough(player)
 	foreign = 0
 	for e in _enemies(zone):
 		if not e.is_boss and String(e.pack).begins_with("zpack_") and not (e.kind in ActDB.zone("sunken_fen").kinds):
@@ -225,11 +233,12 @@ func _ready() -> void:
 	for r in GameState.runes:
 		runes0 += int(GameState.runes[r])
 	var points0 := GameState.attr_points
+	var level0 := GameState.level
 	var paid := Quests.turn_in(rot, player, 1)
 	var runes1 := 0
 	for r in GameState.runes:
 		runes1 += int(GameState.runes[r])
-	check(Quests.state(rot) == Quests.DONE and runes1 == runes0 + 1 and GameState.attr_points == points0, "taking the rune gives a rune and not the points (%s)" % [paid])
+	check(Quests.state(rot) == Quests.DONE and runes1 == runes0 + 1 and GameState.attr_points == points0 + Attributes.POINTS_PER_LEVEL * (GameState.level - level0), "taking the rune gives a rune and not the points (%s)" % [paid])
 	shot("fen_voss.png")
 	zone.queue_free()
 	await settle(0.3)

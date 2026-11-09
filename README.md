@@ -175,6 +175,19 @@ bench (`HermitBench`) that gives one free reroll of an item's modifiers or socke
 Tainted Chest tethered to three elite guardians, opening when they are dead. Zone flags: `mini`, `packs` (false: no ordinary
 monsters), `density`. Tests: `scratch/test_world.tscn`; `scratch/capture_world.tscn` takes pictures. Limits: none of it in a party's
 zone yet; the entrances and the events are drawn with shapes, not art, and a mini-dungeon you quit inside returns you to town.
+**Act I pacing and boss tuning:** a new character should end Act I on levels 12 to 17 (the story's quests and bosses alone give
+about level 12.9, everything about 16.5, a typical player about 15), and its bosses are not one-shot. Experience: a kill gave
+`max_life x 0.4`, which made the later zones' monsters worth far too much (everything came to level 30); a zone's `xp_scale` in
+`ActDB` now sets what its monsters give as a share of that (`Enemy.xp_scale`), and a quest boss's `xp` in `BossDB` is its own
+amount (`Enemy.xp_override`): about 7,600 from the bosses, 6,900 from the quests, 8,000 from clearing every monster. Bosses: `BossDB`
+`life` sets the life outright (a character of the level the story has brought you to does about 90 damage a second a level, 60% of it
+landing, and takes about 15 seconds to get through the first boss, 35 for a chapter boss and 130 for Lord Malaphax: before, a
+level-12 character took one or two seconds) and `power` multiplies their hit (a boss now takes 5-11% of a character's life in one
+hit through their armour; standing still without dodging ends a fight in 15 to 40 seconds, so every fight asks for some dodging).
+Checks: `scratch/test_pacing.tscn` (the level range, the boss lengths and that the numbers are used), `scratch/measure_xp.tscn` (where
+the experience comes from), `scratch/measure_dps.tscn` (what a character of each level deals) and `scratch/measure_fight.tscn` (a boss
+fight as the worst case). Also fixed: in a zone with two bosses, the health bar stopped following the second once the first had died
+and been freed. Regular monsters' life is unchanged, and the rifts are untouched.
 Zone maps come from `tools/gen_zones.py`; tweak them in the map editor (rerunning the script
 overwrites them).
 
