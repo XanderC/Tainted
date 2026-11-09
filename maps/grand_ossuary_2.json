@@ -1,0 +1,1437 @@
+{
+	"format": 1,
+	"id": "grand_ossuary_2",
+	"name": "The Lower Ossuary",
+	"kind": "story",
+	"theme": "crypt",
+	"cell": 128,
+	"auto_decorate": true,
+	"grid": [
+		"############################################################",
+		"############################################################",
+		"############################################################",
+		"############################################################",
+		"###........########################.....................####",
+		"###........########################.....................####",
+		"###.......................#########..#...#.......#...#..####",
+		"###.......................#########.....................####",
+		"###.......................#########.....................####",
+		"###........############...#########.....................####",
+		"###........############...#########......#.......#......####",
+		"#######################...#########.....................####",
+		"#######################...#########.....................####",
+		"#######################...#########.....................####",
+		"#######################...#########..#...#...#...#...#..####",
+		"###############.................###.....................####",
+		"###############.................###.....................####",
+		"###############..#...#...#...#..###.....................####",
+		"###############.................###.....................####",
+		"###############.................###.....................####",
+		"###############.................############...####..#######",
+		"#########.......................................###..#######",
+		"#########.......................................###..#######",
+		"#########.......................................###..#######",
+		"#########...###.................#############...###..#######",
+		"#########...###..#...#...#...#..#############...###..#######",
+		"#########...###.................#############...###..#######",
+		"#########...###.................#####...................####",
+		"#########...###.................#####...................####",
+		"#########...###.................#####..#...#............####",
+		"#####............####################...................####",
+		"#####............####################...................####",
+		"#####..#.........####################......................#",
+		"#####............####################......................#",
+		"#####............####################......................#",
+		"#####............####################......................#",
+		"#####............####################......................#",
+		"#####............####################..#...#...#...........#",
+		"#####............####################......................#",
+		"#####............####################...................####",
+		"#####............####################...................####",
+		"#####............####################...................####",
+		"#####################################...................####",
+		"############################################################",
+		"############################################################",
+		"############################################################"
+	],
+	"objects": [
+		{
+			"type": "start",
+			"x": 832,
+			"y": 960
+		},
+		{
+			"type": "portal",
+			"x": 576,
+			"y": 960,
+			"target": "grand_ossuary_1"
+		},
+		{
+			"type": "waypoint",
+			"x": 2880,
+			"y": 2880
+		},
+		{
+			"type": "trigger",
+			"x": 960,
+			"y": 960,
+			"radius": 520,
+			"id": "lower_ossuary_arrive",
+			"text": "The Lower Ossuary. The stone here is older, and the whispering has a voice in it."
+		},
+		{
+			"type": "prop",
+			"x": 704,
+			"y": 556,
+			"sprite": "torch_1",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 2240,
+			"y": 1964,
+			"sprite": "torch_1",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 2752,
+			"y": 1964,
+			"sprite": "torch_1",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 3264,
+			"y": 1964,
+			"sprite": "torch_1",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 3776,
+			"y": 1964,
+			"sprite": "torch_1",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 960,
+			"y": 3884,
+			"sprite": "torch_1",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 1472,
+			"y": 3884,
+			"sprite": "torch_1",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 4800,
+			"y": 556,
+			"sprite": "torch_1",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 5312,
+			"y": 556,
+			"sprite": "torch_1",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 5824,
+			"y": 556,
+			"sprite": "torch_1",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 6336,
+			"y": 556,
+			"sprite": "torch_1",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 6848,
+			"y": 556,
+			"sprite": "torch_1",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 5056,
+			"y": 3500,
+			"sprite": "torch_1",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 5568,
+			"y": 3500,
+			"sprite": "torch_1",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 6080,
+			"y": 3500,
+			"sprite": "torch_1",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 6592,
+			"y": 3500,
+			"sprite": "torch_1",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 1216,
+			"y": 876,
+			"sprite": "lantern_1",
+			"scale": 0.42,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 2112,
+			"y": 876,
+			"sprite": "lantern_1",
+			"scale": 0.42,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 3008,
+			"y": 1388,
+			"sprite": "lantern_1",
+			"scale": 0.42,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 3008,
+			"y": 2284,
+			"sprite": "lantern_1",
+			"scale": 0.42,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 2624,
+			"y": 2796,
+			"sprite": "lantern_1",
+			"scale": 0.42,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 1728,
+			"y": 2796,
+			"sprite": "lantern_1",
+			"scale": 0.42,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 1216,
+			"y": 3436,
+			"sprite": "lantern_1",
+			"scale": 0.42,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 1216,
+			"y": 4332,
+			"sprite": "lantern_1",
+			"scale": 0.42,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 3392,
+			"y": 2796,
+			"sprite": "lantern_1",
+			"scale": 0.42,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 4288,
+			"y": 2796,
+			"sprite": "lantern_1",
+			"scale": 0.42,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 5184,
+			"y": 2796,
+			"sprite": "lantern_1",
+			"scale": 0.42,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 5696,
+			"y": 2668,
+			"sprite": "lantern_1",
+			"scale": 0.42,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 5696,
+			"y": 1772,
+			"sprite": "lantern_1",
+			"scale": 0.42,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 3392,
+			"y": 2796,
+			"sprite": "lantern_1",
+			"scale": 0.42,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 4288,
+			"y": 2796,
+			"sprite": "lantern_1",
+			"scale": 0.42,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 5184,
+			"y": 2796,
+			"sprite": "lantern_1",
+			"scale": 0.42,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 5824,
+			"y": 3052,
+			"sprite": "lantern_1",
+			"scale": 0.42,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 5824,
+			"y": 3948,
+			"sprite": "lantern_1",
+			"scale": 0.42,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 6336,
+			"y": 4332,
+			"sprite": "lantern_1",
+			"scale": 0.42,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 7232,
+			"y": 4332,
+			"sprite": "lantern_1",
+			"scale": 0.42,
+			"solid": false
+		},
+		{
+			"type": "trap",
+			"x": 3008,
+			"y": 1984
+		},
+		{
+			"type": "trap",
+			"x": 3264,
+			"y": 1984
+		},
+		{
+			"type": "trap",
+			"x": 5184,
+			"y": 2752
+		},
+		{
+			"type": "trap",
+			"x": 5184,
+			"y": 2880
+		},
+		{
+			"type": "trap",
+			"x": 4800,
+			"y": 2752
+		},
+		{
+			"type": "trap",
+			"x": 4800,
+			"y": 3008
+		},
+		{
+			"type": "trap",
+			"x": 5952,
+			"y": 3392
+		},
+		{
+			"type": "trap",
+			"x": 6080,
+			"y": 3392
+		},
+		{
+			"type": "trap",
+			"x": 6720,
+			"y": 3008
+		},
+		{
+			"type": "trap",
+			"x": 1216,
+			"y": 3008
+		},
+		{
+			"type": "trap",
+			"x": 1344,
+			"y": 3008
+		},
+		{
+			"type": "trap",
+			"x": 6720,
+			"y": 4416
+		},
+		{
+			"type": "trap",
+			"x": 6720,
+			"y": 4544
+		},
+		{
+			"type": "prop",
+			"x": 2368,
+			"y": 2368,
+			"sprite": "hollow/bone_4",
+			"scale": 0.7,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 3648,
+			"y": 2496,
+			"sprite": "hollow/bone_6",
+			"scale": 0.7,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 2496,
+			"y": 3392,
+			"sprite": "hollow/bone_6",
+			"scale": 0.7,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 3776,
+			"y": 3392,
+			"sprite": "hollow/bone_6",
+			"scale": 0.7,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 3008,
+			"y": 2240,
+			"sprite": "hollow/bone_5",
+			"scale": 0.7,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 3008,
+			"y": 3520,
+			"sprite": "hollow/bone_6",
+			"scale": 0.7,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 2112,
+			"y": 2880,
+			"sprite": "hollow/bone_5",
+			"scale": 0.7,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 2624,
+			"y": 3008,
+			"sprite": "crypt/blood_1",
+			"scale": 0.4,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 3392,
+			"y": 2752,
+			"sprite": "crypt/blood_2",
+			"scale": 0.4,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 3264,
+			"y": 3392,
+			"sprite": "crypt/blood_2",
+			"scale": 0.4,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 832,
+			"y": 4032,
+			"sprite": "decor_2",
+			"scale": 0.5,
+			"solid": true
+		},
+		{
+			"type": "prop",
+			"x": 832,
+			"y": 4800,
+			"sprite": "hollow/bone_9",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 1344,
+			"y": 4032,
+			"sprite": "decor_2",
+			"scale": 0.5,
+			"solid": true
+		},
+		{
+			"type": "prop",
+			"x": 1344,
+			"y": 4800,
+			"sprite": "hollow/bone_10",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 1856,
+			"y": 4032,
+			"sprite": "decor_2",
+			"scale": 0.5,
+			"solid": true
+		},
+		{
+			"type": "prop",
+			"x": 1856,
+			"y": 4800,
+			"sprite": "hollow/bone_10",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 1984,
+			"y": 5235,
+			"sprite": "decor_19",
+			"scale": 0.5,
+			"solid": true
+		},
+		{
+			"type": "prop",
+			"x": 4928,
+			"y": 1011,
+			"sprite": "decor_22",
+			"scale": 0.55,
+			"solid": true
+		},
+		{
+			"type": "prop",
+			"x": 5440,
+			"y": 1011,
+			"sprite": "decor_22",
+			"scale": 0.55,
+			"solid": true
+		},
+		{
+			"type": "prop",
+			"x": 5952,
+			"y": 1011,
+			"sprite": "decor_22",
+			"scale": 0.55,
+			"solid": true
+		},
+		{
+			"type": "prop",
+			"x": 6464,
+			"y": 1011,
+			"sprite": "decor_22",
+			"scale": 0.55,
+			"solid": true
+		},
+		{
+			"type": "prop",
+			"x": 4928,
+			"y": 2163,
+			"sprite": "decor_22",
+			"scale": 0.55,
+			"solid": true
+		},
+		{
+			"type": "prop",
+			"x": 5440,
+			"y": 2163,
+			"sprite": "decor_22",
+			"scale": 0.55,
+			"solid": true
+		},
+		{
+			"type": "prop",
+			"x": 5952,
+			"y": 2163,
+			"sprite": "decor_22",
+			"scale": 0.55,
+			"solid": true
+		},
+		{
+			"type": "prop",
+			"x": 6464,
+			"y": 2163,
+			"sprite": "decor_22",
+			"scale": 0.55,
+			"solid": true
+		},
+		{
+			"type": "trigger",
+			"x": 5824,
+			"y": 1472,
+			"radius": 700,
+			"id": "nave",
+			"text": "The nave: row upon row of sarcophagi, every lid slid aside."
+		},
+		{
+			"type": "prop",
+			"x": 6848,
+			"y": 4595,
+			"sprite": "crypt/rift_2",
+			"scale": 1.1398267002569196,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 6720,
+			"y": 4851,
+			"sprite": "crypt/rift_1",
+			"scale": 0.944559303470948,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 6464,
+			"y": 4851,
+			"sprite": "crypt/rift_1",
+			"scale": 1.0086444686049159,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 6208,
+			"y": 4851,
+			"sprite": "crypt/rift_2",
+			"scale": 1.0908315502517698,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 6080,
+			"y": 4595,
+			"sprite": "crypt/rift_3",
+			"scale": 1.1848906750454364,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 6208,
+			"y": 4339,
+			"sprite": "crypt/rift_2",
+			"scale": 1.1460913323061446,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 6464,
+			"y": 4339,
+			"sprite": "crypt/rift_3",
+			"scale": 1.0801879161896608,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 6720,
+			"y": 4339,
+			"sprite": "crypt/rift_1",
+			"scale": 1.131796616645279,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 6208,
+			"y": 4672,
+			"sprite": "crypt/blood_2",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 6720,
+			"y": 4672,
+			"sprite": "crypt/blood_1",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 6464,
+			"y": 4800,
+			"sprite": "crypt/blood_2",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "boss",
+			"x": 5568,
+			"y": 4288,
+			"id": "herald_morrow",
+			"name": "Herald Morrow",
+			"kind": "dark_elf",
+			"skin": "lich",
+			"hp": 7.5,
+			"size": 1.55
+		},
+		{
+			"type": "quest_object",
+			"x": 6464,
+			"y": 4544,
+			"id": "anchor_3",
+			"sprite": "crypt/rift_2",
+			"scale": 1.15,
+			"prompt": "Shatter the Veil Anchor",
+			"text": "The last anchor breaks, and a sound goes through the stone like a bell tolling under the world. The wall between the realms shudders and holds, for now. Ash falls from the ceiling.",
+			"ambush": {
+				"kind": "skeleton_vanguard",
+				"n": 6
+			}
+		},
+		{
+			"type": "trigger",
+			"x": 5952,
+			"y": 4416,
+			"radius": 700,
+			"id": "choir",
+			"text": "The choir. A red spire hums in the floor, and a robed figure kneels at its foot, singing."
+		},
+		{
+			"type": "trigger",
+			"x": 7360,
+			"y": 4544,
+			"radius": 520,
+			"id": "sepulcher_door",
+			"text": "A great door of black iron at the end of the choir: barred from the far side. The Sepulcher of Mourning lies beyond it. It will not yield yet."
+		},
+		{
+			"type": "prop",
+			"x": 7539,
+			"y": 4601,
+			"sprite": "crypt/decor_13",
+			"scale": 0.8,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 7360,
+			"y": 4339,
+			"sprite": "lantern_1",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 7360,
+			"y": 4851,
+			"sprite": "lantern_1",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 736,
+			"y": 739,
+			"sprite": "stones_5",
+			"scale": 0.45,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 1211,
+			"y": 861,
+			"sprite": "hollow/bone_9",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 3768,
+			"y": 3630,
+			"sprite": "decor_14",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 3145,
+			"y": 3653,
+			"sprite": "hollow/bone_9",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 2377,
+			"y": 2673,
+			"sprite": "hollow/bone_9",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 2752,
+			"y": 2411,
+			"sprite": "crypt/decor_14",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 2094,
+			"y": 3687,
+			"sprite": "hollow/bone_10",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 2228,
+			"y": 2402,
+			"sprite": "crypt/blood_1",
+			"scale": 0.3,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 2634,
+			"y": 2265,
+			"sprite": "decor_4",
+			"scale": 0.45,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 3240,
+			"y": 2481,
+			"sprite": "hollow/bone_10",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 2393,
+			"y": 3141,
+			"sprite": "stones_10",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 2137,
+			"y": 2856,
+			"sprite": "hollow/bone_2",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 2129,
+			"y": 3251,
+			"sprite": "hollow/bone_10",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 2649,
+			"y": 3257,
+			"sprite": "crypt/decor_15",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 2789,
+			"y": 2598,
+			"sprite": "decor_14",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 2230,
+			"y": 2992,
+			"sprite": "hollow/bone_10",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 1764,
+			"y": 4202,
+			"sprite": "crypt/blood_1",
+			"scale": 0.3,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 1211,
+			"y": 4007,
+			"sprite": "stones_5",
+			"scale": 0.45,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 1608,
+			"y": 4959,
+			"sprite": "stones_9",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 1360,
+			"y": 5228,
+			"sprite": "crypt/decor_15",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 1748,
+			"y": 4589,
+			"sprite": "crypt/blood_3",
+			"scale": 0.3,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 1757,
+			"y": 4143,
+			"sprite": "stones_5",
+			"scale": 0.45,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 1074,
+			"y": 4081,
+			"sprite": "stones_5",
+			"scale": 0.45,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 5691,
+			"y": 2406,
+			"sprite": "crypt/blood_3",
+			"scale": 0.3,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 6884,
+			"y": 1764,
+			"sprite": "hollow/bone_2",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 6450,
+			"y": 739,
+			"sprite": "crypt/decor_14",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 4902,
+			"y": 2095,
+			"sprite": "decor_14",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 5327,
+			"y": 2019,
+			"sprite": "stones_10",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 4686,
+			"y": 853,
+			"sprite": "hollow/bone_7",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 5338,
+			"y": 1514,
+			"sprite": "crypt/blood_3",
+			"scale": 0.3,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 6228,
+			"y": 1355,
+			"sprite": "hollow/bone_2",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 6060,
+			"y": 2238,
+			"sprite": "hollow/bone_7",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 4828,
+			"y": 1103,
+			"sprite": "stones_9",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 5950,
+			"y": 2238,
+			"sprite": "decor_2",
+			"scale": 0.45,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 6718,
+			"y": 2127,
+			"sprite": "hollow/bone_9",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 5083,
+			"y": 1906,
+			"sprite": "decor_2",
+			"scale": 0.45,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 5211,
+			"y": 2380,
+			"sprite": "decor_14",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 6732,
+			"y": 1720,
+			"sprite": "stones_5",
+			"scale": 0.45,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 5474,
+			"y": 1622,
+			"sprite": "decor_14",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 7001,
+			"y": 1992,
+			"sprite": "hollow/bone_7",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 4938,
+			"y": 875,
+			"sprite": "decor_2",
+			"scale": 0.45,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 6070,
+			"y": 5087,
+			"sprite": "crypt/blood_3",
+			"scale": 0.3,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 5278,
+			"y": 4441,
+			"sprite": "crypt/decor_14",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 6742,
+			"y": 3802,
+			"sprite": "decor_14",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 5294,
+			"y": 5206,
+			"sprite": "stones_10",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 5404,
+			"y": 3680,
+			"sprite": "crypt/blood_1",
+			"scale": 0.3,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 6177,
+			"y": 4966,
+			"sprite": "hollow/bone_7",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 6456,
+			"y": 3660,
+			"sprite": "hollow/bone_9",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 5853,
+			"y": 4684,
+			"sprite": "decor_4",
+			"scale": 0.45,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 6055,
+			"y": 4427,
+			"sprite": "decor_4",
+			"scale": 0.45,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 6610,
+			"y": 3903,
+			"sprite": "decor_2",
+			"scale": 0.45,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 5965,
+			"y": 4924,
+			"sprite": "hollow/bone_7",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 5187,
+			"y": 4536,
+			"sprite": "crypt/blood_1",
+			"scale": 0.3,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 5059,
+			"y": 4053,
+			"sprite": "decor_14",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 5028,
+			"y": 4576,
+			"sprite": "crypt/blood_1",
+			"scale": 0.3,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 5842,
+			"y": 4052,
+			"sprite": "stones_5",
+			"scale": 0.45,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 5983,
+			"y": 4076,
+			"sprite": "crypt/decor_15",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "pack",
+			"x": 3264,
+			"y": 3648,
+			"min": 3,
+			"max": 5,
+			"kind": "skeleton_vanguard"
+		},
+		{
+			"type": "pack",
+			"x": 4800,
+			"y": 1344,
+			"min": 3,
+			"max": 5,
+			"kind": "skeleton_hunter"
+		},
+		{
+			"type": "pack",
+			"x": 5952,
+			"y": 1472,
+			"min": 3,
+			"max": 5,
+			"kind": "skeleton_hunter"
+		},
+		{
+			"type": "pack",
+			"x": 2496,
+			"y": 3264,
+			"min": 3,
+			"max": 5,
+			"kind": "skeleton_vanguard"
+		},
+		{
+			"type": "pack",
+			"x": 5440,
+			"y": 5184,
+			"min": 3,
+			"max": 5,
+			"kind": "veil_cultist"
+		},
+		{
+			"type": "pack",
+			"x": 3520,
+			"y": 2752,
+			"min": 3,
+			"max": 5,
+			"kind": "skeleton_vanguard"
+		},
+		{
+			"type": "pack",
+			"x": 1728,
+			"y": 4544,
+			"min": 3,
+			"max": 5,
+			"kind": "ghoul"
+		},
+		{
+			"type": "pack",
+			"x": 6336,
+			"y": 2240,
+			"min": 3,
+			"max": 5,
+			"kind": "skeleton_hunter"
+		},
+		{
+			"type": "pack",
+			"x": 6592,
+			"y": 960,
+			"min": 3,
+			"max": 5,
+			"kind": "skeleton_hunter"
+		},
+		{
+			"type": "pack",
+			"x": 1984,
+			"y": 960,
+			"min": 3,
+			"max": 5
+		},
+		{
+			"type": "pack",
+			"x": 6208,
+			"y": 3648,
+			"min": 3,
+			"max": 5,
+			"kind": "veil_cultist"
+		},
+		{
+			"type": "pack",
+			"x": 5568,
+			"y": 2880,
+			"min": 3,
+			"max": 5
+		},
+		{
+			"type": "pack",
+			"x": 1728,
+			"y": 2880,
+			"min": 3,
+			"max": 5
+		},
+		{
+			"type": "pack",
+			"x": 6848,
+			"y": 5184,
+			"min": 3,
+			"max": 5
+		},
+		{
+			"type": "pack",
+			"x": 1088,
+			"y": 5184,
+			"min": 3,
+			"max": 5,
+			"kind": "ghoul"
+		},
+		{
+			"type": "pack",
+			"x": 6848,
+			"y": 4160,
+			"min": 3,
+			"max": 5,
+			"kind": "veil_cultist"
+		},
+		{
+			"type": "pack",
+			"x": 3136,
+			"y": 1856,
+			"min": 3,
+			"max": 5
+		},
+		{
+			"type": "pack",
+			"x": 4800,
+			"y": 2240,
+			"min": 3,
+			"max": 5
+		},
+		{
+			"type": "pack",
+			"x": 832,
+			"y": 4416,
+			"min": 3,
+			"max": 5,
+			"kind": "ghoul"
+		},
+		{
+			"type": "pack",
+			"x": 1344,
+			"y": 3776,
+			"min": 3,
+			"max": 5,
+			"kind": "ghoul"
+		},
+		{
+			"type": "pack",
+			"x": 5824,
+			"y": 704,
+			"min": 3,
+			"max": 5,
+			"kind": "skeleton_hunter"
+		},
+		{
+			"type": "pack",
+			"x": 3008,
+			"y": 960,
+			"min": 3,
+			"max": 5
+		},
+		{
+			"type": "pack",
+			"x": 2496,
+			"y": 2368,
+			"min": 3,
+			"max": 5,
+			"kind": "skeleton_vanguard"
+		},
+		{
+			"type": "pack",
+			"x": 4288,
+			"y": 2880,
+			"min": 3,
+			"max": 5
+		}
+	]
+}

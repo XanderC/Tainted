@@ -12,6 +12,14 @@
 			"kind": "story",
 			"name": "Blackroot Wilds"
 		},
+		"grand_ossuary_1": {
+			"kind": "story",
+			"name": "The Grand Ossuary"
+		},
+		"grand_ossuary_2": {
+			"kind": "story",
+			"name": "The Lower Ossuary"
+		},
 		"oakhaven": {
 			"kind": "special",
 			"name": "Oakhaven Outpost"

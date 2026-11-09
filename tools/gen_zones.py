@@ -69,6 +69,37 @@ class Zone:
                 if 1 <= x < self.cols - 1 and 1 <= y < self.rows - 1 and (x - c[0]) ** 2 + (y - c[1]) ** 2 <= r * r + 1:
                     self.wall[y][x] = False
 
+    def hall(self, x0, y0, x1, y1):
+        """A rectangular chamber (cells x0..x1, y0..y1, both ends included) cut out of solid rock."""
+        for y in range(y0, y1 + 1):
+            for x in range(x0, x1 + 1):
+                if 1 <= x < self.cols - 1 and 1 <= y < self.rows - 1:
+                    self.wall[y][x] = False
+
+    def hallway(self, a, b, w=3, first="x"):
+        """A straight-walled corridor `w` cells wide from a to b: along x first (or y first), then the other way. Returns
+        the cells of its middle, in order."""
+        corner = (b[0], a[1]) if first == "x" else (a[0], b[1])
+        trail = []
+        for p, q in [(a, corner), (corner, b)]:
+            x, y = p
+            while True:
+                trail.append((x, y))
+                if (x, y) == q:
+                    break
+                x += (q[0] > x) - (q[0] < x)
+                y += (q[1] > y) - (q[1] < y)
+        out = []
+        for c in trail:
+            if not out or out[-1] != c:
+                out.append(c)
+        for x, y in out:
+            for dy in range(-(w // 2), w - w // 2):
+                for dx in range(-(w // 2), w - w // 2):
+                    if 1 <= x + dx < self.cols - 1 and 1 <= y + dy < self.rows - 1:
+                        self.wall[y + dy][x + dx] = False
+        return out
+
     def paint(self, c, ch):
         if 0 <= c[0] < self.cols and 0 <= c[1] < self.rows and not self.wall[c[1]][c[0]]:
             self.roads[c[1]][c[0]] = ch
@@ -788,10 +819,11 @@ def ashen_verge():
     tx, ty, tw, th = terr
     mid = tx + tw // 2
     z.add("trigger", (mid, ty + 5), radius=480, id="mausoleum", text="The Ossuary's iron gates: sealed in two pieces. Before them, a plinth shaped for a keystone.")
-    z.prop("hollow/decor_19", (mid - 1, ty + 3), dy=0.95, scale=0.7, solid=True)
+    z.prop("hollow/decor_19", (mid - 2, ty + 3), dy=0.95, scale=0.7, solid=True)
     z.prop("hollow/decor_16", (mid - 4, ty + 4), scale=0.4, solid=True)
     z.prop("hollow/decor_16", (mid + 3, ty + 4), scale=0.4, solid=True)
-    z.prop("hollow/decor_13", (mid + 1, ty + 3), dx=0.5, dy=0.95, scale=0.4, solid=True)
+    z.prop("hollow/decor_13", (mid + 2, ty + 3), dx=0.5, dy=0.95, scale=0.4, solid=True)
+    z.add("portal", (mid, ty + 3), target="grand_ossuary_1", requires="a1_breaking_the_seal")  # the iron gates: open once the seal is broken
     z.prop("decor_4", (mid - 2, ty + 6), dx=0.5, scale=0.45)
     z.prop("decor_4", (mid + 2, ty + 6), dx=0.5, scale=0.45)
     z.prop("crypt/decor_14", (mid - 3, ty + 7), scale=0.5)
@@ -806,9 +838,274 @@ def ashen_verge():
     z.save("story")
 
 
+def _hall_props(z, hall):
+    x0, y0, x1, y1 = hall
+    for x in range(x0 + 2, x1 - 1, 4):
+        z.prop("torch_1", (x, y0), dx=0.5, dy=0.35, scale=0.5)
+
+
+def _pillars(z, hall, keep, step=4):
+    """Single-cell pillars on a lattice inside a hall (wall islands), clear of the `keep` cells and the corridors' mouths."""
+    x0, y0, x1, y1 = hall
+    for y in range(y0 + 2, y1 - 1, step):
+        for x in range(x0 + 2, x1 - 1, step):
+            if all(math.dist((x, y), k) > 2.6 for k in keep):
+                z.wall[y][x] = True
+
+
+def _trap_row(z, trail, frac):
+    """Spike traps across a hallway where it runs straight: all but one of the cells across it (the safe lane is random)."""
+    i = int(len(trail) * frac)
+    while 0 < i < len(trail) - 1 and trail[i - 1][0] != trail[i + 1][0] and trail[i - 1][1] != trail[i + 1][1]:
+        i += 1  # not on a bend
+    if not 0 < i < len(trail) - 1:
+        return
+    c = trail[i]
+    horizontal = trail[i + 1][1] == trail[i][1]
+    cells = [(c[0], c[1] + d) if horizontal else (c[0] + d, c[1]) for d in (-1, 0, 1)]
+    safe = z.rng.randrange(3)
+    for k, cell in enumerate(cells):
+        if k != safe and not z.wall[cell[1]][cell[0]]:
+            z.add("trap", cell)
+
+
+def _lanterns(z, trail, every=7, offset=1):
+    for i in range(3, len(trail) - 2, every):
+        c = trail[i]
+        horizontal = trail[i + 1][1] == trail[i][1]
+        cell = (c[0], c[1] - offset) if horizontal else (c[0] - offset, c[1])
+        if 1 <= cell[0] < z.cols - 1 and 1 <= cell[1] < z.rows - 1 and not z.wall[cell[1]][cell[0]]:
+            z.prop("lantern_1", cell, dx=0.5, dy=0.85, scale=0.42)
+
+
+def _mid(h):
+    return ((h[0] + h[2]) // 2, (h[1] + h[3]) // 2)
+
+
+def _litter(z, halls, per=16):
+    """Walk-through clutter on the floor of the halls: broken branches, bones, stones, urns, barrels, spilled blood."""
+    keep = [(o["x"] / CELL, o["y"] / CELL) for o in z.objects if o["type"] in ("quest_object", "npc", "boss", "portal", "waypoint", "vault")]
+    things = [("crypt/decor_14", 0.5), ("crypt/decor_15", 0.5), ("stones_9", 0.5), ("stones_10", 0.5), ("hollow/bone_2", 0.5),
+              ("hollow/bone_9", 0.5), ("hollow/bone_10", 0.5), ("hollow/bone_7", 0.5), ("decor_4", 0.45), ("decor_2", 0.45), ("crypt/blood_1", 0.3), ("crypt/blood_3", 0.3),
+              ("stones_5", 0.45), ("decor_14", 0.5)]
+    for h in halls:
+        n = max(3, (h[2] - h[0]) * (h[3] - h[1]) // per)
+        for _ in range(n):
+            c = (z.rng.randint(h[0] + 1, h[2] - 1), z.rng.randint(h[1] + 1, h[3] - 1))
+            if z.open_around(c, 0) and all(math.dist(c, k) > 2.0 for k in keep):
+                sprite, sc = z.rng.choice(things)
+                z.prop(sprite, c, dx=z.rng.uniform(0.2, 0.8), dy=z.rng.uniform(0.3, 0.9), scale=sc)
+
+
+def _anchor_ring(z, c, scale=0.5):
+    for i in range(8):
+        ang = i * math.tau / 8
+        rc = (round(c[0] + math.cos(ang) * 3.0), round(c[1] + math.sin(ang) * 2.4))
+        if z.open_around(rc, 0):
+            z.prop("crypt/rift_" + str(z.rng.choice([1, 2, 3])), rc, dx=0.5, dy=0.9, scale=scale + z.rng.random() * 0.3)
+    for dx, dy in [(-2, 1), (2, 1), (0, 2)]:
+        z.prop("crypt/blood_" + str(z.rng.choice([1, 2, 3])), (c[0] + dx, c[1] + dy), scale=0.5)
+
+
+def grand_ossuary_1():
+    """The Grand Ossuary, level 1 (Act I, Chapter 4: Descent into Madness): narrow stone halls and sarcophagi under the Ashen Verge.
+    The way in is a gatehall in the west; the guardroom beyond has the waypoint, the weeping spirit of Restless Ancestors and
+    the cracked wall of the armory vault; two tomb-halls (north and south) hold the four desecrated urns; the charnel hall in the
+    north-east and the lower ossuary in the south-east each hold a Veil Anchor and the herald who channels it; spike traps in the
+    hallways; the stair down to the Lower Ossuary in the far east. Theme "crypt"."""
+    z = Zone("grand_ossuary_1", "The Grand Ossuary", 66, 46, seed=6601, theme="crypt")
+    z.fill()
+    gate, guard = (3, 20, 10, 26), (15, 17, 29, 29)
+    tomb_a, tomb_b = (8, 3, 21, 12), (8, 34, 21, 43)
+    cross, charnel, ossuary, stair = (35, 19, 45, 27), (34, 3, 47, 13), (34, 33, 47, 43), (54, 18, 62, 28)
+    for h in (gate, guard, tomb_a, tomb_b, cross, charnel, ossuary, stair):
+        z.hall(*h)
+    mid = _mid
+    start, wp = (6, 23), (19, 23)
+    trails = {}
+    trails["gate"] = z.hallway(mid(gate), mid(guard), 3)
+    trails["a"] = z.hallway(mid(guard), mid(tomb_a), 3, first="x")
+    trails["b"] = z.hallway(mid(guard), mid(tomb_b), 3, first="x")
+    trails["cross"] = z.hallway(mid(guard), mid(cross), 3)
+    trails["c"] = z.hallway(mid(cross), mid(charnel), 3)
+    trails["d"] = z.hallway(mid(cross), mid(ossuary), 3)
+    trails["f"] = z.hallway(mid(cross), mid(stair), 3)
+    trails["cf"] = z.hallway((47, 8), (58, 8), 2)
+    trails["cf2"] = z.hallway((58, 8), mid(stair), 2, first="y")
+    trails["df"] = z.hallway((47, 38), (58, 38), 2)
+    trails["df2"] = z.hallway((58, 38), mid(stair), 2, first="y")
+    oren, sable = mid(charnel), mid(ossuary)
+    anchor1, anchor2 = (oren[0], oren[1] - 4), (sable[0], sable[1] + 4)
+    spirit, pedestal, vault = (25, 21), (26, 25), (23, 17)
+    for h, keep in [(guard, [wp, spirit, pedestal, vault, mid(guard)]), (cross, [mid(cross)]), (charnel, [oren, anchor1]), (ossuary, [sable, anchor2])]:
+        edge = [(h[0], mid(h)[1]), (h[2], mid(h)[1]), (mid(h)[0], h[1]), (mid(h)[0], h[3])]
+        _pillars(z, h, keep + edge)
+    z.reachable_only(start)
+
+    z.add("start", start)
+    z.add("portal", (4, 23), target="ashen_verge")
+    z.add("waypoint", wp)
+    z.add("trigger", (7, 23), radius=520, id="ossuary_gate", text="The Grand Ossuary. The air is cold and tastes of old stone, and the whispering is all around you.")
+    for x in range(gate[0] + 2, gate[2], 3):
+        z.prop("lantern_1", (x, gate[1]), dx=0.5, dy=0.35, scale=0.45)
+    z.prop("crypt/decor_13", (3, 22), dx=0.3, dy=0.95, scale=0.5)  # the stair's iron gate, standing open behind the portal
+    z.prop("decor_7", (8, 21), scale=0.4)
+
+    for h in (guard, cross, charnel, ossuary, stair, tomb_a, tomb_b):
+        _hall_props(z, h)
+    for key in ("gate", "a", "b", "cross", "c", "d", "f"):
+        _lanterns(z, trails[key])
+    for key, frac in [("c", 0.55), ("d", 0.55), ("f", 0.4), ("f", 0.75), ("cf", 0.5), ("df", 0.5), ("cross", 0.55)]:
+        _trap_row(z, trails[key], frac)
+
+    # The guardroom: the weeping spirit and her pedestal, and the armory vault behind a cracked wall
+    z.add("npc", spirit, id="ancestor_spirit", name="Weeping Spirit", facing=1.0)
+    z.add("quest_object", pedestal, id="urn_pedestal", sprite="crypt/decor_22", scale=0.5, prompt="Set the urns on the pedestal",
+          text="You set the four urns on their pedestal, one after the other. The weeping stops. The air is warmer, if only for a moment.")
+    z.add("vault", vault, dy=0.15, id="armory", sprite="crypt/decor_20", scale=0.95, requires="a1_the_last_watch",
+          prompt="Press the cracked wall",
+          locked="The wall is cracked, and cold air breathes through it. Behind it, an iron door: a lock the size of a fist. You have nothing that opens it.",
+          text="The rusted key turns, and the wall gives way. The armory vault, sealed since the Ossuary was shut: racks of old steel, still good.",
+          rares=3)
+    z.prop("decor_2", (guard[0] + 2, guard[1] + 1), scale=0.5, solid=True)
+    z.prop("decor_2", (guard[0] + 3, guard[1] + 1), dx=0.6, scale=0.5, solid=True)
+    z.prop("decor_17", (guard[2] - 2, guard[1] + 1), scale=0.5, solid=True)
+    z.prop("crypt/decor_14", (21, 27), scale=0.5)
+    z.prop("hollow/bone_4", (27, 27), scale=0.5)
+
+    # The tomb-halls: rows of sarcophagi, four of them opened and robbed of their urns
+    def tombs(h, urn_cells, tag):
+        x0, y0, x1, y1 = h
+        for x in range(x0 + 2, x1 - 1, 4):
+            for y in (y0 + 2, y1 - 2):
+                z.prop("decor_22" if (x + y) % 8 else "decor_20", (x, y), dy=0.9, scale=0.55, solid=True)
+        for i, c in enumerate(urn_cells):
+            z.add("quest_object", c, id="urn_%s%d" % (tag, i + 1), key="urn", sprite="crypt/decor_4", scale=0.5, prompt="Take the desecrated urn",
+                  text="You lift the urn out of the broken sarcophagus. It is cold and very light, and something inside it sighs.")
+            z.prop("hollow/bone_" + str(z.rng.choice([2, 8, 9, 10])), (c[0] - 1, c[1]), scale=0.5)
+        z.add("trigger", mid(h), radius=600, id="tomb_hall_" + tag, text="A tomb-hall: the sarcophagi are open and emptied of their urns.")
+    tombs(tomb_a, [(11, 5), (17, 10)], "a")
+    tombs(tomb_b, [(11, 41), (17, 36)], "b")
+    for h in (tomb_a, tomb_b):
+        for x in range(h[0] + 3, h[2] - 1, 4):
+            if z.rng.random() < 0.5:
+                z.prop("crypt/blood_" + str(z.rng.choice([1, 2, 3])), (x, mid(h)[1]), scale=0.35)
+
+    # The Veil Anchors: a spire of the red crystal driven into the floor, a ring of blood about it, its herald before it
+    def anchor_site(c, herald_at, aid, boss, name, skin, ambush, text):
+        _anchor_ring(z, c, 0.85)
+        z.add("boss", herald_at, id=boss, name=name, kind="dark_elf", skin=skin, hp=7.0, size=1.45)
+        z.add("quest_object", c, id=aid, sprite="crypt/rift_2", scale=1.05, prompt="Shatter the Veil Anchor", text=text, ambush=ambush)
+    anchor_site(anchor1, oren, "anchor_1", "herald_oren", "Herald Oren", "dark_elf_1", {"kind": "skeleton_vanguard", "n": 5},
+                "The anchor cracks from its crown to its root and goes out. The floor heaves. Out of the dark, all round you, the vanguard rises.")
+    anchor_site(anchor2, sable, "anchor_2", "herald_sable", "Herald Sable", "dark_elf_2", {"kind": "veil_cultist", "n": 5},
+                "The second anchor shatters, and the whole hall lurches. The cult comes for you out of the shadows, hands already raised.")
+    z.add("trigger", oren, radius=640, id="charnel_hall", text="A charnel hall, heaped with bones. At its end, a red spire hums in the floor, and a robed figure kneels before it.")
+    z.add("trigger", sable, radius=640, id="lower_ossuary", text="Another anchor, and another herald. The floor is warm underfoot.")
+    z.prop("hollow/bone_1", (oren[0] - 4, oren[1] + 1), scale=0.6)
+    z.prop("hollow/bone_5", (oren[0] + 4, oren[1] - 1), scale=0.6)
+    z.prop("hollow/bone_6", (sable[0] + 4, sable[1] + 1), scale=0.6)
+    z.prop("hollow/bone_4", (sable[0] - 4, sable[1] - 1), scale=0.6)
+
+    # The stair down
+    sc = mid(stair)
+    z.add("portal", (sc[0] + 2, sc[1]), target="grand_ossuary_2")
+    z.add("trigger", sc, radius=520, id="ossuary_stair", text="A stair winds down into a deeper dark. The whispering comes up it like heat.")
+    z.prop("crypt/decor_13", (sc[0] + 4, sc[1]), dx=0.7, dy=0.95, scale=0.5)
+    for dy in (-3, 3):
+        z.prop("lantern_1", (sc[0] + 2, sc[1] + dy), dy=0.9, scale=0.5)
+
+    _litter(z, [gate, guard, tomb_a, tomb_b, cross, charnel, ossuary, stair])
+    themes = [(mid(tomb_a), 8, "skeleton"), (mid(tomb_b), 8, "skeleton_warrior"), (mid(cross), 6, "skeleton_vanguard"),
+              (oren, 7, "veil_cultist"), (sable, 7, "veil_cultist"), (sc, 6, "skeleton_archer")]
+    avoid = [(start, 8), (wp, 4), (spirit, 3), (oren, 6), (sable, 6), ((4, 23), 3), ((sc[0] + 2, sc[1]), 3), (vault, 3)]
+    z.packs(34, avoid, themes, min_gap=6, start=start, min_start=9)
+    z.save("story")
+
+
+def grand_ossuary_2():
+    """The Lower Ossuary (the Grand Ossuary, level 2): older halls, deeper and colder. The stair down arrives in the north-west;
+    a hall of bones with the waypoint; a cell-block to the south-west; a great nave in the north-east; and the choir in the
+    south-east, where the third Veil Anchor stands and Herald Morrow channels it, and past it the great door to the Sepulcher of
+    Mourning, barred for now. Theme "crypt"."""
+    z = Zone("grand_ossuary_2", "The Lower Ossuary", 60, 46, seed=6602, theme="crypt")
+    z.fill()
+    arrive, bones, cells = (3, 4, 10, 10), (15, 15, 31, 29), (5, 30, 16, 41)
+    nave, choir, apse = (35, 4, 55, 19), (37, 27, 55, 42), (56, 32, 58, 38)
+    for h in (arrive, bones, cells, nave, choir, apse):
+        z.hall(*h)
+    mid = _mid
+    start, wp = (6, 7), (22, 22)
+    trails = {}
+    trails["in"] = z.hallway(mid(arrive), (24, 7), 3)
+    trails["in2"] = z.hallway((24, 7), mid(bones), 3, first="y")
+    trails["cells"] = z.hallway(mid(bones), mid(cells), 3)
+    trails["nave"] = z.hallway(mid(bones), mid(nave), 3)
+    trails["choir"] = z.hallway(mid(bones), mid(choir), 3)
+    trails["link"] = z.hallway((52, 19), (52, 27), 2, first="y")
+    trails["apse"] = z.hallway(mid(choir), mid(apse), 3)
+    morrow = (mid(choir)[0] - 3, mid(choir)[1] - 1)
+    anchor3 = (mid(choir)[0] + 4, mid(choir)[1] + 1)
+    for h, keep in [(bones, [wp, mid(bones)]), (nave, [mid(nave)]), (choir, [morrow, anchor3, mid(choir)]), (cells, [mid(cells)])]:
+        edge = [(h[0], mid(h)[1]), (h[2], mid(h)[1]), (mid(h)[0], h[1]), (mid(h)[0], h[3]), (52, 19), (52, 27)]
+        _pillars(z, h, keep + edge)
+    z.reachable_only(start)
+
+    z.add("start", start)
+    z.add("portal", (4, 7), target="grand_ossuary_1")
+    z.add("waypoint", wp)
+    z.add("trigger", (7, 7), radius=520, id="lower_ossuary_arrive", text="The Lower Ossuary. The stone here is older, and the whispering has a voice in it.")
+    for h in (arrive, bones, cells, nave, choir):
+        _hall_props(z, h)
+    for key in ("in", "in2", "cells", "nave", "choir", "apse"):
+        _lanterns(z, trails[key])
+    for key, frac in [("in2", 0.5), ("nave", 0.5), ("choir", 0.4), ("choir", 0.75), ("link", 0.5), ("cells", 0.55), ("apse", 0.5)]:
+        _trap_row(z, trails[key], frac)
+
+    # The hall of bones
+    bc = mid(bones)
+    for dx, dy in [(-5, -4), (5, -3), (-4, 4), (6, 4), (0, -5), (0, 5), (-7, 0)]:
+        z.prop("hollow/bone_" + str(z.rng.choice([1, 4, 5, 6])), (bc[0] + dx, bc[1] + dy), scale=0.7)
+    for dx, dy in [(-3, 1), (3, -1), (2, 4)]:
+        z.prop("crypt/blood_" + str(z.rng.choice([1, 2, 3])), (bc[0] + dx, bc[1] + dy), scale=0.4)
+    # The cell-block
+    cx, cy = mid(cells)
+    for dx in (-4, 0, 4):
+        z.prop("decor_2", (cx + dx, cells[1] + 1), scale=0.5, solid=True)
+        z.prop("hollow/bone_" + str(z.rng.choice([2, 8, 9, 10])), (cx + dx, cy + 2), scale=0.5)
+    z.prop("decor_19", (cells[2] - 1, cells[3] - 1), dy=0.9, scale=0.5, solid=True)
+    # The nave: sarcophagi in rows
+    for y in (nave[1] + 3, nave[3] - 3):
+        for x in range(nave[0] + 3, nave[2] - 2, 4):
+            z.prop("decor_22" if (x + y) % 8 else "decor_20", (x, y), dy=0.9, scale=0.55, solid=True)
+    z.add("trigger", mid(nave), radius=700, id="nave", text="The nave: row upon row of sarcophagi, every lid slid aside.")
+
+    # The choir and the third Veil Anchor
+    _anchor_ring(z, anchor3, 0.9)
+    z.add("boss", morrow, id="herald_morrow", name="Herald Morrow", kind="dark_elf", skin="lich", hp=7.5, size=1.55)
+    z.add("quest_object", anchor3, id="anchor_3", sprite="crypt/rift_2", scale=1.15, prompt="Shatter the Veil Anchor",
+          text="The last anchor breaks, and a sound goes through the stone like a bell tolling under the world. The wall between the realms shudders and holds, for now. Ash falls from the ceiling.",
+          ambush={"kind": "skeleton_vanguard", "n": 6})
+    z.add("trigger", mid(choir), radius=700, id="choir", text="The choir. A red spire hums in the floor, and a robed figure kneels at its foot, singing.")
+    # The great door to the Sepulcher of Mourning, barred from the far side
+    ac = mid(apse)
+    z.add("trigger", ac, radius=520, id="sepulcher_door", text="A great door of black iron at the end of the choir: barred from the far side. The Sepulcher of Mourning lies beyond it. It will not yield yet.")
+    z.prop("crypt/decor_13", (apse[2], ac[1]), dx=0.9, dy=0.95, scale=0.8)
+    for dy in (-2, 2):
+        z.prop("lantern_1", (apse[2] - 1, ac[1] + dy), dy=0.9, scale=0.5)
+
+    _litter(z, [arrive, bones, cells, nave, choir])
+    themes = [(bc, 8, "skeleton_vanguard"), (mid(cells), 7, "ghoul"), (mid(nave), 9, "skeleton_hunter"), (mid(choir), 9, "veil_cultist")]
+    avoid = [(start, 8), (wp, 4), (morrow, 7), (anchor3, 4), ((4, 7), 3), (ac, 5)]
+    z.packs(40, avoid, themes, min_gap=6, start=start, min_start=9)
+    z.save("story")
+
+
 if __name__ == "__main__":
     dune_wastes()
     oakhaven()
     weeping_hollow()
     sunken_fen()
     ashen_verge()
+    grand_ossuary_1()
+    grand_ossuary_2()

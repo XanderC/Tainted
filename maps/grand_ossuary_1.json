@@ -1,0 +1,1463 @@
+{
+	"format": 1,
+	"id": "grand_ossuary_1",
+	"name": "The Grand Ossuary",
+	"kind": "story",
+	"theme": "crypt",
+	"cell": 128,
+	"auto_decorate": true,
+	"grid": [
+		"##################################################################",
+		"##################################################################",
+		"##################################################################",
+		"########..............############..............##################",
+		"########..............############..............##################",
+		"########..............############..#.......#...##################",
+		"########..............############..............##################",
+		"########..............############.........................#######",
+		"########..............############.........................#######",
+		"########..............############..........#...#########..#######",
+		"########..............############..............#########..#######",
+		"########..............############..............#########..#######",
+		"########..............############..............#########..#######",
+		"#############...##################..............#########..#######",
+		"#############...#######################...###############..#######",
+		"#############...#######################...###############..#######",
+		"#############...#######################...###############..#######",
+		"#############.................#########...###############..#######",
+		"#############.................#########...############.........###",
+		"#############....#............#####...........########.........###",
+		"###........##.................#####...........########.........###",
+		"###........##.................#####..#........########.........###",
+		"###............................................................###",
+		"###............................................................###",
+		"###............................................................###",
+		"###........##.................#####..#........########.........###",
+		"###........##.................#####...........########.........###",
+		"#############....#............#####...........########.........###",
+		"#############.................#########...############.........###",
+		"#############.................#########...###############..#######",
+		"#############...#######################...###############..#######",
+		"#############...#######################...###############..#######",
+		"#############...#######################...###############..#######",
+		"#############...##################..............#########..#######",
+		"########..............############..............#########..#######",
+		"########..............############..#.......#...#########..#######",
+		"########..............############..............#########..#######",
+		"########..............############.........................#######",
+		"########..............############.........................#######",
+		"########..............############..........#...##################",
+		"########..............############..............##################",
+		"########..............############..............##################",
+		"########..............############..............##################",
+		"########..............############..............##################",
+		"##################################################################",
+		"##################################################################"
+	],
+	"objects": [
+		{
+			"type": "start",
+			"x": 832,
+			"y": 3008
+		},
+		{
+			"type": "portal",
+			"x": 576,
+			"y": 3008,
+			"target": "ashen_verge"
+		},
+		{
+			"type": "waypoint",
+			"x": 2496,
+			"y": 3008
+		},
+		{
+			"type": "trigger",
+			"x": 960,
+			"y": 3008,
+			"radius": 520,
+			"id": "ossuary_gate",
+			"text": "The Grand Ossuary. The air is cold and tastes of old stone, and the whispering is all around you."
+		},
+		{
+			"type": "prop",
+			"x": 704,
+			"y": 2604,
+			"sprite": "lantern_1",
+			"scale": 0.45,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 1088,
+			"y": 2604,
+			"sprite": "lantern_1",
+			"scale": 0.45,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 422,
+			"y": 2937,
+			"sprite": "crypt/decor_13",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 1088,
+			"y": 2752,
+			"sprite": "decor_7",
+			"scale": 0.4,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 2240,
+			"y": 2220,
+			"sprite": "torch_1",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 2752,
+			"y": 2220,
+			"sprite": "torch_1",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 3264,
+			"y": 2220,
+			"sprite": "torch_1",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 4800,
+			"y": 2476,
+			"sprite": "torch_1",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 5312,
+			"y": 2476,
+			"sprite": "torch_1",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 4672,
+			"y": 428,
+			"sprite": "torch_1",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 5184,
+			"y": 428,
+			"sprite": "torch_1",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 5696,
+			"y": 428,
+			"sprite": "torch_1",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 4672,
+			"y": 4268,
+			"sprite": "torch_1",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 5184,
+			"y": 4268,
+			"sprite": "torch_1",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 5696,
+			"y": 4268,
+			"sprite": "torch_1",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 7232,
+			"y": 2348,
+			"sprite": "torch_1",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 7744,
+			"y": 2348,
+			"sprite": "torch_1",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 1344,
+			"y": 428,
+			"sprite": "torch_1",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 1856,
+			"y": 428,
+			"sprite": "torch_1",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 2368,
+			"y": 428,
+			"sprite": "torch_1",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 1344,
+			"y": 4396,
+			"sprite": "torch_1",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 1856,
+			"y": 4396,
+			"sprite": "torch_1",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 2368,
+			"y": 4396,
+			"sprite": "torch_1",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 1216,
+			"y": 2924,
+			"sprite": "lantern_1",
+			"scale": 0.42,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 2112,
+			"y": 2924,
+			"sprite": "lantern_1",
+			"scale": 0.42,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 2496,
+			"y": 2924,
+			"sprite": "lantern_1",
+			"scale": 0.42,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 1728,
+			"y": 2796,
+			"sprite": "lantern_1",
+			"scale": 0.42,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 1728,
+			"y": 1900,
+			"sprite": "lantern_1",
+			"scale": 0.42,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 2496,
+			"y": 2924,
+			"sprite": "lantern_1",
+			"scale": 0.42,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 1728,
+			"y": 3308,
+			"sprite": "lantern_1",
+			"scale": 0.42,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 1728,
+			"y": 4204,
+			"sprite": "lantern_1",
+			"scale": 0.42,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 3264,
+			"y": 2924,
+			"sprite": "lantern_1",
+			"scale": 0.42,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 4160,
+			"y": 2924,
+			"sprite": "lantern_1",
+			"scale": 0.42,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 5056,
+			"y": 2668,
+			"sprite": "lantern_1",
+			"scale": 0.42,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 5056,
+			"y": 1772,
+			"sprite": "lantern_1",
+			"scale": 0.42,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 5056,
+			"y": 3436,
+			"sprite": "lantern_1",
+			"scale": 0.42,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 5056,
+			"y": 4332,
+			"sprite": "lantern_1",
+			"scale": 0.42,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 5568,
+			"y": 2924,
+			"sprite": "lantern_1",
+			"scale": 0.42,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 6464,
+			"y": 2924,
+			"sprite": "lantern_1",
+			"scale": 0.42,
+			"solid": false
+		},
+		{
+			"type": "trap",
+			"x": 5056,
+			"y": 1984
+		},
+		{
+			"type": "trap",
+			"x": 5312,
+			"y": 1984
+		},
+		{
+			"type": "trap",
+			"x": 5056,
+			"y": 4032
+		},
+		{
+			"type": "trap",
+			"x": 5312,
+			"y": 4032
+		},
+		{
+			"type": "trap",
+			"x": 6080,
+			"y": 3008
+		},
+		{
+			"type": "trap",
+			"x": 6080,
+			"y": 3136
+		},
+		{
+			"type": "trap",
+			"x": 6976,
+			"y": 2880
+		},
+		{
+			"type": "trap",
+			"x": 6976,
+			"y": 3136
+		},
+		{
+			"type": "trap",
+			"x": 6848,
+			"y": 1088
+		},
+		{
+			"type": "trap",
+			"x": 6848,
+			"y": 4800
+		},
+		{
+			"type": "trap",
+			"x": 6848,
+			"y": 4928
+		},
+		{
+			"type": "trap",
+			"x": 4160,
+			"y": 2880
+		},
+		{
+			"type": "trap",
+			"x": 4160,
+			"y": 3136
+		},
+		{
+			"type": "npc",
+			"x": 3264,
+			"y": 2752,
+			"id": "ancestor_spirit",
+			"name": "Weeping Spirit",
+			"facing": 1.0
+		},
+		{
+			"type": "quest_object",
+			"x": 3392,
+			"y": 3264,
+			"id": "urn_pedestal",
+			"sprite": "crypt/decor_22",
+			"scale": 0.5,
+			"prompt": "Set the urns on the pedestal",
+			"text": "You set the four urns on their pedestal, one after the other. The weeping stops. The air is warmer, if only for a moment."
+		},
+		{
+			"type": "vault",
+			"x": 3008,
+			"y": 2195,
+			"id": "armory",
+			"sprite": "crypt/decor_20",
+			"scale": 0.95,
+			"requires": "a1_the_last_watch",
+			"prompt": "Press the cracked wall",
+			"locked": "The wall is cracked, and cold air breathes through it. Behind it, an iron door: a lock the size of a fist. You have nothing that opens it.",
+			"text": "The rusted key turns, and the wall gives way. The armory vault, sealed since the Ossuary was shut: racks of old steel, still good.",
+			"rares": 3
+		},
+		{
+			"type": "prop",
+			"x": 2240,
+			"y": 2368,
+			"sprite": "decor_2",
+			"scale": 0.5,
+			"solid": true
+		},
+		{
+			"type": "prop",
+			"x": 2380,
+			"y": 2368,
+			"sprite": "decor_2",
+			"scale": 0.5,
+			"solid": true
+		},
+		{
+			"type": "prop",
+			"x": 3520,
+			"y": 2368,
+			"sprite": "decor_17",
+			"scale": 0.5,
+			"solid": true
+		},
+		{
+			"type": "prop",
+			"x": 2752,
+			"y": 3520,
+			"sprite": "crypt/decor_14",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 3520,
+			"y": 3520,
+			"sprite": "hollow/bone_4",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 1344,
+			"y": 755,
+			"sprite": "decor_22",
+			"scale": 0.55,
+			"solid": true
+		},
+		{
+			"type": "prop",
+			"x": 1344,
+			"y": 1395,
+			"sprite": "decor_22",
+			"scale": 0.55,
+			"solid": true
+		},
+		{
+			"type": "prop",
+			"x": 1856,
+			"y": 755,
+			"sprite": "decor_22",
+			"scale": 0.55,
+			"solid": true
+		},
+		{
+			"type": "prop",
+			"x": 1856,
+			"y": 1395,
+			"sprite": "decor_20",
+			"scale": 0.55,
+			"solid": true
+		},
+		{
+			"type": "prop",
+			"x": 2368,
+			"y": 755,
+			"sprite": "decor_22",
+			"scale": 0.55,
+			"solid": true
+		},
+		{
+			"type": "prop",
+			"x": 2368,
+			"y": 1395,
+			"sprite": "decor_22",
+			"scale": 0.55,
+			"solid": true
+		},
+		{
+			"type": "quest_object",
+			"x": 1472,
+			"y": 704,
+			"id": "urn_a1",
+			"key": "urn",
+			"sprite": "crypt/decor_4",
+			"scale": 0.5,
+			"prompt": "Take the desecrated urn",
+			"text": "You lift the urn out of the broken sarcophagus. It is cold and very light, and something inside it sighs."
+		},
+		{
+			"type": "prop",
+			"x": 1344,
+			"y": 704,
+			"sprite": "hollow/bone_10",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "quest_object",
+			"x": 2240,
+			"y": 1344,
+			"id": "urn_a2",
+			"key": "urn",
+			"sprite": "crypt/decor_4",
+			"scale": 0.5,
+			"prompt": "Take the desecrated urn",
+			"text": "You lift the urn out of the broken sarcophagus. It is cold and very light, and something inside it sighs."
+		},
+		{
+			"type": "prop",
+			"x": 2112,
+			"y": 1344,
+			"sprite": "hollow/bone_8",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "trigger",
+			"x": 1856,
+			"y": 960,
+			"radius": 600,
+			"id": "tomb_hall_a",
+			"text": "A tomb-hall: the sarcophagi are open and emptied of their urns."
+		},
+		{
+			"type": "prop",
+			"x": 1344,
+			"y": 4723,
+			"sprite": "decor_22",
+			"scale": 0.55,
+			"solid": true
+		},
+		{
+			"type": "prop",
+			"x": 1344,
+			"y": 5363,
+			"sprite": "decor_22",
+			"scale": 0.55,
+			"solid": true
+		},
+		{
+			"type": "prop",
+			"x": 1856,
+			"y": 4723,
+			"sprite": "decor_22",
+			"scale": 0.55,
+			"solid": true
+		},
+		{
+			"type": "prop",
+			"x": 1856,
+			"y": 5363,
+			"sprite": "decor_22",
+			"scale": 0.55,
+			"solid": true
+		},
+		{
+			"type": "prop",
+			"x": 2368,
+			"y": 4723,
+			"sprite": "decor_22",
+			"scale": 0.55,
+			"solid": true
+		},
+		{
+			"type": "prop",
+			"x": 2368,
+			"y": 5363,
+			"sprite": "decor_22",
+			"scale": 0.55,
+			"solid": true
+		},
+		{
+			"type": "quest_object",
+			"x": 1472,
+			"y": 5312,
+			"id": "urn_b1",
+			"key": "urn",
+			"sprite": "crypt/decor_4",
+			"scale": 0.5,
+			"prompt": "Take the desecrated urn",
+			"text": "You lift the urn out of the broken sarcophagus. It is cold and very light, and something inside it sighs."
+		},
+		{
+			"type": "prop",
+			"x": 1344,
+			"y": 5312,
+			"sprite": "hollow/bone_8",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "quest_object",
+			"x": 2240,
+			"y": 4672,
+			"id": "urn_b2",
+			"key": "urn",
+			"sprite": "crypt/decor_4",
+			"scale": 0.5,
+			"prompt": "Take the desecrated urn",
+			"text": "You lift the urn out of the broken sarcophagus. It is cold and very light, and something inside it sighs."
+		},
+		{
+			"type": "prop",
+			"x": 2112,
+			"y": 4672,
+			"sprite": "hollow/bone_8",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "trigger",
+			"x": 1856,
+			"y": 4928,
+			"radius": 600,
+			"id": "tomb_hall_b",
+			"text": "A tomb-hall: the sarcophagi are open and emptied of their urns."
+		},
+		{
+			"type": "prop",
+			"x": 1472,
+			"y": 960,
+			"sprite": "crypt/blood_3",
+			"scale": 0.35,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 5568,
+			"y": 627,
+			"sprite": "crypt/rift_2",
+			"scale": 0.9489337911640223,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 5440,
+			"y": 883,
+			"sprite": "crypt/rift_1",
+			"scale": 0.8755938281865362,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 5184,
+			"y": 883,
+			"sprite": "crypt/rift_2",
+			"scale": 1.0198956720910655,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 4928,
+			"y": 883,
+			"sprite": "crypt/rift_1",
+			"scale": 1.0137980116194825,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 4800,
+			"y": 627,
+			"sprite": "crypt/rift_2",
+			"scale": 0.8731081898675567,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 4928,
+			"y": 704,
+			"sprite": "crypt/blood_2",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 5440,
+			"y": 704,
+			"sprite": "crypt/blood_2",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 5184,
+			"y": 832,
+			"sprite": "crypt/blood_1",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "boss",
+			"x": 5184,
+			"y": 1088,
+			"id": "herald_oren",
+			"name": "Herald Oren",
+			"kind": "dark_elf",
+			"skin": "dark_elf_1",
+			"hp": 7.0,
+			"size": 1.45
+		},
+		{
+			"type": "quest_object",
+			"x": 5184,
+			"y": 576,
+			"id": "anchor_1",
+			"sprite": "crypt/rift_2",
+			"scale": 1.05,
+			"prompt": "Shatter the Veil Anchor",
+			"text": "The anchor cracks from its crown to its root and goes out. The floor heaves. Out of the dark, all round you, the vanguard rises.",
+			"ambush": {
+				"kind": "skeleton_vanguard",
+				"n": 5
+			}
+		},
+		{
+			"type": "prop",
+			"x": 5568,
+			"y": 5491,
+			"sprite": "crypt/rift_2",
+			"scale": 1.0691200603225939,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 4800,
+			"y": 5491,
+			"sprite": "crypt/rift_3",
+			"scale": 0.8663676209175514,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 4928,
+			"y": 5235,
+			"sprite": "crypt/rift_2",
+			"scale": 0.9843261643080224,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 5184,
+			"y": 5235,
+			"sprite": "crypt/rift_3",
+			"scale": 0.8791566379029037,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 5440,
+			"y": 5235,
+			"sprite": "crypt/rift_1",
+			"scale": 1.105531882082508,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 4928,
+			"y": 5568,
+			"sprite": "crypt/blood_3",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 5440,
+			"y": 5568,
+			"sprite": "crypt/blood_2",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 5184,
+			"y": 5696,
+			"sprite": "crypt/blood_1",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "boss",
+			"x": 5184,
+			"y": 4928,
+			"id": "herald_sable",
+			"name": "Herald Sable",
+			"kind": "dark_elf",
+			"skin": "dark_elf_2",
+			"hp": 7.0,
+			"size": 1.45
+		},
+		{
+			"type": "quest_object",
+			"x": 5184,
+			"y": 5440,
+			"id": "anchor_2",
+			"sprite": "crypt/rift_2",
+			"scale": 1.05,
+			"prompt": "Shatter the Veil Anchor",
+			"text": "The second anchor shatters, and the whole hall lurches. The cult comes for you out of the shadows, hands already raised.",
+			"ambush": {
+				"kind": "veil_cultist",
+				"n": 5
+			}
+		},
+		{
+			"type": "trigger",
+			"x": 5184,
+			"y": 1088,
+			"radius": 640,
+			"id": "charnel_hall",
+			"text": "A charnel hall, heaped with bones. At its end, a red spire hums in the floor, and a robed figure kneels before it."
+		},
+		{
+			"type": "trigger",
+			"x": 5184,
+			"y": 4928,
+			"radius": 640,
+			"id": "lower_ossuary",
+			"text": "Another anchor, and another herald. The floor is warm underfoot."
+		},
+		{
+			"type": "prop",
+			"x": 4672,
+			"y": 1216,
+			"sprite": "hollow/bone_1",
+			"scale": 0.6,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 5696,
+			"y": 960,
+			"sprite": "hollow/bone_5",
+			"scale": 0.6,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 5696,
+			"y": 5056,
+			"sprite": "hollow/bone_6",
+			"scale": 0.6,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 4672,
+			"y": 4800,
+			"sprite": "hollow/bone_4",
+			"scale": 0.6,
+			"solid": false
+		},
+		{
+			"type": "portal",
+			"x": 7744,
+			"y": 3008,
+			"target": "grand_ossuary_2"
+		},
+		{
+			"type": "trigger",
+			"x": 7488,
+			"y": 3008,
+			"radius": 520,
+			"id": "ossuary_stair",
+			"text": "A stair winds down into a deeper dark. The whispering comes up it like heat."
+		},
+		{
+			"type": "prop",
+			"x": 8025,
+			"y": 3065,
+			"sprite": "crypt/decor_13",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 7744,
+			"y": 2675,
+			"sprite": "lantern_1",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 7744,
+			"y": 3443,
+			"sprite": "lantern_1",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 1234,
+			"y": 3011,
+			"sprite": "hollow/bone_9",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 1069,
+			"y": 2755,
+			"sprite": "hollow/bone_10",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 2504,
+			"y": 3691,
+			"sprite": "decor_4",
+			"scale": 0.45,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 3282,
+			"y": 3542,
+			"sprite": "hollow/bone_7",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 2251,
+			"y": 3383,
+			"sprite": "decor_14",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 2657,
+			"y": 2409,
+			"sprite": "decor_4",
+			"scale": 0.45,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 3278,
+			"y": 3695,
+			"sprite": "hollow/bone_9",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 2466,
+			"y": 942,
+			"sprite": "stones_5",
+			"scale": 0.45,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 1209,
+			"y": 1111,
+			"sprite": "stones_5",
+			"scale": 0.45,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 1199,
+			"y": 621,
+			"sprite": "hollow/bone_9",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 1864,
+			"y": 4922,
+			"sprite": "stones_10",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 1218,
+			"y": 5204,
+			"sprite": "decor_14",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 1483,
+			"y": 4656,
+			"sprite": "decor_4",
+			"scale": 0.45,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 2140,
+			"y": 5098,
+			"sprite": "decor_14",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 2377,
+			"y": 5086,
+			"sprite": "crypt/decor_14",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 1728,
+			"y": 5095,
+			"sprite": "crypt/blood_3",
+			"scale": 0.3,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 4916,
+			"y": 3259,
+			"sprite": "stones_9",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 5035,
+			"y": 3263,
+			"sprite": "decor_2",
+			"scale": 0.45,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 4924,
+			"y": 3034,
+			"sprite": "hollow/bone_9",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 5678,
+			"y": 3267,
+			"sprite": "hollow/bone_2",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 5021,
+			"y": 1619,
+			"sprite": "crypt/decor_14",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 4798,
+			"y": 681,
+			"sprite": "decor_4",
+			"scale": 0.45,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 5951,
+			"y": 813,
+			"sprite": "decor_14",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 5963,
+			"y": 882,
+			"sprite": "hollow/bone_7",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 4640,
+			"y": 1642,
+			"sprite": "crypt/blood_3",
+			"scale": 0.3,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 5731,
+			"y": 1504,
+			"sprite": "hollow/bone_7",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 5709,
+			"y": 4816,
+			"sprite": "decor_14",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 5580,
+			"y": 4847,
+			"sprite": "crypt/decor_15",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 4910,
+			"y": 4544,
+			"sprite": "crypt/blood_1",
+			"scale": 0.3,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 4945,
+			"y": 4669,
+			"sprite": "stones_9",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 4509,
+			"y": 5467,
+			"sprite": "hollow/bone_9",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 7617,
+			"y": 2742,
+			"sprite": "stones_10",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 7519,
+			"y": 2506,
+			"sprite": "stones_10",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 7493,
+			"y": 3402,
+			"sprite": "decor_4",
+			"scale": 0.45,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 7506,
+			"y": 3394,
+			"sprite": "stones_9",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "prop",
+			"x": 7220,
+			"y": 2472,
+			"sprite": "stones_10",
+			"scale": 0.5,
+			"solid": false
+		},
+		{
+			"type": "pack",
+			"x": 3136,
+			"y": 3392,
+			"min": 3,
+			"max": 5
+		},
+		{
+			"type": "pack",
+			"x": 1216,
+			"y": 576,
+			"min": 3,
+			"max": 5,
+			"kind": "skeleton"
+		},
+		{
+			"type": "pack",
+			"x": 7360,
+			"y": 2752,
+			"min": 3,
+			"max": 5,
+			"kind": "skeleton_archer"
+		},
+		{
+			"type": "pack",
+			"x": 4544,
+			"y": 5440,
+			"min": 3,
+			"max": 5,
+			"kind": "veil_cultist"
+		},
+		{
+			"type": "pack",
+			"x": 5184,
+			"y": 3264,
+			"min": 3,
+			"max": 5,
+			"kind": "skeleton_vanguard"
+		},
+		{
+			"type": "pack",
+			"x": 2496,
+			"y": 4800,
+			"min": 3,
+			"max": 5,
+			"kind": "skeleton_warrior"
+		},
+		{
+			"type": "pack",
+			"x": 1472,
+			"y": 5056,
+			"min": 3,
+			"max": 5,
+			"kind": "skeleton_warrior"
+		},
+		{
+			"type": "pack",
+			"x": 2624,
+			"y": 2496,
+			"min": 3,
+			"max": 5
+		},
+		{
+			"type": "pack",
+			"x": 1728,
+			"y": 1472,
+			"min": 3,
+			"max": 5,
+			"kind": "skeleton"
+		},
+		{
+			"type": "pack",
+			"x": 7488,
+			"y": 3520,
+			"min": 3,
+			"max": 5,
+			"kind": "skeleton_archer"
+		},
+		{
+			"type": "pack",
+			"x": 2624,
+			"y": 1472,
+			"min": 3,
+			"max": 5,
+			"kind": "skeleton"
+		},
+		{
+			"type": "pack",
+			"x": 2496,
+			"y": 704,
+			"min": 3,
+			"max": 5,
+			"kind": "skeleton"
+		},
+		{
+			"type": "pack",
+			"x": 5952,
+			"y": 5184,
+			"min": 3,
+			"max": 5,
+			"kind": "veil_cultist"
+		},
+		{
+			"type": "pack",
+			"x": 5184,
+			"y": 2496,
+			"min": 3,
+			"max": 5,
+			"kind": "skeleton_vanguard"
+		},
+		{
+			"type": "pack",
+			"x": 3520,
+			"y": 2368,
+			"min": 3,
+			"max": 5
+		},
+		{
+			"type": "pack",
+			"x": 5952,
+			"y": 832,
+			"min": 3,
+			"max": 5,
+			"kind": "veil_cultist"
+		},
+		{
+			"type": "pack",
+			"x": 1984,
+			"y": 3264,
+			"min": 3,
+			"max": 5
+		},
+		{
+			"type": "pack",
+			"x": 1856,
+			"y": 2368,
+			"min": 3,
+			"max": 5
+		},
+		{
+			"type": "pack",
+			"x": 6592,
+			"y": 3008,
+			"min": 3,
+			"max": 5
+		},
+		{
+			"type": "pack",
+			"x": 5952,
+			"y": 4416,
+			"min": 3,
+			"max": 5
+		},
+		{
+			"type": "pack",
+			"x": 5184,
+			"y": 4160,
+			"min": 3,
+			"max": 5,
+			"kind": "veil_cultist"
+		},
+		{
+			"type": "pack",
+			"x": 4288,
+			"y": 3008,
+			"min": 3,
+			"max": 5
+		},
+		{
+			"type": "pack",
+			"x": 1856,
+			"y": 4032,
+			"min": 3,
+			"max": 5,
+			"kind": "skeleton_warrior"
+		},
+		{
+			"type": "pack",
+			"x": 4544,
+			"y": 1600,
+			"min": 3,
+			"max": 5,
+			"kind": "veil_cultist"
+		}
+	]
+}

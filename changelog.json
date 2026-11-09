@@ -1,5 +1,16 @@
 [
 	{
+		"build": 0,
+		"title": "Act I phase 4: the Grand Ossuary",
+		"notes": [
+			"The Ossuary's gates in the Ashen Verge now lead down into the Grand Ossuary, two levels of narrow stone halls, sarcophagi, torches and soul lanterns. Beware the spike traps in the hallways: watch the stone shiver, then go.",
+			"New main quest, Descent into Madness: High Priestess Althea sends you down to shatter three Veil Anchors, each channelled by a cultist herald. Every anchor you break shakes the floor and brings an elite ambush out of the dark. The heralds are boss fights you can repeat once the quest is done.",
+			"New side quest, Restless Ancestors: a weeping spirit on the first level wants her four stolen urns back from the open sarcophagi. Her reward is a lasting +5% to all resistances.",
+			"The key from The Last Watch now opens the armory vault behind a cracked wall in the first level's guardroom, once, for three rare items.",
+			"New monsters: Skeleton Vanguards and Veil Cultists. The Lower Ossuary ends at a great barred door. What lies behind it comes in the next update."
+		]
+	},
+	{
 		"build": 202611090752,
 		"title": "Act I phase 3: the Ashen Verge",
 		"notes": [

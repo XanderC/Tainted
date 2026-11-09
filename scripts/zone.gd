@@ -29,7 +29,7 @@ var quest_log: QuestLogUI
 var waypoint_ui: WaypointUI
 
 var _cam: Camera2D
-var _exits: Array = []  # [{"node", "target"}]
+var _exits: Array = []  # [{"node", "target", "requires"}] (a way on that opens once the quest it `requires` is READY or DONE)
 var _waypoint: Interactable = null
 var _triggers: Array = []  # trigger objects not yet walked into this visit
 var _quest_objects: Array = []  # [{"node", "id"}]
@@ -193,6 +193,12 @@ func _reset_boss_fight() -> void:
 			_spawn_boss(o)
 
 
+## Whether a way on is open: it needs no quest, or the quest it `requires` is handed in (READY, or DONE).
+func _exit_open(e: Dictionary) -> bool:
+	var need := String(e.get("requires", ""))
+	return need == "" or Quests.state(need) == Quests.READY or Quests.state(need) == Quests.DONE
+
+
 ## Where you appear: at the waypoint, the town portal spot, the exit to the zone you came from, or
 ## the map's start.
 func _arrival() -> Vector2:
@@ -222,13 +228,20 @@ func _place_objects(bosses := true) -> void:
 		p.position = Vector2(float(o.x), float(o.y))
 		add_child(p)
 		_label(p, "→ " + ActDB.zone_name(target), Color(0.85, 0.7, 1.0))
-		_exits.append({"node": p, "target": target})
+		_exits.append({"node": p, "target": target, "requires": String(o.get("requires", ""))})
 	for o in MapData.objects_of(maze.data, "waypoint"):
 		_waypoint = _add_waypoint(Vector2(float(o.x), float(o.y)))
 	for o in MapData.objects_of(maze.data, "npc"):
 		_add_npc(o)
 	for o in MapData.objects_of(maze.data, "quest_object"):
 		_add_quest_object(o)
+	for o in MapData.objects_of(maze.data, "vault"):
+		_add_vault(o)
+	for o in MapData.objects_of(maze.data, "trap"):
+		var trap := SpikeTrap.new()
+		trap.position = Vector2(float(o.x), float(o.y))
+		trap.theme = maze.theme
+		add_child(trap)
 	for o in MapData.objects_of(maze.data, "trigger"):
 		_triggers.append(o)
 	for o in MapData.objects_of(maze.data, "boss"):
@@ -341,12 +354,62 @@ func _add_quest_object(o: Dictionary) -> void:
 	glow.z_index = -1
 	glow.draw.connect(func(): glow.draw_arc(Vector2.ZERO, 46, 0, TAU, 40, Color(1.0, 0.85, 0.3, 0.8), 3.0))
 	it.add_child(glow)
+	var key := String(o.get("key", id))  # (several urns are one step: "use" 4 of "urn")
 	it.action = func():
-		Quests.notify("use", id)
+		Quests.notify("use", key)
 		_flash(String(o.get("text", "Done.")), Color(1.0, 0.88, 0.5))
 		it.visible = false
 		it.remove_from_group("interactables")
-	_quest_objects.append({"node": it, "id": id})
+		if o.has("ambush"):
+			_ambush(it.global_position, String(o["ambush"].get("kind", "skeleton")), int(o["ambush"].get("n", 5)))
+	_quest_objects.append({"node": it, "id": key})
+
+
+## An ambush (a quest object's "ambush"): an elite pack and its followers come out of the dark round the player.
+func _ambush(at: Vector2, kind: String, n: int) -> void:
+	var pack := "ambush_%d" % Time.get_ticks_msec()
+	for j in n:
+		var a := TAU * (float(j) + randf() * 0.5) / float(n)
+		var e := _spawn_enemy(at + Vector2.from_angle(a) * randf_range(330.0, 480.0), pack, kind,
+			MonsterAffix.Tier.ELITE if j == 0 else MonsterAffix.Tier.NORMAL)
+		e._aggro = true
+
+
+## A vault behind a cracked wall (a map "vault" object): the wall gives way to the key a quest gave (`requires`, done), once per
+## character, and spills what was kept behind it.
+func _add_vault(o: Dictionary) -> void:
+	var id := "vault:" + String(o.get("id", ""))
+	var it := Interactable.new()
+	it.position = Vector2(float(o.x), float(o.y))
+	it.prompt = String(o.get("prompt", "Press the cracked wall"))
+	add_child(it)
+	var sprite := Sprite2D.new()
+	it.add_child(sprite)
+	var set_art := func(sprite_name: String, scale_: float):
+		var tex := MapTheme.load_sprite(maze.theme, sprite_name)
+		sprite.texture = tex
+		if tex != null:
+			sprite.offset = Vector2(0, -tex.get_height() * 0.5)
+			sprite.scale = Vector2.ONE * scale_
+	var open_art := String(o.get("open_sprite", "crypt/decor_13"))
+	var open_scale := float(o.get("open_scale", 0.4))
+	if id in GameState.opened_vaults:
+		set_art.call(open_art, open_scale)
+		it.remove_from_group("interactables")
+		return
+	set_art.call(String(o.get("sprite", "crypt/decor_20")), float(o.get("scale", 0.9)))
+	it.action = func():
+		if Quests.state(String(o.get("requires", ""))) != Quests.DONE:
+			_flash(String(o.get("locked", "The wall is cracked, and cold air breathes through it. Something is sealed behind it, and you have nothing that opens it.")), Color(0.8, 0.8, 0.9))
+			return
+		GameState.opened_vaults.append(id)
+		GameState.save()
+		set_art.call(open_art, open_scale)
+		it.remove_from_group("interactables")
+		_flash(String(o.get("text", "The rusted key turns, and the wall gives way. A vault, sealed for centuries.")), Color(1.0, 0.88, 0.5))
+		for k in int(o.get("rares", 3)):
+			_drop_item(LootGenerator.roll_item(area_level + 3, ItemInstance.Rarity.RARE), it.global_position + Vector2(-90 + k * 90, 120))
+		CurrencyPickup.add_to_bundle(self, "Currency", ["orb", "alchemy", 2], it.global_position + Vector2(0, 170))
 
 
 func _label(parent: Node2D, text: String, col: Color, y := -110.0) -> void:
@@ -585,7 +648,9 @@ func _process(_delta: float) -> void:
 		return
 	var p := player.global_position
 	for e in _exits:
-		if p.distance_to(e["node"].global_position) < EXIT_REACH and not get_tree().paused:
+		var open := _exit_open(e)
+		e["node"].visible = open
+		if open and p.distance_to(e["node"].global_position) < EXIT_REACH and not get_tree().paused:
 			_leave(e["target"], zone_id)
 			return
 	if _waypoint != null and not (zone_id in GameState.waypoints) and p.distance_to(_waypoint.global_position) < WAYPOINT_REACH:

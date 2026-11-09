@@ -11,9 +11,10 @@ extends RefCounted
 ##   "waypoint" - touch the waypoint in zone `key`
 ##   "kill"     - kill `count` monsters of MonsterKinds `key`
 ##   "kill_boss"- kill the quest boss `key` (a map "boss" object)
-##   "use"      - use object `key` (a map "quest_object")
+##   "use"      - use object `key` (a map "quest_object"; its "key", when it has one, is shared by several of them: "count" of them)
 ## Rewards: {"xp", "orbs": {id: n}, "gems": {gem id: n}, "passive_points", "attr_points", "skill_rune": n, "item": {"slot", "rarity"},
-## "notes": [lines listed with the rewards, for what the story gives that is not an item]}.
+## "notes": [lines listed with the rewards, for what the story gives that is not an item],
+## "bonus": {stat: amount} a permanent bonus for good once the quest is done (Quests.bonus: "res_all" adds to every resistance)}.
 ## "choose": [{"label", ...rewards}, ...] instead makes the player pick one of them when handing in (the others are lost).
 ##
 ## Act I is "The Bleeding Veil" (ACT1_DESIGN.md): Oakhaven Outpost and the zones round it.
@@ -41,6 +42,8 @@ const NPCS := {
 		"greeting": "Oakhaven threw me out for what I brew. Funny, now it wants what I know."},
 	"mara": {"name": "Scout Mara", "title": "Last of the Watch", "skin": "forest_ranger_3",
 		"greeting": "Don't stand in the doorway. They remember where the door is."},
+	"ancestor_spirit": {"name": "Weeping Spirit", "title": "Of the Ossuary", "skin": "ghost_knight",
+		"greeting": "Cold. It is always cold, here. They took our urns, and now we cannot sleep."},
 	"corwin": {"name": "Merchant Corwin", "title": "In a hurry", "skin": "caravan_master",
 		"greeting": "Don't ask me what's in the lockbox. Fetch it, and the gem is yours."},
 }
@@ -109,6 +112,36 @@ const QUESTS := {
 		"lines": {
 			"mara": {1: "Dennis sent you? Thank the gods. Jorin and Tess went down to the gates for a closer look... and came back wrong. I couldn't. Here: the armory key, from the guardroom. There's a vault behind a collapsible wall in the Ossuary's first hall. Take it to Dennis, and tell him the beacon's dry."},
 		},
+	},
+	"a1_descent_into_madness": {
+		"name": "Descent into Madness", "act": 1, "kind": "main", "giver": "althea", "turn_in": "althea", "requires": "a1_breaking_the_seal",
+		"summary": "Beneath the Ossuary's gates the boundary between the realms is being held open by three Veil Anchors, each channelled by a cultist herald. Fight down through the catacombs, level by level, and shatter all three before the wall between the worlds collapses.",
+		"offer": "The gates are open, and what I feared is true. The cult has driven three [b]Veil Anchors[/b] into the Ossuary's floors, and each is channelled by a herald who believes he is feeding a god. They hold the boundary open from the inside. Go down. Break the anchors, one on the first level, one deeper, and the last on the level below. Every one will shake the floor and bring what it can to your throat. And be quick: if the wall between the realms falls before they do, the Outpost falls with it.",
+		"progress": "The Grand Ossuary lies behind the mausoleum in the Ashen Verge. Two anchors stand on its first level, in the north and the south; the third is on the level below. Each is held by a herald.",
+		"complete": "Three anchors, and the floor still holds. I felt each one go, like a tooth. But you have seen the lower level: the stair at its end goes down to the Sepulcher of Mourning, and that is where they have been carrying everything they take from the graves. I will tell you what I can about what sleeps there.",
+		"steps": [
+			{"type": "zone", "key": "grand_ossuary_1", "text": "Descend into the Grand Ossuary"},
+			{"type": "kill_boss", "key": "herald_oren", "text": "Slay Herald Oren, who channels the first Veil Anchor"},
+			{"type": "use", "key": "anchor_1", "text": "Shatter the first Veil Anchor"},
+			{"type": "kill_boss", "key": "herald_sable", "text": "Slay Herald Sable, who channels the second"},
+			{"type": "use", "key": "anchor_2", "text": "Shatter the second Veil Anchor"},
+			{"type": "zone", "key": "grand_ossuary_2", "text": "Take the stair down to the Lower Ossuary"},
+			{"type": "kill_boss", "key": "herald_morrow", "text": "Slay Herald Morrow, who channels the third"},
+			{"type": "use", "key": "anchor_3", "text": "Shatter the third Veil Anchor"},
+		],
+		"rewards": {"xp": 1100, "orbs": {"alteration": 4, "augment": 3, "alchemy": 3, "chaos": 2}, "passive_points": 1, "item": {"slot": "", "rarity": 2}},
+	},
+	"a1_restless_ancestors": {
+		"name": "Restless Ancestors", "act": 1, "kind": "side", "giver": "ancestor_spirit", "turn_in": "ancestor_spirit",
+		"summary": "A weeping spirit in the Grand Ossuary asks you to recover four desecrated burial urns from the crypt's sarcophagi and set them back on their sanctified pedestal.",
+		"offer": "Oh. You can see me. Please: do not run. They broke the sarcophagi and took our urns, four of them, and without them we cannot rest. They lie in the old tomb-halls of this level, in the open sarcophagi. Bring them back to the pedestal beside me, and I will give you what blessing the dead can: a ward that stays.",
+		"progress": "Four urns, in the open sarcophagi of the tomb-halls on this level. Set them on the pedestal here, beside me.",
+		"complete": "Quiet. Do you hear it? Nothing. Nothing at all. Thank you. Take what the dead can give: a ward that will not leave you.",
+		"steps": [
+			{"type": "use", "key": "urn", "count": 4, "text": "Recover the desecrated burial urns from the sarcophagi"},
+			{"type": "use", "key": "urn_pedestal", "text": "Set the urns on their sanctified pedestal"},
+		],
+		"rewards": {"xp": 540, "orbs": {"augment": 2, "alchemy": 1}, "bonus": {"res_all": 0.05}},
 	},
 	"a1_taste_for_rot": {
 		"name": "A Taste for Rot", "act": 1, "kind": "side", "giver": "voss", "turn_in": "voss",

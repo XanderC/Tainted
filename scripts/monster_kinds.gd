@@ -22,6 +22,8 @@ const KINDS := {
 	"fen_crawler": {"name": "Fen Crawler", "skin": "ghoul", "min_level": 99, "hp": 1.2, "speed": 1.1, "damage": 1.0, "element": "chaos"},
 	"bleed_fiend": {"name": "Bleed Fiend", "skin": "blood_demon", "min_level": 99, "hp": 1.7, "speed": 1.0, "damage": 1.15, "element": "chaos"},
 	"mutated_scout": {"name": "Mutated Scout", "skin": "forest_ranger_3", "min_level": 99, "hp": 1.4, "speed": 1.2, "damage": 1.0, "element": "chaos"},
+	"skeleton_vanguard": {"name": "Skeleton Vanguard", "skins": ["skeleton_crusader_1", "skeleton_crusader_2"], "min_level": 99, "hp": 1.5, "speed": 1.0, "damage": 1.3},
+	"veil_cultist": {"name": "Veil Cultist", "skins": ["dark_elf_1", "dark_elf_2"], "min_level": 99, "hp": 0.9, "speed": 1.1, "damage": 1.25, "element": "chaos"},
 	"ghoul": {"name": "Ghoul", "skin": "ghoul", "min_level": 2, "hp": 0.9, "speed": 1.35, "damage": 1.0},
 	"mummy": {"name": "Mummy", "skin": "mummy", "min_level": 2, "hp": 1.4, "speed": 0.8, "damage": 1.1, "element": "chaos"},
 	"skeleton_warrior": {"name": "Skeleton Warrior", "skins": ["skeleton_warrior_1", "skeleton_warrior_2"], "min_level": 3, "hp": 1.15, "speed": 1.0, "damage": 1.15},

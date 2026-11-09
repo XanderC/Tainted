@@ -19,6 +19,10 @@ const ZONES := {
 		"kinds": ["rot_bloat", "leechfiend", "fen_crawler", "villager", "zombie"]},
 	"ashen_verge": {"name": "Ashen Verge", "act": 1, "map": "ashen_verge", "area_level": 6,
 		"kinds": ["skeleton", "skeleton_warrior", "zombie", "ghoul", "bleed_fiend"]},
+	"grand_ossuary_1": {"name": "Grand Ossuary", "act": 1, "map": "grand_ossuary_1", "area_level": 7,
+		"kinds": ["skeleton", "skeleton_warrior", "skeleton_vanguard", "skeleton_archer", "ghoul", "veil_cultist"]},
+	"grand_ossuary_2": {"name": "Lower Ossuary", "act": 1, "map": "grand_ossuary_2", "area_level": 8,
+		"kinds": ["skeleton_warrior", "skeleton_vanguard", "skeleton_hunter", "ghoul", "veil_cultist", "bleed_fiend"]},
 }
 
 

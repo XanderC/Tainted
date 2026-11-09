@@ -79,6 +79,16 @@ const THEMES := {
 		"wall_chance": 0.55, "plateau_chance": 0.35,
 		"scatter": {},
 	},
+	# Act 1's Grand Ossuary: stone-brick halls over dark void, from the CraftPix 2D Top-Down Dungeon Tileset
+	# (assets/tiles/crypt, tools/import_crypt.py): torches and soul lanterns, coffins, urns, bones
+	"crypt": {
+		"wall_props": [["torch_1", 0.5], ["torch_1", 0.5], ["crypt/decor_14", 0.5], ["stones_9", 0.45]],
+		"floor_props": [["decor_4", 0.4], ["decor_2", 0.4], ["decor_14", 0.4], ["decor_15", 0.4], ["stones_9", 0.4], ["stones_10", 0.4],
+			["hollow/bone_2", 0.4], ["hollow/bone_9", 0.4], ["hollow/bone_10", 0.4]],
+		"plateau_props": [["stones_9", 0.4]],
+		"wall_chance": 0.07, "plateau_chance": 0.0,
+		"scatter": {},
+	},
 	# Act 1's caves and catacombs (the CraftPix 2D Top-Down Cave Tileset: stone-brick walls over dark void, a slime lake,
 	# crystals, mushrooms, bones; tools/import_cave.py). `water_tint` darkens its green lake into tainted water.
 	"hollow": {

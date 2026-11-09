@@ -69,6 +69,57 @@ const BOSSES := {
 		],
 		"loot": {"rares": 2, "magics": 3, "orbs": {"alteration": 2, "augment": 2, "alchemy": 2}, "scrolls": 2},
 	},
+	# Chapter 4 of Act I: the three cultist heralds who channel the Veil Anchors in the Grand Ossuary
+	"herald_oren": {
+		"title": "Herald Oren", "hp": 1.9,
+		"arena": 520.0, "intro": 1.4, "enrage": 150.0, "max_adds": 5,
+		"lines": {"intro": "The first anchor is mine to keep. Look how it sings.", "enrage": "Burn, burn!"},
+		"moves": {
+			"strike": {"kind": "slam", "windup": 0.7, "cd": 2.6, "range": [0.0, 200.0], "weight": 5, "r": 140.0, "dmg": 1.2, "recover": 0.5},
+			"bolts": {"kind": "rain", "windup": 1.0, "cd": 6.0, "range": [0.0, 900.0], "weight": 3, "count": 5, "r": 100.0, "dmg": 1.2, "recover": 0.6},
+			"call": {"kind": "summon", "windup": 1.0, "cd": 12.0, "range": [0.0, 900.0], "weight": 2, "recover": 0.6},
+		},
+		"phases": [
+			{"at": 1.0, "moves": ["strike", "bolts"]},
+			{"at": 0.55, "say": "Rise, vanguard. Rise for the Veil.", "moves": ["strike", "bolts", "call"], "adds": [{"kind": "skeleton_vanguard", "n": 2}], "speed": 1.1},
+		],
+		"loot": {"rares": 1, "magics": 2, "orbs": {"alteration": 2, "augment": 1}, "scrolls": 1},
+	},
+	"herald_sable": {
+		"title": "Herald Sable", "hp": 2.2,
+		"arena": 540.0, "intro": 1.4, "enrage": 160.0, "max_adds": 5,
+		"lines": {"intro": "You break the first and think it a victory. It was a door.", "enrage": "Enough. Come to me."},
+		"moves": {
+			"lunge": {"kind": "charge", "windup": 0.7, "cd": 5.0, "range": [200.0, 700.0], "weight": 3, "length": 500.0, "width": 90.0, "speed": 1000.0, "dmg": 1.3, "recover": 0.7},
+			"whirl": {"kind": "sweep", "windup": 0.8, "cd": 3.2, "range": [0.0, 260.0], "weight": 4, "r": 250.0, "arc": 2.6, "dmg": 1.2, "recover": 0.5},
+			"bolts": {"kind": "rain", "windup": 1.1, "cd": 6.5, "range": [0.0, 900.0], "weight": 3, "count": 6, "r": 100.0, "dmg": 1.2, "recover": 0.6},
+			"call": {"kind": "summon", "windup": 1.1, "cd": 12.0, "range": [0.0, 900.0], "weight": 2, "recover": 0.6},
+		},
+		"phases": [
+			{"at": 1.0, "moves": ["whirl", "lunge", "bolts"]},
+			{"at": 0.6, "say": "Come through, little ones.", "moves": ["whirl", "lunge", "bolts", "call"], "adds": [{"kind": "bleed_fiend", "n": 2}], "speed": 1.1},
+			{"at": 0.3, "say": "The Veil is thin. Thinner.", "moves": ["whirl", "lunge", "bolts", "call"], "adds": [{"kind": "veil_cultist", "n": 2}], "speed": 1.2, "dmg": 1.15, "cd": 0.85},
+		],
+		"loot": {"rares": 2, "magics": 2, "orbs": {"alteration": 2, "augment": 2, "alchemy": 1}, "scrolls": 1},
+	},
+	"herald_morrow": {
+		"title": "Herald Morrow", "hp": 3.0,
+		"arena": 620.0, "intro": 1.8, "enrage": 180.0, "max_adds": 6,
+		"lines": {"intro": "Three anchors hold the wall up. When the last falls, so does it. Do you understand what you are asking?", "enrage": "Then fall with it!"},
+		"moves": {
+			"crush": {"kind": "slam", "windup": 0.8, "cd": 3.0, "range": [0.0, 220.0], "weight": 5, "r": 170.0, "dmg": 1.4, "recover": 0.6},
+			"quake": {"kind": "slam", "windup": 1.5, "cd": 9.0, "range": [0.0, 500.0], "weight": 2, "r": 320.0, "dmg": 1.6, "recover": 0.9},
+			"storm": {"kind": "rain", "windup": 1.2, "cd": 7.0, "range": [0.0, 900.0], "weight": 3, "count": 7, "r": 110.0, "dmg": 1.3, "recover": 0.7},
+			"rush": {"kind": "charge", "windup": 0.8, "cd": 6.0, "range": [250.0, 750.0], "weight": 2, "length": 540.0, "width": 100.0, "speed": 1050.0, "dmg": 1.4, "recover": 0.8},
+			"call": {"kind": "summon", "windup": 1.1, "cd": 12.0, "range": [0.0, 900.0], "weight": 2, "recover": 0.6},
+		},
+		"phases": [
+			{"at": 1.0, "moves": ["crush", "storm", "rush"]},
+			{"at": 0.65, "say": "Rise! Rise and hold the line!", "moves": ["crush", "storm", "rush", "call"], "adds": [{"kind": "skeleton_vanguard", "n": 3}], "speed": 1.1},
+			{"at": 0.3, "say": "Let it fall. Let it all fall.", "moves": ["crush", "quake", "storm", "rush", "call"], "adds": [{"kind": "veil_cultist", "n": 2}, {"kind": "bleed_fiend", "n": 1}], "speed": 1.2, "dmg": 1.15, "cd": 0.85},
+		],
+		"loot": {"rares": 3, "magics": 2, "orbs": {"alteration": 3, "augment": 2, "alchemy": 2, "chaos": 1}, "scrolls": 2},
+	},
 	# Chapter 2 of Act I: the guardian of the Brood Cyst in the Weeping Hollow
 	"matron_vhol": {
 		"title": "Skittering Matron", "hp": 2.2,

@@ -63,6 +63,15 @@ static func notify(event: String, key: String, amount := 1) -> void:
 		_changed()
 
 
+## What the quests done give for good ("bonus" rewards, QuestDB): the sum for `stat` ("res_all" adds to every resistance).
+static func bonus(stat: String) -> float:
+	var sum := 0.0
+	for id in GameState.quests:
+		if state(id) == DONE:
+			sum += float(QuestDB.quest(id).get("rewards", {}).get("bonus", {}).get(stat, 0.0))
+	return sum
+
+
 ## Whether an active quest is waiting on this exact event right now (show the strongbox, etc.).
 static func wants(event: String, key: String) -> bool:
 	for id in GameState.quests:
@@ -165,6 +174,8 @@ static func turn_in(id: String, player: Player, choice := -1) -> Array:
 		got.append("%d × %s" % [int(r["orbs"][orb]), Currency.orb_name(orb)])
 	for note in r.get("notes", []):
 		got.append(String(note))
+	for stat in r.get("bonus", {}):
+		got.append("%+d%% to all Resistances, for good" % int(round(float(r["bonus"][stat]) * 100.0)) if stat == "res_all" else "a lasting bonus (%s)" % stat)
 	if int(r.get("attr_points", 0)) > 0:
 		GameState.attr_points += int(r["attr_points"])
 		got.append("+%d attribute points" % int(r["attr_points"]))
@@ -203,7 +214,7 @@ static func tracker_lines() -> Array:
 			if st == ACTIVE:
 				var s := current_step(id)
 				var txt: String = s.get("text", "")
-				if s.get("type", "") == "kill" and int(s.get("count", 1)) > 1:
+				if s.get("type", "") in ["kill", "use"] and int(s.get("count", 1)) > 1:
 					txt += " (%d / %d)" % [int(GameState.quests[id].get("count", 0)), int(s["count"])]
 				out.append({"quest": id, "title": q["name"], "text": txt, "kind": kind})
 			elif st == READY:

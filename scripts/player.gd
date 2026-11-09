@@ -964,7 +964,7 @@ func resistance(dtype: int) -> float:
 	var key: String = RESIST_KEYS.get(dtype, "")
 	if key == "":
 		return 0.0
-	var r := stats.get_stat(key) + stats.get_stat("res_all") + passive(key) + passive("res_all")
+	var r := stats.get_stat(key) + stats.get_stat("res_all") + passive(key) + passive("res_all") + Quests.bonus(key) + Quests.bonus("res_all")
 	return clampf(r, -1.0, MAX_RESIST)
 
 

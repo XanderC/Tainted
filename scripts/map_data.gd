@@ -20,7 +20,11 @@ extends RefCounted
 ##     {"type": "waypoint", "x", "y"},                           # story zones: the zone's waypoint
 ##     {"type": "boss", "x", "y", "id", "name", "kind", "skin", "hp", "size"},  # a quest boss
 ##     {"type": "terrace", "x", "y", "w", "h", "stairs": [col, ...]},  # raised walkable ground: cells, see MazeMap._add_terraces
-##     {"type": "quest_object", "x", "y", "id", "sprite", "scale", "prompt", "text"}  # used for a quest
+##     {"type": "quest_object", "x", "y", "id", "sprite", "scale", "prompt", "text"}  # used for a quest ("key": the step's key when
+##                                          # several objects share one; "ambush": {"kind", "n"}: an elite pack comes when it is used)
+##     {"type": "trap", "x", "y"},                              # spikes that rise from the floor every few seconds (SpikeTrap)
+##     {"type": "vault", "x", "y", "id", "sprite", "open_sprite", "requires", "prompt", "locked", "text", "rares"}  # a cracked wall
+##                                          # that gives way once the quest `requires` is done: its loot, once per character
 ##   ]
 ## }
 

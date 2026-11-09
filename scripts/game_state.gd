@@ -46,6 +46,7 @@ var rift_level := 1     # level chosen at the rift gate for the next run
 ## The story (Quests, ActDB): quest id -> progress; zones whose waypoint you've touched
 var quests := {}
 var waypoints: Array = []
+var opened_vaults: Array = []  # the story's vaults (map "vault" objects) already broken into: they give their loot once
 ## Town portal scrolls (TownPortals): how many you carry, the portal you have open ({} for none; its
 ## fields: TownPortals) and what lay on the ground where you went through one. Arriving back through
 ## one: where (portal_arrival), and a solo rift to carry on with (rift_resume, for main.gd).
@@ -140,6 +141,7 @@ func _new_game() -> void:
 	rift_level = 1
 	quests = {}
 	waypoints = []
+	opened_vaults = []
 	tp_scrolls = START_SCROLLS
 	pet = ""
 	town_portal = {}
@@ -1300,7 +1302,7 @@ func save() -> void:
 		"version": 2, "name": char_name, "class": char_class, "tutorial_stage": tutorial_stage,
 		"recipes": known_recipes, "runs_cleared": runs_cleared,
 		"rift_unlocked": rift_unlocked, "rift_level": rift_level,
-		"quests": quests, "waypoints": waypoints, "town_portal": town_portal,
+		"quests": quests, "waypoints": waypoints, "opened_vaults": opened_vaults, "town_portal": town_portal,
 		"tp_scrolls": tp_scrolls, "pet": pet, "left_loot": left_loot,
 		"gamble": {"at": gamble_at, "items": gamble_stock.map(func(i): return i.to_dict())},
 		"inventory": inv, "equipment": eq,
@@ -1653,6 +1655,7 @@ func _apply_save(data: Dictionary) -> void:
 	rift_level = clampi(int(data.get("rift_level", 1)), 1, rift_unlocked)
 	quests = Quests.migrate(data.get("quests", {}))
 	waypoints = data.get("waypoints", [])
+	opened_vaults = data.get("opened_vaults", [])
 	town_portal = data.get("town_portal", {})
 	if not town_portal.is_empty() and not town_portal.has("kind"):  # an older save's: {"zone", "x", "y"}
 		town_portal = {"id": 1, "kind": "zone", "zone": String(town_portal.get("zone", "")), "inst": "",

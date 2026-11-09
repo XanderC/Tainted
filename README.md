@@ -126,6 +126,21 @@ paths, walls and terraces to ash (`assets/tiles/ashen`; a theme's `art` is the f
 `tools/import_crypt.py` brings the dungeon pack's props (`assets/tiles/crypt`: gravestones, dead branches, ruined walls,
 a key) and turns its green slime and the cave crystals blood-red for the rifts. Test: `scratch/test_verge.tscn`. Art
 notes: the golem is the ice golem character, the warden a big rotting villager, the mutated scouts a ranger.
+**Phase 4 (built):** the **Grand Ossuary** in two levels (`grand_ossuary_1`, 66 x 46, and `grand_ossuary_2`, the Lower Ossuary,
+60 x 46), under the Verge's mausoleum: the portal there (`"requires": "a1_breaking_the_seal"`: a way on can now be gated on a
+quest being READY or DONE) opens when the seal is broken. Narrow stone halls and hallways in the new `crypt` theme
+(`tools/import_crypt.py` now also builds its floor and wall pieces from the dungeon pack, and `torch_1` and the blue `lantern_1`
+soul lanterns), with **spike traps** (`SpikeTrap`, a map `trap` object: a rhythm of warning, rise and a hit of 14% of your Life,
+once per rising). The main quest **Descent into Madness** (Althea, after Chapter 3): three **Veil Anchors**, each channelled by a
+cultist herald (`herald_oren`, `herald_sable` on level 1, `herald_morrow` on level 2: `BossDB` fights, dark elf and lich art).
+Shattering an anchor (a `quest_object` with an `ambush`) brings an elite pack out of the dark. Level 1 also has the weeping
+spirit of **Restless Ancestors** (four urns in the open sarcophagi of the two tomb-halls, which share one quest step by their
+`key`, then the pedestal; the reward is +5% to all resistances for good: `Quests.bonus`, a quest reward `bonus`, read by
+`Player.resistance`), and the **armory vault** behind a cracked wall in the guardroom (a map `vault` object: it gives way once
+The Last Watch is done, spilling three rare items once per character: `GameState.opened_vaults`). New monsters: Skeleton Vanguard
+and Veil Cultist. The Lower Ossuary ends at a great barred door to the Sepulcher of Mourning (phase 5). Test:
+`scratch/test_ossuary.tscn`. Art notes: no custom art for heralds (dark elves and a lich), the sarcophagi are the pack's stone
+and wooden chests.
 Zone maps come from `tools/gen_zones.py`; tweak them in the map editor (rerunning the script
 overwrites them).
 

@@ -1429,7 +1429,7 @@
 		},
 		{
 			"type": "prop",
-			"x": 7872,
+			"x": 7744,
 			"y": 2937,
 			"sprite": "hollow/decor_19",
 			"scale": 0.7,
@@ -1453,11 +1453,18 @@
 		},
 		{
 			"type": "prop",
-			"x": 8128,
+			"x": 8256,
 			"y": 2937,
 			"sprite": "hollow/decor_13",
 			"scale": 0.4,
 			"solid": true
+		},
+		{
+			"type": "portal",
+			"x": 8000,
+			"y": 2880,
+			"target": "grand_ossuary_1",
+			"requires": "a1_breaking_the_seal"
 		},
 		{
 			"type": "prop",
