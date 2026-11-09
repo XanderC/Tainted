@@ -29,6 +29,7 @@ var gate := Vector2.ZERO  # the Rift Gate
 var player: Player
 var menu: GameMenu  # character screen + inventory / vendor panels
 var skill_tree_ui: SkillTreeUI
+var skill_picker: SkillPicker
 var rift_ui: RiftSelectUI
 var upgrade_popup_ui: CanvasLayer
 var _hud: Label
@@ -119,12 +120,16 @@ func _ready() -> void:
 	potion_pad.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	layer.add_child(potion_pad)
 	potion_pad.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT)
-	# The skill buttons, greyed out: there is nothing to fight in town, but they stay where they are
+	# The skill buttons, greyed out: there is nothing to fight in town, but they stay where they are. Tapping one opens
+	# a dropdown of the skills you can put on that hotkey (SkillPicker).
+	skill_picker = SkillPicker.new()
+	add_child(skill_picker)
 	for i in SkillButton.CENTRES:
 		var sb := SkillButton.new()
 		sb.player = player
 		sb.index = i
 		sb.disabled = true
+		sb.on_tap = skill_picker.open
 		sb.position = SkillButton.pad_position(i)
 		potion_pad.add_child(sb)
 	# The flask row, between the orbs at the bottom centre
@@ -277,7 +282,8 @@ func _process(delta: float) -> void:
 		(quest_log != null and quest_log.is_open()) or \
 		(waypoint_ui != null and waypoint_ui.is_open()) or \
 		(hire_ui != null and hire_ui.is_open()) or 		(dye_ui != null and dye_ui.is_open()) or \
-		(skill_tree_ui != null and skill_tree_ui.is_open())
+		(skill_tree_ui != null and skill_tree_ui.is_open()) or \
+		(skill_picker != null and skill_picker.is_open())
 	_near = best
 	_talk_btn.visible = best != null and not any_open
 	_chars_btn.visible = not any_open and not get_tree().paused

@@ -997,6 +997,26 @@ func set_slot_skill(i: int, skill_id: String) -> bool:
 	return true
 
 
+## Put a skill on hotkey i from the town's skill picker (SkillPicker). Unlike set_slot_skill, a skill that is on another
+## hotkey is MOVED: it leaves that one (which is left empty, its supports staying in the slot) rather than the two
+## swapping. The gem that was on hotkey i goes back to the pouch.
+func move_skill_to_slot(i: int, skill_id: String) -> bool:
+	if i < 0 or i >= SKILL_SLOTS or skill_gem_block_reason(skill_id) != "":
+		return false
+	var other := slot_of(skill_id)
+	if other == i:
+		return true
+	if other < 0:
+		return set_slot_skill(i, skill_id)  # from the pouch: nothing to take off another hotkey
+	var displaced := slot_skill(i)
+	if displaced != "":
+		skill_gems[displaced] = skill_gem_count(displaced) + 1
+	skill_slots[other].skill = ""
+	skill_slots[i].skill = skill_id
+	_on_skills_modified()
+	return true
+
+
 ## Take the skill gem out of slot i back to the pouch.
 func clear_slot_skill(i: int) -> bool:
 	var id := slot_skill(i)

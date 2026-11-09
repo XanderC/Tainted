@@ -1,8 +1,8 @@
 class_name HudLayout
 extends RefCounted
 ## Where the top-right of the screen's controls sit, so they don't fall over each other: the minimap in the
-## corner (Minimap), and left of it one row of icon buttons, all the same size (ICON): the bag, options and the
-## passive tree, then (in town) the character screen. The town portal scroll is not in it: it sits just right of the
+## corner (Minimap), and left of it one row of icon buttons, all the same size (ICON): the bag, options, the
+## passive tree and your skills window, then (in town) the character screen. The town portal scroll is not in it: it sits just right of the
 ## mana globe (place_by_mana). The party list is on the left instead, under the hireling (PartyUI.dock). Put a
 ## control in the row with place(); anything else that sits at the top right starts under BELOW_MAP.
 
@@ -16,8 +16,8 @@ const BELOW_MAP := ROW_TOP + MAP + 10.0  ## the top of what sits under the minim
 const BELOW_ROW := ROW_TOP + ROW_H + 8.0  ## where the minimap's whole-map view starts: under the row of buttons
 
 ## Left from the minimap, in this order, with each one's width.
-const ORDER := ["bag", "options", "passives", "characters"]
-const WIDTH := {"bag": ICON, "options": ICON, "passives": ICON, "characters": ICON}
+const ORDER := ["bag", "options", "passives", "skills", "characters"]
+const WIDTH := {"bag": ICON, "options": ICON, "passives": ICON, "skills": ICON, "characters": ICON}
 
 
 ## An icon button for the row or the mana globe: ICON square whatever the glyph is (the glyph can't grow it, as it

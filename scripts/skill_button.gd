@@ -20,7 +20,10 @@ const CENTRES := {
 
 var player: Player
 var index := 0
-var disabled := false  # shown but greyed and not tappable (in town, where nothing is fought)
+var disabled := false  # shown but greyed: it can't use its skill (in town, where nothing is fought)
+## Set in town, where a disabled button is still tappable: a tap calls this with (index, the button's rectangle on screen),
+## which opens the skill picker for the hotkey.
+var on_tap := Callable()
 
 var _is_down := false
 var _touch_id := -1
@@ -52,7 +55,14 @@ func _process(_delta: float) -> void:
 
 
 func _input(event: InputEvent) -> void:
-	if player == null or disabled:
+	if player == null:
+		return
+	if disabled:
+		# Greyed out, but in town a tap changes what the hotkey holds. (A touch also arrives as an emulated mouse
+		# click; asking to open the picker again for the same hotkey is harmless.)
+		if on_tap.is_valid() and is_visible_in_tree() and _pressed_inside(event):
+			on_tap.call(index, Rect2(global_position, size))
+			get_viewport().set_input_as_handled()
 		return
 	if event is InputEventScreenTouch:
 		if event.pressed and Rect2(global_position, size).has_point(event.position):
@@ -70,6 +80,18 @@ func _input(event: InputEvent) -> void:
 			get_viewport().set_input_as_handled()
 		elif not event.pressed and event.button_index == MOUSE_BUTTON_LEFT and _is_down:
 			_is_down = false
+
+
+## A touch or a left click that starts inside the button's opening.
+func _pressed_inside(event: InputEvent) -> bool:
+	var pos := Vector2.ZERO
+	if event is InputEventScreenTouch and event.pressed:
+		pos = event.position
+	elif event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		pos = event.position
+	else:
+		return false
+	return Rect2(global_position, size).has_point(pos)
 
 
 func _draw() -> void:

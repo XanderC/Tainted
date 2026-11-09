@@ -40,7 +40,7 @@ func refresh() -> void:
 	if GameState.gem_station:
 		sec.add_child(UIKit.label("Tap a slot or a link to choose its gem.", 12, UIKit.TEXT_DIM, true))
 	else:
-		sec.add_child(UIKit.label("🔒 Change skill and support gems at the Jeweler in town. Tap a gem to see what it does.",
+		sec.add_child(UIKit.label("In town, tap a skill button on the screen to change its skill. 🔒 Support gems are linked at the Jeweler. Tap a gem to see what it does.",
 			13, UIKit.TEXT_DIM, true))
 
 

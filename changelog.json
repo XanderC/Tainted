@@ -1,5 +1,14 @@
 [
 	{
+		"build": 0,
+		"title": "Skills button and skill hotkeys in town",
+		"notes": [
+			"A new Skills button sits beside the passive tree button, top right. It opens your skills window.",
+			"In town, tap one of your skill buttons and a list of the skills you can put there drops down. Tap a skill to equip it. A skill that is already on another button moves: it comes off the old button and goes on the new one, and what was on the new button goes back to your pouch. Skills you can't use yet are greyed out with what they need.",
+			"Support gems are still linked at the Jeweler."
+		]
+	},
+	{
 		"build": 202611091216,
 		"title": "Act I balance: levels and bosses",
 		"notes": [

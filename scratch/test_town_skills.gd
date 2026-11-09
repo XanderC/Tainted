@@ -1,5 +1,6 @@
 extends Node2D
-## Town shows the skill buttons, greyed out and not tappable. Takes scratch/town_skills.png.
+## Town shows the skill buttons, greyed out: tapping one fires nothing (it opens the skill picker, see
+## test_town_hotkey_picker). Takes scratch/town_skills.png.
 ##   godot --path . --resolution 1600x720 res://scratch/test_town_skills.tscn
 
 var _fails := 0

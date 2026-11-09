@@ -18,6 +18,7 @@ var selected: ItemInstance = null  ## item picked in the character panel (bag or
 var _root: Control
 var _open_btn: Button
 var _options_btn: Button
+var _skills_btn: Button
 var _left_frame: PanelContainer
 var _left_body: VBoxContainer
 var _left_title: Label
@@ -60,6 +61,7 @@ func _process(_delta: float) -> void:
 	if _open_btn != null:
 		_open_btn.visible = not get_tree().paused
 		_options_btn.visible = _open_btn.visible
+		_skills_btn.visible = _open_btn.visible
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -81,9 +83,9 @@ func is_open() -> bool:
 	return _root.visible
 
 
-## Open the inventory (available anywhere): the bag alone, or the hireling's page beside it.
+## Open the inventory (available anywhere): the bag alone, or the hireling's page or your skills window beside it.
 func open(panel: String = "") -> void:
-	_open_with("hireling" if panel == "hireling" else "", "")
+	_open_with(panel if panel in ["hireling", "skills"] else "", "")
 
 
 ## Open a vendor ("stash", "shop", "smith", "jeweler") on the left. Only call this from that
@@ -125,7 +127,8 @@ func show_panel(panel_name: String) -> void:
 	if panel_name == "hireling" and _current != "hireling":
 		_back_panel = _current
 	# The hireling's page fills the left side: no tab row (it has a Back button instead)
-	_tabs_row.visible = panel_name != "hireling"
+	# (nor your skills window opened on its own: it has no other tabs)
+	_tabs_row.visible = panel_name != "hireling" and not (panel_name == "skills" and _vendor == "")
 	_tabs_gap.visible = _tabs_row.visible
 	_current = panel_name
 	for n in _panels:
@@ -399,6 +402,13 @@ func _build() -> void:
 	_options_btn.pressed.connect(func(): OptionsUI.open(self))
 	add_child(_options_btn)
 	HudLayout.place(_options_btn, "options")
+
+	# Your skills window (the Skills panel on its own), next to the passive tree's button
+	_skills_btn = HudLayout.icon_button("💠", 26)
+	_skills_btn.tooltip_text = "Skills"
+	_skills_btn.pressed.connect(func(): open("skills"))
+	add_child(_skills_btn)
+	HudLayout.place(_skills_btn, "skills")
 
 	_root = Control.new()
 	_root.visible = false

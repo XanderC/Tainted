@@ -689,7 +689,8 @@ that is never used up: drink it from a flask slot and it goes on cooldown.
 ### Minimap and the top of the screen
 - **Layout** (`HudLayout`): the minimap is in the top right corner (168 px square). Left of it is one row of icon
   buttons, all `HudLayout.ICON` (48 px) square (`HudLayout.icon_button`: the glyph can't make one bigger), in this
-  order: the bag 🎒 and options ⚙ (`GameMenu`), the passive tree ✦ (`SkillTreeUI`), and in town the 👥 character screen.
+  order: the bag 🎒 and options ⚙ (`GameMenu`), the passive tree ✦ (`SkillTreeUI`), your skills window 💠
+  (`GameMenu`, `open("skills")`), and in town the 👥 character screen.
   The town portal scroll button is not in the row: it is an icon of the same size just right of the mana globe
   (`HudLayout.place_by_mana`, made by `TownPortals.add_button`), its count in the corner. Put a control in the row with
   `HudLayout.place(control, slot)`; anything else that sits at the right starts under `HudLayout.BELOW_MAP` (the
@@ -707,6 +708,20 @@ that is never used up: drink it from a flask slot and it goes on cooldown.
   the list starts at the top of the column.
 - Test: `scratch/test_minimap.tscn` (windowed; checks nothing overlaps and all is on screen, exploring, the big map and
   the party list's place; takes `scratch/minimap_*.png`).
+
+### Skills window and town hotkeys
+- **The 💠 button** (`GameMenu._skills_btn`, slot "skills" in `HudLayout.ORDER`, right of the passive tree's ✦) opens
+  the Skills panel on its own: `GameMenu.open("skills")`. With no vendor open it has no tab row, and the skill slots
+  are view-only (tap a gem for its card); the Jeweler's Skills tab is still where support gems are linked.
+- **Tapping a skill hotkey in town** (`SkillButton.on_tap`, set by `Town`; the buttons stay greyed out and fire
+  nothing) opens `SkillPicker` above it: the skill gems in the pouch plus those already on other hotkeys, one tap to
+  equip. Skills whose level or attribute need isn't met are greyed with the reason. "Take it off this hotkey" returns
+  the gem to the pouch. Tap outside, or Escape, closes it.
+- **A skill that is already on another hotkey moves**: `GameState.move_skill_to_slot` takes it off the old hotkey
+  (left empty; its supports stay in that slot) and puts it on the new one, and the gem that was on the new hotkey
+  goes back to the pouch. (The Jeweler's panel, `set_slot_skill`, still swaps the two slots.)
+- Test: `scratch/test_town_hotkey_picker.tscn` (windowed; taps real hotkeys, checks the move rule, take-off, greyed
+  rows, Escape, and the button's place and size; takes `scratch/hotkey_*.png`).
 
 ### Kept zones
 - **A solo zone is kept as you leave it** (`ZoneInstances`, in memory only): leaving the Blackroot Wilds by an exit, a
@@ -828,7 +843,8 @@ Orbs and shards, and loose skill, support and socket gems belong to the
 account, not a character (`GameState.SHARED_KEYS`, saved in the account file). The stash shows them
 in tabs: **Items** (the grid), **Currency** and **Gems**. The inventory keeps only
 Equipment and Consumables.
-- Skill gems are set only at the Jeweler (its Skills tab). Socket gems and runes go into items at
+- Skill gems are set at the Jeweler (its Skills tab), or in town by tapping a skill hotkey (see "Skills window and
+  town hotkeys"); support gems only at the Jeweler. Socket gems and runes go into items at
   the stash (its Gems and Runes tabs) or the Jeweler (`GameState.gem_station`): drag one onto an item, and take
   them out with the button on the item's card. Gem levels and what each character has socketed stay
   that character's.
