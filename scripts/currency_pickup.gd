@@ -8,7 +8,8 @@ extends Node2D
 ## kind: "orb" | "shard" | "recipe" | "rune" (a skill rune) | "gem" (a socket gem or rune) | "skill_gem"
 ##   | "scroll" (Scrolls of Town Portal: the character's own, not the stash's)
 ##   | "bundle" (many of the above under one label, `parts` = [[kind, id, amount], ...], taken in one
-##   tap: a rift boss's orbs and shards are one pile, and a zone's drops join a pile lying near them)
+##   tap: no longer dropped, but a portal trip saved before drops became single items can restore one)
+## Each drop lies on its own; tapping one takes it and all the currency within NEAR_RADIUS of it.
 
 var kind := "shard"
 var id := ""
@@ -16,7 +17,7 @@ var amount := 1
 var delay := 0.3  # kept for spawners; a tap always works
 var parts: Array = []  # a bundle's contents
 var title := "Currency"  # a bundle's name: "Currency", "Gems & Runes"
-const MERGE_RADIUS := 170.0  # a drop within this of a bundle of its title joins it
+const NEAR_RADIUS := 380.0  # tapping one takes every currency lying within this of it
 var _t := 0.0
 var _plate: Button  # its label (LootPickup.layout places it)
 
@@ -42,22 +43,16 @@ func _process(delta: float) -> void:
 	queue_redraw()
 
 
-## Puts one drop into the bundle called `title` lying within MERGE_RADIUS of `pos` in `scene`, or starts
-## one there: so what a fight drops is one label to tap, not a scatter.
-static func add_to_bundle(scene: Node, title: String, part: Array, pos: Vector2) -> CurrencyPickup:
-	var near: CurrencyPickup = null
-	for c in scene.get_tree().get_nodes_in_group("currency_pickups"):
-		if c is CurrencyPickup and c.kind == "bundle" and c.title == title and not c.is_queued_for_deletion() 				and c.get_parent() == scene and c.position.distance_to(pos) <= MERGE_RADIUS:
-			near = c
-			break
-	if near == null:
-		near = CurrencyPickup.new()
-		near.kind = "bundle"
-		near.title = title
-		near.position = pos + Vector2.from_angle(randf() * TAU) * randf_range(20.0, 55.0)
-		scene.add_child(near)
-	near.add_part(part)
-	return near
+## Drops one [kind, id, amount] on its own near `pos` in `scene`: every drop is its own label, and tapping
+## one takes it together with all the currency lying near it (_take).
+static func drop(scene: Node, part: Array, pos: Vector2) -> CurrencyPickup:
+	var c := CurrencyPickup.new()
+	c.kind = part[0]
+	c.id = part[1]
+	c.amount = int(part[2])
+	c.position = pos + Vector2.from_angle(randf() * TAU) * randf_range(20.0, 55.0)
+	scene.add_child(c)
+	return c
 
 
 ## Adds [kind, id, amount] to a bundle (the same thing twice is one entry with both amounts).
@@ -134,9 +129,27 @@ func take_by_pet(pet_name: String) -> void:
 	_take(pet_name)
 
 
+## Currency lying within NEAR_RADIUS of this one (not counting it): a tap takes them all with it.
+func neighbours() -> Array[CurrencyPickup]:
+	var out: Array[CurrencyPickup] = []
+	for c in get_tree().get_nodes_in_group("currency_pickups"):
+		if c != self and c is CurrencyPickup and not c.is_queued_for_deletion() and c.get_parent() == get_parent() \
+				and c.pet_can_take() and c.global_position.distance_to(global_position) <= NEAR_RADIUS:
+			out.append(c)
+	return out
+
+
 func _take(by := "") -> void:
 	var full := kind == "scroll" and GameState.tp_scrolls >= GameState.MAX_SCROLLS
 	var text := "You carry all the scrolls you can (%d)" % GameState.MAX_SCROLLS if full else collect()
+	if by == "" and not full:  # a tap (not a pet fetching one): everything near it comes too
+		var also := neighbours()
+		if not also.is_empty():
+			var names: Array[String] = [text.trim_prefix("+ ").trim_prefix("+")]
+			for c in also:
+				names.append(c.collect().trim_prefix("+ ").trim_prefix("+"))
+				c.queue_free()
+			text = "+ " + ", ".join(PackedStringArray(names.slice(0, 3))) + (" and %d more" % (names.size() - 3) if names.size() > 3 else "")
 	if by != "" and not full:
 		text = "%s fetched  %s" % [by, text.trim_prefix("+ ").trim_prefix("+")]
 	var n := get_parent()

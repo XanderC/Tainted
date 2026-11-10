@@ -109,9 +109,9 @@ func _hoard(at: Vector2) -> void:
 	zone._flash("The mimic's hoard spills out!", Color(1.0, 0.85, 0.4))
 	for k in 3:
 		zone._drop_item(LootGenerator.roll_item(zone.area_level + 2, ItemInstance.Rarity.RARE if k < 2 else ItemInstance.Rarity.MAGIC), at + Vector2(-70 + k * 70, 60))
-	CurrencyPickup.add_to_bundle(zone, "Currency", ["orb", "alteration", 8], at)
-	CurrencyPickup.add_to_bundle(zone, "Currency", ["orb", "alchemy", 3], at + Vector2(0, 20))
-	CurrencyPickup.add_to_bundle(zone, "Currency", ["orb", "chaos", 1], at + Vector2(20, 40))
+	CurrencyPickup.drop(zone, ["orb", "alteration", 8], at)
+	CurrencyPickup.drop(zone, ["orb", "alchemy", 3], at + Vector2(0, 20))
+	CurrencyPickup.drop(zone, ["orb", "chaos", 1], at + Vector2(20, 40))
 	_sprite_at("res://assets/tiles/crypt/decor_23.png", at, 0.6)
 
 
@@ -167,8 +167,8 @@ func _raise(at: Vector2) -> void:
 	zone._flash("The champion falls. The portcullises rise.", Color(1.0, 0.9, 0.6))
 	for k in 2:
 		zone._drop_item(LootGenerator.roll_item(zone.area_level + 3, ItemInstance.Rarity.RARE), at + Vector2(-40 + k * 80, 40))
-	CurrencyPickup.add_to_bundle(zone, "Currency", ["orb", "alchemy", 3], at)
-	CurrencyPickup.add_to_bundle(zone, "Currency", ["orb", "chaos", 1], at + Vector2(0, 30))
+	CurrencyPickup.drop(zone, ["orb", "alchemy", 3], at)
+	CurrencyPickup.drop(zone, ["orb", "chaos", 1], at + Vector2(0, 30))
 
 
 # ---------- the hermit's sanctum ----------
@@ -271,6 +271,6 @@ func _open_chest() -> void:
 	for k in 3:
 		zone._drop_item(LootGenerator.roll_item(zone.area_level + 3, ItemInstance.Rarity.RARE), at + Vector2(-90 + k * 90, 70))
 	zone._drop_item(LootGenerator.roll_item(zone.area_level + 3, ItemInstance.Rarity.MAGIC), at + Vector2(0, 130))
-	CurrencyPickup.add_to_bundle(zone, "Currency", ["orb", "chaos", 2], at)
-	CurrencyPickup.add_to_bundle(zone, "Currency", ["orb", "alchemy", 4], at + Vector2(0, 20))
-	CurrencyPickup.add_to_bundle(zone, "Currency", ["orb", "exalt", 1], at + Vector2(30, 40))
+	CurrencyPickup.drop(zone, ["orb", "chaos", 2], at)
+	CurrencyPickup.drop(zone, ["orb", "alchemy", 4], at + Vector2(0, 20))
+	CurrencyPickup.drop(zone, ["orb", "exalt", 1], at + Vector2(30, 40))

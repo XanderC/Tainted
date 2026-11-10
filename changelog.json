@@ -1,5 +1,13 @@
 [
 	{
+		"build": 0,
+		"title": "Currency drops one by one",
+		"notes": [
+			"Currency no longer piles up under one \"Currency (N)\" label. Every orb, shard, scroll, gem and rune drops as its own item on the ground.",
+			"Tap any currency and you pick it up together with all the currency lying near it. One message tells you what you got."
+		]
+	},
+	{
 		"build": 202611092234,
 		"title": "Skills button and skill hotkeys in town",
 		"notes": [

@@ -45,11 +45,11 @@ func _ready() -> void:
 	near.amount = 4
 	near.position = player.global_position + Vector2(300, 80)
 	zone.add_child(near)
-	var bundle := CurrencyPickup.add_to_bundle(zone, "Currency", ["orb", "chaos", 2], player.global_position + Vector2(-320, 60))
+	var bundle := CurrencyPickup.drop(zone, ["orb", "chaos", 2], player.global_position + Vector2(-320, 60))
 	var chaos_before := GameState.orb_count("chaos")
 	await settle(4.0)
 	check(not is_instance_valid(near) or near.is_queued_for_deletion(), "it took the shards lying near the player")
-	check(not is_instance_valid(bundle) or bundle.is_queued_for_deletion(), "and the pile of currency")
+	check(not is_instance_valid(bundle) or bundle.is_queued_for_deletion(), "and the other currency")
 	check(GameState.shard_count("alchemy") + 1000 * GameState.orb_count("alchemy") > shards_before, "the shards reached the stash")
 	check(GameState.orb_count("chaos") == chaos_before + 2, "so did the orbs (%d -> %d)" % [chaos_before, GameState.orb_count("chaos")])
 

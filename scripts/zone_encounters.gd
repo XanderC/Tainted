@@ -339,7 +339,7 @@ func _shrine_done() -> void:
 	zone._flash("The shrine is cleansed! You feel its blessing.", Color(1.0, 0.9, 0.5))
 	_reward(pos, true)
 	zone._drop_item(LootGenerator.roll_item(zone.area_level + 3, ItemInstance.Rarity.RARE), pos + Vector2(0, 90))
-	CurrencyPickup.add_to_bundle(zone, "Currency", ["orb", "chaos", 1], pos + Vector2(60, 60))
+	CurrencyPickup.drop(zone, ["orb", "chaos", 1], pos + Vector2(60, 60))
 	zone.player.bless(BLESS_SECONDS)
 
 
@@ -621,8 +621,8 @@ func _reward(at: Vector2, big: bool) -> void:
 	zone._drop_item(LootGenerator.roll_item(zone.area_level + 1, ItemInstance.Rarity.RARE), at + Vector2(-40, 30))
 	if big:
 		zone._drop_item(LootGenerator.roll_item(zone.area_level + 1, ItemInstance.Rarity.MAGIC), at + Vector2(40, 30))
-	CurrencyPickup.add_to_bundle(zone, "Currency", ["orb", "alteration", 2], at)
-	CurrencyPickup.add_to_bundle(zone, "Currency", ["shard", "alchemy", 6 if big else 3], at)
+	CurrencyPickup.drop(zone, ["orb", "alteration", 2], at)
+	CurrencyPickup.drop(zone, ["shard", "alchemy", 6 if big else 3], at)
 	zone.spawn_currency("scroll", "town_portal", 1, at + Vector2(0, 60))
 
 

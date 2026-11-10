@@ -37,10 +37,8 @@ func _ready() -> void:
 		kinds[c.kind] = true
 		if c.kind == "bundle":
 			bundles += 1
-			for part in c.parts:
-				kinds[part[0]] = true  # (what is in a pile)
-	check(piles.size() >= 3 and piles.size() <= 8, "the boss's currency lies on the ground in a few piles (%d: %s)" % [piles.size(), kinds.keys()])
-	check(bundles == 2, "orbs and shards are one pile, gems and runes another (%d bundles)" % bundles)
+	check(piles.size() >= 6 and piles.size() <= 24, "the boss's currency lies on the ground, each drop on its own (%d: %s)" % [piles.size(), kinds.keys()])
+	check(bundles == 0, "nothing is bundled into a pile (%d bundles)" % bundles)
 	check(kinds.has("orb") and kinds.has("shard") and kinds.has("rune") and kinds.has("gem"), "orbs, shards, runes and gems among them")
 	check(piles.all(func(c): return c._plate != null and c._plate.text != ""), "each has a label")
 	check(GameState.orbs == orbs0 and GameState.shards == shards0 and GameState.gems == gems0 and GameState.runes == runes0,
@@ -63,13 +61,17 @@ func _ready() -> void:
 	await get_tree().create_timer(0.6).timeout
 	check(is_instance_valid(first) and first.is_inside_tree(), "standing on a pile doesn't pick it up")
 	var n := 0
+	var first_tap := piles.size()
 	for c in piles:
-		if is_instance_valid(c):
+		if is_instance_valid(c) and not c.is_queued_for_deletion():
 			p.global_position = c.global_position
 			c._plate.pressed.emit()  # its label tapped
 			n += 1
+			if n == 1:
+				first_tap = piles.filter(func(q): return is_instance_valid(q) and not q.is_queued_for_deletion()).size()
 	await get_tree().process_frame
-	check(get_tree().get_nodes_in_group("currency_pickups").is_empty(), "tapping each label picks it up (%d)" % n)
+	check(first_tap < piles.size() - 1, "one tap took the currency lying near it too (%d of %d left after it)" % [first_tap, piles.size()])
+	check(get_tree().get_nodes_in_group("currency_pickups").is_empty(), "tapping the labels picks everything up (%d taps for %d drops)" % [n, piles.size()])
 	var more := func(now: Dictionary, before: Dictionary) -> bool:
 		return now.keys().any(func(k): return int(now[k]) > int(before.get(k, 0)))
 	check(more.call(GameState.orbs, orbs0) and more.call(GameState.gems, gems0) and more.call(GameState.runes, runes0),

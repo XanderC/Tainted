@@ -419,7 +419,7 @@ func _add_vault(o: Dictionary) -> void:
 		_flash(String(o.get("text", "The rusted key turns, and the wall gives way. A vault, sealed for centuries.")), Color(1.0, 0.88, 0.5))
 		for k in int(o.get("rares", 3)):
 			_drop_item(LootGenerator.roll_item(area_level + 3, ItemInstance.Rarity.RARE), it.global_position + Vector2(-90 + k * 90, 120))
-		CurrencyPickup.add_to_bundle(self, "Currency", ["orb", "alchemy", 2], it.global_position + Vector2(0, 170))
+		CurrencyPickup.drop(self, ["orb", "alchemy", 2], it.global_position + Vector2(0, 170))
 
 
 func _label(parent: Node2D, text: String, col: Color, y := -110.0) -> void:
@@ -599,7 +599,7 @@ func _on_monster_died(e: Enemy, at: Vector2) -> void:
 		_drop_item(LootGenerator.roll_item(area_level + 1, r), at)
 	if randf() < SHARD_DROP_CHANCE * more:
 		var ids := CraftingDB.ORBS.keys()
-		CurrencyPickup.add_to_bundle(self, "Currency", ["shard", ids[randi() % mini(4, ids.size())], 1], at)
+		CurrencyPickup.drop(self, ["shard", ids[randi() % mini(4, ids.size())], 1], at)
 	if randf() < (SCROLL_ELITE_CHANCE if elite else SCROLL_DROP_CHANCE) * more:
 		spawn_currency("scroll", "town_portal", 1, at)
 
@@ -617,7 +617,7 @@ func _drop_boss_loot(at: Vector2, boss_id := "") -> void:
 		n += 1
 	var orbs: Dictionary = loot.get("orbs", {})
 	for orb_id in orbs:
-		CurrencyPickup.add_to_bundle(self, "Currency", ["orb", orb_id, int(orbs[orb_id])], at)
+		CurrencyPickup.drop(self, ["orb", orb_id, int(orbs[orb_id])], at)
 	if int(loot.get("scrolls", 0)) > 0:
 		spawn_currency("scroll", "town_portal", int(loot.scrolls), at)
 

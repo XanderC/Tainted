@@ -201,16 +201,8 @@ func _on_boss_died(pos: Vector2) -> void:
 	if skill_gem_drop != "":
 		piles[["skill_gem", skill_gem_drop]] = 1
 	piles[["scroll", "town_portal"]] = 2 if on_time else 1
-	# Orbs and shards are one pile to tap, gems and runes another; the rest (a skill gem, scrolls)
-	# lie round the boss each on its own
-	var keys: Array = []
-	for k in piles.keys():
-		var title := "Currency" if k[0] in ["orb", "shard"] else ("Gems & Runes" if k[0] in ["rune", "gem"] else "")
-		if title == "":
-			keys.append(k)
-		else:
-			CurrencyPickup.add_to_bundle(main, title, [k[0], k[1], piles[k]],
-				pos + Vector2(110.0 if title == "Currency" else -110.0, 60.0))
+	# Every pile lies round the boss on its own; tapping one takes the currency near it too
+	var keys: Array = piles.keys()
 	for i in keys.size():
 		var at: Vector2 = pos + Vector2.from_angle(TAU * (i + 0.5) / keys.size() + PI * 0.5) * (150.0 + 30.0 * (i % 2))
 		main.spawn_currency(keys[i][0], keys[i][1], piles[keys[i]], at)
