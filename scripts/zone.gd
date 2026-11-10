@@ -71,6 +71,7 @@ func _ready() -> void:
 		_inst = String(Net.coop.inst)
 	# The world: made once. A solo zone is kept as you leave it (ZoneInstances) and comes back by resume().
 	_place_objects(not party_zone)
+	_place_breakables(z)  # (every game of a party builds the same ones; each rolls its own loot)
 	if not party_zone:
 		_spawn_packs()
 		var met := ZoneEncounters.roll(self)  # a cottage in the woods, a cult at its ritual, a cursed shrine: sometimes
@@ -259,6 +260,26 @@ func _place_objects(bosses := true) -> void:
 	for o in MapData.objects_of(maze.data, "boss"):
 		if bosses and Quests.boss_alive(String(o.get("id", ""))):
 			_spawn_boss(o)
+
+
+## Barrels, crates and urns to break, and a chest or two (Breakables). A zone's `"breakables"` scales how many (0: none);
+## a hermit's sanctum (`"packs": false`) is quiet. They are part of the world, so a kept zone keeps them as they were left.
+func _place_breakables(info: Dictionary) -> void:
+	var scale := 0.0 if info.get("packs", true) == false else float(info.get("breakables", 1.0))
+	var spots := Breakables.spots(maze, scale)
+	for s in spots.props:
+		var b := Breakable.new()
+		b.kind = String(s.kind)
+		b.position = s.pos
+		add_child(b)
+		b.broken.connect(func(at: Vector2): Breakables.drop_loot(self, at))
+	for p in spots.chests:
+		var c := LootChest.new()
+		c.position = p
+		add_child(c)
+		c.opened.connect(func(at: Vector2):
+			_flash("The chest is full.", Color(1.0, 0.88, 0.5))
+			Breakables.drop_loot(self, at, true))
 
 
 ## This game hosts the party's zone: its monsters, as on a solo visit (Coop).

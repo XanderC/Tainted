@@ -1,6 +1,15 @@
 [
 	{
 		"build": 0,
+		"title": "Barrels, crates, urns and chests",
+		"notes": [
+			"Every zone now has barrels, crates and urns standing about. Break them with any attack, area spell, arrow, bolt or dash: they take a hit or two, burst into pieces, and now and then spill currency, a scroll or a piece of gear.",
+			"There are also chests: walk up and press the button (or E) to open one. A chest always holds a piece of gear, and often currency and more.",
+			"Your hireling and pet leave them alone."
+		]
+	},
+	{
+		"build": 0,
 		"title": "Stash tabs you can customise",
 		"notes": [
 			"The stash tabs are yours to arrange. The ✎ button at the end of the tab row lets you add tabs (up to ten), rename them, move them up and down, change what each one is, and delete them (the gear in a deleted tab goes to your other tabs).",

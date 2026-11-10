@@ -318,6 +318,18 @@ func _nearest_enemy(within: float):
 	return best
 
 
+## Breaks the barrels, crates and urns (Breakable) inside the same cone or circle a hit of `skill` covers.
+func _hit_breakables(origin: Vector2, dir: Vector2, hit_radius: float, arc_deg: float, skill: SkillDef) -> void:
+	var half := deg_to_rad(arc_deg) * 0.5
+	for b in get_tree().get_nodes_in_group("breakables"):
+		var to: Vector2 = b.global_position - origin
+		if to.length() > hit_radius + 14.0:
+			continue
+		if arc_deg < 359.0 and absf(dir.angle_to(to)) > half:
+			continue
+		b.take_damage(0.0, false, skill.get_effective_damage_type(), skill.get_effective_ailment())
+
+
 ## Damage every enemy inside a cone or full circle, handling element, runes, crits and leech.
 func _hit_area(origin: Vector2, dir: Vector2, hit_radius: float, arc_deg: float,
 		skill: SkillDef, stun_dur := 0.0, is_echo := false) -> void:
@@ -367,6 +379,8 @@ func _hit_area(origin: Vector2, dir: Vector2, hit_radius: float, arc_deg: float,
 	if leech > 0.0 and total_dealt > 0.0:
 		var heal := total_dealt * leech
 		hp = minf(hp + heal, stats.get_stat("max_life"))
+
+	_hit_breakables(origin, dir, hit_radius, arc_deg, skill)
 
 	if crit_hit:  # a critical strike: Cast on Critical Strike
 		_fire_triggers("crit")
@@ -558,8 +572,11 @@ func spell_mult() -> float:
 
 ## One hit of skill `s` on enemy `e` (an arrow, a bolt, a strike of lightning), `scale` of the skill's
 ## damage (`part` of it): crits, execute, element and ailment (or `dtype` / `ailment` instead), leech. The damage dealt.
-func _hit_one(e: Enemy, s: SkillDef, part := 1.0, dtype := -1, ailment := "-") -> float:
+func _hit_one(e, s: SkillDef, part := 1.0, dtype := -1, ailment := "-") -> float:
 	if not is_instance_valid(e) or e._dead:
+		return 0.0
+	if e is Breakable:  # a barrel: it breaks, and that is all (no crit, no leech, no trigger)
+		e.take_damage()
 		return 0.0
 	var crit_chance := stats.get_stat("crit_chance") if passive("no_crit") <= 0.0 else 0.0
 	if s.get_execute_bonus() > 0.0 and e.hp / e.max_hp < 0.35:
@@ -615,7 +632,8 @@ func _shoot(s: SkillDef, dir: Vector2, pierce: bool, style: String, reach := 0.0
 		a.speed = 560.0
 	a.life = clampf((reach if reach > 0.0 else maxf(s.max_range, 400.0)) / a.speed, 0.2, 1.5)
 	var echo := _echo_cast
-	a.on_hit = func(e: Enemy) -> void:
+	a.breaks = true  # yours break barrels and crates on the way
+	a.on_hit = func(e) -> void:
 		if not is_instance_valid(self) or not is_instance_valid(e):
 			return
 		if s.kind == SkillDef.Kind.BOLT:  # bursts: everything near where it hit
@@ -701,7 +719,12 @@ func _do_dash(s: SkillDef) -> void:
 			var p: Vector2 = e.global_position
 			var along := clampf((p - from).dot(dir), 0.0, from.distance_to(to))
 			if p.distance_to(from + dir * along) < rad + 14.0 * e.size_mult:
-				_hit_one(e, s))
+				_hit_one(e, s)
+		for b in get_tree().get_nodes_in_group("breakables"):
+			var bp: Vector2 = b.global_position
+			var along := clampf((bp - from).dot(dir), 0.0, from.distance_to(to))
+			if bp.distance_to(from + dir * along) < rad + 14.0:
+				b.take_damage())
 
 
 ## Fan of Knives (Death Blossom: three waves): knives thrown out all round.

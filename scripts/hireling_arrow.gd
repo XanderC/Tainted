@@ -18,6 +18,7 @@ var on_hit: Callable
 var style := "arrow"  ## "arrow", "orb" (a bolt of fire or magic) or "knife"
 var speed := SPEED
 var life := LIFE
+var breaks := false  ## the player's own: also hits the barrels, crates and urns (Breakable) on its way
 
 var _t := 0.0
 var _hit := {}  # enemies already hit (piercing)
@@ -76,3 +77,12 @@ func _physics_process(delta: float) -> void:
 		if not pierce:
 			queue_free()
 			return
+	if breaks:
+		for b in get_tree().get_nodes_in_group("breakables"):
+			if _hit.has(b) or global_position.distance_to(b.global_position + Vector2(0, -16)) > HIT_RADIUS:
+				continue
+			_hit[b] = true
+			on_hit.call(b)
+			if not pierce:
+				queue_free()
+				return
