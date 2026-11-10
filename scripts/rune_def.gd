@@ -12,7 +12,8 @@ extends Resource
 enum Category {
 	TRANSMUTATION,  ## Converts damage type and applies elemental ailment (max 1 per skill)
 	FORM,           ## Alters skill geometry / delivery (Nova, Reach, Echo)
-	MODIFIER        ## Stat enhancements and utility (Vampiric, Brutality, Alacrity, Execute)
+	MODIFIER,       ## Stat enhancements and utility (Vampiric, Brutality, Alacrity, Execute)
+	META            ## Fires another skill on an event (max 1 per skill): see `trigger`
 }
 
 enum DamageType {
@@ -47,9 +48,12 @@ enum DamageType {
 @export var duration_mult: float = 1.0       ## buff / effect duration multiplier (skill upgrades)
 @export var on_use_gain: float = 0.0         ## resource restored when the skill is used
 @export var on_use_heal: float = 0.0         ## fraction of max life healed when the skill is used
+@export var trigger: String = ""             ## META: "crit" (when you land a critical strike) or "hurt" (when you take damage)
 @export var rarity: int = 0                  ## ItemInstance.Rarity
 @export var base_id: String = ""             ## id without the rarity suffix
 
+## Seconds a meta support waits between casts, by trigger.
+const TRIGGER_COOLDOWN := {"crit": 0.4, "hurt": 1.0}
 const RARITY_NAMES := ["", "Empowered", "Exalted"]
 const RARITY_POWER := [1.0, 1.5, 2.0]         ## multiplies the rune's effects
 const RARITY_DAMAGE := [0.0, 0.10, 0.20]      ## extra skill damage on top
@@ -90,6 +94,8 @@ func stat_lines(lvl: int = 1) -> String:
 		t += "[color=#ff9f43]• +%d%% Crit Chance vs enemies below 35%% Life[/color]\n" % int(round(execute_bonus * sc * 100))
 	if ailment != "":
 		t += "[color=#%s]• Inflicts %s (%d%% chance)[/color]\n" % [color.to_html(false), ailment.to_upper(), int(ailment_chance * 100)]
+	if category == Category.META:
+		t += "[color=#ffd24d]• Casts a skill of your choice %s[/color]\n" % ("on a critical strike" if trigger == "crit" else "when you take damage")
 	return t
 
 
@@ -123,6 +129,7 @@ class DB:
 		r.ailment = mods.get("ailment", "")
 		r.ailment_chance = mods.get("ailment_chance", 1.0)
 		r.cost_mult = mods.get("cost_mult", 1.3)
+		r.trigger = mods.get("trigger", "")
 		_catalog[id] = r
 		return r
 
@@ -187,6 +194,17 @@ class DB:
 			"💀", Color(0.9, 0.4, 0.1),
 			"+50% Critical Strike Chance against enemies below 35% health.",
 			{"execute_bonus": 0.50, "cost_mult": 1.2})
+
+		# --- Meta supports: fire another skill (chosen in the link) for free ---
+		_make("rune_cast_crit", "Cast on Critical Strike", "", Category.META, DamageType.PHYSICAL,
+			"✴", Color(1.0, 0.82, 0.30),
+			"Whenever you land a critical strike, also casts the skill chosen in this link, free of cost (at most once every %.1f seconds)." % TRIGGER_COOLDOWN.crit,
+			{"trigger": "crit", "cost_mult": 1.0})
+
+		_make("rune_cast_hurt", "Cast when Damage Taken", "", Category.META, DamageType.PHYSICAL,
+			"🛡", Color(0.95, 0.45, 0.55),
+			"Whenever you take damage, also casts the skill chosen in this link, free of cost (at most once every %.1f seconds)." % TRIGGER_COOLDOWN.hurt,
+			{"trigger": "hurt", "cost_mult": 1.0})
 
 	static func make_id(base: String, r: int) -> String:
 		return base if r <= 0 else "%s@%d" % [base, r]

@@ -1162,6 +1162,68 @@ func get_skill_def_with_runes(skill_id: String) -> SkillDef:
 	return get_slot_skill_def(i) if i >= 0 else SkillTree.get_skill(skill_id)
 
 
+## The meta support (RuneDef.Category.META) linked in slot i, or null.
+func slot_meta(i: int) -> RuneDef:
+	if i < 0 or i >= SKILL_SLOTS:
+		return null
+	for rid in slot_supports(i):
+		var r := RuneDef.DB.get_rune(String(rid))
+		if r != null and r.category == RuneDef.Category.META:
+			return r
+	return null
+
+
+## The skill that slot i's meta support casts on its trigger: "" when the slot has no meta support or none is chosen.
+func slot_trigger(i: int) -> String:
+	if slot_meta(i) == null:
+		return ""
+	return String(skill_slots[i].get("trigger_skill", ""))
+
+
+## "" if `skill_id` can be the skill slot i's meta support casts, else why not: one you have unlocked, that is not the
+## slot's own skill, and not one that moves you about (a leap or a dash).
+func trigger_block_reason(i: int, skill_id: String) -> String:
+	if slot_meta(i) == null:
+		return "No meta support in this slot"
+	var sk := SkillTree.get_skill(skill_id)
+	if sk == null or sk.hireling_only:
+		return "Unknown skill"
+	if not is_skill_unlocked(skill_id):
+		return "You have not unlocked it"
+	if skill_id == slot_skill(i):
+		return "It is this slot's own skill"
+	if sk.kind in [SkillDef.Kind.LEAP_SLAM, SkillDef.Kind.DASH]:
+		return "A skill that moves you cannot be triggered"
+	return ""
+
+
+## Choose the skill slot i's meta support casts ("" clears it).
+func set_slot_trigger(i: int, skill_id: String) -> bool:
+	if i < 0 or i >= SKILL_SLOTS or slot_meta(i) == null:
+		return false
+	if skill_id != "" and trigger_block_reason(i, skill_id) != "":
+		return false
+	skill_slots[i]["trigger_skill"] = skill_id
+	_on_skills_modified()
+	return true
+
+
+## What the player's meta supports fire: one {"slot", "event" ("crit" | "hurt"), "skill" (a SkillDef, with the
+## supports of the slot it is in if it has one), "cd" (seconds until it may fire again)} per slot that has a meta
+## support, a skill of its own and a chosen skill to cast.
+func get_triggers() -> Array:
+	var list: Array = []
+	for i in SKILL_SLOTS:
+		var meta := slot_meta(i)
+		var id := slot_trigger(i)
+		if meta == null or id == "" or slot_skill(i) == "" or trigger_block_reason(i, id) != "":
+			continue
+		var sk := get_skill_def_with_runes(id)
+		if sk != null:
+			list.append({"slot": i, "event": meta.trigger, "skill": sk, "cd": 0.0})
+	return list
+
+
 ## One entry per skill slot (always SKILL_SLOTS); null for an empty slot.
 func get_equipped_skills() -> Array[SkillDef]:
 	var list: Array[SkillDef] = []

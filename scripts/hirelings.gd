@@ -321,7 +321,7 @@ static func socket_support(i: int, idx: int, rune_id: String) -> bool:
 		list[idx] = rune_id
 	else:
 		list.append(rune_id)
-	if not SkillDef.supports_valid(list):
+	if not SkillDef.supports_valid(list) or SkillDef.supports_have_meta(list):  # (a hireling fires no triggers)
 		return false
 	_set_supports(i, list)
 	GameState.runes[rune_id] = GameState.rune_count(rune_id) - 1
@@ -364,7 +364,7 @@ static func move_support(from_i: int, from_idx: int, to_i: int, to_idx: int) -> 
 	else:
 		a.remove_at(from_idx)
 		b.append(rid)
-	if not SkillDef.supports_valid(a) or not SkillDef.supports_valid(b):
+	if not SkillDef.supports_valid(a) or not SkillDef.supports_valid(b) or SkillDef.supports_have_meta(a) or SkillDef.supports_have_meta(b):
 		return false
 	_set_supports(from_i, a)
 	_set_supports(to_i, b)

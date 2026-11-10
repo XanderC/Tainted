@@ -1,6 +1,15 @@
 [
 	{
 		"build": 0,
+		"title": "Meta supports: cast on crit, cast when damaged",
+		"notes": [
+			"Two new support gems, found like the others: Cast on Critical Strike and Cast when Damage Taken. Link one in a skill slot and a new cell appears after the links: tap it at the stash or Jeweler to choose which of your skills it casts.",
+			"That skill is cast for free, without its cooldown or cost, whenever you land a critical strike (at most every 0.4 seconds) or take damage (at most every second). It never triggers another triggered skill, and a skill that moves you (a leap or a dash) cannot be chosen.",
+			"A skill can carry one meta support, and hirelings cannot use them."
+		]
+	},
+	{
+		"build": 0,
 		"title": "Skill Gems and gem cutting",
 		"notes": [
 			"Skill gems no longer drop one per skill, and the Merchant no longer sells them. A plain Skill Gem drops from elites (and, rarely, normal monsters), and from every boss.",

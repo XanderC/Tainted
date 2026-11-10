@@ -168,7 +168,33 @@ func _slot_row(i: int, links: int) -> HBoxContainer:
 			var locked := DragSlot.new(CELL)
 			locked.setup(null, Color(0.18, 0.16, 0.20), Color(0.05, 0.05, 0.06), 0, "🔒", "Link opens at level %d" % (j * 5))
 			row.add_child(locked)
+	if GameState.slot_meta(i) != null:  # a meta support: the skill it casts
+		var arrow := UIKit.label("➜", 18, Color(1.0, 0.82, 0.30))
+		arrow.tooltip_text = "Casts"
+		row.add_child(arrow)
+		row.add_child(_trigger_cell(i, CELL))
 	return row
+
+
+## The skill slot `slot`'s meta support casts (empty: tap to choose).
+func _trigger_cell(slot: int, sz: Vector2) -> DragSlot:
+	var cell := DragSlot.new(sz)
+	cell.name = "Trigger_%d" % slot
+	var id := GameState.slot_trigger(slot)
+	var sk := SkillTree.get_skill(id) if id != "" else null
+	var meta := GameState.slot_meta(slot)
+	var when := "on a critical strike" if meta.trigger == "crit" else "when you take damage"
+	if sk == null:
+		cell.setup(null, Color(1.0, 0.82, 0.30), Color(0.09, 0.08, 0.05), 0, "◇", "Tap to choose the skill cast %s" % when)
+	else:
+		cell.setup(IconFactory.gem_icon("skill:" + id, sk.color, 3), Color(1.0, 0.82, 0.30), Color(sk.color).darkened(0.85), 0)
+		cell.inset_icon()
+		cell.tooltip_text = "%s is cast %s" % [sk.display_name, when]
+		if SkillIcons.texture(id) == null:
+			_overlay(cell, sk.icon, 22, Color.WHITE, VERTICAL_ALIGNMENT_CENTER, HORIZONTAL_ALIGNMENT_CENTER)
+	if GameState.gem_station:
+		cell.clicked.connect(func(): _pick_trigger(slot, get_viewport().get_mouse_position()))
+	return cell
 
 
 ## A skill gem cell: in slot `slot` (>= 0) or in the pouch (slot -1). skill_id "" = empty slot.
@@ -309,6 +335,31 @@ func _pick_skill(slot: int, at: Vector2) -> void:
 		_close_pick(), "You have no other skills. Cut a Skill Gem into one below.")
 
 
+## The skills slot `slot`'s meta support can cast, in a dropdown at `at`: your unlocked skills (greyed out when
+## one cannot be), what the one chosen is, and clearing it.
+func _pick_trigger(slot: int, at: Vector2) -> void:
+	var here := GameState.slot_trigger(slot)
+	var rows: Array = []
+	for sk in SkillTree.active_skills():
+		if sk.id == here or not GameState.is_skill_unlocked(sk.id):
+			continue
+		var why := GameState.trigger_block_reason(slot, sk.id)
+		var text := "%s   Lv %d" % [sk.display_name, GameState.gem_level(sk.id)]
+		if why != "":
+			text += "
+[color]" + why
+		var id: String = sk.id
+		rows.append([IconFactory.gem_icon("skill:" + id, sk.color, 3), text, why == "", func():
+			if not GameState.set_slot_trigger(slot, id):
+				menu.feedback("Can't cast that.")
+			_close_pick(), id])
+	var meta := GameState.slot_meta(slot)
+	var when := "ON A CRITICAL STRIKE" if meta.trigger == "crit" else "WHEN YOU TAKE DAMAGE"
+	_show_pick(at, "CAST " + when, "Choose a skill", rows, "skill", here, func():
+		GameState.set_slot_trigger(slot, "")
+		_close_pick(), "You have no skills to cast. Cut a Skill Gem into one in Gem Cutting.")
+
+
 ## The supports link `idx` of slot `slot` can take, in a dropdown at `at`: yours not linked, each
 ## greyed out if it can't go with the slot's others; what the one there does, and taking it out.
 func _pick_support(slot: int, idx: int, at: Vector2) -> void:
@@ -327,7 +378,7 @@ func _pick_support(slot: int, idx: int, at: Vector2) -> void:
 		var fits := SkillDef.supports_valid(trial)
 		var text := "%s   Lv %d   ×%d" % [r.display_name, GameState.support_level(rid), GameState.rune_count(rid)]
 		if not fits:
-			text += "\n[color]one elemental support per skill, and no doubles"
+			text += "\n[color]one elemental and one meta support per skill, and no doubles"
 		var id: String = rid
 		rows.append([r.get_icon(), text, fits, func():
 			if not GameState.socket_support(slot, mini(idx, GameState.slot_supports(slot).size()), id):

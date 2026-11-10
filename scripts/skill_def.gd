@@ -306,10 +306,11 @@ func get_execute_bonus() -> float:
 	return bonus
 
 
-## Support rules for one skill: at most one elemental conversion, and no two of the same support.
+## Support rules for one skill: at most one elemental conversion, at most one meta support, and no two of the same support.
 static func supports_valid(rune_ids: Array) -> bool:
 	var seen := {}
 	var conversions := 0
+	var metas := 0
 	for rid in rune_ids:
 		var b := RuneDef.DB.base_of(String(rid))
 		if seen.has(b):
@@ -318,4 +319,15 @@ static func supports_valid(rune_ids: Array) -> bool:
 		var r := RuneDef.DB.get_rune(String(rid))
 		if r != null and r.category == RuneDef.Category.TRANSMUTATION:
 			conversions += 1
-	return conversions <= 1
+		elif r != null and r.category == RuneDef.Category.META:
+			metas += 1
+	return conversions <= 1 and metas <= 1
+
+
+## Whether any of the supports is a meta support (those fire the player's own skills: a hireling cannot link them).
+static func supports_have_meta(rune_ids: Array) -> bool:
+	for rid in rune_ids:
+		var r := RuneDef.DB.get_rune(String(rid))
+		if r != null and r.category == RuneDef.Category.META:
+			return true
+	return false

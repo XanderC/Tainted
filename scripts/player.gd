@@ -67,6 +67,10 @@ var skills: Array[SkillDef] = []
 var facing := Vector2.RIGHT
 
 var _cooldowns: Array[float] = []
+## What meta supports fire (GameState.get_triggers): {"slot", "event", "skill", "cd"}. A triggered cast never triggers
+## another (_trigger_busy), and each waits RuneDef.TRIGGER_COOLDOWN between casts.
+var _triggers: Array = []
+var _trigger_busy := false
 var _mouse_attack_down := false
 var _whirlwind_t := 0.0
 var _hurt_cd := 0.0
@@ -135,6 +139,7 @@ func sync_skills_from_state() -> void:
 	for s in equipped:
 		skills.append(s)
 		_cooldowns.append(0.0)
+	_triggers = GameState.get_triggers()
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -175,6 +180,8 @@ func _physics_process(delta: float) -> void:
 	_ward_t = maxf(_ward_t - delta, 0.0)
 	for i in _cooldowns.size():
 		_cooldowns[i] = maxf(_cooldowns[i] - delta, 0.0)
+	for t in _triggers:
+		t.cd = maxf(float(t.cd) - delta, 0.0)
 	_swing_t = maxf(_swing_t - delta, 0.0)
 	_ring_t = maxf(_ring_t - delta, 0.0)
 	_whirlwind_t = maxf(_whirlwind_t - delta, 0.0)
@@ -324,6 +331,7 @@ func _hit_area(origin: Vector2, dir: Vector2, hit_radius: float, arc_deg: float,
 
 	var total_dealt := 0.0
 	var hits := 0
+	var crit_hit := false
 
 	for e in get_tree().get_nodes_in_group("enemies"):
 		var to: Vector2 = e.global_position - origin
@@ -343,6 +351,7 @@ func _hit_area(origin: Vector2, dir: Vector2, hit_radius: float, arc_deg: float,
 		e.take_damage(dmg, crit, dtype, ailment)
 		total_dealt += dmg
 		hits += 1
+		crit_hit = crit_hit or crit
 
 		if stun_dur > 0.0:
 			e.stun(stun_dur)
@@ -358,6 +367,9 @@ func _hit_area(origin: Vector2, dir: Vector2, hit_radius: float, arc_deg: float,
 	if leech > 0.0 and total_dealt > 0.0:
 		var heal := total_dealt * leech
 		hp = minf(hp + heal, stats.get_stat("max_life"))
+
+	if crit_hit:  # a critical strike: Cast on Critical Strike
+		_fire_triggers("crit")
 
 	# Echo Rune aftershock
 	if not is_echo and skill.has_echo():
@@ -408,6 +420,23 @@ func use_skill(i: int) -> void:
 				_echo_cast = true
 				_cast(s)
 				_echo_cast = false)
+
+
+## Meta supports: casts the skill each linked one chose, free of cost and cooldown, when `event` ("crit" or "hurt")
+## happens and its own wait (RuneDef.TRIGGER_COOLDOWN) is over. Skips a skill whose weapon or attributes you lack.
+func _fire_triggers(event: String) -> void:
+	if _trigger_busy or _triggers.is_empty() or dead or _busy or not can_fight:
+		return
+	for t in _triggers:
+		if t.event != event or float(t.cd) > 0.0:
+			continue
+		var s: SkillDef = t.skill
+		if skill_block_reason(s) != "":
+			continue
+		t.cd = float(RuneDef.TRIGGER_COOLDOWN.get(event, 1.0))
+		_trigger_busy = true
+		_cast(s)
+		_trigger_busy = false
 
 
 ## Skills an Echo support casts again (at half damage), rather than their hits echoing.
@@ -544,6 +573,8 @@ func _hit_one(e: Enemy, s: SkillDef, part := 1.0, dtype := -1, ailment := "-") -
 	var leech := s.get_effective_leech() + passive("leech")
 	if leech > 0.0:
 		hp = minf(hp + dmg * leech, stats.get_stat("max_life"))
+	if crit:
+		_fire_triggers("crit")
 	return dmg
 
 
@@ -1317,6 +1348,8 @@ func take_damage(amount: float, dtype := 0) -> void:
 		mana -= off
 		taken -= off
 	hp -= taken
+	if hp > 0.0 and taken > 0.0:  # Cast when Damage Taken
+		_fire_triggers("hurt")
 	# Getting hit builds Adrenaline
 	var gain := class_def.power_per_life_lost * taken / maxf(stats.get_stat("max_life"), 1.0)
 	if _hit_power_cd <= 0.0 and class_def.power_on_hit > 0.0:
