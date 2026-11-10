@@ -37,6 +37,7 @@ func _ready() -> void:
 		GameState.select_character(id)
 		GameState.level = 7
 		GameState.orbs["chaos"] = 11
+		GameState.add_stash_tab("Bot uniques", "unique")  # the account's own stash tabs are kept too
 		GameState.save()
 		GameState._save_account()
 		await get_tree().create_timer(3.5).timeout  # the server writes a moment after a change
@@ -50,6 +51,13 @@ func _ready() -> void:
 			GameState.select_character(GameState.characters[0].id)
 			_check(GameState.level == 7, "its level is kept (%d)" % GameState.level)
 			_check(int(GameState.orbs.get("chaos", 0)) == 11, "the account's orbs are kept (%d)" % int(GameState.orbs.get("chaos", 0)))
+			var tab_names := GameState.stash_tabs.map(func(t): return t.name)
+			_check(tab_names.size() == 5 and tab_names[4] == "Bot uniques" and GameState.stash_tabs[4].type == "unique",
+				"the account's stash tabs are kept (%s)" % [tab_names])
+			# An account with broken stash tabs should be refused too
+			var acc_bad := GameState._read_json(GameState.ACCOUNT_PATH)
+			acc_bad["stash_tabs"] = "junk"
+			Net._rpc_save_file.rpc_id(1, "account", acc_bad)
 			# A save the server should refuse: an impossible level
 			var bad := GameState._read_json(GameState._char_path(GameState.char_id))
 			bad["level"] = 999
@@ -60,6 +68,7 @@ func _ready() -> void:
 			await Net.account_ready
 			GameState.select_character(GameState.characters[0].id)
 			_check(GameState.level == 7, "the server refused the impossible save (level %d)" % GameState.level)
+			_check(GameState.stash_tabs.size() == 5, "and the account with broken stash tabs (%d tabs)" % GameState.stash_tabs.size())
 		Net.leave()
 	print("account %s: %d checks, %d failed" % [phase, _checks, _failed])
 	get_tree().quit(1 if _failed > 0 else 0)

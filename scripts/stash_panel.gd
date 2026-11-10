@@ -1,8 +1,9 @@
 class_name StashPanel
 extends MenuPanel
-## The shared (account-wide) stash. At the stash the menu's tab row is Items, Currency and Gems
-## (GameMenu._build_tabs); Items and Currency are this panel, Gems is the usual gem panel,
-## which can socket gems here (GameState.gem_station).
+## The shared (account-wide) stash. At the stash the menu's tab row is the account's stash tabs
+## (GameState.stash_tabs, edited with StashTabsDialog; GameMenu._build_tabs): Items and Uniques tabs are this panel
+## showing that tab's grid, Currency is this panel's bench, Gems and Runes are the usual gem panels, which can
+## socket gems here (GameState.gem_station).
 ##   Items     - a grid like the bag, its cells as big as fit the panel without scrolling. Drag gear
 ##               between it and the bag on the right, or within the stash to rearrange; dropping
 ##               onto one item swaps the two. Tap an item for its card.
@@ -17,7 +18,9 @@ const MAX_ORB_CELL := 84.0
 const GROUP_GAP := 24.0  # between the currency groups
 const BENCH_SLOT := Vector2(120, 120)
 
-var tab := "items"  # "items" | "currency"
+var tab := "items"  # "items" | "currency": what is showing (an Items or Uniques stash tab shows "items")
+## Which of GameState.stash_tabs is open: the one whose item grid the "items" view shows, or the Currency tab.
+var grid_tab := 0
 var _orb := ""  # the orb picked on the Currency tab
 # The item as it was before the last orb used on it, to show what changed
 var _before: ItemInstance = null
@@ -65,6 +68,20 @@ func panel_title() -> String:
 	return "📦 Stash"
 
 
+## Opens stash tab `i` (an Items, Uniques or Currency tab; the main stash if it is none of those).
+func select_tab(i: int) -> void:
+	var type: String = GameState.stash_tabs[i].type if i >= 0 and i < GameState.stash_tabs.size() else ""
+	if type == "currency":
+		tab = "currency"
+		grid_tab = i
+	elif type in ["items", "unique"]:
+		tab = "items"
+		grid_tab = i
+	else:
+		tab = "items"
+		grid_tab = 0
+
+
 func refresh() -> void:
 	UIKit.clear(self)
 	if tab == "currency":
@@ -76,11 +93,18 @@ func refresh() -> void:
 # ---------- items ----------
 
 func _show_items() -> void:
-	var used := GameState.STASH_SIZE - GameState.stash.free_cells()
-	var sec := UIKit.section(self, "SHARED STASH   %d items   %d / %d cells" % [
-		GameState.stash.count(), used, GameState.STASH_SIZE])
+	var grid := GameState.stash_grid(grid_tab)
+	if grid == null:  # (the tab went)
+		grid_tab = 0
+		grid = GameState.stash
+	var used := GameState.STASH_SIZE - grid.free_cells()
+	var unique: bool = GameState.stash_tabs[grid_tab].type == "unique"
+	var sec := UIKit.section(self, "%s   %d items   %d / %d cells" % [
+		String(GameState.stash_tabs[grid_tab].name).to_upper(), grid.count(), used, GameState.STASH_SIZE])
+	if unique:
+		sec.add_child(UIKit.label("Legendary and Set gear only.", 13, UIKit.TEXT_DIM))
 	_cell = fit_cell()
-	var view := ItemGridView.new(GameState.stash, _cell, "stash")
+	var view := ItemGridView.new(grid, _cell, "stash")
 	view.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	view.selected = menu.selected
 	view.can_accept_at = func(d: Dictionary, at: Vector2i) -> bool:
@@ -88,15 +112,15 @@ func _show_items() -> void:
 		if d.get("kind", "") != "item" or it == null:
 			return false
 		match d.get("from", ""):
-			"bag": return GameState.can_bag_to_stash(it, at)
-			"stash": return not GameState.stash.plan_drop(it, at, GameState.stash).is_empty()
+			"bag": return GameState.can_bag_to_stash(it, at, grid)
+			"stash": return grid.has(it) and not grid.plan_drop(it, at, grid).is_empty()
 		return false
 	view.on_drop_at = func(d: Dictionary, at: Vector2i) -> void:
 		var it: ItemInstance = d.get("item")
 		if d.get("from", "") == "bag":
-			GameState.bag_to_stash(it, at)
+			GameState.bag_to_stash(it, at, grid)
 		else:
-			GameState.move_in_stash(it, at)
+			GameState.move_in_stash(it, at, grid)
 		menu.refresh()
 	view.item_clicked.connect(func(it: ItemInstance):
 		menu.selected = it

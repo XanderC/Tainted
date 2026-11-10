@@ -99,7 +99,7 @@ func _open_with(panel: String, vendor: String) -> void:
 		return
 	_vendor = vendor
 	if vendor == "stash":
-		(_get_panel("stash") as StashPanel).tab = "items"
+		(_get_panel("stash") as StashPanel).select_tab(0)
 	# Gems are socketed and swapped only at the stash or the Jeweler (the shared gems show there)
 	GameState.gem_station = vendor in ["stash", "jeweler"]
 	selected = null
@@ -274,7 +274,7 @@ func refresh() -> void:
 	if _root == null or not _root.visible:
 		return
 	if selected != null and not player.inventory.has(selected) and not player.is_worn(selected) \
-			and not GameState.stash.has(selected):
+			and GameState.stash_grid_of(selected) == null:
 		selected = null
 	_build_tabs()  # tab labels carry counts (runes, gems)
 	_char.refresh()
@@ -346,32 +346,38 @@ func _get_panel(panel_name: String) -> MenuPanel:
 	return p
 
 
-## One row of tabs: the vendor's panel then its VENDOR_TABS. At the stash it is Items, Currency, Gems and
-## Runes (Items and Currency are the two tabs of the StashPanel). None with no vendor.
+## One row of tabs: the vendor's panel then its VENDOR_TABS. At the stash it is the account's stash tabs
+## (GameState.stash_tabs: Items and Uniques tabs and the Currency tab are the StashPanel showing that tab; Gems and
+## Runes are their own panels), then a button that edits them. None with no vendor.
 func _build_tabs() -> void:
 	UIKit.clear(_tabs_row)
-	var tabs: Array = []  # [panel name, stash tab or ""]
+	var tabs: Array = []  # [panel name, stash tab index or -1, label]
 	if _vendor == "stash":
-		tabs = [["stash", "items"], ["stash", "currency"], ["gems", ""], ["runes", ""]]
+		for i in GameState.stash_tabs.size():
+			var st: Dictionary = GameState.stash_tabs[i]
+			var panel_name := "stash" if st.type in ["items", "unique", "currency"] else String(st.type)
+			var label := "%s %s" % [GameState.TAB_ICONS[st.type], st.name]
+			if st.type in ["gems", "runes"] and st.name == GameState.TAB_TYPE_NAMES[st.type]:
+				label = _get_panel(panel_name).panel_title()  # (it counts what is in it)
+			tabs.append([panel_name, i, label])
 	elif _vendor != "":
-		tabs.append([_vendor, ""])
+		tabs.append([_vendor, -1, ""])
 		for n in VENDOR_TABS.get(_vendor, DEFAULT_TABS):
-			tabs.append([n, ""])
+			tabs.append([n, -1, ""])
 	var stash := _panels.get("stash") as StashPanel
 	for t in tabs:
 		var n: String = t[0]
-		var stash_tab: String = t[1]
+		var stash_index: int = t[1]
 		var p := _get_panel(n)
 		p.visible = n == _current
-		var active: bool = n == _current and (stash_tab == "" or stash.tab == stash_tab)
+		var active: bool = n == _current and (n != "stash" or stash_index < 0 or stash.grid_tab == stash_index)
 		var b := Button.new()
-		b.text = p.panel_title()
-		if stash_tab != "":
-			b.text = "📦 Items" if stash_tab == "items" else "💰 Currency"
+		b.text = String(t[2]) if t[2] != "" else p.panel_title()
+		b.clip_text = true
 		b.custom_minimum_size = Vector2(0, 42)
 		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		b.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-		b.add_theme_font_size_override("font_size", 15)
+		b.add_theme_font_size_override("font_size", 15 if tabs.size() <= 5 else 13)
 		# Sunk into the title band; the open tab is the one lit up
 		var face := UIKit.tab_box(active)
 		b.add_theme_stylebox_override("normal", face)
@@ -381,11 +387,41 @@ func _build_tabs() -> void:
 		b.add_theme_color_override("font_color", UIKit.tab_font_color(active))
 		UIKit.tab_font(b)
 		b.pressed.connect(func():
-			if stash_tab != "":
-				(_get_panel("stash") as StashPanel).tab = stash_tab
+			if n == "stash" and stash_index >= 0:
+				(_get_panel("stash") as StashPanel).select_tab(stash_index)
 			show_panel(n)
 		)
 		_tabs_row.add_child(b)
+	if _vendor == "stash":  # edit the tabs
+		var edit_btn := Button.new()
+		edit_btn.text = "✎"
+		edit_btn.tooltip_text = "Add, rename, reorder or delete stash tabs"
+		edit_btn.custom_minimum_size = Vector2(46, 42)
+		edit_btn.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		edit_btn.add_theme_font_size_override("font_size", 18)
+		var face := UIKit.tab_box(false)
+		edit_btn.add_theme_stylebox_override("normal", face)
+		edit_btn.add_theme_stylebox_override("hover", face)
+		edit_btn.add_theme_stylebox_override("pressed", UIKit.tab_box(true))
+		edit_btn.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+		edit_btn.add_theme_color_override("font_color", UIKit.tab_font_color(false))
+		edit_btn.pressed.connect(func(): StashTabsDialog.open(self))
+		_tabs_row.add_child(edit_btn)
+
+
+## The stash's tabs were edited (StashTabsDialog): if the one being shown went or changed into one this panel does not
+## show, go back to the main stash. Then redraw.
+func stash_tabs_changed() -> void:
+	var stash := _get_panel("stash") as StashPanel
+	if _current == "stash":
+		var shown_type := String(GameState.stash_tabs[stash.grid_tab].type) if stash.grid_tab < GameState.stash_tabs.size() else ""
+		if (stash.tab == "currency" and shown_type != "currency") or (stash.tab == "items" and not shown_type in ["items", "unique"]):
+			stash.select_tab(0)
+	elif _current in ["gems", "runes"] and not GameState.stash_tabs.any(func(t): return t.type == _current):
+		stash.select_tab(0)
+		show_panel("stash")
+		return
+	refresh()
 
 
 func _build() -> void:

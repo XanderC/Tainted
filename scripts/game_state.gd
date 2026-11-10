@@ -72,7 +72,20 @@ var player: Player
 const STASH_COLS := 12
 const STASH_ROWS := 10
 const STASH_SIZE := STASH_COLS * STASH_ROWS  # cells
-var stash := ItemGrid.new(STASH_COLS, STASH_ROWS)  # shared storage, account-wide
+var stash := ItemGrid.new(STASH_COLS, STASH_ROWS)  # shared storage, account-wide (the first tab: see stash_tabs)
+## The stash's tabs, in order: {"name": String, "type": one of TAB_TYPES, "grid": ItemGrid (items and unique tabs)}.
+## The first is the main stash (`stash`): always an Items tab, it can be renamed but not moved, retyped or deleted.
+## Account-wide like everything in the stash. Saved in the account as "stash_tabs" (only the others' items: the
+## main stash stays under "stash", where the server and the trade code have always read it).
+var stash_tabs: Array = []
+## What a tab can be: an item grid for any gear (items), an item grid for Legendary and Set gear only (unique),
+## the orbs and the crafting bench (currency), the socket gems (gems), the socket runes (runes). The last three
+## show the account's pools, so there is at most one of each.
+const TAB_TYPES := ["items", "unique", "currency", "gems", "runes"]
+const TAB_TYPE_NAMES := {"items": "Items", "unique": "Uniques", "currency": "Currency", "gems": "Gems", "runes": "Runes"}
+const TAB_ICONS := {"items": "📦", "unique": "⭐", "currency": "💰", "gems": "💎", "runes": "🔷"}
+const MAX_STASH_TABS := 10
+const TAB_NAME_MAX := 14
 ## Items that had nowhere to go when an older save was loaded (it counted items, not cells, so a
 ## full bag or stash of big gear can't all fit the grids). Moved into the stash as room is made.
 var stash_overflow: Array[ItemInstance] = []
@@ -130,6 +143,7 @@ func _ready() -> void:
 		return  # a dedicated server (Net) plays no character: nothing to load or save
 	SkillTree.init_skills()
 	RuneDef.DB.init_catalog()
+	stash_tabs = _default_stash_tabs()
 	_new_game()  # defaults until a character is picked on the select screen
 	_load_account()
 
@@ -346,16 +360,103 @@ func buy_orb(id: String) -> bool:
 
 # ---------- stash ----------
 
+## Items in the whole stash, every tab.
 func stash_count() -> int:
-	return stash.count()
+	var n := 0
+	for g in all_stash_grids():
+		n += g.count()
+	return n
+
+
+func _default_stash_tabs() -> Array:
+	return [
+		{"name": "Stash", "type": "items", "grid": stash},
+		{"name": "Currency", "type": "currency"},
+		{"name": "Gems", "type": "gems"},
+		{"name": "Runes", "type": "runes"},
+	]
+
+
+## The item grid of stash tab `i` (the main stash for tab 0); null for a tab with none (currency, gems, runes).
+func stash_grid(i: int) -> ItemGrid:
+	if i < 0 or i >= stash_tabs.size():
+		return null
+	return stash_tabs[i].get("grid") as ItemGrid
+
+
+## The tab a grid belongs to, or -1.
+func stash_tab_index(grid: ItemGrid) -> int:
+	for i in stash_tabs.size():
+		if grid != null and stash_tabs[i].get("grid") == grid:
+			return i
+	return -1
+
+
+## Every item grid of the stash, in tab order.
+func all_stash_grids() -> Array[ItemGrid]:
+	var out: Array[ItemGrid] = []
+	for i in stash_tabs.size():
+		var g := stash_grid(i)
+		if g != null:
+			out.append(g)
+	return out
+
+
+## Every item in the stash's grids.
+func all_stash_items() -> Array[ItemInstance]:
+	var out: Array[ItemInstance] = []
+	for g in all_stash_grids():
+		out.append_array(g.items())
+	return out
+
+
+## The grid `item` is in, or null.
+func stash_grid_of(item: ItemInstance) -> ItemGrid:
+	for g in all_stash_grids():
+		if g.has(item):
+			return g
+	return null
+
+
+## Whether tab `i` takes `item`: an Items tab anything, a Uniques tab only Legendary and Set gear.
+func tab_accepts(i: int, item: ItemInstance) -> bool:
+	if item == null or stash_grid(i) == null:
+		return false
+	return stash_tabs[i].type != "unique" or item.is_unique()
+
+
+## Whether `item` may lie in `grid` (any grid that is not a stash tab's takes anything).
+func grid_accepts(grid: ItemGrid, item: ItemInstance) -> bool:
+	var i := stash_tab_index(grid)
+	return i < 0 or tab_accepts(i, item)
+
+
+## The grid `item` goes in when it is simply put in the stash and there is room: a Legendary or Set item to a
+## Uniques tab first, then any Items tab, in tab order. null if none has room.
+func _stash_grid_for(item: ItemInstance) -> ItemGrid:
+	var order: Array[int] = []
+	if item.is_unique():
+		for i in stash_tabs.size():
+			if stash_tabs[i].type == "unique":
+				order.append(i)
+	for i in stash_tabs.size():
+		if stash_tabs[i].type == "items":
+			order.append(i)
+	for i in order:
+		if stash_grid(i).can_fit(item):
+			return stash_grid(i)
+	return null
 
 
 ## Move a bag item into the first space in the stash it fits.
 func stash_item(item: ItemInstance) -> bool:
-	if not is_instance_valid(player) or not player.bag.has(item) or not stash.can_fit(item):
+	if not is_instance_valid(player) or not player.bag.has(item):
+		return false
+	var g := _stash_grid_for(item)
+	if g == null:
 		return false
 	player.bag.remove(item)
-	stash.add(item)
+	g.add(item)
 	player.inventory_changed.emit()
 	_changed()
 	return true
@@ -367,9 +468,10 @@ func put_in_stash(item: ItemInstance) -> bool:
 
 ## Move a stash item into the first space in the bag it fits.
 func take_from_stash(item: ItemInstance) -> bool:
-	if not stash.has(item) or not is_instance_valid(player) or not player.can_fit(item):
+	var g := stash_grid_of(item)
+	if g == null or not is_instance_valid(player) or not player.can_fit(item):
 		return false
-	stash.remove(item)
+	g.remove(item)
 	player.bag.add(item)
 	_settle_overflow()
 	player.inventory_changed.emit()
@@ -377,41 +479,51 @@ func take_from_stash(item: ItemInstance) -> bool:
 	return true
 
 
-## Drag within the stash: `item` to top-left cell `at`, swapping with one item it lands on.
-func move_in_stash(item: ItemInstance, at: Vector2i) -> bool:
-	var plan := stash.plan_drop(item, at, stash)
-	if not stash.has(item) or plan.is_empty():
+## Drag within a stash grid (the main one unless `grid` is given): `item` to top-left cell `at`, swapping with one
+## item it lands on.
+func move_in_stash(item: ItemInstance, at: Vector2i, grid: ItemGrid = null) -> bool:
+	grid = grid if grid != null else stash
+	var plan := grid.plan_drop(item, at, grid)
+	if not grid.has(item) or plan.is_empty():
 		return false
-	stash.apply_drop(item, at, stash, plan)
+	grid.apply_drop(item, at, grid, plan)
 	_changed()
 	return true
 
 
-## Whether a bag item may be dropped at `at` in the stash (into space, or swapping with one item
-## that then fits in the bag).
-func can_bag_to_stash(item: ItemInstance, at: Vector2i) -> bool:
-	return is_instance_valid(player) and player.bag.has(item) and not stash.plan_drop(item, at, player.bag).is_empty()
+## Whether a bag item may be dropped at `at` in a stash grid (into space, or swapping with one item that then fits
+## in the bag): a Uniques tab takes only Legendary and Set gear.
+func can_bag_to_stash(item: ItemInstance, at: Vector2i, grid: ItemGrid = null) -> bool:
+	grid = grid if grid != null else stash
+	return is_instance_valid(player) and player.bag.has(item) and grid_accepts(grid, item) \
+		and not grid.plan_drop(item, at, player.bag).is_empty()
 
 
-func bag_to_stash(item: ItemInstance, at: Vector2i) -> bool:
-	if not can_bag_to_stash(item, at):
+func bag_to_stash(item: ItemInstance, at: Vector2i, grid: ItemGrid = null) -> bool:
+	grid = grid if grid != null else stash
+	if not can_bag_to_stash(item, at, grid):
 		return false
-	stash.apply_drop(item, at, player.bag, stash.plan_drop(item, at, player.bag))
+	grid.apply_drop(item, at, player.bag, grid.plan_drop(item, at, player.bag))
 	player.inventory_changed.emit()
 	_changed()
 	return true
 
 
-## Whether a stash item may be dropped at `at` in the bag (into space, or swapping with one item
-## that then fits in the stash).
+## Whether a stash item (from any tab) may be dropped at `at` in the bag (into space, or swapping with one item
+## that then fits where it was: and that tab must take it).
 func can_stash_to_bag(item: ItemInstance, at: Vector2i) -> bool:
-	return is_instance_valid(player) and stash.has(item) and not player.bag.plan_drop(item, at, stash).is_empty()
+	var g := stash_grid_of(item)
+	if not is_instance_valid(player) or g == null:
+		return false
+	var plan := player.bag.plan_drop(item, at, g)
+	return not plan.is_empty() and (not plan.has("swap") or grid_accepts(g, plan.swap))
 
 
 func stash_to_bag(item: ItemInstance, at: Vector2i) -> bool:
 	if not can_stash_to_bag(item, at):
 		return false
-	player.bag.apply_drop(item, at, stash, player.bag.plan_drop(item, at, stash))
+	var g := stash_grid_of(item)
+	player.bag.apply_drop(item, at, g, player.bag.plan_drop(item, at, g))
 	_settle_overflow()
 	player.inventory_changed.emit()
 	_changed()
@@ -422,7 +534,8 @@ func stash_to_bag(item: ItemInstance, at: Vector2i) -> bool:
 func _settle_overflow() -> bool:
 	var moved := false
 	for it in stash_overflow.duplicate():
-		if stash.add(it):
+		var g := _stash_grid_for(it)
+		if g != null and g.add(it):
 			stash_overflow.erase(it)
 			moved = true
 	return moved
@@ -431,8 +544,153 @@ func _settle_overflow() -> bool:
 ## Anything that couldn't be placed goes to the stash, or waits in the overflow for room.
 func _keep(items: Array[ItemInstance]) -> void:
 	for it in items:
-		if not stash.add(it):
+		var g := _stash_grid_for(it)
+		if g == null or not g.add(it):
 			stash_overflow.append(it)
+
+
+# ---------- stash tabs ----------
+
+## "" if a tab of `type` can be added or switched to now (`ignoring`: the tab being changed), else why not.
+func _tab_type_block(type: String, ignoring := -1) -> String:
+	if not TAB_TYPES.has(type):
+		return "Unknown tab type"
+	if type in ["currency", "gems", "runes"]:
+		for i in stash_tabs.size():
+			if i != ignoring and stash_tabs[i].type == type:
+				return "There is already a %s tab" % TAB_TYPE_NAMES[type]
+	return ""
+
+
+func _clean_tab_name(name: String, type: String) -> String:
+	var n := name.strip_edges().left(TAB_NAME_MAX).strip_edges()
+	return n if n != "" else String(TAB_TYPE_NAMES[type])
+
+
+## Adds a tab on the end. "" when it is added, else why not.
+func add_stash_tab(name: String, type: String) -> String:
+	if stash_tabs.size() >= MAX_STASH_TABS:
+		return "At most %d tabs" % MAX_STASH_TABS
+	var why := _tab_type_block(type)
+	if why != "":
+		return why
+	var tab := {"name": _clean_tab_name(name, type), "type": type}
+	if type in ["items", "unique"]:
+		tab["grid"] = ItemGrid.new(STASH_COLS, STASH_ROWS)
+	stash_tabs.append(tab)
+	_changed()
+	return ""
+
+
+func rename_stash_tab(i: int, name: String) -> bool:
+	if i < 0 or i >= stash_tabs.size():
+		return false
+	stash_tabs[i]["name"] = _clean_tab_name(name, stash_tabs[i].type)
+	_changed()
+	return true
+
+
+## Changes what tab `i` is. "" when done, else why not: the main stash stays an Items tab; a Uniques tab only
+## takes Legendary and Set gear, so one that holds other gear cannot become one; Currency, Gems and Runes
+## tabs hold no items, so an item tab must be empty to become one.
+func set_stash_tab_type(i: int, type: String) -> String:
+	if i <= 0 or i >= stash_tabs.size():
+		return "The main stash stays an Items tab"
+	var tab: Dictionary = stash_tabs[i]
+	if tab.type == type:
+		return ""
+	var why := _tab_type_block(type, i)
+	if why != "":
+		return why
+	var g := stash_grid(i)
+	if type == "unique" and g != null and g.items().any(func(it): return not it.is_unique()):
+		return "It holds gear that is not Legendary or Set"
+	if type in ["currency", "gems", "runes"] and g != null and g.count() > 0:
+		return "Empty it first"
+	var named_after_type: bool = tab.name == TAB_TYPE_NAMES[tab.type]
+	tab["type"] = type
+	if type in ["items", "unique"]:
+		if g == null:
+			tab["grid"] = ItemGrid.new(STASH_COLS, STASH_ROWS)
+	else:
+		tab.erase("grid")
+	if named_after_type:
+		tab["name"] = String(TAB_TYPE_NAMES[type])
+	_changed()
+	return ""
+
+
+## Moves tab `i` up or down one place (not the main stash, nor in front of it).
+func move_stash_tab(i: int, delta: int) -> bool:
+	var j := i + delta
+	if i <= 0 or j <= 0 or i >= stash_tabs.size() or j >= stash_tabs.size():
+		return false
+	var t = stash_tabs[i]
+	stash_tabs[i] = stash_tabs[j]
+	stash_tabs[j] = t
+	_changed()
+	return true
+
+
+## Deletes tab `i` (not the main stash): the gear in it goes to the other tabs, or waits in the overflow.
+func remove_stash_tab(i: int) -> bool:
+	if i <= 0 or i >= stash_tabs.size():
+		return false
+	var g := stash_grid(i)
+	var homeless: Array[ItemInstance] = g.items() if g != null else []
+	stash_tabs.remove_at(i)
+	_keep(homeless)
+	_changed()
+	return true
+
+
+## The tabs as saved: the first's items are the main stash's (saved apart), the others' go with them.
+func _stash_tabs_to_array() -> Array:
+	var out: Array = []
+	for i in stash_tabs.size():
+		var t: Dictionary = stash_tabs[i]
+		var d := {"name": t.name, "type": t.type}
+		if i > 0 and t.has("grid"):
+			d["items"] = (t.grid as ItemGrid).to_array()
+		out.append(d)
+	return out
+
+
+## Rebuilds the tabs from the account's "stash_tabs" (an account from before them has the usual four). Gear that
+## does not fit its tab waits in the overflow.
+func _load_stash_tabs(list: Array) -> void:
+	stash_tabs = _default_stash_tabs()
+	if list.is_empty():
+		return
+	var tabs: Array = [stash_tabs[0]]
+	if list[0] is Dictionary and String(list[0].get("name", "")) != "":
+		tabs[0]["name"] = _clean_tab_name(String(list[0].name), "items")
+	var homeless: Array[ItemInstance] = []
+	for k in range(1, list.size()):
+		var d = list[k]
+		if not d is Dictionary or tabs.size() >= MAX_STASH_TABS:
+			continue
+		var type := String(d.get("type", "items"))
+		stash_tabs = tabs  # (so the singleton check sees what has been added)
+		if _tab_type_block(type) != "":
+			continue
+		var tab := {"name": _clean_tab_name(String(d.get("name", "")), type), "type": type}
+		if type in ["items", "unique"]:
+			var grid := ItemGrid.new(STASH_COLS, STASH_ROWS)
+			homeless.append_array(grid.load_array(d.get("items", []) if d.get("items", []) is Array else []))
+			tab["grid"] = grid
+		tabs.append(tab)
+	stash_tabs = tabs
+	# Gear that is in a Uniques tab but is not unique (a damaged save) is not lost
+	for i in stash_tabs.size():
+		var g := stash_grid(i)
+		if g != null and stash_tabs[i].type == "unique":
+			for it in g.items():
+				if not it.is_unique():
+					g.remove(it)
+					homeless.append(it)
+	stash_overflow.append_array(homeless)
+	_settle_overflow()
 
 
 ## Sells a bag item to the Merchant for orbs and shards. Returns what was paid ({} if it couldn't).
@@ -1382,7 +1640,7 @@ func _note_looks(quiet := false) -> void:
 
 ## The Sage in town: identifies everything in the bag and the stash, free. Returns how many.
 func identify_all(p: Player) -> int:
-	var all: Array[ItemInstance] = stash.items()
+	var all: Array[ItemInstance] = all_stash_items()
 	all.append_array(stash_overflow)
 	if p != null:
 		all.append_array(p.inventory)
@@ -1556,6 +1814,7 @@ func _save_account() -> void:
 	_write_json(ACCOUNT_PATH, {
 		"characters": characters, "last": last_character,
 		"stash": stash.to_array(),
+		"stash_tabs": _stash_tabs_to_array(),
 		"stash_overflow": stash_overflow.map(func(i): return i.to_dict()),
 		"shared": {"orbs": orbs, "shards": shards,
 			"skill_gems": skill_gems, "uncut_gems": uncut_gems, "runes": runes, "gems": gems},
@@ -1571,6 +1830,7 @@ func _load_account() -> void:
 		characters.clear()
 		last_character = ""
 		stash.clear()
+		stash_tabs = _default_stash_tabs()
 		stash_overflow.clear()
 		wardrobe = {}
 		if not online_saves:
@@ -1597,10 +1857,11 @@ func _load_account() -> void:
 	if retired > 0:
 		_save_account()
 	_load_stash(acc.get("stash", []), acc.get("stash_overflow", []))
+	_load_stash_tabs(acc.get("stash_tabs", []))
 	_load_shared(acc)
 	wardrobe = Wardrobe.sanitize(acc.get("wardrobe", {}))
 	# Accounts from before the Wardrobe: what is in the stash unlocks its look
-	if Wardrobe.unlock(stash.items() + stash_overflow).size() > 0:
+	if Wardrobe.unlock(all_stash_items() + stash_overflow).size() > 0:
 		_save_account()
 
 

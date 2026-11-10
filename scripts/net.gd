@@ -1398,6 +1398,10 @@ func _strip_gone(account: String, data: Dictionary) -> Dictionary:
 			data[key] = data[key].filter(func(e): return keep.call(e.get("item") if e is Dictionary and e.has("item") else e))
 	if data.get("stash_overflow") is Array:
 		data["stash_overflow"] = data.stash_overflow.filter(keep)
+	if data.get("stash_tabs") is Array:  # the other stash tabs' grids
+		for tab in data.stash_tabs:
+			if tab is Dictionary and tab.get("items") is Array:
+				tab["items"] = tab.items.filter(func(e): return keep.call(e.get("item") if e is Dictionary and e.has("item") else e))
 	if data.get("equipment") is Dictionary:
 		for slot in data.equipment.keys():
 			if not keep.call(data.equipment[slot]):

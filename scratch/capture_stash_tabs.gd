@@ -1,5 +1,5 @@
 extends Node2D
-## Screenshots of the stash's tabs (Items, Currency, Materials, Gems) and of the Skills panel
+## Screenshots of the stash's tabs (Items, Currency, Gems, Runes) and of the Skills panel
 ## locked away from the stash. Needs a window:  godot --path . res://scratch/capture_stash_tabs.tscn
 
 
@@ -22,7 +22,7 @@ func _ready() -> void:
 		menu.show_panel("stash")
 		await _settle()
 		_shot("stash_%s.png" % t)
-	for t in ["skills", "gems"]:  # the gem panels, as the stash's Skills and Gems tabs
+	for t in ["gems", "runes"]:  # the gem panels, as the stash's Gems and Runes tabs
 		menu.show_panel(t)
 		await _settle()
 		_shot("stash_%s.png" % t)

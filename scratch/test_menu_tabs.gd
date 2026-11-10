@@ -52,7 +52,10 @@ func _ready() -> void:
 	menu.open_vendor("stash")
 	await get_tree().process_frame
 	var st := _tabs(menu)
-	check(st.size() == 4 and st.any(func(t): return "Runes" in t) and not st.any(func(t): return "Skills" in t or "Hireling" in t), "the stash: Items, Currency, Gems, Runes (%s)" % [st])
+	check(st.has("✎"), "the stash's tab row ends with the button that edits the tabs")
+	st = st.filter(func(t): return t != "✎")
+	check(st.size() == GameState.stash_tabs.size() and st.any(func(t): return "Runes" in t) and not st.any(func(t): return "Skills" in t or "Hireling" in t),
+		"the stash: one tab per stash tab, Items, Currency, Gems, Runes to start (%s)" % [st])
 	menu.close()
 	menu.open_vendor("shop")
 	await get_tree().process_frame

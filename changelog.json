@@ -1,6 +1,15 @@
 [
 	{
 		"build": 0,
+		"title": "Stash tabs you can customise",
+		"notes": [
+			"The stash tabs are yours to arrange. The ✎ button at the end of the tab row lets you add tabs (up to ten), rename them, move them up and down, change what each one is, and delete them (the gear in a deleted tab goes to your other tabs).",
+			"Tab types: Items (any gear, a full grid like the main stash), Uniques (Legendary and Set gear only), Currency, Gems and Runes. There is one Currency, one Gems and one Runes tab at most. The main stash always stays the first Items tab.",
+			"Gear you put away goes to a Uniques tab first if it is Legendary or Set, otherwise to the first Items tab with room. Your tabs are shared by every character, like the rest of the stash, and traded items are cleared out of every tab."
+		]
+	},
+	{
+		"build": 0,
 		"title": "Meta supports: cast on crit, cast when damaged",
 		"notes": [
 			"Two new support gems, found like the others: Cast on Critical Strike and Cast when Damage Taken. Link one in a skill slot and a new cell appears after the links: tap it at the stash or Jeweler to choose which of your skills it casts.",

@@ -10,6 +10,9 @@ extends RefCounted
 const FLUSH_AFTER := 2.0  ## seconds after a change before the account is written to disk
 const MAX_FILE_BYTES := 512 * 1024
 const MAX_CHARACTERS := 8  ## GameState.MAX_CHARACTERS
+const MAX_STASH_TABS := 10  ## GameState.MAX_STASH_TABS
+## The account holds every stash tab's gear (up to MAX_STASH_TABS full grids), so it may be bigger than a character.
+const MAX_ACCOUNT_BYTES := 2 * 1024 * 1024
 const MAX_LEVEL := 100
 const BACKUP_DAYS := 7
 
@@ -111,7 +114,7 @@ static func check(vpath: String, data: Variant) -> String:
 	if not data is Dictionary:
 		return "not a dictionary"
 	var size := JSON.stringify(data).length()
-	if size > MAX_FILE_BYTES:
+	if size > (MAX_ACCOUNT_BYTES if vpath == "account" else MAX_FILE_BYTES):
 		return "too big (%d bytes)" % size
 	if vpath == "account":
 		var chars = data.get("characters", [])
@@ -122,6 +125,12 @@ static func check(vpath: String, data: Variant) -> String:
 				return "bad character in the list"
 		if not data.get("shared", {}) is Dictionary or not data.get("stash", []) is Array:
 			return "bad shared stash"
+		var tabs = data.get("stash_tabs", [])
+		if not tabs is Array or tabs.size() > MAX_STASH_TABS:
+			return "bad stash tabs"
+		for t in tabs:
+			if not t is Dictionary or not t.get("items", []) is Array:
+				return "bad stash tab"
 		return ""
 	if vpath.begins_with("characters/"):
 		if not _is_char_id(vpath.trim_prefix("characters/")):
