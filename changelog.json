@@ -1,6 +1,14 @@
 [
 	{
 		"build": 0,
+		"title": "Passive tree: choose your attributes",
+		"notes": [
+			"The small Strength, Dexterity, Vitality and Energy nodes of the passive tree are now Attribute nodes: tap one and pick which attribute it gives. They show four coloured quarters until you take them.",
+			"A node you had already taken keeps the attribute it gave before. Refunding a node, or a respec, forgets its choice."
+		]
+	},
+	{
+		"build": 0,
 		"title": "Currency drops one by one",
 		"notes": [
 			"Currency no longer piles up under one \"Currency (N)\" label. Every orb, shard, scroll, gem and rune drops as its own item on the ground.",

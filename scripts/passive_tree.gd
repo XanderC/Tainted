@@ -181,7 +181,32 @@ static func _build() -> Dictionary:
 		_link(g, c1, c2)
 		_link(g, c2, b)
 	_build_outer(g)
+	_make_attribute_nodes(g)
 	return g
+
+
+## Every small node that only gives points of one attribute becomes an attribute node (Path of Exile 2): the
+## one you take it with picks which attribute it gives. The node keeps its old amount, and its old attribute
+## as the `default` (what an old save that took it before there was a choice keeps), and gives no fixed stat.
+static func _make_attribute_nodes(g: Dictionary) -> void:
+	for id in g.nodes:
+		var n: Dictionary = g.nodes[id]
+		if n.kind != "small" or n.stats.size() != 1:
+			continue
+		var key: String = n.stats.keys()[0]
+		if not Attributes.KEYS.has(key):
+			continue
+		n["attr"] = {"amount": int(n.stats[key]), "default": key}
+		n["name"] = "Attribute"
+		n["stats"] = {}
+
+
+## What an attribute node reads as, with the attribute it was taken as ("" when none is chosen yet).
+static func attribute_text(n: Dictionary, choice := "") -> String:
+	var amount := int(n.attr.amount)
+	if Attributes.KEYS.has(choice):
+		return "%+d %s" % [amount, Attributes.NAMES[choice]]
+	return "%+d to an attribute of your choice" % amount
 
 
 # Outer tree themes, one per quarter (ring index / 12): right (Dexterity), down (Vitality),

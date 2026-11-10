@@ -404,8 +404,8 @@ func _tree() -> void:
 	var dirs := {"str": Vector2(0, -1), "dex": Vector2(1, 0), "vit": Vector2(0, 1), "ene": Vector2(-1, 0)}
 	for k in dirs:
 		var n: Dictionary = g.nodes.get(k + "_p0", {})
-		check(not n.is_empty() and int(n.stats.get(k, 0)) == 8 and n.pos.normalized().is_equal_approx(dirs[k]),
-			"a %s branch leaves the start, its first node +8 %s" % [Attributes.NAMES[k], Attributes.NAMES[k]])
+		check(not n.is_empty() and n.has("attr") and int(n.attr.amount) == 8 and n.attr.default == k and n.pos.normalized().is_equal_approx(dirs[k]),
+			"a %s branch leaves the start, its first node an attribute node worth 8 (default %s)" % [Attributes.NAMES[k], Attributes.NAMES[k]])
 	check(g.nodes.str_c0.stats.has("str") and g.nodes.str_c0.stats.has("dex"), "the Strength-Dexterity connector gives both")
 	check(g.nodes.ene_c0.stats.has("ene") and g.nodes.ene_c0.stats.has("str"), "and the Energy-Strength one")
 	check(g.nodes.cl7_key.name == "Assassin's Creed" and g.nodes.cl5_key.name == "Templar's Oath", "the Assassin's and Paladin's keystones sit between")
@@ -419,7 +419,7 @@ func _tree() -> void:
 				queue.append(l)
 	check(seen.size() == g.nodes.size(), "every node joins up (%d of %d)" % [seen.size(), g.nodes.size()])
 	for nid in g.nodes:
-		var t := PassiveTree.stat_text(g.nodes[nid].stats)
+		var t := PassiveTree.stat_text(g.nodes[nid].stats) if not g.nodes[nid].has("attr") else PassiveTree.attribute_text(g.nodes[nid])
 		if g.nodes[nid].kind != "start" and t == "":
 			check(false, "%s says what it does" % nid)
 	# The tree's attribute points count like added ones

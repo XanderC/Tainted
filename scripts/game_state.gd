@@ -94,6 +94,7 @@ var hireling := {}
 var hireling_gear := {}
 var hireling_flasks: Array = [null, null]  ## its two flasks (Hirelings.FLASK_SLOTS), ItemInstance or null
 var passive_nodes := {}    # class_id -> Array of allocated PassiveTree node ids (start not included)
+var passive_choices := {}  # attribute node id -> the attribute ("str"...) it was taken as (see attr_choice)
 var skill_gems := {}       # skill_id -> count of loose skill gems in the gem pouch
 var gem_levels := {}       # skill_id -> gem level (1..SkillTree.GEM_MAX_LEVEL)
 var gem_xp := {}           # skill_id -> experience towards the next gem level
@@ -170,6 +171,7 @@ func _new_game() -> void:
 	hireling_flasks = [null, null]
 	Hirelings.reset_offers()
 	passive_nodes = {}
+	passive_choices = {}
 	gem_levels = {}
 	gem_xp = {}
 	support_levels = {}
@@ -479,8 +481,12 @@ func passive_value(key: String) -> float:
 	var cid := _class_id()
 	for nid in allocated_nodes():
 		var n := PassiveTree.get_node(cid, String(nid))
-		if not n.is_empty() and n.stats.has(key):
+		if n.is_empty():
+			continue
+		if n.stats.has(key):
 			total += float(n.stats[key])
+		elif n.has("attr") and attr_choice(String(nid)) == key:
+			total += float(n.attr.amount)
 	# Legendary powers and set bonuses of the gear being worn (UniqueItems)
 	if is_instance_valid(player):
 		total += float(player.item_powers.get(key, 0.0))
@@ -506,9 +512,28 @@ func node_block_reason(node_id: String) -> String:
 	return ""
 
 
-func allocate_node(node_id: String) -> bool:
+## The attribute an allocated attribute node was taken as. A node taken before nodes had a choice (an old
+## save) keeps the attribute it used to give: its `default`.
+func attr_choice(node_id: String) -> String:
+	var n := PassiveTree.get_node(_class_id(), node_id)
+	if n.is_empty() or not n.has("attr"):
+		return ""
+	var c := String(passive_choices.get(node_id, ""))
+	return c if Attributes.KEYS.has(c) else String(n.attr.default)
+
+
+## Takes a node (1 point). An attribute node (PassiveTree.attribute_text) gives the attribute you pass as
+## `choice`; with none it gives the node's own default one. A bad choice takes nothing.
+func allocate_node(node_id: String, choice := "") -> bool:
 	if node_block_reason(node_id) != "":
 		return false
+	var n := PassiveTree.get_node(_class_id(), node_id)
+	if n.has("attr"):
+		if choice == "":
+			choice = String(n.attr.default)
+		if not Attributes.KEYS.has(choice):
+			return false
+		passive_choices[node_id] = choice
 	allocated_nodes().append(node_id)
 	skill_points -= 1
 	_on_skills_modified()
@@ -541,6 +566,7 @@ func refund_node(node_id: String) -> bool:
 		return false
 	orbs["regret"] = orb_count("regret") - 1
 	allocated_nodes().erase(node_id)
+	passive_choices.erase(node_id)
 	skill_points += 1
 	_on_skills_modified()
 	return true
@@ -555,6 +581,7 @@ func points_spent() -> int:
 func reset_all_skills() -> void:
 	skill_points += points_spent()
 	passive_nodes[_class_id()] = []
+	passive_choices = {}
 	_on_skills_modified()
 
 
@@ -1335,6 +1362,7 @@ func save() -> void:
 		"hireling": _hireling_save(),
 		"skill_tree_version": 2,
 		"passive_nodes": passive_nodes,
+		"passive_choices": passive_choices,
 		"gem_levels": gem_levels,
 		"gem_xp": gem_xp,
 		"support_levels": support_levels,
@@ -1707,6 +1735,7 @@ func _apply_save(data: Dictionary) -> void:
 		_migrate_to_skill_gems(data)
 	else:
 		passive_nodes = data.get("passive_nodes", {})
+		passive_choices = data.get("passive_choices", {})
 		if not data.has("passive_nodes"):
 			# ranked passives from the Diablo style tree: refund for the new node tree
 			for id in data.get("unlocked_skills", {}):
@@ -1790,6 +1819,7 @@ func _fix_passive_points() -> void:
 		spent += (passive_nodes[c] as Array).size()
 	if spent > budget:
 		passive_nodes = {}
+		passive_choices = {}
 		spent = 0
 	skill_points = budget - spent
 

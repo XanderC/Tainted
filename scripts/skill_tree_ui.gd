@@ -17,6 +17,7 @@ var _respec_armed := false
 var _btn_open: Button
 var _tree_canvas: SkillTreeCanvas
 var _detail_vbox: VBoxContainer
+var _choice: Control  # the pick-an-attribute popup while it is up
 
 
 func _ready() -> void:
@@ -54,6 +55,7 @@ func open(_unused: String = "") -> void:
 
 
 func close() -> void:
+	close_choice()
 	if _root != null:
 		_root.visible = false
 	layer = 12
@@ -130,6 +132,9 @@ func _build_ui() -> void:
 	_tree_canvas.node_selected.connect(func(id: String):
 		_selected_id = id
 		_refresh()
+		# Tapping an attribute node you can take asks which attribute you want (Path of Exile 2)
+		if PassiveTree.get_node(_tree_canvas.class_id, id).has("attr") and GameState.node_block_reason(id) == "":
+			choose_attribute(id)
 	)
 	var zoom_row := HBoxContainer.new()
 	zoom_row.add_theme_constant_override("separation", 6)
@@ -189,6 +194,60 @@ func _on_respec() -> void:
 	_refresh()
 
 
+## The pick-an-attribute popup for an attribute node: four buttons, one per attribute (the node then gives
+## that one), or Cancel. Dismissed by tapping outside it.
+func choose_attribute(node_id: String) -> void:
+	close_choice()
+	var n := PassiveTree.get_node(_tree_canvas.class_id, node_id)
+	if n.is_empty() or not n.has("attr") or GameState.node_block_reason(node_id) != "":
+		return
+	_choice = Control.new()
+	_choice.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_choice.mouse_filter = Control.MOUSE_FILTER_STOP
+	_root.add_child(_choice)
+	var dim := ColorRect.new()
+	dim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	dim.color = Color(0, 0, 0, 0.55)
+	dim.gui_input.connect(func(e: InputEvent):
+		if e is InputEventMouseButton and e.pressed:
+			close_choice()
+	)
+	_choice.add_child(dim)
+	var centre := CenterContainer.new()
+	centre.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	centre.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_choice.add_child(centre)
+	var panel := PanelContainer.new()
+	var sb := UIKit.inset_box(12, Color(1.0, 0.85, 0.85))
+	sb.set_content_margin_all(16)
+	panel.add_theme_stylebox_override("panel", sb)
+	centre.add_child(panel)
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", 8)
+	panel.add_child(box)
+	box.add_child(UIKit.label("CHOOSE AN ATTRIBUTE", 20, Color(1.0, 0.88, 0.45)))
+	box.add_child(UIKit.label("This node gives %+d to the one you pick." % int(n.attr.amount), 14, UIKit.TEXT_DIM))
+	for key in Attributes.KEYS:
+		var col: Color = Attributes.COLORS[key]
+		var b := UIKit.button("%+d %s" % [int(n.attr.amount), Attributes.NAMES[key]], col.darkened(0.7), col, Vector2(260, 46), 17)
+		b.name = "Pick_" + String(key)
+		b.pressed.connect(func():
+			close_choice()
+			if GameState.allocate_node(node_id, key):
+				_refresh()
+		)
+		box.add_child(b)
+	var cancel := UIKit.button("Cancel", Color(0.16, 0.14, 0.18), Color(0.6, 0.55, 0.5), Vector2(260, 40), 15)
+	cancel.pressed.connect(close_choice)
+	box.add_child(cancel)
+
+
+func close_choice() -> void:
+	if is_instance_valid(_choice):
+		_choice.queue_free()
+	_choice = null
+
+
 func _render_tree() -> void:
 	if player != null and player.class_def != null:
 		_tree_canvas.class_id = player.class_def.id
@@ -213,7 +272,11 @@ func _render_inspector() -> void:
 	if n.kind == "start":
 		_detail_vbox.add_child(UIKit.label("Where your tree begins.", 14, Color(0.9, 0.88, 0.82), true))
 		return
-	_detail_vbox.add_child(UIKit.rich("[color=#%s]%s[/color]" % ["34d399" if on else "e2d9c8", PassiveTree.stat_text(n.stats)], 16))
+	var is_attr: bool = n.has("attr")
+	var effect: String = PassiveTree.attribute_text(n, GameState.attr_choice(_selected_id) if on else "") if is_attr else PassiveTree.stat_text(n.stats)
+	_detail_vbox.add_child(UIKit.rich("[color=#%s]%s[/color]" % ["34d399" if on else "e2d9c8", effect], 16))
+	if is_attr and not on:
+		_detail_vbox.add_child(UIKit.label("Choose Strength, Dexterity, Vitality or Energy when you take it.", 13, UIKit.TEXT_DIM, true))
 	if on:
 		var regrets := GameState.orb_count("regret")
 		var refund := UIKit.button("↺ Refund: 1 Orb of Regret (have %d)" % regrets, Color(0.25, 0.12, 0.10), Color(0.85, 0.45, 0.30), Vector2(0, 46), 16)
@@ -233,7 +296,9 @@ func _render_inspector() -> void:
 		var why := GameState.node_block_reason(_selected_id)
 		btn.disabled = why != ""
 		btn.pressed.connect(func():
-			if GameState.allocate_node(_selected_id):
+			if n.has("attr"):
+				choose_attribute(_selected_id)
+			elif GameState.allocate_node(_selected_id):
 				_refresh()
 		)
 		_detail_vbox.add_child(btn)

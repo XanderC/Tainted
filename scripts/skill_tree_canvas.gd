@@ -157,6 +157,8 @@ func _draw() -> void:
 		var on := GameState.is_node_allocated(id)
 		var reach := not on and GameState.node_block_reason(id) in ["", "No passive points"]
 		var lean := node_attribute(n)
+		if n.has("attr"):  # an attribute node leans to the one it was taken as, and to none before
+			lean = GameState.attr_choice(id) if on else ""
 		var tint: Color = Attributes.COLORS[lean].darkened(0.45) if lean != "" else DARK
 		var border := GOLD if on else (REACH if reach else tint)
 		var fill := Color(0.35, 0.24, 0.08) if on else (Color(0.10, 0.09, 0.12).lerp(tint, 0.25) if lean != "" else Color(0.10, 0.09, 0.12))
@@ -168,8 +170,12 @@ func _draw() -> void:
 			draw_arc(c, r + 5.0 * zoom, 0.0, TAU, 40, border, 2.0)
 		elif n.kind == "notable":
 			draw_arc(c, r - 5.0 * zoom, 0.0, TAU, 28, border.darkened(0.2), 1.5)
+		if n.has("attr") and not on:  # four coloured quarters: it can be any of the attributes
+			for q in Attributes.KEYS.size():
+				draw_arc(c, r - 3.5 * zoom, q * TAU / 4.0 + 0.12, (q + 1) * TAU / 4.0 - 0.12, 8,
+					Attributes.COLORS[Attributes.KEYS[q]], 3.0 * clampf(zoom, 0.6, 1.2))
 		if on:
-			draw_circle(c, r * 0.35, GOLD.lightened(0.2))
+			draw_circle(c, r * 0.35, Attributes.COLORS[lean].lightened(0.25) if n.has("attr") and lean != "" else GOLD.lightened(0.2))
 		if id == selected_id:
 			draw_arc(c, r + 9.0 * zoom, 0.0, TAU, 40, Color.WHITE, 2.5)
 		# names of the big nodes
