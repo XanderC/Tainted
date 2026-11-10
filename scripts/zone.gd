@@ -15,6 +15,8 @@ const ITEM_DROP_CHANCE := 0.10  # a normal monster's chance to drop an item (eli
 const SHARD_DROP_CHANCE := 0.09  # (a Currency pile is one label: CurrencyPickup bundles)
 const SCROLL_DROP_CHANCE := 0.03  # a Scroll of Town Portal from a normal monster...
 const SCROLL_ELITE_CHANCE := 0.25  # ...and from an elite
+const SKILL_GEM_DROP_CHANCE := 0.005  # a Skill Gem (cut into a skill of your choice) from a normal monster...
+const SKILL_GEM_ELITE_CHANCE := 0.03  # ...from an elite (a boss always drops one)
 const UpgradePopupUIScript = preload("res://scripts/upgrade_popup_ui.gd")
 
 var zone_id := ""
@@ -602,6 +604,8 @@ func _on_monster_died(e: Enemy, at: Vector2) -> void:
 		CurrencyPickup.drop(self, ["shard", ids[randi() % mini(4, ids.size())], 1], at)
 	if randf() < (SCROLL_ELITE_CHANCE if elite else SCROLL_DROP_CHANCE) * more:
 		spawn_currency("scroll", "town_portal", 1, at)
+	if randf() < (SKILL_GEM_ELITE_CHANCE if elite else SKILL_GEM_DROP_CHANCE) * more:
+		spawn_currency("skill_gem", "", 1, at)
 
 
 func _drop_boss_loot(at: Vector2, boss_id := "") -> void:
@@ -620,6 +624,7 @@ func _drop_boss_loot(at: Vector2, boss_id := "") -> void:
 		CurrencyPickup.drop(self, ["orb", orb_id, int(orbs[orb_id])], at)
 	if int(loot.get("scrolls", 0)) > 0:
 		spawn_currency("scroll", "town_portal", int(loot.scrolls), at)
+	spawn_currency("skill_gem", "", 1, at)  # every boss drops a Skill Gem
 
 
 func _drop_item(item: ItemInstance, at: Vector2) -> void:

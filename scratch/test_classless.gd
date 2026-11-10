@@ -76,7 +76,7 @@ func _playing() -> void:
 		"basic Mana skills cost nothing, the others Mana")
 
 	# Gems need their attribute
-	GameState.add_skill_gem("whirlwind", 1)
+	GameState.grant_skill("whirlwind")
 	check(GameState.gem_attr_block_reason("whirlwind").begins_with("Requires 18 Strength"), "Whirlwind needs 18 Strength (%s)" % GameState.gem_attr_block_reason("whirlwind"))
 	check(not GameState.set_slot_skill(3, "whirlwind"), "can't socket it with 15")
 	GameState.level = 3  # (it's a core gem: level 3)
@@ -92,7 +92,7 @@ func _playing() -> void:
 	GameState._on_skills_modified()
 
 	# Weapons: a bow for bow skills, a melee weapon (or none) for melee ones
-	GameState.add_skill_gem("quick_shot", 1)
+	GameState.grant_skill("quick_shot")
 	GameState.set_slot_skill(1, "quick_shot")
 	check(p.skill_block_reason(p.skills[1]) == "Needs a bow", "Quick Shot needs a bow (%s)" % p.skill_block_reason(p.skills[1]))
 	var bow := _item("hunting_bow")
@@ -178,15 +178,15 @@ func _playing() -> void:
 	check(p.hp < before and p.mana < 1.0, "Blood Magic: a Mana skill costs life instead (%.0f life)" % (before - p.hp))
 	p.item_powers.erase("blood_magic")
 
-	# The shop's gems: every colour
+	# The shop sells no skill gems (they drop, and are cut into skills); the skills cover every colour
 	var shop := ShopPanel.new()
 	shop.player = p
-	var wares := shop._wares().filter(func(w): return w.type == "skillgem")
-	var colours := {}
-	for w in wares:
-		colours[SkillTree.get_skill(w.id).main_attribute()] = true
-	check(colours.has("str") and colours.has("dex") and colours.has("ene"), "the Merchant sells red, green and blue gems (%d)" % wares.size())
+	check(shop._wares().all(func(w): return w.type != "skillgem"), "the Merchant sells no skill gems")
 	shop.free()
+	var colours := {}
+	for sk in SkillTree.active_skills():
+		colours[sk.main_attribute()] = true
+	check(colours.has("str") and colours.has("dex") and colours.has("ene"), "the skills cover red, green and blue gems")
 	await _gear_and_supports(p)
 	_main_attributes(p)
 	_resistances(p)
@@ -371,8 +371,8 @@ func _gear_and_supports(p: Player) -> void:
 
 
 func _use(p: Player, id: String) -> void:
-	if GameState.skill_gem_count(id) <= 0 and GameState.slot_of(id) < 0:
-		GameState.add_skill_gem(id, 1)
+	if not GameState.is_skill_unlocked(id):
+		GameState.grant_skill(id)
 	if GameState.slot_of(id) != 1:
 		GameState.set_slot_skill(1, id)
 	p._cooldowns[1] = 0.0

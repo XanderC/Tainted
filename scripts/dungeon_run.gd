@@ -183,10 +183,8 @@ func _on_boss_died(pos: Vector2) -> void:
 	GameState.runs_cleared += 1
 	rune_drop = RuneDef.DB.random_drop(level, true)
 	bonus_runes.append(rune_drop)
-	# A skill gem the player is (or will soon be) able to use
-	var gems := SkillTree.active_skills().filter(func(s): return SkillTree.gem_level_req(s.id) <= GameState.level + 3)
-	if not gems.is_empty():
-		skill_gem_drop = gems.pick_random().id
+	# A Skill Gem: the player cuts it into the skill they want
+	skill_gem_drop = "skill"
 	bonus_gems.append(GemDef.random_drop(mini(GemDef.MAX_TIER, 2 + int(level / 3.0) + (1 if on_time else 0))))
 	bonus_gems.append(SocketRune.random_drop(level, BOSS_SOCKET_RUNE_BOOST))
 	var piles := {}  # [kind, id] -> how many
@@ -199,7 +197,7 @@ func _on_boss_died(pos: Vector2) -> void:
 	for gid in bonus_gems:
 		piles[["gem", gid]] = int(piles.get(["gem", gid], 0)) + 1
 	if skill_gem_drop != "":
-		piles[["skill_gem", skill_gem_drop]] = 1
+		piles[["skill_gem", ""]] = 1
 	piles[["scroll", "town_portal"]] = 2 if on_time else 1
 	# Every pile lies round the boss on its own; tapping one takes the currency near it too
 	var keys: Array = piles.keys()

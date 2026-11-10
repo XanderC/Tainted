@@ -41,8 +41,8 @@ func _ready() -> void:
 	GameState.level = 40  # past every skill gem's level
 	GameState.attributes = {"str": 300, "dex": 300, "vit": 300, "ene": 300}
 	town.player.refresh_attributes()
-	GameState.skill_gems["whirlwind"] = 1
-	GameState.skill_gems["firebolt"] = 1
+	GameState.grant_skill("whirlwind")
+	GameState.grant_skill("firebolt")
 	menu.open_vendor("jeweler")
 	menu.show_panel("skills")
 	await get_tree().process_frame
@@ -74,7 +74,7 @@ func _ready() -> void:
 			await get_tree().process_frame
 		get_viewport().get_texture().get_image().save_png(out + "skill_chosen.png")
 	ww.pressed.emit()
-	check(GameState.slot_skill(slot) == "whirlwind" and GameState.skill_gem_count("whirlwind") == 0, "tapping it again sockets it")
+	check(GameState.slot_skill(slot) == "whirlwind", "tapping it again sockets it")
 	check(not tip.visible, "and the dropdown closes")
 	var main := GameState.slot_skill(0)
 	sp._pick_skill(0, Vector2(400, 300))
@@ -91,7 +91,7 @@ func _ready() -> void:
 	check(take != null, "a filled slot has Take it out")
 	if take != null:
 		take.pressed.emit()
-	check(GameState.slot_skill(slot) == "" and GameState.skill_gem_count(main) > 0, "Take it out: back with the shared gems")
+	check(GameState.slot_skill(slot) == "" and GameState.is_skill_unlocked(main), "Take it out: the skill stays unlocked")
 	# A support link
 	var sups := SkillGemsPanel.owned_supports()
 	check(not sups.is_empty(), "there are loose supports to link")

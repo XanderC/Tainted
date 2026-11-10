@@ -95,11 +95,11 @@ func _fill(body: VBoxContainer) -> void:
 	var rows: Array = []
 	for sk in SkillTree.active_skills():
 		var other := GameState.slot_of(sk.id)
-		if sk.id == here or (other < 0 and GameState.skill_gem_count(sk.id) <= 0):
-			continue  # (the one already here, and skills you don't have)
+		if sk.id == here or (other < 0 and not GameState.is_skill_unlocked(sk.id)):
+			continue  # (the one already here, and skills you have not unlocked)
 		rows.append(sk)
 	if rows.is_empty():
-		body.add_child(UIKit.label("You have no other skill gems. Find them in rifts, or buy them from the Merchant.", 13, UIKit.TEXT_DIM, true))
+		body.add_child(UIKit.label("You have no other skills. Cut a Skill Gem into one in the Skills window (the 💠 button).", 13, UIKit.TEXT_DIM, true))
 		return
 
 	body.add_child(UIKit.label("Tap a skill to put it here", 12, UIKit.TEXT_DIM))

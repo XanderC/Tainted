@@ -302,7 +302,7 @@ func _open_choice() -> void:
 	var title := UIKit.label("CHOOSE YOUR FIRST SKILL GEM", 24, Color(0.6, 0.85, 1.0))
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	v.add_child(title)
-	var sub := UIKit.label("Skill gems are your attacks. Socket one into a skill slot to use it - you'll find and buy more later.", 15, UIKit.TEXT_DIM, true)
+	var sub := UIKit.label("Skills are your attacks. This one goes into your main attack slot - Skill Gems you find later unlock more.", 15, UIKit.TEXT_DIM, true)
 	sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	sub.custom_minimum_size = Vector2(820, 0)
 	v.add_child(sub)
@@ -338,8 +338,8 @@ func _gem_card(id: String) -> Control:
 	v.add_child(d)
 	var b := UIKit.button("Take %s" % sk.display_name, sk.color.darkened(0.75), sk.color, Vector2(0, 52), 17)
 	b.pressed.connect(func():
-		GameState.add_skill_gem(id, 1)
-		GameState.set_slot_skill(0, id)  # straight into the main attack: gems change at the stash
+		GameState.grant_skill(id)
+		GameState.set_slot_skill(0, id)  # straight into the main attack
 		_choice.get_parent().queue_free()
 		_choice = null
 		get_tree().paused = false

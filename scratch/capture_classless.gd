@@ -68,8 +68,8 @@ func _ready() -> void:
 
 
 func _slot(i: int, id: String) -> void:
-	if GameState.skill_gem_count(id) <= 0 and GameState.slot_of(id) < 0:
-		GameState.add_skill_gem(id, 1)
+	if not GameState.is_skill_unlocked(id):
+		GameState.grant_skill(id)
 	GameState.set_slot_skill(i, id)
 
 

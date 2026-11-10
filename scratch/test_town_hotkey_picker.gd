@@ -57,9 +57,9 @@ func _ready() -> void:
 	# Known state: every slot empty, two gems in the pouch
 	for i in GameState.SKILL_SLOTS:
 		GameState.clear_slot_skill(i)
-	GameState.skill_gems.clear()
-	GameState.skill_gems["whirlwind"] = 1
-	GameState.skill_gems["firebolt"] = 1
+	GameState.cut_skills = {}
+	GameState.grant_skill("whirlwind")
+	GameState.grant_skill("firebolt")
 
 	# --- tapping an empty hotkey opens the dropdown with the pouch's skills
 	await _tap(btns[2])
@@ -73,7 +73,7 @@ func _ready() -> void:
 	# --- picking from the pouch fills the hotkey, one tap
 	_row(picker, "Whirlwind").pressed.emit()
 	check(GameState.slot_skill(2) == "whirlwind", "one tap puts Whirlwind on hotkey 2")
-	check(GameState.skill_gem_count("whirlwind") == 0, "and it leaves the pouch")
+	check(GameState.is_skill_unlocked("whirlwind"), "and it stays unlocked")
 	check(not picker.is_open(), "the dropdown closes")
 
 	# --- a skill already on a hotkey MOVES: it comes off the old one
@@ -95,13 +95,13 @@ func _ready() -> void:
 	check(GameState.slot_skill(1) == "whirlwind", "Whirlwind moved onto hotkey 1")
 	check(GameState.slot_skill(4) == "", "hotkey 4 is empty")
 	check(GameState.slot_skill(1) != "firebolt" and GameState.slot_of("firebolt") < 0, "Firebolt came off the hotkey it was displaced from")
-	check(GameState.skill_gem_count("firebolt") == 1, "and is back in the pouch")
+	check(GameState.is_skill_unlocked("firebolt"), "and stays unlocked")
 
 	# --- take it off
 	await _tap(btns[1])
 	var off: Button = picker.find_children("*", "Button", true, false).filter(func(b): return "Take it off" in b.text)[0]
 	off.pressed.emit()
-	check(GameState.slot_skill(1) == "" and GameState.skill_gem_count("whirlwind") == 1, "Take it off empties the hotkey and returns the gem")
+	check(GameState.slot_skill(1) == "" and GameState.is_skill_unlocked("whirlwind"), "Take it off empties the hotkey, the skill stays unlocked")
 	check(not picker.is_open(), "and closes the dropdown")
 
 	# --- a skill you can't use yet is greyed out and does nothing

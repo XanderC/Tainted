@@ -99,11 +99,6 @@ func _wares() -> Array[Dictionary]:
 		if r.source == "vendor" and not GameState.knows_recipe(id):
 			list.append({"type": "recipe", "id": id, "name": "Recipe: " + r.name, "desc": r.desc,
 				"price": r.price, "color": Color(0.95, 0.85, 0.45), "icon": IconFactory.recipe_icon(id)})
-	for sk in SkillTree.active_skills():
-		list.append({"type": "skillgem", "id": sk.id, "name": "Skill Gem: " + sk.display_name,
-			"desc": "%s (needs level %d, %s; %s)" % [sk.description, SkillTree.gem_level_req(sk.id), _gem_need_text(sk.id),
-				"costs nothing" if sk.resource_cost <= 0.0 and sk.resource_gain <= 0.0 else sk.resource_name()],
-			"price": SkillTree.gem_price(sk.id), "color": sk.gem_color(), "icon": IconFactory.gem_icon("skill:" + sk.id, sk.color, 3)})
 	list.append({"type": "scroll", "id": "town_portal", "name": "Scroll of Town Portal",
 		"desc": "Read it (🌀 at the top of the screen, or G) in a zone or a rift: a portal to town opens where you stand, and going back through it you come out there again. Your party can use it too. You carry %d (at most %d)." % [GameState.tp_scrolls, GameState.MAX_SCROLLS],
 		"price": GameState.SCROLL_PRICE, "color": TownPortals.MINE, "icon": IconFactory.scroll_icon()})
@@ -128,23 +123,12 @@ func _wares() -> Array[Dictionary]:
 	return list
 
 
-## "18 Dexterity", "18 Strength and 13 Energy": what a skill gem needs.
-static func _gem_need_text(skill_id: String) -> String:
-	var req := SkillTree.gem_attr_req(skill_id)
-	var parts: Array[String] = []
-	for k in req:
-		parts.append("%d %s" % [int(req[k]), Attributes.NAMES[k]])
-	return " and ".join(PackedStringArray(parts))
-
-
 func _ware_cell(w: Dictionary) -> DragSlot:
 	var cell := DragSlot.new(Vector2(_cell, _cell))
 	var afford := GameState.can_afford(w.price)
 	var sel: bool = _ware.get("id", "") == w.id
 	var border: Color = Color.WHITE if sel else (Color(w.color) if afford else Color(0.30, 0.28, 0.32))
 	cell.setup(w.icon, border, Color(0.11, 0.10, 0.14))  # tap: its card
-	if w.type == "skillgem":
-		cell.inset_icon()  # (painted square art would hide the cell's border)
 	if not afford:
 		cell.modulate = Color(1, 1, 1, 0.5)
 	cell.payload = {"kind": "ware", "ware": w}
@@ -235,7 +219,6 @@ func _buy(w: Dictionary) -> void:
 		"recipe": ok = GameState.buy_recipe(w.id)
 		"orb": ok = GameState.buy_orb(w.id)
 		"flask": ok = GameState.buy_flask(w.id, w.price)
-		"skillgem": ok = GameState.buy_skill_gem(w.id)
 		"scroll": ok = GameState.buy_scroll()
 	var why := "Not enough orbs!" if not GameState.can_afford(w.price) else "No room in your bag!"
 	if w.get("type", "") == "scroll" and GameState.tp_scrolls >= GameState.MAX_SCROLLS:

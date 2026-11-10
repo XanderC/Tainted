@@ -43,7 +43,7 @@ func _ready() -> void:
 	check(gs.orb_count("transmute") == 1 and gs.shard_count("transmute") == 4,
 		"old materials became shards (%d orbs, %d shards)" % [gs.orb_count("transmute"), gs.shard_count("transmute")])
 	check(not gs._read_json(gs._char_path(a_id)).has("materials"), "materials taken out of the character save")
-	check(gs.skill_gem_count("frenzy") == 3 and gs.skill_gem_count("cleave") == 1, "skill gems added")
+	check(int(gs.skill_gems.get("frenzy", 0)) == 3 and int(gs.skill_gems.get("cleave", 0)) == 1, "old loose skill gems added")
 	check(gs.rune_count("rune_fire") == 3, "support gems added")
 	check(gs.gem_count("ruby_1") == 3, "socket gems added")
 	var a_after := gs._read_json(gs._char_path(a_id))
@@ -71,26 +71,28 @@ func _ready() -> void:
 	var new_id := gs.create_character("PoolTester", "warrior")
 	made.append(new_id)
 	check(new_id != "", "character created")
-	check(gs.orb_count("chaos") == before and gs.skill_gem_count("frenzy") == 3, "creating a character keeps the pools")
+	check(gs.orb_count("chaos") == before and int(gs.skill_gems.get("frenzy", 0)) == 3, "creating a character keeps the pools")
 	var saved := gs._read_json(gs._char_path(new_id))
 	for k in gs.SHARED_KEYS:
 		check(not saved.has(k), "character save has no %s" % k)
 	check(gs.select_character(a_id), "select an existing character")
 	check(gs.orb_count("chaos") == before, "loading a character keeps the pools (%d)" % gs.orb_count("chaos"))
 
-	# --- a socketed gem isn't also in the stash: loading never hands out a starter gem ---
+	# --- skills unlocked: an older character keeps what it had, and nothing it did not ---
 	var slotted := gs._read_json(gs._char_path(a_id))
 	var slots := gs._empty_slots()
 	slots[0].skill = "frenzy"
 	slotted["skill_slots"] = slots
 	slotted["skill_tree_version"] = 2
 	gs._write_json(gs._char_path(a_id), slotted)
-	gs.skill_gems.erase("frenzy")
+	gs.skill_gems = {"cleave": 1}
 	check(gs.select_character(a_id), "select a character with Frenzy socketed")
 	check(gs.slot_skill(0) == "frenzy", "Frenzy is in its slot")
-	check(gs.skill_gem_count("frenzy") == 0, "and not in the stash too (%d)" % gs.skill_gem_count("frenzy"))
+	check(gs.cut_skills.has("frenzy") and gs.cut_skills.has("cleave") and gs.cut_skills.has("quick_shot"),
+		"an old save keeps its socketed skill, the loose ones of the old pool and Quick Shot (%s)" % [gs.cut_skills.keys()])
+	check(not gs.cut_skills.has("whirlwind"), "and not a skill it never had")
 	gs.give_starter_skills()
-	check(gs.skill_gem_count("frenzy") == 0, "skipping the tutorial gives no second Frenzy when one is socketed")
+	check(gs.cut_skills.has("frenzy") and gs.cut_skills.has("firebolt"), "skipping the tutorial unlocks the starting skills")
 
 	# --- restore ---
 	gs.char_id = ""  # or the selected test character is saved again on the way out

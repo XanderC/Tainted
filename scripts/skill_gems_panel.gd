@@ -29,6 +29,10 @@ func panel_title() -> String:
 
 func refresh() -> void:
 	UIKit.clear(self)
+	_mode_tabs()
+	if _cutting:
+		_cutting_section()
+		return
 	var links := GameState.links_unlocked()
 	var nxt := GameState.next_link_level()
 	var title := "SKILL SLOTS  —  %d support link%s" % [links, "" if links == 1 else "s"]
@@ -42,6 +46,105 @@ func refresh() -> void:
 	else:
 		sec.add_child(UIKit.label("In town, tap a skill button on the screen to change its skill. 🔒 Support gems are linked at the Jeweler. Tap a gem to see what it does.",
 			13, UIKit.TEXT_DIM, true))
+
+
+# ---------- gem cutting ----------
+
+## The tab of the gem-cutting list that is open.
+var _cut_cat := ""
+## Showing the gem-cutting list instead of the skill slots.
+var _cutting := false
+
+
+## "Skill Slots" and "Gem Cutting (n Skill Gems)": what the window shows.
+func _mode_tabs() -> void:
+	var bar := HBoxContainer.new()
+	bar.add_theme_constant_override("separation", 6)
+	add_child(bar)
+	var n := GameState.uncut_gems
+	for m in [["Skill Slots", false], ["Gem Cutting" + (" (%d)" % n if n > 0 else ""), true]]:
+		var on: bool = m[1] == _cutting
+		var b := UIKit.button(m[0], Color(0.20, 0.17, 0.10) if on else Color(0.10, 0.09, 0.13),
+			Color(0.95, 0.80, 0.40) if on else Color(0.32, 0.30, 0.40), Vector2(0, 42), 14)
+		b.name = "Mode_Cutting" if m[1] else "Mode_Slots"
+		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		var to: bool = m[1]
+		b.pressed.connect(func():
+			_cutting = to
+			menu.refresh())
+		bar.add_child(b)
+
+## Every skill, listed by what it needs (SkillTree.category): a Skill Gem cuts one open for this character for
+## good, and it can then go in any skill slot. Boss and elite drops; they are not sold.
+func _cutting_section() -> void:
+	var have := GameState.uncut_gems
+	var sec := UIKit.section(self, "GEM CUTTING  —  %d Skill Gem%s" % [have, "" if have == 1 else "s"])
+	sec.add_child(UIKit.label("Skill Gems drop from elites and bosses. Cut one into a skill to unlock it for this character for good.",
+		12, UIKit.TEXT_DIM, true))
+	if _cut_cat == "" or not SkillTree.CATEGORIES.has(_cut_cat):
+		_cut_cat = SkillTree.CATEGORIES[0]
+	var tabs := HBoxContainer.new()
+	tabs.add_theme_constant_override("separation", 4)
+	sec.add_child(tabs)
+	var skills := SkillTree.active_skills()
+	for cat in SkillTree.CATEGORIES:
+		var mine := skills.filter(func(s): return SkillTree.category(s.id) == cat)
+		var open := GameState.is_skill_unlocked
+		var done := mine.filter(func(s): return open.call(s.id)).size()
+		var on: bool = cat == _cut_cat
+		var b := UIKit.button("%s %d/%d" % [cat, done, mine.size()], Color(0.20, 0.17, 0.10) if on else Color(0.10, 0.09, 0.13),
+			Color(0.95, 0.80, 0.40) if on else Color(0.32, 0.30, 0.40), Vector2(0, 38), 12)
+		b.name = "CutTab_" + cat
+		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		b.pressed.connect(func():
+			_cut_cat = cat
+			menu.refresh())
+		tabs.add_child(b)
+	for sk in skills:
+		if SkillTree.category(sk.id) == _cut_cat:
+			sec.add_child(_cut_row(sk))
+
+
+func _cut_row(sk: SkillDef) -> Control:
+	var id: String = sk.id
+	var unlocked := GameState.is_skill_unlocked(id)
+	var why := GameState.unlock_block_reason(id)
+	var row := HBoxContainer.new()
+	row.name = "Cut_" + id
+	row.add_theme_constant_override("separation", 8)
+	var ic := TextureRect.new()
+	ic.texture = IconFactory.gem_icon("skill:" + id, sk.color, 3)
+	ic.custom_minimum_size = Vector2(44, 44)
+	ic.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	ic.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	ic.modulate = Color.WHITE if unlocked else Color(1, 1, 1, 0.6)
+	row.add_child(ic)
+	var col := VBoxContainer.new()
+	col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	col.add_theme_constant_override("separation", 0)
+	row.add_child(col)
+	col.add_child(UIKit.label("%s %s" % [sk.icon, sk.display_name], 14, sk.color.lightened(0.2) if unlocked else Color(0.85, 0.82, 0.76)))
+	var need := SkillTree.gem_attr_req(id)
+	var parts: Array[String] = []
+	for k in need:
+		parts.append("%d %s" % [int(need[k]), Attributes.NAMES[k]])
+	col.add_child(UIKit.label("Level %d  •  %s" % [SkillTree.gem_level_req(id), ", ".join(PackedStringArray(parts))], 11, UIKit.TEXT_DIM))
+	col.add_child(UIKit.label(sk.description, 11, Color(0.70, 0.68, 0.64), true))
+	var b: Button
+	if unlocked:
+		b = UIKit.button("✔ Unlocked", Color(0.08, 0.16, 0.10), Color(0.35, 0.80, 0.45), Vector2(124, 40), 13)
+		b.disabled = true
+	else:
+		b = UIKit.button("Cut" if why == "" else why, Color(0.10, 0.22, 0.24), Color(0.60, 0.95, 0.95), Vector2(124, 40), 13)
+		b.disabled = why != ""
+		b.pressed.connect(func():
+			if GameState.unlock_skill(id):
+				menu.feedback("%s unlocked!" % sk.display_name)
+			menu.refresh())
+	b.name = "CutBtn"
+	b.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	row.add_child(b)
+	return row
 
 
 # ---------- slots ----------
@@ -78,7 +181,7 @@ func _skill_cell(skill_id: String, slot: int, sz: Vector2) -> DragSlot:
 		var sel: bool = _sel.get("type", "") == "skill" and _sel.get("id", "") == skill_id
 		var ok := GameState.skill_gem_block_reason(skill_id) == ""
 		cell.setup(IconFactory.gem_icon("skill:" + skill_id, sk.color, 3), Color.WHITE if sel else sk.color,
-			Color(sk.color).darkened(0.85), GameState.skill_gem_count(skill_id) if slot < 0 else 0)  # tap: its card
+			Color(sk.color).darkened(0.85), 0)  # tap: its card
 		cell.inset_icon()
 		if not ok:
 			cell.modulate = Color(1, 1, 1, 0.45)
@@ -149,11 +252,11 @@ func _show_tip(at: Vector2) -> void:
 		_add_details(d, at))
 
 
-## Owned skill gems / supports, in display order.
+## Unlocked skills / owned supports, in display order.
 static func owned_skill_gems() -> Array[String]:
 	var ids: Array[String] = []
 	for sk in SkillTree.active_skills():
-		if GameState.skill_gem_count(sk.id) > 0:
+		if GameState.is_skill_unlocked(sk.id):
 			ids.append(sk.id)
 	return ids
 
@@ -187,7 +290,7 @@ func _pick_skill(slot: int, at: Vector2) -> void:
 	var rows: Array = []  # [icon, text, enabled, Callable]
 	for sk in SkillTree.active_skills():
 		var other := GameState.slot_of(sk.id)
-		if sk.id == here or (other < 0 and GameState.skill_gem_count(sk.id) <= 0):
+		if sk.id == here or (other < 0 and not GameState.is_skill_unlocked(sk.id)):
 			continue
 		var why := GameState.skill_gem_block_reason(sk.id)
 		var text := "%s   Lv %d" % [sk.display_name, GameState.gem_level(sk.id)]
@@ -203,7 +306,7 @@ func _pick_skill(slot: int, at: Vector2) -> void:
 	var title := "MAIN ATTACK" if slot == 0 else "SKILL %d" % slot
 	_show_pick(at, title, "Choose a skill gem", rows, "skill", here, func():
 		GameState.clear_slot_skill(slot)
-		_close_pick(), "You have no other skill gems. Find them in rifts, or buy them from the Merchant.")
+		_close_pick(), "You have no other skills. Cut a Skill Gem into one below.")
 
 
 ## The supports link `idx` of slot `slot` can take, in a dropdown at `at`: yours not linked, each

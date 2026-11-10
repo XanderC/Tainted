@@ -95,7 +95,9 @@ var hireling_gear := {}
 var hireling_flasks: Array = [null, null]  ## its two flasks (Hirelings.FLASK_SLOTS), ItemInstance or null
 var passive_nodes := {}    # class_id -> Array of allocated PassiveTree node ids (start not included)
 var passive_choices := {}  # attribute node id -> the attribute ("str"...) it was taken as (see attr_choice)
-var skill_gems := {}       # skill_id -> count of loose skill gems in the gem pouch
+var skill_gems := {}       # skill_id -> count of loose gems (old pool: a character's first load seeds its cut_skills from it) [shared]
+var uncut_gems := 0        # Skill Gems not cut yet: each unlocks one skill for one character (unlock_skill)  [shared]
+var cut_skills := {}       # skill_id -> true: the skills this character has unlocked
 var gem_levels := {}       # skill_id -> gem level (1..SkillTree.GEM_MAX_LEVEL)
 var gem_xp := {}           # skill_id -> experience towards the next gem level
 var support_levels := {}   # support (rune) id -> level (1..SkillTree.GEM_MAX_LEVEL)
@@ -172,6 +174,7 @@ func _new_game() -> void:
 	Hirelings.reset_offers()
 	passive_nodes = {}
 	passive_choices = {}
+	cut_skills = {}
 	gem_levels = {}
 	gem_xp = {}
 	support_levels = {}
@@ -188,6 +191,7 @@ func _starter_pools() -> void:
 	gems = {"ruby_1": 2, "topaz_1": 1, "emerald_1": 1}
 	runes = STARTER_RUNES.duplicate()
 	skill_gems = {}
+	uncut_gems = 0
 
 
 const STARTER_RUNES := {
@@ -196,14 +200,11 @@ const STARTER_RUNES := {
 }
 
 
-## The usual starting skill setup, for a new character who skips the tutorial: a basic gem of each
-## colour socketed (Cleave, Frenzy, Firebolt: all usable at level 1), and a Quick Shot gem in the
-## shared stash unless one is owned already -- loose or socketed -- for trying a bow.
+## The usual starting skill setup, for a new character who skips the tutorial: a basic skill of each
+## colour in its slots (Cleave, Frenzy, Firebolt: all usable at level 1), and Quick Shot unlocked for trying a bow.
 func give_starter_skills() -> void:
-	var owned := skill_gem_count("quick_shot") > 0 or slot_of("quick_shot") >= 0  # before the slots change
 	_starter_slots()
-	if not owned:
-		skill_gems["quick_shot"] = 1
+	cut_skills["quick_shot"] = true
 	_on_skills_modified()
 
 
@@ -212,6 +213,7 @@ func _starter_slots() -> void:
 	skill_slots = _empty_slots()
 	for i in STARTER_SKILLS.size():
 		skill_slots[i].skill = STARTER_SKILLS[i]
+		cut_skills[STARTER_SKILLS[i]] = true
 	skill_slots[0].supports = ["rune_frost"]
 
 
@@ -456,9 +458,9 @@ func get_skill_rank(skill_id: String) -> int:
 	return gem_level(skill_id) + int(passive_value("gem_level"))
 
 
-## You own the skill gem (in the pouch or a slot).
+## The character has cut this skill (or it is in one of its slots): it can be put in a skill slot.
 func is_skill_unlocked(skill_id: String) -> bool:
-	return skill_gem_count(skill_id) > 0 or slot_of(skill_id) >= 0
+	return cut_skills.has(skill_id) or slot_of(skill_id) >= 0
 
 
 func _class_id() -> String:
@@ -874,22 +876,41 @@ func next_link_level() -> int:
 	return 0 if n >= MAX_LINKS else n * 5
 
 
-func skill_gem_count(skill_id: String) -> int:
-	return int(skill_gems.get(skill_id, 0))
-
-
-func add_skill_gem(skill_id: String, amount := 1) -> void:
-	skill_gems[skill_id] = maxi(skill_gem_count(skill_id) + amount, 0)
-	if skill_gems[skill_id] == 0:
-		skill_gems.erase(skill_id)
+## Adds uncut Skill Gems (the account's: any character cuts them, see unlock_skill).
+func add_skill_gem(amount := 1) -> void:
+	uncut_gems = maxi(uncut_gems + amount, 0)
 	_changed()
 
 
-func buy_skill_gem(skill_id: String) -> bool:
-	if not pay(SkillTree.gem_price(skill_id)):
+## "" if the character can cut `skill_id` out of a Skill Gem now, else why not.
+func unlock_block_reason(skill_id: String) -> String:
+	var sk := SkillTree.get_skill(skill_id)
+	if sk == null or sk.hireling_only:
+		return "Unknown skill"
+	if cut_skills.has(skill_id):
+		return "Already cut"
+	if level < SkillTree.gem_level_req(skill_id):
+		return "Needs level %d" % SkillTree.gem_level_req(skill_id)
+	if uncut_gems <= 0:
+		return "You have no Skill Gem"
+	return ""
+
+
+## Uses one Skill Gem to unlock a skill for this character for good (it can then go in any skill slot).
+func unlock_skill(skill_id: String) -> bool:
+	if unlock_block_reason(skill_id) != "":
 		return false
-	add_skill_gem(skill_id, 1)
+	uncut_gems -= 1
+	cut_skills[skill_id] = true
+	_on_skills_modified()
 	return true
+
+
+## Unlocks a skill with no Skill Gem (the ones a character starts with, the tutorial's pick).
+func grant_skill(skill_id: String) -> void:
+	if SkillTree.get_skill(skill_id) != null and not cut_skills.has(skill_id):
+		cut_skills[skill_id] = true
+		_on_skills_modified()
 
 
 func gem_level(skill_id: String) -> int:
@@ -999,9 +1020,8 @@ func gem_attr_block_reason(skill_id: String) -> String:
 	return ""
 
 
-## Socket a skill gem from the pouch into slot i (the gem already there goes back to the pouch;
-## its supports stay in the slot). A skill can only be in one slot: if it is elsewhere, the two
-## slots' skills swap.
+## Put a skill you have unlocked into slot i (what was there stays unlocked; its supports stay in the slot). A
+## skill can only be in one slot: if it is elsewhere, the two slots' skills swap.
 func set_slot_skill(i: int, skill_id: String) -> bool:
 	if i < 0 or i >= SKILL_SLOTS or skill_gem_block_reason(skill_id) != "":
 		return false
@@ -1010,23 +1030,16 @@ func set_slot_skill(i: int, skill_id: String) -> bool:
 		return true
 	if other >= 0:
 		skill_slots[other].skill = skill_slots[i].skill
-		skill_slots[i].skill = skill_id
-	else:
-		if skill_gem_count(skill_id) <= 0:
-			return false
-		if skill_slots[i].skill != "":
-			skill_gems[skill_slots[i].skill] = skill_gem_count(skill_slots[i].skill) + 1
-		skill_gems[skill_id] = skill_gem_count(skill_id) - 1
-		if skill_gems[skill_id] <= 0:
-			skill_gems.erase(skill_id)
-		skill_slots[i].skill = skill_id
+	elif not cut_skills.has(skill_id):
+		return false
+	skill_slots[i].skill = skill_id
 	_on_skills_modified()
 	return true
 
 
 ## Put a skill on hotkey i from the town's skill picker (SkillPicker). Unlike set_slot_skill, a skill that is on another
 ## hotkey is MOVED: it leaves that one (which is left empty, its supports staying in the slot) rather than the two
-## swapping. The gem that was on hotkey i goes back to the pouch.
+## swapping.
 func move_skill_to_slot(i: int, skill_id: String) -> bool:
 	if i < 0 or i >= SKILL_SLOTS or skill_gem_block_reason(skill_id) != "":
 		return false
@@ -1034,23 +1047,18 @@ func move_skill_to_slot(i: int, skill_id: String) -> bool:
 	if other == i:
 		return true
 	if other < 0:
-		return set_slot_skill(i, skill_id)  # from the pouch: nothing to take off another hotkey
-	var displaced := slot_skill(i)
-	if displaced != "":
-		skill_gems[displaced] = skill_gem_count(displaced) + 1
+		return set_slot_skill(i, skill_id)  # not on another hotkey: nothing to take off it
 	skill_slots[other].skill = ""
 	skill_slots[i].skill = skill_id
 	_on_skills_modified()
 	return true
 
 
-## Take the skill gem out of slot i back to the pouch.
+## Take the skill out of slot i (it stays unlocked).
 func clear_slot_skill(i: int) -> bool:
-	var id := slot_skill(i)
-	if id == "":
+	if slot_skill(i) == "":
 		return false
 	skill_slots[i].skill = ""
-	skill_gems[id] = skill_gem_count(id) + 1
 	_on_skills_modified()
 	return true
 
@@ -1190,7 +1198,7 @@ func _migrate_to_skill_gems(data: Dictionary) -> void:
 			owned.erase(id)
 			skill_slots[i].skill = id
 	for id in owned:  # the ones not on the bar join the shared pool
-		skill_gems[id] = skill_gem_count(id) + 1
+		skill_gems[id] = int(skill_gems.get(id, 0)) + 1
 	for id in old_runes:
 		var slot := slot_of(String(id))
 		for rid in old_runes[id]:
@@ -1199,6 +1207,25 @@ func _migrate_to_skill_gems(data: Dictionary) -> void:
 			else:
 				runes[String(rid)] = rune_count(String(rid)) + 1
 	skill_points += refund
+
+
+## The skills this character has unlocked. A save from before Skill Gems unlocked skills has none recorded: it keeps
+## every skill it had in a slot, had a level for, or that was a loose gem in the account's old pool, and Quick Shot.
+func _load_cut_skills(data: Dictionary) -> void:
+	cut_skills = {}
+	if data.has("cut_skills"):
+		for id in data.cut_skills:
+			if SkillTree.get_skill(String(id)) != null:
+				cut_skills[String(id)] = true
+		return
+	for slot in skill_slots:
+		if String(slot.skill) != "":
+			cut_skills[String(slot.skill)] = true
+	for id in gem_levels:
+		cut_skills[String(id)] = true
+	for id in skill_gems:
+		cut_skills[String(id)] = true
+	cut_skills["quick_shot"] = true
 
 
 ## Keep slot data sane after loading (supports beyond the open links go back to the pouch).
@@ -1363,6 +1390,7 @@ func save() -> void:
 		"skill_tree_version": 2,
 		"passive_nodes": passive_nodes,
 		"passive_choices": passive_choices,
+		"cut_skills": cut_skills.keys(),
 		"gem_levels": gem_levels,
 		"gem_xp": gem_xp,
 		"support_levels": support_levels,
@@ -1468,7 +1496,7 @@ func _save_account() -> void:
 		"stash": stash.to_array(),
 		"stash_overflow": stash_overflow.map(func(i): return i.to_dict()),
 		"shared": {"orbs": orbs, "shards": shards,
-			"skill_gems": skill_gems, "runes": runes, "gems": gems},
+			"skill_gems": skill_gems, "uncut_gems": uncut_gems, "runes": runes, "gems": gems},
 		"wardrobe": wardrobe,
 	})
 
@@ -1537,6 +1565,7 @@ func _load_shared(acc: Dictionary) -> void:
 		shards = _ints(sh.get("shards", {}))
 		old_materials = _ints(sh.get("materials", {}))
 		skill_gems = _ints(sh.get("skill_gems", {}))
+		uncut_gems = int(sh.get("uncut_gems", 0))
 		runes = _ints(sh.get("runes", {}))
 		gems = _migrate_gems(_ints(sh.get("gems", {})))
 	elif characters.is_empty():
@@ -1746,6 +1775,7 @@ func _apply_save(data: Dictionary) -> void:
 		support_xp = data.get("support_xp", {})
 		skill_slots = data.get("skill_slots", _empty_slots())
 	_fix_slots()
+	_load_cut_skills(data)
 	_fix_passive_points()
 	attributes = _ints(data.get("attributes", {}))
 	_fix_attribute_points()

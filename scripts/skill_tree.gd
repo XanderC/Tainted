@@ -10,13 +10,11 @@ extends RefCounted
 const ACTIVE_MAX_RANK := 15
 
 const GEM_MAX_LEVEL := 20
-## Character level needed to use a skill gem, and its merchant price, by cluster.
+## Character level needed to use (and to cut) a skill gem, by cluster.
 const GEM_LEVEL_REQ := {"basic": 1, "core": 3, "defensive": 5, "brawling": 8, "mastery": 12, "ultimate": 18}
 ## The attribute a gem needs, by cluster (everyone starts with 15 of each: the basic gems of every
 ## colour work from the start).
 const GEM_ATTR_REQ := {"basic": 10, "core": 18, "defensive": 24, "brawling": 32, "mastery": 42, "ultimate": 56}
-const GEM_PRICE := {"basic": {"transmute": 1}, "core": {"alteration": 1}, "defensive": {"alteration": 3},
-	"brawling": {"alchemy": 1}, "mastery": {"alchemy": 2}, "ultimate": {"chaos": 1}}
 
 static var _skills: Dictionary = {}
 static var _mod_cache: Dictionary = {}
@@ -261,11 +259,30 @@ static func gem_attr_req(skill_id: String) -> Dictionary:
 	return out
 
 
-## Merchant price in orbs.
-static func gem_price(skill_id: String) -> Dictionary:
+## The tabs of the gem-cutting list, in order.
+const CATEGORIES := ["Bow", "Melee", "Spell", "Throwing", "Shouts & Buffs"]
+## Skills that carry no weapon or spell tag, and where they are listed.
+const _CATEGORY_OF := {
+	"blade_vortex": "Throwing", "fan_of_knives": "Throwing", "spear_throw": "Throwing", "death_blossom": "Throwing",
+	"iron_skin": "Shouts & Buffs", "threatening_shout": "Shouts & Buffs", "ignore_pain": "Shouts & Buffs",
+	"taunt": "Shouts & Buffs", "battle_cry": "Shouts & Buffs", "war_cry": "Shouts & Buffs",
+	"battle_standard": "Shouts & Buffs", "berserk": "Shouts & Buffs", "colossus": "Shouts & Buffs",
+	"ancients": "Shouts & Buffs",
+}
+
+
+## The tab (CATEGORIES) a skill is listed under in the gem-cutting window: bows by the weapon they need, spells, the
+## throwing skills, shouts and buffs; everything else is a melee skill.
+static func category(skill_id: String) -> String:
 	init_skills()
 	var s: SkillDef = _skills.get(skill_id)
-	return GEM_PRICE.get(s.cluster, {"alteration": 2}) if s != null else {"alteration": 2}
+	if s == null:
+		return ""
+	if s.weapon == "bow":
+		return "Bow"
+	if s.is_spell:
+		return "Spell"
+	return String(_CATEGORY_OF.get(skill_id, "Melee"))
 
 
 ## Every active skill (each one is a skill gem), in catalogue order. Hirelings' own skills aren't gems.

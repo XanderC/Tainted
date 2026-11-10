@@ -83,7 +83,7 @@ func label_text() -> String:
 		"recipe": return "%s: %s" % ["Plan" if CraftingDB.is_plan(id) else "Recipe", CraftingDB.RECIPES[id].name]
 		"rune": return _counted(RuneDef.DB.get_rune(id).display_name)
 		"gem": return _counted(String(GemDef.info(id).get("name", id)))
-		"skill_gem": return _counted("Skill Gem: " + SkillTree.get_skill(id).display_name)
+		"skill_gem": return _counted("Skill Gem")
 		"scroll": return "%d Scrolls of Town Portal" % amount if amount > 1 else "Scroll of Town Portal"
 	return "%d %s Shards" % [amount, CraftingDB.ORBS.get(id, {}).get("short", "Orb")]
 
@@ -99,7 +99,7 @@ func color() -> Color:
 		"recipe": return CraftingDB.recipe_color(id)
 		"rune": return RuneDef.DB.get_rune(id).rarity_color()
 		"gem": return Color(GemDef.info(id).get("color", Color.WHITE))
-		"skill_gem": return SkillTree.get_skill(id).color
+		"skill_gem": return Color(0.45, 0.80, 1.0)
 		"scroll": return TownPortals.MINE
 	return CraftingDB.ORBS.get(id, {}).get("color", Color(1.0, 0.85, 0.2))
 
@@ -178,7 +178,7 @@ func collect() -> String:
 		"orb": GameState.add_orb(id, amount)
 		"rune": GameState.add_rune(id, amount)
 		"gem": GameState.add_gem(id, amount)
-		"skill_gem": GameState.add_skill_gem(id, amount)
+		"skill_gem": GameState.add_skill_gem(amount)
 		"scroll": GameState.add_scrolls(amount)
 		"recipe":
 			if not GameState.learn_recipe(id):

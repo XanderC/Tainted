@@ -1,6 +1,16 @@
 [
 	{
 		"build": 0,
+		"title": "Skill Gems and gem cutting",
+		"notes": [
+			"Skill gems no longer drop one per skill, and the Merchant no longer sells them. A plain Skill Gem drops from elites (and, rarely, normal monsters), and from every boss.",
+			"Open the Skills window (the 💠 button) and switch to Gem Cutting: every skill is listed under Bow, Melee, Spell, Throwing or Shouts & Buffs with what it needs. Cut a Skill Gem into the skill you want to unlock it for that character for good.",
+			"A skill you have unlocked can be put in any skill slot and taken out again; it is not used up. Characters you already had keep every skill they had.",
+			"Skill Gems are shared by your whole account, but each character unlocks its own skills."
+		]
+	},
+	{
+		"build": 0,
 		"title": "Passive tree: choose your attributes",
 		"notes": [
 			"The small Strength, Dexterity, Vitality and Energy nodes of the passive tree are now Attribute nodes: tap one and pick which attribute it gives. They show four coloured quarters until you take them.",
