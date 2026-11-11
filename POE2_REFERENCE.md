@@ -134,11 +134,19 @@ Not in Tainted and common in PoE2: Chain, Multishot, Pierce, Fork, Ricochet, Pro
 | Controlled Destruction | 1 | 100% | spells that hit deal 25% more hit damage; cannot deal critical hits | Spell, Damage |
 | Magnified Area I | 1 | 130% | 35% increased area of effect | Area |
 | Life Leech I | 1 | 100% | leech 12% of physical attack damage as life | Attack, Physical |
+| Chain III | 5 | 100% | chains +2 times, 40% less damage with hits | Chains, Projectile |
+| Rapid Attacks II | 4 | 100% | 25% increased attack speed | Attack |
+| Rapid Attacks III | 5 | 100% | 35% increased attack speed, 50% less damage | Attack |
+| Rapid Casting II | 4 | 100% | 20% increased cast speed | Spell |
+| Rapid Casting III | 5 | 100% | 10% increased cast speed per different spell cast in the last 8 s (not built) | Spell |
+| Magnified Area II | 3 | 130% | 45% increased area of effect | Area |
+| Life Leech II | 3 | 100% | leech 16% of physical attack damage as life | Attack |
+| Life Leech III | 5 | 100% | as II, and the leech is not removed at full life (not built: no leech pool) | Attack |
 | Fire / Cold / Lightning / Chaos Mastery | 5 | 100% | +1 to level of supported skills of that element | that element |
 
 ## 6. What this means for the game
 
-Done in the game (2026-11-11): the level curve and PoE2 tiers (phase 2, `SkillTree.GEM_TIER` and `GEM_CHAR_LEVEL`), and the 13 supports above (phase 3, `RuneDef.DB.init_catalog`, restrictions in `SkillDef.supports_block_reason`). Not done: Penetration, Exposure, Pierce, Fork, Ricochet, Ignite/Bleed/Poison tiers, minion and totem supports; those need combat systems Tainted lacks (resistance reduction, chaining projectiles, ailment tiers).
+Done in the game (2026-11-11): the level curve and PoE2 tiers (phase 2, `SkillTree.GEM_TIER` and `GEM_CHAR_LEVEL`), and the 19 supports above (phase 3, `RuneDef.DB.init_catalog`, restrictions in `SkillDef.supports_block_reason`). Not done: Penetration, Exposure, Pierce, Fork, Ricochet, Ignite/Bleed/Poison tiers, minion and totem supports; those need combat systems Tainted lacks (resistance reduction, chaining projectiles, ailment tiers).
 
 
 - **Level requirements:** replace the six-cluster table with the shared curve; the cluster becomes the minimum gem level (tier). Needs a decision on character level cap (the game's cap is below PoE2's 90, so the curve would need compressing or truncating to the levels the game reaches).

@@ -279,6 +279,26 @@ class DB:
 		_make("rune_life_leech_1", "Life Leech I", "", Category.MODIFIER, DamageType.PHYSICAL,
 			"🩸", Color(0.9, 0.25, 0.35), "Leeches 12% of the damage dealt as life.",
 			{"family": "life_leech", "tier": 1, "needs": ["attack", "physical"], "life_leech": 0.12, "cost_mult": 1.0})
+		_make("rune_chain_3", "Chain III", "", Category.FORM, DamageType.LIGHTNING,
+			"⛓", Color(1.0, 0.8, 0.35), "The skill chains 2 additional times, but deals 40% less damage.",
+			{"family": "chain", "tier": 3, "needs": ["chaining"], "extra_chains": 2, "more_damage": -0.40,
+				"cost_mult": 1.0, "player_only": true})
+		_make("rune_rapid_attacks_2", "Rapid Attacks II", "", Category.MODIFIER, DamageType.PHYSICAL,
+			"⚔", Color(0.98, 0.55, 0.25), "The attack is used 25% faster.",
+			{"family": "rapid_attacks", "tier": 2, "needs": ["attack"], "speed_bonus": 0.25, "cost_mult": 1.0, "player_only": true})
+		_make("rune_rapid_attacks_3", "Rapid Attacks III", "", Category.MODIFIER, DamageType.PHYSICAL,
+			"⚔", Color(1.0, 0.5, 0.2), "The attack is used 35% faster, but deals 50% less damage.",
+			{"family": "rapid_attacks", "tier": 3, "needs": ["attack"], "speed_bonus": 0.35, "more_damage": -0.50,
+				"cost_mult": 1.0, "player_only": true})
+		_make("rune_rapid_casting_2", "Rapid Casting II", "", Category.MODIFIER, DamageType.PHYSICAL,
+			"⌛", Color(0.45, 0.65, 1.0), "The spell is cast 20% faster.",
+			{"family": "rapid_casting", "tier": 2, "needs": ["spell"], "speed_bonus": 0.20, "cost_mult": 1.0, "player_only": true})
+		_make("rune_magnified_area_2", "Magnified Area II", "", Category.FORM, DamageType.PHYSICAL,
+			"◎", Color(0.65, 0.8, 0.98), "The skill's area of effect is 45% larger.",
+			{"family": "magnified_area", "tier": 2, "needs": ["area"], "radius_mult": 1.45, "cost_mult": 1.3})
+		_make("rune_life_leech_2", "Life Leech II", "", Category.MODIFIER, DamageType.PHYSICAL,
+			"🩸", Color(0.92, 0.22, 0.32), "Leeches 16% of the damage dealt as life.",
+			{"family": "life_leech", "tier": 2, "needs": ["attack", "physical"], "life_leech": 0.16, "cost_mult": 1.0})
 		_make("rune_fire_mastery", "Fire Mastery", "", Category.MODIFIER, DamageType.FIRE,
 			"🔥", Color(1.0, 0.5, 0.2), "+1 to the level of a Fire skill.",
 			{"family": "fire_mastery", "tier": 5, "needs": ["fire"], "level_bonus": 1, "cost_mult": 1.0})

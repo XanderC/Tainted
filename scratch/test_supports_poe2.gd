@@ -34,7 +34,8 @@ func _ready() -> void:
 	# The catalogue
 	var ids := ["rune_multishot_1", "rune_multishot_2", "rune_chain_1", "rune_chain_2", "rune_rapid_attacks_1", "rune_rapid_casting_1",
 		"rune_controlled_destruction", "rune_magnified_area_1", "rune_life_leech_1", "rune_fire_mastery", "rune_cold_mastery",
-		"rune_lightning_mastery", "rune_chaos_mastery"]
+		"rune_lightning_mastery", "rune_chaos_mastery", "rune_chain_3", "rune_rapid_attacks_2", "rune_rapid_attacks_3", "rune_rapid_casting_2",
+		"rune_magnified_area_2", "rune_life_leech_2"]
 	for id in ids:
 		var r := RuneDef.DB.get_rune(id)
 		check(r != null and r.family != "" and r.tier > 0 and not r.needs.is_empty(), "%s exists with a family, a tier and a restriction" % id)
@@ -77,6 +78,20 @@ func _ready() -> void:
 	check(SkillDef.supports_valid(["rune_magnified_area_1", "rune_multishot_1"], qs) == false and SkillDef.supports_valid(["rune_magnified_area_1"], cl), "Magnified Area: area skills")
 	check(SkillDef.supports_valid(["rune_multishot_1"]), "with no skill given there is no restriction")
 	check(SkillDef.supports_valid(["rune_frost", "rune_fire"]) == false, "(the old one-conversion rule stands)")
+
+	# The higher tiers
+	var ra3 := RuneDef.DB.get_rune("rune_rapid_attacks_3")
+	check(is_equal_approx(RuneDef.DB.get_rune("rune_rapid_attacks_2").speed_bonus, 0.25) and is_equal_approx(ra3.speed_bonus, 0.35) and is_equal_approx(ra3.more_damage, -0.50),
+		"Rapid Attacks II: 25% faster; III: 35% faster, 50% less damage")
+	check(is_equal_approx(RuneDef.DB.get_rune("rune_rapid_casting_2").speed_bonus, 0.20), "Rapid Casting II: 20% faster")
+	check(RuneDef.DB.get_rune("rune_chain_3").extra_chains == 2 and is_equal_approx(RuneDef.DB.get_rune("rune_chain_3").more_damage, -0.40), "Chain III: +2 chains, 40% less damage")
+	check(is_equal_approx(RuneDef.DB.get_rune("rune_magnified_area_2").radius_mult, 1.45) and RuneDef.DB.get_rune("rune_magnified_area_2").cost_mult == 1.3, "Magnified Area II: 45% bigger, costs 1.3x")
+	check(is_equal_approx(RuneDef.DB.get_rune("rune_life_leech_2").life_leech, 0.16), "Life Leech II: 16%")
+	check(not SkillDef.supports_valid(["rune_rapid_attacks_1", "rune_rapid_attacks_3"], cl) and not SkillDef.supports_valid(["rune_chain_1", "rune_chain_3"], SkillTree.get_skill("arc"))
+		and not SkillDef.supports_valid(["rune_magnified_area_1", "rune_magnified_area_2"], cl) and not SkillDef.supports_valid(["rune_life_leech_1", "rune_life_leech_2"], cl),
+		"two tiers of one family never go together")
+	check(SkillDef.supports_valid(["rune_rapid_attacks_2", "rune_life_leech_2", "rune_magnified_area_2"], cl), "different families do")
+	check(is_equal_approx(_skill("cleave", ["rune_rapid_attacks_3"]).get_effective_damage_mult(1), cl.get_effective_damage_mult(1) * 0.5), "Rapid Attacks III halves the damage")
 
 	# Numbers
 	var base_qs := qs.get_effective_damage_mult(1)
