@@ -19,10 +19,10 @@ $baseBuild = [long]((Get-Content $baseJson -Raw | ConvertFrom-Json).build)
 
 $build = [long](Get-Date -Format "yyyyMMddHHmm")
 [IO.File]::WriteAllText((Join-Path $PSScriptRoot "build.json"), "{`n`t`"build`": $build`n}`n")
-# The changelog's newest entry (build 0, until published) is this update's
+# The changelog's unpublished entries (build 0, until published) all belong to this update
 $log = Join-Path $PSScriptRoot "changelog.json"
 $text = [IO.File]::ReadAllText($log)
-$stamped = [regex]::new('"build": 0,').Replace($text, "`"build`": $build,", 1)
+$stamped = [regex]::new('"build": 0,').Replace($text, "`"build`": $build,")
 if ($stamped -ne $text) { [IO.File]::WriteAllText($log, $stamped) }
 Remove-Item -Recurse -Force $update -ErrorAction SilentlyContinue
 New-Item -ItemType Directory -Force $update | Out-Null

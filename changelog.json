@@ -1,6 +1,6 @@
 [
 	{
-		"build": 0,
+		"build": 202611110816,
 		"title": "Barrels, crates, urns and chests",
 		"notes": [
 			"Every zone now has barrels, crates and urns standing about. Break them with any attack, area spell, arrow, bolt or dash: they take a hit or two, burst into pieces, and now and then spill currency, a scroll or a piece of gear.",
@@ -9,7 +9,7 @@
 		]
 	},
 	{
-		"build": 0,
+		"build": 202611110816,
 		"title": "Stash tabs you can customise",
 		"notes": [
 			"The stash tabs are yours to arrange. The ✎ button at the end of the tab row lets you add tabs (up to ten), rename them, move them up and down, change what each one is, and delete them (the gear in a deleted tab goes to your other tabs).",
@@ -18,7 +18,7 @@
 		]
 	},
 	{
-		"build": 0,
+		"build": 202611110816,
 		"title": "Meta supports: cast on crit, cast when damaged",
 		"notes": [
 			"Two new support gems, found like the others: Cast on Critical Strike and Cast when Damage Taken. Link one in a skill slot and a new cell appears after the links: tap it at the stash or Jeweler to choose which of your skills it casts.",
@@ -27,7 +27,7 @@
 		]
 	},
 	{
-		"build": 0,
+		"build": 202611110816,
 		"title": "Skill Gems and gem cutting",
 		"notes": [
 			"Skill gems no longer drop one per skill, and the Merchant no longer sells them. A plain Skill Gem drops from elites (and, rarely, normal monsters), and from every boss.",
@@ -37,7 +37,7 @@
 		]
 	},
 	{
-		"build": 0,
+		"build": 202611110816,
 		"title": "Passive tree: choose your attributes",
 		"notes": [
 			"The small Strength, Dexterity, Vitality and Energy nodes of the passive tree are now Attribute nodes: tap one and pick which attribute it gives. They show four coloured quarters until you take them.",
@@ -45,7 +45,7 @@
 		]
 	},
 	{
-		"build": 0,
+		"build": 202611110816,
 		"title": "Currency drops one by one",
 		"notes": [
 			"Currency no longer piles up under one \"Currency (N)\" label. Every orb, shard, scroll, gem and rune drops as its own item on the ground.",
