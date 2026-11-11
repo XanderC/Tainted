@@ -244,9 +244,13 @@ func get_effective_color() -> Color:
 
 
 func get_effective_damage_mult(skill_rank: int = 1) -> float:
+	skill_rank += get_level_bonus()
 	var mult := damage_mult * (1.0 + 0.10 * (skill_rank - 1))  # +10% per rank
 	for r in get_runes():
 		mult += r.damage_mult_bonus * _lv(r) + GameState.support_damage_bonus(r.id)
+	for r in get_runes():
+		if r.more_damage != 0.0:
+			mult *= 1.0 + (r.more_damage * _lv(r) if r.more_damage > 0.0 else r.more_damage)
 	if not for_hireling:
 		mult *= 1.0 + GameState.passive_value("skill_dmg:" + id)  # Legendary / Set powers for this skill
 	return maxf(mult, 0.1)
@@ -255,7 +259,7 @@ func get_effective_damage_mult(skill_rank: int = 1) -> float:
 func get_effective_cooldown(skill_rank: int = 1) -> float:
 	if cooldown <= 0.0:
 		return 0.0
-	var rank_cd_reduction := (skill_rank - 1) * 0.02  # -2% per rank
+	var rank_cd_reduction := (skill_rank + get_level_bonus() - 1) * 0.02  # -2% per rank
 	var cd := cooldown * (1.0 - rank_cd_reduction)
 	for r in get_runes():
 		cd *= maxf(1.0 - (1.0 - r.cooldown_mult) * _lv(r), 0.3) if r.cooldown_mult < 1.0 else r.cooldown_mult
@@ -306,22 +310,120 @@ func get_execute_bonus() -> float:
 	return bonus
 
 
-## Support rules for one skill: at most one elemental conversion, at most one meta support, and no two of the same support.
-static func supports_valid(rune_ids: Array) -> bool:
+## The "+N to level" a linked support gives (Fire Mastery and its kin).
+func get_level_bonus() -> int:
+	var n := 0
+	for r in get_runes():
+		n += r.level_bonus
+	return n
+
+
+## Projectiles a shot of this skill gains, and times a chaining skill chains again (Multishot, Chain).
+func get_extra_projectiles() -> int:
+	var n := 0
+	for r in get_runes():
+		n += r.extra_projectiles
+	return n
+
+
+func get_extra_chains() -> int:
+	var n := 0
+	for r in get_runes():
+		n += r.extra_chains
+	return n
+
+
+## How much faster (above 1) or slower (below) the skill is used with its supports (Rapid Attacks, Multishot's penalty).
+func get_speed_mult() -> float:
+	var m := 1.0
+	for r in get_runes():
+		if r.speed_bonus != 0.0:
+			m *= 1.0 + (r.speed_bonus * _lv(r) if r.speed_bonus > 0.0 else r.speed_bonus)
+	return maxf(m, 0.3)
+
+
+## Controlled Destruction: no critical hits.
+func cannot_crit() -> bool:
+	for r in get_runes():
+		if r.no_crit:
+			return true
+	return false
+
+
+## What this skill is, for the supports that only go on some skills: "spell" or "attack", "hit" (it deals damage),
+## "projectile", "chaining", "area", "melee", and its element ("physical", "fire", "cold", "lightning", "chaos").
+## `rune_ids`: the supports it is linked with, one of which may convert the element.
+func skill_tags(rune_ids: Array = []) -> Array[String]:
+	var tags: Array[String] = []
+	var hits := damage_mult > 0.0
+	if hits:
+		tags.append("hit")
+		tags.append("spell" if is_spell else "attack")
+	elif is_spell:
+		tags.append("spell")
+	if kind in [Kind.SHOT, Kind.POWER_SHOT, Kind.MULTISHOT, Kind.BOLT]:
+		tags.append("projectile")
+	if kind == Kind.ARC and cluster != "ultimate":
+		tags.append("chaining")
+	if radius > 0.0:
+		tags.append("area")
+	if weapon == "melee":
+		tags.append("melee")
+	var dtype := base_damage_type
+	for rid in rune_ids:
+		var r := RuneDef.DB.get_rune(String(rid))
+		if r != null and r.category == RuneDef.Category.TRANSMUTATION:
+			dtype = r.damage_type
+	tags.append(["physical", "cold", "fire", "lightning", "chaos"][dtype])
+	return tags
+
+
+## "" if these supports can be linked to `skill` (null: any skill) together, else why not: no two of one support or of
+## one family (Multishot I and II), at most one elemental conversion, at most one meta support, and each support's own
+## restriction (Chain needs a chaining skill, Fire Mastery a Fire one).
+static func supports_block_reason(rune_ids: Array, skill: SkillDef = null) -> String:
 	var seen := {}
 	var conversions := 0
 	var metas := 0
 	for rid in rune_ids:
 		var b := RuneDef.DB.base_of(String(rid))
-		if seen.has(b):
-			return false
-		seen[b] = true
 		var r := RuneDef.DB.get_rune(String(rid))
+		var key := b if r == null or r.family.is_empty() else r.family
+		if seen.has(key):
+			return "no doubles, and one of each family"
+		seen[key] = true
 		if r != null and r.category == RuneDef.Category.TRANSMUTATION:
 			conversions += 1
 		elif r != null and r.category == RuneDef.Category.META:
 			metas += 1
-	return conversions <= 1 and metas <= 1
+	if conversions > 1:
+		return "one elemental support per skill"
+	if metas > 1:
+		return "one meta support per skill"
+	if skill != null:
+		var tags := skill.skill_tags(rune_ids)
+		for rid in rune_ids:
+			var r := RuneDef.DB.get_rune(String(rid))
+			if r == null:
+				continue
+			for need in r.needs:
+				if not tags.has(String(need)):
+					return "%s needs a %s skill" % [r.display_name, need]
+	return ""
+
+
+static func supports_valid(rune_ids: Array, skill: SkillDef = null) -> bool:
+	return supports_block_reason(rune_ids, skill) == ""
+
+
+## Whether any of the supports is one a hireling cannot have: a meta support, or one whose effect is in the player's own
+## casting (Multishot, Chain, speed).
+static func supports_not_for_hirelings(rune_ids: Array) -> bool:
+	for rid in rune_ids:
+		var r := RuneDef.DB.get_rune(String(rid))
+		if r != null and (r.category == RuneDef.Category.META or r.player_only):
+			return true
+	return false
 
 
 ## Whether any of the supports is a meta support (those fire the player's own skills: a hireling cannot link them).

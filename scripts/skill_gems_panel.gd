@@ -375,14 +375,15 @@ func _pick_support(slot: int, idx: int, at: Vector2) -> void:
 			trial[idx] = rid
 		else:
 			trial.append(rid)
-		var fits := SkillDef.supports_valid(trial)
+		var why := SkillDef.supports_block_reason(trial, SkillTree.get_skill(GameState.slot_skill(slot)))
+		var fits := why == ""
 		var text := "%s   Lv %d   ×%d" % [r.display_name, GameState.support_level(rid), GameState.rune_count(rid)]
 		if not fits:
-			text += "\n[color]one elemental and one meta support per skill, and no doubles"
+			text += "\n[color]" + why
 		var id: String = rid
 		rows.append([r.get_icon(), text, fits, func():
 			if not GameState.socket_support(slot, mini(idx, GameState.slot_supports(slot).size()), id):
-				menu.feedback("Can't link that: one elemental support per skill, and no doubles.")
+				menu.feedback("Can't link that: " + why + ".")
 			_close_pick(), id])
 	var sk := GameState.get_slot_skill_def(slot)
 	var title := "SUPPORT FOR %s" % (sk.display_name.to_upper() if sk != null else ("THE MAIN ATTACK" if slot == 0 else "SKILL %d" % slot))

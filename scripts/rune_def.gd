@@ -49,6 +49,18 @@ enum DamageType {
 @export var on_use_gain: float = 0.0         ## resource restored when the skill is used
 @export var on_use_heal: float = 0.0         ## fraction of max life healed when the skill is used
 @export var trigger: String = ""             ## META: "crit" (when you land a critical strike) or "hurt" (when you take damage)
+
+# Path of Exile 2 supports (POE2_REFERENCE.md): a family of tiers, restricted by what the skill is, with a trade-off.
+@export var family: String = ""              ## supports of one family do not go together (Multishot I and II)
+@export var tier: int = 0                    ## 1, 2, 3 within the family (shown as I, II, III)
+@export var needs: Array = []                ## skill tags the linked skill must all have (SkillDef.skill_tags); empty = any
+@export var more_damage: float = 0.0         ## "N% more / less damage" (multiplies the skill's damage; positive grows with the level)
+@export var speed_bonus: float = 0.0         ## "N% increased / less skill speed" (shortens the wait between casts)
+@export var extra_projectiles: int = 0       ## projectiles added to each shot
+@export var extra_chains: int = 0            ## times a chaining skill chains again
+@export var no_crit: bool = false            ## the skill cannot deal critical hits
+@export var level_bonus: int = 0             ## "+1 to level of supported skills" (the skill rank for its damage and cooldown)
+@export var player_only: bool = false        ## its effect is in the player's own casting, so a hireling cannot link it
 @export var rarity: int = 0                  ## ItemInstance.Rarity
 @export var base_id: String = ""             ## id without the rarity suffix
 
@@ -92,6 +104,22 @@ func stat_lines(lvl: int = 1) -> String:
 		t += "[color=#ff4d66]• Life Leech: %d%% of Damage Dealt[/color]\n" % int(round(life_leech * sc * 100))
 	if execute_bonus > 0.0:
 		t += "[color=#ff9f43]• +%d%% Crit Chance vs enemies below 35%% Life[/color]\n" % int(round(execute_bonus * sc * 100))
+	if extra_projectiles > 0:
+		t += "[color=#ffcc4d]• Fires %d additional Projectiles[/color]\n" % extra_projectiles
+	if extra_chains > 0:
+		t += "[color=#ffcc4d]• Chains %d additional time%s[/color]\n" % [extra_chains, "" if extra_chains == 1 else "s"]
+	if more_damage != 0.0:
+		var md := more_damage * sc if more_damage > 0.0 else more_damage
+		t += "[color=#%s]• %d%% %s Damage[/color]\n" % ["66ff66" if md > 0.0 else "f87171", int(round(absf(md) * 100)), "more" if md > 0.0 else "less"]
+	if speed_bonus != 0.0:
+		var sb := speed_bonus * sc if speed_bonus > 0.0 else speed_bonus
+		t += "[color=#%s]• %d%% %s Skill Speed[/color]\n" % ["66e6ff" if sb > 0.0 else "f87171", int(round(absf(sb) * 100)), "increased" if sb > 0.0 else "less"]
+	if no_crit:
+		t += "[color=#f87171]• Cannot deal Critical Hits[/color]\n"
+	if level_bonus > 0:
+		t += "[color=#ffd24d]• +%d to Level of the supported skill[/color]\n" % level_bonus
+	if not needs.is_empty():
+		t += "[color=#9a8f7e]Supports: %s skills[/color]\n" % ", ".join(PackedStringArray(needs))
 	if ailment != "":
 		t += "[color=#%s]• Inflicts %s (%d%% chance)[/color]\n" % [color.to_html(false), ailment.to_upper(), int(ailment_chance * 100)]
 	if category == Category.META:
@@ -130,6 +158,16 @@ class DB:
 		r.ailment_chance = mods.get("ailment_chance", 1.0)
 		r.cost_mult = mods.get("cost_mult", 1.3)
 		r.trigger = mods.get("trigger", "")
+		r.family = mods.get("family", "")
+		r.tier = mods.get("tier", 0)
+		r.needs = mods.get("needs", [])
+		r.more_damage = mods.get("more_damage", 0.0)
+		r.speed_bonus = mods.get("speed_bonus", 0.0)
+		r.extra_projectiles = mods.get("extra_projectiles", 0)
+		r.extra_chains = mods.get("extra_chains", 0)
+		r.no_crit = mods.get("no_crit", false)
+		r.level_bonus = mods.get("level_bonus", 0)
+		r.player_only = mods.get("player_only", false)
 		_catalog[id] = r
 		return r
 
@@ -206,6 +244,54 @@ class DB:
 			"Whenever you take damage, also casts the skill chosen in this link, free of cost (at most once every %.1f seconds)." % TRIGGER_COOLDOWN.hurt,
 			{"trigger": "hurt", "cost_mult": 1.0})
 
+		# --- Path of Exile 2 supports (numbers from poe2db.tw: see POE2_REFERENCE.md). A tier is a stronger version of
+		# the same family; each is restricted to the skills it makes sense on, and none costs more to use (PoE2's
+		# 100% mana multiplier), Magnified Area aside. ---
+		_make("rune_multishot_1", "Multishot I", "", Category.FORM, DamageType.PHYSICAL,
+			"⇶", Color(0.75, 0.9, 0.6), "Fires 2 additional projectiles, but deals 35% less damage and has 20% less skill speed.",
+			{"family": "multishot", "tier": 1, "needs": ["projectile"], "extra_projectiles": 2, "more_damage": -0.35,
+				"speed_bonus": -0.20, "cost_mult": 1.0, "player_only": true})
+		_make("rune_multishot_2", "Multishot II", "", Category.FORM, DamageType.PHYSICAL,
+			"⇶", Color(0.55, 0.85, 0.7), "Fires 2 additional projectiles, but deals 25% less damage and has 20% less skill speed.",
+			{"family": "multishot", "tier": 2, "needs": ["projectile"], "extra_projectiles": 2, "more_damage": -0.25,
+				"speed_bonus": -0.20, "cost_mult": 1.0, "player_only": true})
+		_make("rune_chain_1", "Chain I", "", Category.FORM, DamageType.LIGHTNING,
+			"⛓", Color(0.85, 0.9, 0.5), "The skill chains 1 additional time, but deals 30% less damage.",
+			{"family": "chain", "tier": 1, "needs": ["chaining"], "extra_chains": 1, "more_damage": -0.30,
+				"cost_mult": 1.0, "player_only": true})
+		_make("rune_chain_2", "Chain II", "", Category.FORM, DamageType.LIGHTNING,
+			"⛓", Color(0.95, 0.85, 0.4), "The skill chains 2 additional times, but deals 50% less damage.",
+			{"family": "chain", "tier": 2, "needs": ["chaining"], "extra_chains": 2, "more_damage": -0.50,
+				"cost_mult": 1.0, "player_only": true})
+		_make("rune_rapid_attacks_1", "Rapid Attacks I", "", Category.MODIFIER, DamageType.PHYSICAL,
+			"⚔", Color(0.95, 0.6, 0.3), "The attack is used 15% faster.",
+			{"family": "rapid_attacks", "tier": 1, "needs": ["attack"], "speed_bonus": 0.15, "cost_mult": 1.0, "player_only": true})
+		_make("rune_rapid_casting_1", "Rapid Casting I", "", Category.MODIFIER, DamageType.PHYSICAL,
+			"⌛", Color(0.5, 0.7, 1.0), "The spell is cast 15% faster.",
+			{"family": "rapid_casting", "tier": 1, "needs": ["spell"], "speed_bonus": 0.15, "cost_mult": 1.0, "player_only": true})
+		_make("rune_controlled_destruction", "Controlled Destruction", "", Category.MODIFIER, DamageType.PHYSICAL,
+			"🎯", Color(0.6, 0.6, 1.0), "A spell that hits deals 25% more damage, but cannot deal critical hits.",
+			{"family": "controlled_destruction", "tier": 1, "needs": ["spell", "hit"], "more_damage": 0.25, "no_crit": true,
+				"cost_mult": 1.0, "player_only": true})
+		_make("rune_magnified_area_1", "Magnified Area I", "", Category.FORM, DamageType.PHYSICAL,
+			"◎", Color(0.7, 0.85, 0.95), "The skill's area of effect is 35% larger.",
+			{"family": "magnified_area", "tier": 1, "needs": ["area"], "radius_mult": 1.35, "cost_mult": 1.3})
+		_make("rune_life_leech_1", "Life Leech I", "", Category.MODIFIER, DamageType.PHYSICAL,
+			"🩸", Color(0.9, 0.25, 0.35), "Leeches 12% of the damage dealt as life.",
+			{"family": "life_leech", "tier": 1, "needs": ["attack", "physical"], "life_leech": 0.12, "cost_mult": 1.0})
+		_make("rune_fire_mastery", "Fire Mastery", "", Category.MODIFIER, DamageType.FIRE,
+			"🔥", Color(1.0, 0.5, 0.2), "+1 to the level of a Fire skill.",
+			{"family": "fire_mastery", "tier": 5, "needs": ["fire"], "level_bonus": 1, "cost_mult": 1.0})
+		_make("rune_cold_mastery", "Cold Mastery", "", Category.MODIFIER, DamageType.COLD,
+			"❄", Color(0.5, 0.85, 1.0), "+1 to the level of a Cold skill.",
+			{"family": "cold_mastery", "tier": 5, "needs": ["cold"], "level_bonus": 1, "cost_mult": 1.0})
+		_make("rune_lightning_mastery", "Lightning Mastery", "", Category.MODIFIER, DamageType.LIGHTNING,
+			"⚡", Color(1.0, 0.95, 0.4), "+1 to the level of a Lightning skill.",
+			{"family": "lightning_mastery", "tier": 5, "needs": ["lightning"], "level_bonus": 1, "cost_mult": 1.0})
+		_make("rune_chaos_mastery", "Chaos Mastery", "", Category.MODIFIER, DamageType.CHAOS,
+			"☠", Color(0.8, 0.35, 1.0), "+1 to the level of a Chaos skill.",
+			{"family": "chaos_mastery", "tier": 5, "needs": ["chaos"], "level_bonus": 1, "cost_mult": 1.0})
+
 	static func make_id(base: String, r: int) -> String:
 		return base if r <= 0 else "%s@%d" % [base, r]
 
@@ -237,6 +323,10 @@ class DB:
 		v.radius_mult = 1.0 + (src.radius_mult - 1.0) * m
 		v.life_leech = src.life_leech * m
 		v.execute_bonus = src.execute_bonus * m
+		if src.speed_bonus > 0.0:
+			v.speed_bonus = src.speed_bonus * m
+		if src.more_damage > 0.0:
+			v.more_damage = src.more_damage * m   # (a penalty stays what it is)
 		_catalog[id] = v
 		return v
 

@@ -352,8 +352,8 @@ func _hit_area(origin: Vector2, dir: Vector2, hit_radius: float, arc_deg: float,
 		if arc_deg < 359.0 and absf(dir.angle_to(to)) > half:
 			continue
 
-		var crit_chance := stats.get_stat("crit_chance") if passive("no_crit") <= 0.0 else 0.0
-		if exec_bonus > 0.0 and e.hp / e.max_hp < 0.35:
+		var crit_chance := stats.get_stat("crit_chance") if passive("no_crit") <= 0.0 and not skill.cannot_crit() else 0.0
+		if exec_bonus > 0.0 and e.hp / e.max_hp < 0.35 and not skill.cannot_crit():
 			crit_chance += exec_bonus
 		var crit := randf() < crit_chance
 
@@ -421,6 +421,7 @@ func use_skill(i: int) -> void:
 	if cost > _pool(s):
 		return
 	_spend(s, cost)
+	cd /= s.get_speed_mult()   # Rapid Attacks / Casting, Multishot's slower casting
 	_cooldowns[i] = cd
 	if s.get_on_use_gain() > 0.0:
 		_gain_for(s, s.get_on_use_gain())
@@ -487,20 +488,22 @@ func _cast(s: SkillDef) -> void:
 			_do_cleave_skill(s)
 		SkillDef.Kind.SHOT:
 			_play_shoot()
-			_shoot(s, _aim(s.max_range), false, "arrow")
+			_shoot_fan(s, _aim(s.max_range), false, "arrow")
 		SkillDef.Kind.POWER_SHOT:
 			_play_shoot()
-			_shoot(s, _aim(s.max_range), true, "arrow")
+			_shoot_fan(s, _aim(s.max_range), true, "arrow")
 		SkillDef.Kind.MULTISHOT:
 			_play_shoot()
 			var base := _aim(s.max_range).angle()
+			var more := s.get_extra_projectiles()
 			if s.get_effective_arc() >= 359.0:  # a support makes it all round: a ring of eight
-				for k in 8:
-					_shoot(s, Vector2.from_angle(base + TAU * k / 8.0), false, "arrow")
+				for k in 8 + more:
+					_shoot(s, Vector2.from_angle(base + TAU * k / float(8 + more)), false, "arrow")
 			else:
 				var spread := deg_to_rad(s.get_effective_arc())
-				for k in 5:
-					_shoot(s, Vector2.from_angle(base - spread * 0.5 + spread * k / 4.0), false, "arrow")
+				var n := 5 + more
+				for k in n:
+					_shoot(s, Vector2.from_angle(base - spread * 0.5 + spread * k / float(n - 1)), false, "arrow")
 		SkillDef.Kind.ARROW_RAIN:
 			_play_shoot()
 			_do_arrow_rain(s)
@@ -510,7 +513,7 @@ func _cast(s: SkillDef) -> void:
 			_do_knife_fan(s)
 		SkillDef.Kind.BOLT:
 			_play_cast()
-			_shoot(s, _aim(s.max_range), false, "orb")
+			_shoot_fan(s, _aim(s.max_range), false, "orb")
 		SkillDef.Kind.NOVA:
 			_do_nova(s)
 		SkillDef.Kind.ARC:
@@ -578,8 +581,8 @@ func _hit_one(e, s: SkillDef, part := 1.0, dtype := -1, ailment := "-") -> float
 	if e is Breakable:  # a barrel: it breaks, and that is all (no crit, no leech, no trigger)
 		e.take_damage()
 		return 0.0
-	var crit_chance := stats.get_stat("crit_chance") if passive("no_crit") <= 0.0 else 0.0
-	if s.get_execute_bonus() > 0.0 and e.hp / e.max_hp < 0.35:
+	var crit_chance := stats.get_stat("crit_chance") if passive("no_crit") <= 0.0 and not s.cannot_crit() else 0.0
+	if s.get_execute_bonus() > 0.0 and e.hp / e.max_hp < 0.35 and not s.cannot_crit():
 		crit_chance += s.get_execute_bonus()
 	var crit := randf() < crit_chance
 	var dmg := damage_for(s) * s.get_effective_damage_mult(GameState.get_skill_rank(s.id)) * part * (2.0 if crit else 1.0)
@@ -614,6 +617,17 @@ func _play_shoot() -> void:
 
 func _play_cast() -> void:
 	rig.play_once("Throwing", maxf(1.2, 0.5 * stats.get_stat("attack_speed")))
+
+
+## A shot of skill `s`: one projectile along `dir`, plus the extra ones a support adds (Multishot), fanned around it.
+func _shoot_fan(s: SkillDef, dir: Vector2, pierce: bool, style: String) -> void:
+	var n := 1 + s.get_extra_projectiles()
+	if n == 1:
+		_shoot(s, dir, pierce, style)
+		return
+	var step := deg_to_rad(9.0)
+	for k in n:
+		_shoot(s, dir.rotated(step * (float(k) - float(n - 1) * 0.5)), pierce, style)
 
 
 ## A projectile of skill `s` along `dir`: an arrow, a bolt of fire ("orb": it bursts where it hits)
@@ -756,7 +770,7 @@ func _do_nova(s: SkillDef) -> void:
 func _do_arc(s: SkillDef) -> void:
 	_play_cast()
 	var storm := s.cluster == "ultimate"
-	var strikes := 12 if storm else 3
+	var strikes := 12 if storm else 3 + s.get_extra_chains()   # (Chain supports add strikes)
 	var gap := (s.duration / strikes) if storm else 0.07
 	var picked := _nearest_enemies(s.max_range, strikes if not storm else 99)
 	var part := 0.5 if _echo_cast else 1.0

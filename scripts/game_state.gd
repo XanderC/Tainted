@@ -1356,7 +1356,7 @@ func socket_support(i: int, idx: int, rune_id: String) -> bool:
 		list[idx] = rune_id
 	else:
 		list.append(rune_id)
-	if not SkillDef.supports_valid(list):
+	if not SkillDef.supports_valid(list, SkillTree.get_skill(slot_skill(i))):
 		return false
 	skill_slots[i].supports = list
 	runes[rune_id] = rune_count(rune_id) - 1
@@ -1400,7 +1400,7 @@ func move_support(from_slot: int, from_idx: int, to_slot: int, to_idx: int) -> b
 	else:
 		a.remove_at(from_idx)
 		b.append(rid)
-	if not SkillDef.supports_valid(a) or not SkillDef.supports_valid(b):
+	if not SkillDef.supports_valid(a, SkillTree.get_skill(slot_skill(from_slot))) or not SkillDef.supports_valid(b, SkillTree.get_skill(slot_skill(to_slot))):
 		return false
 	skill_slots[from_slot].supports = a
 	skill_slots[to_slot].supports = b

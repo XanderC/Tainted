@@ -1,6 +1,15 @@
 [
 	{
 		"build": 0,
+		"title": "Thirteen new support gems from Path of Exile 2",
+		"notes": [
+			"New supports, found like the others: Multishot I and II (two more projectiles, but less damage and slower), Chain I and II (Arc chains further, for less damage), Rapid Attacks I and Rapid Casting I (15% faster), Controlled Destruction (a spell deals 25% more damage but cannot crit), Magnified Area I (35% bigger area), Life Leech I (12% of damage back as life) and the four Masteries (+1 level to a Fire, Cold, Lightning or Chaos skill).",
+			"Supports now come in families (Multishot I and II do not go together), and some only fit certain skills: Multishot needs a projectile skill, Chain a chaining one, Fire Mastery a Fire skill, and so on. The support list greys out what does not fit and says why.",
+			"Hirelings cannot link the ones that change how you cast (Multishot, Chain, the speed ones, Controlled Destruction)."
+		]
+	},
+	{
+		"build": 0,
 		"title": "Skill gem levels follow Path of Exile 2",
 		"notes": [
 			"Each skill now has a PoE2 tier that sets the character level you need to cut it: starter skills at level 1, core skills at 6, defensive at 10, brawling at 14, mastery at 31 and the ultimates at 58. Skills you have already cut stay usable.",

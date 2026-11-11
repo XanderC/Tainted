@@ -121,7 +121,25 @@ Tainted's supports are 12 flat ones (`RuneDef.DB`), level adds +3% effect and +1
 
 Not in Tainted and common in PoE2: Chain, Multishot, Pierce, Fork, Ricochet, Projectile Acceleration, Controlled Destruction, Faster Casting, Penetration (Fire, Cold, Lightning) I/II, Exposure (Fire, Cold, Lightning), Heightened Accuracy, Bleed, Maim, Stun, Rage, Fist of War, Armour Break, Warcry supports, Minion supports, totem supports, curse supports.
 
+### Support numbers used in the game (poe2db.tw, level 1 of each)
+
+| Support | Tier | Mana | Effect | Supports |
+|---|---|---|---|---|
+| Multishot I | 1 | 100% | +2 projectiles, 35% less damage, 20% less skill speed | Projectile |
+| Multishot II | 2 | 100% | +2 projectiles, 25% less damage, 20% less skill speed | Projectile |
+| Chain I | 1 | 100% | chains +1 time, 30% less damage with hits | Chains, Projectile |
+| Chain II | 2 | 100% | chains +2 times, 50% less damage with hits (Chain III: +2 times, no penalty stated) | Chains, Projectile |
+| Rapid Attacks I | 1 | 100% | 15% increased attack speed | Attack |
+| Rapid Casting I | 1 | 100% | 15% increased cast speed | Spell |
+| Controlled Destruction | 1 | 100% | spells that hit deal 25% more hit damage; cannot deal critical hits | Spell, Damage |
+| Magnified Area I | 1 | 130% | 35% increased area of effect | Area |
+| Life Leech I | 1 | 100% | leech 12% of physical attack damage as life | Attack, Physical |
+| Fire / Cold / Lightning / Chaos Mastery | 5 | 100% | +1 to level of supported skills of that element | that element |
+
 ## 6. What this means for the game
+
+Done in the game (2026-11-11): the level curve and PoE2 tiers (phase 2, `SkillTree.GEM_TIER` and `GEM_CHAR_LEVEL`), and the 13 supports above (phase 3, `RuneDef.DB.init_catalog`, restrictions in `SkillDef.supports_block_reason`). Not done: Penetration, Exposure, Pierce, Fork, Ricochet, Ignite/Bleed/Poison tiers, minion and totem supports; those need combat systems Tainted lacks (resistance reduction, chaining projectiles, ailment tiers).
+
 
 - **Level requirements:** replace the six-cluster table with the shared curve; the cluster becomes the minimum gem level (tier). Needs a decision on character level cap (the game's cap is below PoE2's 90, so the curve would need compressing or truncating to the levels the game reaches).
 - **Supports:** add family tiers and skill-type restrictions (tags above), with the trade-offs the pages state (for example Multishot I = +2 projectiles, 35% less damage, 20% less skill speed).
