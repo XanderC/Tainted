@@ -20,6 +20,7 @@ func _ready() -> void:
 		await get_tree().process_frame
 	var menu: GameMenu = town.menu
 	GameState.level = 1
+	GameState.gem_levels = {}
 	GameState.attributes = {"str": 300, "dex": 300, "vit": 300, "ene": 300}
 	GameState.cut_skills = {}
 	GameState.uncut_gems = 0

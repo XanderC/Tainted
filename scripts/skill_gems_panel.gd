@@ -128,7 +128,7 @@ func _cut_row(sk: SkillDef) -> Control:
 	var parts: Array[String] = []
 	for k in need:
 		parts.append("%d %s" % [int(need[k]), Attributes.NAMES[k]])
-	col.add_child(UIKit.label("Level %d  •  %s" % [SkillTree.gem_level_req(id), ", ".join(PackedStringArray(parts))], 11, UIKit.TEXT_DIM))
+	col.add_child(UIKit.label("Character level %d  •  %s" % [SkillTree.gem_level_req(id), ", ".join(PackedStringArray(parts))], 11, UIKit.TEXT_DIM))
 	col.add_child(UIKit.label(sk.description, 11, Color(0.70, 0.68, 0.64), true))
 	var b: Button
 	if unlocked:
@@ -520,6 +520,9 @@ func _add_details(d: VBoxContainer, at: Vector2, prism := true) -> void:
 		if lvl < SkillTree.GEM_MAX_LEVEL:
 			info += "  •  XP %d / %d" % [int(GameState.gem_xp.get(id, 0.0)), int(GameState.gem_xp_to_next(lvl))]
 		d.add_child(UIKit.label(info, 13, Color(0.38, 0.65, 0.98)))
+		var wait := GameState.gem_level_up_block(GameState.level, lvl)
+		if wait != "":
+			d.add_child(UIKit.label("⏳ " + wait, 12, Color(0.98, 0.75, 0.35)))
 		var need := SkillTree.gem_attr_req(id)
 		var parts: Array[String] = []
 		for k in need:
@@ -548,6 +551,9 @@ func _add_details(d: VBoxContainer, at: Vector2, prism := true) -> void:
 		if slvl < SkillTree.GEM_MAX_LEVEL:
 			sinfo += "  •  XP %d / %d" % [int(GameState.support_xp.get(r.id, 0.0)), int(GameState.gem_xp_to_next(slvl))]
 		d.add_child(UIKit.label(sinfo, 13, Color(0.38, 0.65, 0.98), true))
+		var swait := GameState.gem_level_up_block(GameState.level, slvl)
+		if swait != "":
+			d.add_child(UIKit.label("⏳ " + swait, 12, Color(0.98, 0.75, 0.35), true))
 		d.add_child(UIKit.label(r.description, 14, Color(0.9, 0.9, 0.95), true))
 		d.add_child(UIKit.rich(r.stat_lines(slvl), 14))
 		d.add_child(UIKit.label("Supports linked to a socketed skill level up from the experience you earn: +3% effects and +1% skill damage per level.", 12, UIKit.TEXT_DIM, true))
@@ -561,7 +567,7 @@ func _add_gemcutter(parent: Control, id: String, support: bool, lvl: int, at: Ve
 	if lvl >= SkillTree.GEM_MAX_LEVEL:
 		return
 	var b := UIKit.button("💎 Gemcutter's Prism: +1 level (have %d)" % n, Color(0.10, 0.22, 0.24), Color(0.60, 0.95, 0.95), Vector2(0, 44), 14)
-	b.disabled = n <= 0
+	b.disabled = n <= 0 or GameState.gem_level_up_block(GameState.level, lvl) != ""
 	b.pressed.connect(func():
 		if GameState.use_gemcutter(id, support):
 			menu.feedback("Gem levelled up!")

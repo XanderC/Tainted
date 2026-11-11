@@ -1,5 +1,13 @@
 [
 	{
+		"build": 0,
+		"title": "Skill gem levels follow Path of Exile 2",
+		"notes": [
+			"Each skill now has a PoE2 tier that sets the character level you need to cut it: starter skills at level 1, core skills at 6, defensive at 10, brawling at 14, mastery at 31 and the ultimates at 58. Skills you have already cut stay usable.",
+			"Skill and support gems now level up on PoE2's curve: gem level 2 needs character level 3, level 3 needs 6, level 4 needs 10, and so on up to level 20 at character level 90. A gem that has the experience but not the character level waits with a full bar, and a Gemcutter's Prism is kept until it can be used."
+		]
+	},
+	{
 		"build": 202611110816,
 		"title": "Barrels, crates, urns and chests",
 		"notes": [

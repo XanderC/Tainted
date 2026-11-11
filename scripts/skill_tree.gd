@@ -2,16 +2,19 @@ class_name SkillTree
 extends RefCounted
 ## Skill gems (Path of Exile style): you socket them into skill slots and link support gems to them.
 ## A gem levels up as you fight (+10% power per level). Its cluster sets the character level needed
-## to use it (GEM_LEVEL_REQ), how much of its attribute it needs (GEM_ATTR_REQ) and its merchant
-## price. Its colour is its attribute: red Strength (melee, Adrenaline), green Dexterity (bows,
+## to cut it (its tier, GEM_TIER, on PoE2's character-level curve GEM_CHAR_LEVEL, which also gates levelling the gem
+## up), how much of its attribute it needs (GEM_ATTR_REQ) and its merchant price. Its colour is its attribute: red Strength (melee, Adrenaline), green Dexterity (bows,
 ## daggers, speed: Mana), blue Energy (spells: Mana); a few are two colours. Passives live in
 ## PassiveTree.
 
 const ACTIVE_MAX_RANK := 15
 
 const GEM_MAX_LEVEL := 20
-## Character level needed to use (and to cut) a skill gem, by cluster.
-const GEM_LEVEL_REQ := {"basic": 1, "core": 3, "defensive": 5, "brawling": 8, "mastery": 12, "ultimate": 18}
+## Path of Exile 2's tiers (poe2db.tw, see POE2_REFERENCE.md): the lowest gem level a skill can be cut at, by cluster
+## (basic skills are tier 1, the late ones tier 14).
+const GEM_TIER := {"basic": 1, "core": 3, "defensive": 4, "brawling": 5, "mastery": 9, "ultimate": 14}
+## Character level each gem level needs (PoE2's one curve for every gem): index 0 is gem level 1.
+const GEM_CHAR_LEVEL := [0, 3, 6, 10, 14, 18, 22, 26, 31, 36, 41, 46, 52, 58, 64, 66, 72, 78, 84, 90]
 ## The attribute a gem needs, by cluster (everyone starts with 15 of each: the basic gems of every
 ## colour work from the start).
 const GEM_ATTR_REQ := {"basic": 10, "core": 18, "defensive": 24, "brawling": 32, "mastery": 42, "ultimate": 56}
@@ -239,10 +242,16 @@ static func all_skills() -> Array[SkillDef]:
 
 # ---------------- skill gems ----------------
 
+## The character level a skill needs to be cut: its tier on PoE2's curve (at least 1).
 static func gem_level_req(skill_id: String) -> int:
 	init_skills()
 	var s: SkillDef = _skills.get(skill_id)
-	return int(GEM_LEVEL_REQ.get(s.cluster, 1)) if s != null else 1
+	return gem_char_level(int(GEM_TIER.get(s.cluster, 1)) if s != null else 1)
+
+
+## The character level gem level `gem_level` (1..GEM_MAX_LEVEL) needs, on PoE2's curve (at least 1).
+static func gem_char_level(gem_level: int) -> int:
+	return maxi(1, int(GEM_CHAR_LEVEL[clampi(gem_level, 1, GEM_MAX_LEVEL) - 1]))
 
 
 ## How much of its attributes a gem needs ({key: n}): by cluster for its main attribute, and 70% of

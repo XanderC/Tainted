@@ -1219,7 +1219,7 @@ func use_gemcutter(id: String, support: bool) -> bool:
 	var levels: Dictionary = support_levels if support else gem_levels
 	var xps: Dictionary = support_xp if support else gem_xp
 	var lvl := clampi(int(levels.get(id, 1)), 1, SkillTree.GEM_MAX_LEVEL)
-	if orb_count("gemcutter") <= 0 or lvl >= SkillTree.GEM_MAX_LEVEL:
+	if orb_count("gemcutter") <= 0 or lvl >= SkillTree.GEM_MAX_LEVEL or gem_level_up_block(level, lvl) != "":
 		return false
 	orbs["gemcutter"] = orb_count("gemcutter") - 1
 	_add_gem_xp(levels, xps, id, gem_xp_to_next(lvl))
@@ -1234,12 +1234,14 @@ func _add_gem_xp(levels: Dictionary, xps: Dictionary, id: String, amount: float)
 		return false
 	var x := float(xps.get(id, 0.0)) + amount
 	var up := false
-	while lvl < SkillTree.GEM_MAX_LEVEL and x >= gem_xp_to_next(lvl):
+	while lvl < SkillTree.GEM_MAX_LEVEL and x >= gem_xp_to_next(lvl) and gem_level_up_block(level, lvl) == "":
 		x -= gem_xp_to_next(lvl)
 		lvl += 1
 		up = true
 	if lvl >= SkillTree.GEM_MAX_LEVEL:
 		x = 0.0
+	else:
+		x = minf(x, gem_xp_to_next(lvl))   # waiting for a character level: a full bar, not more
 	levels[id] = lvl
 	xps[id] = x
 	return up
@@ -1263,10 +1265,19 @@ func slot_of(skill_id: String) -> int:
 
 ## "" if the skill gem can be socketed into a slot now.
 func skill_gem_block_reason(skill_id: String) -> String:
+	# A skill already cut passed the level gate when it was cut: it stays usable if the gate has risen since.
 	var need := SkillTree.gem_level_req(skill_id)
-	if level < need:
+	if level < need and not cut_skills.has(skill_id) and slot_of(skill_id) < 0:
 		return "Requires character level %d" % need
 	return gem_attr_block_reason(skill_id)
+
+
+## "" if a gem at `lvl` can go up a level, else the character level it is waiting for (PoE2's curve).
+static func gem_level_up_block(char_level: int, lvl: int) -> String:
+	if lvl >= SkillTree.GEM_MAX_LEVEL:
+		return ""
+	var need := SkillTree.gem_char_level(lvl + 1)
+	return "" if char_level >= need else "Needs character level %d to level up" % need
 
 
 ## "" if you have enough of the gem's attributes (SkillTree.gem_attr_req), else what's missing.
