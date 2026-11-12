@@ -88,8 +88,9 @@ func on_bag_drop(d: Dictionary, _at: Vector2i) -> void:
 	_buy(d.get("ware", {}))
 
 
-## What a Normal flask costs, by tier (small, medium, large; utility flasks as small).
-const FLASK_PRICES := [{"transmute": 1}, {"augment": 2}, {"alchemy": 1}]
+## What a Normal flask costs, by tier (Lesser to Ultimate).
+const FLASK_PRICES := [{"transmute": 1}, {"augment": 2}, {"alchemy": 1}, {"alchemy": 2}, {"alchemy": 3}, {"chaos": 1}, {"chaos": 2},
+	{"chaos": 3}, {"chaos": 4}]
 
 
 func _wares() -> Array[Dictionary]:
@@ -102,15 +103,16 @@ func _wares() -> Array[Dictionary]:
 	list.append({"type": "scroll", "id": "town_portal", "name": "Scroll of Town Portal",
 		"desc": "Read it (🌀 at the top of the screen, or G) in a zone or a rift: a portal to town opens where you stand, and going back through it you come out there again. Your party can use it too. You carry %d (at most %d)." % [GameState.tp_scrolls, GameState.MAX_SCROLLS],
 		"price": GameState.SCROLL_PRICE, "color": TownPortals.MINE, "icon": IconFactory.scroll_icon()})
-	# Normal flasks of every base; find or craft better ones
+	# Normal flasks of the tiers your level reaches; find or craft better ones
 	for b in LootGenerator.bases:
-		if b.slot != "flask":
+		if b.slot != "flask" or b.weight <= 0 or b.drop_level > maxi(GameState.level, 1) + 4:
 			continue
 		var f := ItemInstance.new()
 		f.base = b
+		var tier := maxi(LootGenerator.FLASK_IDS_LIFE.find(b.id), LootGenerator.FLASK_IDS_POWER.find(b.id))
 		list.append({"type": "flask", "id": b.id, "name": b.display_name,
-			"desc": "%s, cooldown %.0fs. Never runs out." % [f.flask_text("Mana"), float(b.flask.cooldown)],
-			"price": FLASK_PRICES[int(b.flask.get("tier", 1)) - 1] if b.flask.kind != "utility" else FLASK_PRICES[0],
+			"desc": "%s. Holds %d charges, 10 a drink; kills and waypoints refill them." % [f.flask_text("Mana"), int(b.flask.max_charges)],
+			"price": FLASK_PRICES[clampi(tier, 0, FLASK_PRICES.size() - 1)],
 			"color": b.color, "icon": b.icon})
 	# Currency exchange: better orbs for cheaper ones
 	for id in CraftingDB.ORB_ORDER:

@@ -436,9 +436,8 @@ static func item_card(parent: Node, item: ItemInstance, compact := false, deltas
 	if item.is_flask():
 		# What drinking it does, modifiers included, then the modifiers themselves below
 		var e := item.flask_effect()
-		txt += "[color=#f3e6c4]%s[/color]\n[color=#9ca3af]Cooldown %.1fs[/color]\n" % [item.flask_text("Mana"), float(e.cooldown)]
-	if item.base.flask_slots > 0:
-		txt += "[color=#f3e6c4]Opens %d flask slot%s[/color]\n" % [item.base.flask_slots, "" if item.base.flask_slots == 1 else "s"]
+		txt += "[color=#f3e6c4]%s[/color]\n[color=#9ca3af]Charges %d / %d, %d per use[/color]\n" % [item.flask_text("Mana"),
+			int(item.charges_now()), int(e.max_charges), int(e.per_use)]
 	if item.quality > 0:
 		txt += "[color=#9ab0d0]Quality: +%d%%[/color]\n" % item.quality
 	if item.base.implicit_stat != "":

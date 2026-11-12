@@ -66,6 +66,7 @@ func _ready() -> void:
 	player.can_fight = false
 	player.position = _arrival()
 	add_child(player)
+	player.refill_flasks()  # the town fills your flasks
 	player.item_dropped.connect(_on_item_dropped)
 	var cam := GameCamera.make()
 	cam.limit_left = 0

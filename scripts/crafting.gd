@@ -34,6 +34,8 @@ static func orb_block_reason(item: ItemInstance, orb: String) -> String:
 	# Room for one more modifier: a Magic item has 1 prefix and 1 suffix, a Rare 3 and 3 (a flask has its own limits)
 	var room := LootGenerator.affix_room(item)
 	var full: bool = int(room.prefix) <= 0 and int(room.suffix) <= 0
+	if item.is_flask() and orb in ["regal", "alchemy", "chaos", "exalt", "chance"]:
+		return "Flasks are only ever Normal or Magic"
 	match orb:
 		"transmute":
 			if item.rarity != R.NORMAL: return "Needs a Normal item"

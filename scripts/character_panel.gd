@@ -155,7 +155,7 @@ static func doll_rect(slot: String) -> Rect2:
 	return Rect2(x, _down(d[1]), int(d[2]) * DOLL_U, int(d[3]) * DOLL_U)
 
 
-## Flask slot i: the five in a row under the belt, centred on it.
+## Flask slot i: the two (life, then mana) in a row under the belt, centred on it.
 static func flask_rect(i: int) -> Rect2:
 	var belt := doll_rect("belt")
 	var row_w := Player.FLASK_SLOTS * DOLL_U + (Player.FLASK_SLOTS - 1) * DOLL_GAP.y
@@ -247,29 +247,24 @@ func _bag_dropped(d: Dictionary, at: Vector2i) -> void:
 
 # ---------- flasks ----------
 
-## Flask slot i, in the column down the left of the bag. The belt opens the first few (Player.flask_slot_count);
-## the rest are locked, and a flask left in one can't be drunk until a bigger belt opens it.
-## Drag a flask here from the bag (or another slot to swap), and back to the bag to take it off.
+## Flask slot i: the first takes a life flask, the second a mana flask (Path of Exile 2).
+## Drag a flask here from the bag, and back to the bag to take it off.
 func _flask_cell(i: int) -> DragSlot:
 	var it: ItemInstance = player.flasks[i]
-	var open := i < player.flask_slot_count()
 	var key: String = FlaskBar.KEYS[i]
+	var what: String = ["life", "mana"][i]
 	var cell := UIKit.item_cell(it, it != null and it == menu.selected, flask_rect(i).size)
 	if it == null:
 		cell.setup(null, Color(0.28, 0.24, 0.30), Color(0.09, 0.08, 0.11), 0,
-			("🧪\n%s" % key) if open else "🔒",
-			("Flask slot %d (%s) - drag a flask here" % [i + 1, key]) if open else "Wear a belt with more flask slots to open this one")
+			"🧪\n%s" % key, "Flask slot %d (%s): drag a %s flask here" % [i + 1, key, what])
 	else:
 		cell.payload = {"kind": "item", "from": "flask", "idx": i, "item": it}
 		cell.clicked.connect(menu.select.bind(it))
-		cell.tooltip_text = "%s\n%s\n%s" % [it.display_name, it.flask_text("Mana"),
-			"Drink with %s" % key if open else "Locked: your belt doesn't open this slot"]
-		if not open:
-			cell.modulate = Color(1, 1, 1, 0.45)
+		cell.tooltip_text = "%s\n%s\nCharges %d / %d (%d per use)\nDrink with %s" % [it.display_name, it.flask_text("Mana"),
+			int(it.charges_now()), it.max_charges(), int(it.flask_effect().per_use), key]
 	cell.can_accept = func(d: Dictionary) -> bool:
 		var di: ItemInstance = d.get("item")
-		return d.get("kind", "") == "item" and di != null and di.is_flask() and d.get("from", "") in ["bag", "flask"] \
-			and not (d.get("from", "") == "flask" and int(d.get("idx", -1)) == i)
+		return d.get("kind", "") == "item" and di != null and Player.flask_fits_slot(di, i) and d.get("from", "") == "bag"
 	cell.on_drop = func(d: Dictionary) -> void:
 		var di: ItemInstance = d.get("item")
 		if player.equip_flask(di, i):

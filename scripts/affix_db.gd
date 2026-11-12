@@ -54,6 +54,14 @@ const FAMILIES := {
 	"life_kill": {"prefix": false, "stat": "life_on_kill", "mod": F, "text": "Gain {v} Life per enemy killed", "scale": 0.5},
 	"mana_kill": {"prefix": false, "stat": "mana_on_kill", "mod": F, "text": "Gain {v} Mana per enemy killed", "scale": 0.5},
 	"life_leech": {"prefix": false, "stat": "leech", "mod": F, "text": "Leech {v}% of Damage as Life", "scale": 0.4, "pct": true, "dec": 1},
+	# Flasks (the stats are read by ItemInstance.flask_effect, not worn)
+	"flask_amount": {"prefix": true, "stat": "flask_amount", "mod": F, "text": "{v}% increased Amount Recovered", "scale": 1.0, "pct": true},
+	"flask_speed": {"prefix": true, "stat": "flask_speed", "mod": F, "text": "{v}% increased Recovery rate", "scale": 1.0, "pct": true},
+	"flask_instant_part": {"prefix": true, "stat": "flask_instant_part", "mod": F, "text": "{v}% of Recovery applied Instantly", "scale": 1.0, "pct": true},
+	"flask_used": {"prefix": false, "stat": "flask_used", "mod": F, "text": "{v}% reduced Charges per use", "scale": 1.0, "pct": true},
+	"flask_charges": {"prefix": false, "stat": "flask_charges", "mod": F, "text": "{v}% increased Charges", "scale": 1.0, "pct": true},
+	"flask_gained": {"prefix": false, "stat": "flask_gained", "mod": F, "text": "{v}% increased Charges gained", "scale": 1.0, "pct": true},
+	"flask_per_second": {"prefix": false, "stat": "flask_per_second", "mod": F, "text": "Gains {v} Charges per Second", "scale": 1.0, "dec": 2},
 }
 
 ## Tier weights: a family's higher tiers are rarer (PoE2: the best tiers carry a fraction of the weight).
@@ -174,4 +182,6 @@ const LEGACY := {
 	"spell_inc": "spell_dmg", "mana_flat": "mana", "mana_regen": "mana_regen", "bow_inc": "phys_pct",
 	"res_fire": "res_fire", "res_cold": "res_cold", "res_lightning": "res_lightning", "res_chaos": "res_chaos",
 	"res_all": "res_all", "attack_inc": "phys_pct",
+	# Flask modifiers from before the flask rework
+	"fl_ample": "flask_amount", "fl_seething": "flask_instant_part", "fl_chemist": "flask_gained", "fl_enduring": "flask_speed",
 }

@@ -1,6 +1,16 @@
 [
 	{
 		"build": 0,
+		"title": "Two flasks with charges, as in Path of Exile 2",
+		"notes": [
+			"You now have two flask slots: a life flask (Q) and a mana flask (E). A belt no longer opens flask slots. Flasks are no longer on a cooldown. They hold charges instead (60 to 75), each drink spends 10, and the flask on the bar shows how full it is.",
+			"Kills refill your flasks: a normal monster gives 1 charge, an elite 3, a legendary monster 6, a boss 10. Standing at a waypoint or arriving in town fills them completely.",
+			"Nine tiers of each kind, Lesser to Ultimate, from item level 1 to 60, with Path of Exile 2's durations. Flasks are Normal or Magic only, with one prefix and one suffix: increased amount recovered, recovery rate, part of the recovery instant, fewer charges per use, more charges, more charges gained, charges per second.",
+			"Flasks you already own: the first life flask and the first mana flask fill the two slots and the rest go to your bag. A Rare flask became Magic, keeping a prefix and a suffix. Your hireling still drinks the two flasks you give it, but only life flasks, and they recharge on a timer."
+		]
+	},
+	{
+		"build": 0,
 		"title": "Item modifiers as in Path of Exile 2",
 		"notes": [
 			"Gear modifiers follow Path of Exile 2. Every modifier is a prefix or a suffix with tiers (T1 is the best), and the tier your item can roll depends on its item level: a level 1 ring only reaches the first tier of Life, a level 54 one the eighth. A Magic item holds 1 prefix and 1 suffix, a Rare up to 3 and 3, and a Rare now drops with 4 to 6 modifiers. Every item class has its own pool: staves roll spell damage, bows and swords physical damage, boots movement speed, rings and amulets resistances, attributes and typed damage.",

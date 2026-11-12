@@ -50,10 +50,15 @@ FAMILY = {
     "FlaskRecoveryAmount": "flask_amount", "FlaskRecoverySpeed": "flask_speed",
     "FlaskChargesUsed": "flask_used", "FlaskGainCharge": "flask_per_second",
     "FlaskNumCharges": "flask_charges", "FlaskRechargeRate": "flask_gained",
-    "FlaskBuffWhileHealing": "flask_instant",
     "BeltFlaskRecoveryRate": "belt_flask_recovery", "BeltCharmDuration": "belt_charm_duration",
     "BeltCharmChargesGained": "belt_charm_gained", "BeltCharmChargesUsed": "belt_charm_used",
     "BeltFlaskChargesGained": "belt_flask_gained", "BeltFlaskChargesUsed": "belt_flask_used",
+}
+# A flask or charm family mixes several mods; keep the ones the game has, by what the line says
+FLASK_TEXT = {
+    "flask_amount": "increased Amount Recovered", "flask_speed": "increased Recovery rate",
+    "flask_gained": "increased Charges gained", "flask_charges": "increased Charges",
+    "flask_used": "reduced Charges per use", "flask_per_second": "Charges per Second",
 }
 # "+x% to Critical Hit Chance" (weapons) and "x% increased Critical Hit Chance" (jewellery) are different mods
 ALT = {"crit_chance": "crit_chance_inc"}
@@ -100,8 +105,24 @@ def main(folder: str, out: str) -> None:
                 fid = ALT[fid]
             if fid == "spell_dmg" and fam == "WeaponCasterDamagePrefix" and "Spell Damage" not in text:
                 continue
-            if fam in ("FlaskRecoveryAmount",) and cls == "charm":
-                continue  # a charm's "recover life when used" lines are written by hand
+            if cls == "charm" and fam == "FlaskRecoveryAmount":
+                if "Life when Used" in text:
+                    fid = "charm_life"
+                elif "Mana when Used" in text:
+                    fid = "charm_mana"
+                else:
+                    continue  # "Also grants Guard": the game has no Guard
+            elif cls == "charm" and fam == "FlaskRecoverySpeed":
+                if "increased Duration" not in text:
+                    continue
+                fid = "charm_duration"
+            if fid in FLASK_TEXT:
+                if fid == "flask_speed" and "applied Instantly" in text:
+                    fid = "flask_instant_part"
+                elif FLASK_TEXT[fid] not in text or "more Recovery" in text:
+                    continue
+            if fid == "belt_flask_recovery" and "Life Recovery" not in text:
+                continue  # the belt's mana line is the same mod for the other flask
             row = tier_row(m)
             if row is None:
                 continue

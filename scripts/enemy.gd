@@ -495,7 +495,7 @@ func _die() -> void:
 	velocity = Vector2.ZERO
 	died.emit(global_position)
 	if is_instance_valid(target):
-		target.on_enemy_killed(global_position)
+		target.on_enemy_killed(global_position, _flask_charge_worth())
 	var worth := xp_override if xp_override >= 0.0 else max_hp * (0.6 if is_boss else 0.4) * xp_scale
 	GameState.add_xp(worth * PartyScale.xp())
 	if has_affix("molten"):
@@ -926,3 +926,13 @@ func _spawn_text(text: String, col: Color) -> void:
 	t.tween_property(l, "position:y", l.position.y - 30.0, 0.5)
 	t.parallel().tween_property(l, "modulate:a", 0.0, 0.5)
 	t.tween_callback(l.queue_free)
+
+
+## What this kill gives a player's flasks: a normal monster 1 charge, an elite 3, a legendary or a boss more.
+func _flask_charge_worth() -> float:
+	if is_boss:
+		return 10.0
+	match tier:
+		MonsterAffix.Tier.ELITE: return 3.0
+		MonsterAffix.Tier.LEGENDARY: return 6.0
+	return 1.0

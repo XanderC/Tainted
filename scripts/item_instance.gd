@@ -103,16 +103,21 @@ func is_flask() -> bool:
 
 
 # ---------- flasks ----------
-# A flask is drunk from a flask slot (Player.use_flask), never used up, on a cooldown. Its base
-# (ItemBase.flask) says what it does; its modifiers change that (prefixes) or add buffs that last
-# while it is in effect (suffixes). Worn flasks give no stats of their own.
+# Path of Exile 2: a flask holds charges. Drinking spends some (the base's charges_per_use), kills, the passing
+# seconds and waypoints refill them (Player). Its base (ItemBase.flask) says what it does; its modifiers change
+# that: amount recovered, recovery rate, how much is instant, charges per use, charges held, charges gained.
+# Worn flasks give no stats of their own.
 
-const FLASK_MIN_COOLDOWN := 0.4  # cooldown reduction stops at 60%
+const FLASK_USE_LOCK := 0.5  # seconds before a flask can be drunk again
+const HIRELING_FLASK_WAIT := 8.0  # a hireling's flasks recharge on a timer, after the effect ends
+
+## Charges it holds now (-1: full, a flask that has not been used).
+@export var charges: float = -1.0
 
 
 ## What drinking it does, modifiers included:
-##   kind, amount, duration, cooldown, instant (bool),
-##   buff {stat, mod, value} for a utility flask, during [{stat, mod, value}], warding (bool)
+##   kind, amount, duration, instant (bool), instant_part (0..1, drunk at once), max_charges, per_use, gain_mult,
+##   per_second, cooldown (a hireling's wait), buff {stat, mod, value} for an old utility flask, during, warding
 func flask_effect() -> Dictionary:
 	var f: Dictionary = base.flask
 	var mods := {}
@@ -120,35 +125,61 @@ func flask_effect() -> Dictionary:
 		mods[String(a.stat)] = float(mods.get(String(a.stat), 0.0)) + float(a.value)
 	var kind := String(f.get("kind", "life"))
 	var amount := float(f.get("amount", 0.0)) * (1.0 + float(mods.get("flask_amount", 0.0)))
-	var instant := mods.has("flask_instant")
-	if instant:
-		amount *= 1.0 - float(mods.flask_instant)
-	var duration := float(f.get("duration", 3.0)) * (1.0 + float(mods.get("flask_duration", 0.0)))
-	var cooldown := float(f.get("cooldown", 8.0)) * maxf(1.0 - float(mods.get("flask_cooldown", 0.0)), FLASK_MIN_COOLDOWN)
-	var out := {"kind": kind, "amount": amount, "duration": duration, "cooldown": cooldown,
-		"instant": instant, "during": [], "warding": mods.has("flask_warding")}
-	if kind == "utility":
-		out.amount = float(f.get("amount", 0.0)) * (1.0 + float(mods.get("flask_effect", 0.0)))
-		out["buff"] = {"stat": String(f.get("stat", "")), "mod": int(f.get("mod", StatBlock.ModType.INCREASED)), "value": out.amount}
-	var I := StatBlock.ModType.INCREASED
-	for pair in [["flask_armor", "armor", StatBlock.ModType.FLAT], ["flask_move", "move_speed", I],
-			["flask_atk", "attack_speed", I], ["flask_dmg", "damage", I]]:
-		if mods.has(pair[0]):
-			out.during.append({"stat": pair[1], "mod": pair[2], "value": float(mods[pair[0]])})
+	var duration := float(f.get("duration", 3.0)) / (1.0 + float(mods.get("flask_speed", 0.0)))
+	var out := {"kind": kind, "amount": amount, "duration": duration, "instant": false,
+		"instant_part": clampf(float(mods.get("flask_instant_part", 0.0)), 0.0, 1.0),
+		"max_charges": maxi(int(round(float(f.get("max_charges", 60)) * (1.0 + float(mods.get("flask_charges", 0.0))))), 1),
+		"per_use": maxi(int(round(float(f.get("charges_per_use", 10)) * (1.0 - float(mods.get("flask_used", 0.0))))), 1),
+		"gain_mult": 1.0 + float(mods.get("flask_gained", 0.0)),
+		"per_second": float(mods.get("flask_per_second", 0.0)),
+		"cooldown": duration + HIRELING_FLASK_WAIT, "during": [], "warding": false}
+	if kind == "utility":  # a flask of an earlier build, until it is turned into a charm
+		out["buff"] = {"stat": String(f.get("stat", "")), "mod": int(f.get("mod", StatBlock.ModType.INCREASED)), "value": float(f.get("amount", 0.0))}
 	return out
 
 
+func max_charges() -> int:
+	return int(flask_effect().max_charges)
+
+
+## Charges it holds now.
+func charges_now() -> float:
+	var m := float(max_charges())
+	return m if charges < 0.0 else minf(charges, m)
+
+
+## Fill it (a new flask, a waypoint, the town).
+func refill() -> void:
+	if is_flask():
+		charges = float(max_charges())
+
+
+func add_charges(n: float) -> void:
+	charges = minf(charges_now() + n, float(max_charges()))
+
+
+## Spend what a drink costs. False (and nothing spent) if it holds too few.
+func spend_charges() -> bool:
+	var need := float(flask_effect().per_use)
+	if charges_now() < need:
+		return false
+	charges = charges_now() - need
+	return true
+
+
 ## The flask's base effect as a line of text, e.g. "Recovers 30% of Life over 3.0s".
-func flask_text(power_name := "Power") -> String:
+func flask_text(power_name := "Mana") -> String:
 	var e := flask_effect()
-	var over := "instantly" if e.instant else "over %.1fs" % e.duration
+	var over := "over %.1fs" % e.duration
+	if float(e.instant_part) > 0.0:
+		over += ", %d%% applied instantly" % int(round(float(e.instant_part) * 100.0))
 	match String(e.kind):
 		"life":
 			return "Recovers %d%% of Life %s" % [int(round(float(e.amount) * 100.0)), over]
 		"power":
 			return "Recovers %d %s %s" % [int(round(float(e.amount))), power_name, over]
 	var t := String(base.flask.get("text", "{v}"))
-	var v: float = float(e.amount)
+	var v: float = float(base.flask.get("amount", 0.0))
 	var shown := str(int(round(v * 100.0))) if int(base.flask.get("mod", 1)) != StatBlock.ModType.FLAT else str(int(round(v)))
 	return "%s for %.1fs" % [t.replace("{v}", shown), e.duration]
 
@@ -287,6 +318,7 @@ func to_dict() -> Dictionary:
 		"dye": dye,
 		"look": look,
 		"uid": _ensure_uid(),
+		"charges": charges,
 	}
 
 
@@ -304,6 +336,7 @@ static func from_dict(d: Dictionary) -> ItemInstance:
 	it.base = b
 	it.uid = String(d.get("uid", "")).left(32) if d.get("uid") is String else ""
 	it.display_name = String(d.get("name", b.display_name))
+	it.charges = float(d.get("charges", -1.0))
 	it.rarity = int(d.get("rarity", 0)) as Rarity
 	it.ilvl = int(d.get("ilvl", 1))
 	it.unique_id = String(d.get("unique", ""))
@@ -330,6 +363,16 @@ static func from_dict(d: Dictionary) -> ItemInstance:
 	for m in d.get("rw_mods", []):
 		it.rw_mods.append({"stat": String(m.get("stat", "")), "mod_type": int(m.get("mod_type", 0)),
 			"value": float(m.get("value", 0.0)), "text": String(m.get("text", ""))})
+	if it.is_flask() and it.rarity > Rarity.MAGIC:
+		# Path of Exile 2 has no Rare flasks: one prefix and one suffix are kept, as a Magic flask
+		it.rarity = Rarity.MAGIC
+		var seen := {"p": false, "s": false}
+		it.affixes = it.affixes.filter(func(e):
+			var k := "p" if LootGenerator.entry_is_prefix(e) else "s"
+			if seen[k]:
+				return false
+			seen[k] = true
+			return true)
 	# Items saved before gems existed get their sockets rolled once on load
 	it.sockets = int(d.get("sockets", roll_sockets(b, it.rarity)))
 	for gid in d.get("gems", []):

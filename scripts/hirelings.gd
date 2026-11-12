@@ -245,8 +245,8 @@ static func unequip(player: Player, slot: String) -> bool:
 static func flask_block_reason(item: ItemInstance) -> String:
 	if item == null or not item.is_flask():
 		return "Only flasks go there"
-	if String(item.flask_effect().kind) == "power":
-		return "Hirelings have no Mana to restore"
+	if String(item.flask_effect().kind) != "life":
+		return "Hirelings only drink life flasks"
 	return ""
 
 

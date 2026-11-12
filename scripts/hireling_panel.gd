@@ -187,7 +187,7 @@ func _flask_cell(i: int) -> DragSlot:
 	var it := Hirelings.flask(i)
 	var cell := UIKit.item_cell(it, false, _flask_rect(i).size)
 	if it == null:
-		cell.setup(null, Color(0.28, 0.24, 0.30), Color(0.09, 0.08, 0.11), 0, "🧪", "Its flask %d: drag a life or utility flask here from your bag.\nIt drinks a life flask below half its life, a utility flask as soon as it is fighting." % (i + 1))
+		cell.setup(null, Color(0.28, 0.24, 0.30), Color(0.09, 0.08, 0.11), 0, "🧪", "Its flask %d: drag a life flask here from your bag.\nIt drinks it below half its life, then waits for it to recharge." % (i + 1))
 	else:
 		cell.payload = {"kind": "item", "from": "hireling_flask", "idx": i, "item": it}
 		cell.tooltip_text = "%s\n%s" % [it.display_name, it.flask_text()]

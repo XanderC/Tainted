@@ -172,8 +172,8 @@ func _new_game() -> void:
 	_pending_equipment.clear()
 	_pending_alt_set.clear()
 
-	# Every character starts with a Small Life Flask in the first flask slot
-	_pending_flasks = [_new_flask("small_life_flask").to_dict()]
+	# Every character starts with a Lesser Life Flask and a Lesser Mana Flask in the two flask slots
+	_pending_flasks = [_new_flask("small_life_flask").to_dict(), _new_flask("small_power_flask").to_dict()]
 	_pending_loose_flasks.clear()
 
 	# Starting skill gems & points (one passive point per level gained, 99 at level 100)
@@ -986,6 +986,7 @@ func _new_flask(base_id: String, ilvl := 1) -> ItemInstance:
 	it.base = LootGenerator.base_by_id(base_id)
 	it.ilvl = ilvl
 	it.display_name = it.base.display_name
+	it.refill()
 	return it
 
 
@@ -1603,12 +1604,22 @@ func attach_player(p: Player) -> void:
 		if not spare.is_empty():
 			_keep(spare)
 		_save_account()
-	p.flasks = [null, null, null, null, null]
-	for i in mini(_pending_flasks.size(), Player.FLASK_SLOTS):
-		if _pending_flasks[i] is Dictionary:
-			var f := ItemInstance.from_dict(_pending_flasks[i])
-			if f != null and f.is_flask():
-				p.flasks[i] = f
+	p.flasks = [null, null]
+	# Path of Exile 2 has two flask slots, life then mana: a saved character's first life flask and first mana flask
+	# go in them, and the rest of its (up to five) flasks go to the bag with the potions of older saves
+	for fd in _pending_flasks:
+		if fd is Dictionary:
+			var f := ItemInstance.from_dict(fd)
+			if f == null or not f.is_flask():
+				continue
+			var placed := false
+			for i in Player.FLASK_SLOTS:
+				if p.flasks[i] == null and Player.flask_fits_slot(f, i):
+					p.flasks[i] = f
+					placed = true
+					break
+			if not placed:
+				_pending_loose_flasks.append(f)
 	# Flasks an older save's potions turned into: into the bag, or the stash if it is full
 	var extra: Array[ItemInstance] = []
 	for f in _pending_loose_flasks:

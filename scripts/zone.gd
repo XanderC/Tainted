@@ -705,6 +705,8 @@ func _process(_delta: float) -> void:
 		if open and p.distance_to(e["node"].global_position) < EXIT_REACH and not get_tree().paused:
 			_leave(e["target"], zone_id)
 			return
+	if _waypoint != null and p.distance_to(_waypoint.global_position) < WAYPOINT_REACH:
+		player.refill_flasks()  # standing at a waypoint refills your flasks
 	if _waypoint != null and not (zone_id in GameState.waypoints) and p.distance_to(_waypoint.global_position) < WAYPOINT_REACH:
 		GameState.waypoints.append(zone_id)
 		Quests.notify("waypoint", zone_id)

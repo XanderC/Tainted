@@ -12,11 +12,10 @@ const BAG_COLS := 12  # like Path of Exile: 12 x 5
 const BAG_ROWS := 5
 const BAG_SIZE := BAG_COLS * BAG_ROWS  # cells
 const SLOTS := ["weapon", "offhand", "helmet", "shoulders", "chest", "wrists", "gloves", "legs", "boots", "ring", "ring2", "amulet", "belt"]  # two ring slots
-## Flask slots, Path of Exile style: the belt opens some of them (ItemBase.flask_slots); without
-## one there is NO_BELT_FLASKS. Flasks in slots beyond that stay put but can't be drunk.
-const FLASK_SLOTS := 5
-const NO_BELT_FLASKS := 1
-const FLASK_KEYS := [KEY_Q, KEY_E, KEY_R, KEY_T, KEY_F]
+## Flask slots, Path of Exile 2 style: two, the first for a life flask and the second for a mana flask.
+const FLASK_SLOTS := 2
+const FLASK_KINDS := ["life", "power"]
+const FLASK_KEYS := [KEY_Q, KEY_E]
 ## Slots that change how the character looks (see RigSprite.GEAR_LAYERS).
 const VISIBLE_SLOTS := ["weapon", "helmet", "shoulders", "chest", "gloves", "boots"]
 const ATTACK_ANIMS := ["Slashing", "Run Slashing", "Slashing in The Air"]
@@ -34,9 +33,9 @@ const MANA_REGEN := 0.03  ## of maximum Mana per second...
 const MANA_REGEN_FLAT := 2.0  ## ...and this much
 const WARD_TAKEN := 0.6  ## Arcane Ward: what's left of a hit
 var _ward_t := 0.0
-var flasks: Array = [null, null, null, null, null]  # ItemInstance or null, FLASK_SLOTS long
-var _flask_cd: Array[float] = [0.0, 0.0, 0.0, 0.0, 0.0]
-var _flask_cd_max: Array[float] = [1.0, 1.0, 1.0, 1.0, 1.0]
+var flasks: Array = [null, null]  # ItemInstance or null, FLASK_SLOTS long
+var _flask_cd: Array[float] = [0.0, 0.0]  # the short wait before a flask can be drunk again
+var _flask_cd_max: Array[float] = [1.0, 1.0]
 ## Flasks in effect: {source, t, life_rate, power_rate, warding}. Their buffs are StatBlock mods
 ## under `source`, removed when t runs out.
 var _flask_effects: Array[Dictionary] = []
@@ -933,44 +932,37 @@ func _do_smite(s: SkillDef) -> void:
 
 # ---------- flasks ----------
 
-## How many flask slots can be drunk from: what the belt opens, or NO_BELT_FLASKS without one.
+## How many flask slots can be drunk from: both, always.
 func flask_slot_count() -> int:
-	var belt: ItemInstance = equipment.get("belt")
-	var n := belt.base.flask_slots if belt != null and belt.base.flask_slots > 0 else NO_BELT_FLASKS
-	return clampi(n, 1, FLASK_SLOTS)
+	return FLASK_SLOTS
 
 
-## Drink the flask in slot i. False if the slot is empty, closed (belt) or on cooldown.
+## Whether `item` is the kind of flask slot i takes (life in the first, mana in the second).
+static func flask_fits_slot(item: ItemInstance, i: int) -> bool:
+	return item != null and item.is_flask() and i >= 0 and i < FLASK_SLOTS 		and String(item.base.flask.get("kind", "")) == String(FLASK_KINDS[i])
+
+
+## Drink the flask in slot i. False if the slot is empty, it holds too few charges or it was just drunk.
 func use_flask(i: int) -> bool:
-	if dead or i < 0 or i >= flask_slot_count():
+	if dead or i < 0 or i >= FLASK_SLOTS:
 		return false
 	var it: ItemInstance = flasks[i]
-	if it == null or _flask_cd[i] > 0.0:
+	if it == null or _flask_cd[i] > 0.0 or not it.spend_charges():
 		return false
 	var e := it.flask_effect()
-	_flask_cd[i] = float(e.cooldown)
-	_flask_cd_max[i] = maxf(float(e.cooldown), 0.01)
+	_flask_cd[i] = ItemInstance.FLASK_USE_LOCK
+	_flask_cd_max[i] = ItemInstance.FLASK_USE_LOCK
 	var source := RefCounted.new()
-	var fx := {"source": source, "t": float(e.duration), "life_rate": 0.0, "power_rate": 0.0, "warding": bool(e.warding)}
+	var fx := {"source": source, "t": float(e.duration), "life_rate": 0.0, "power_rate": 0.0, "warding": false}
+	var at_once := float(e.instant_part)
 	match String(e.kind):
 		"life":
 			var total: float = stats.get_stat("max_life") * float(e.amount)
-			if e.instant:
-				hp = minf(hp + total, stats.get_stat("max_life"))
-			else:
-				fx.life_rate = total / maxf(float(e.duration), 0.1)
+			hp = minf(hp + total * at_once, stats.get_stat("max_life"))
+			fx.life_rate = total * (1.0 - at_once) / maxf(float(e.duration), 0.1)
 		"power":  # Mana
-			if e.instant:
-				gain_mana(float(e.amount))
-			else:
-				fx.power_rate = float(e.amount) / maxf(float(e.duration), 0.1)
-		"utility":
-			var b: Dictionary = e.buff
-			stats.add_mod(String(b.stat), int(b.mod), float(b.value), source)
-	for d in e.during:
-		stats.add_mod(String(d.stat), int(d.mod), float(d.value), source)
-	if fx.warding:
-		_slow_t = 0.0
+			gain_mana(float(e.amount) * at_once)
+			fx.power_rate = float(e.amount) * (1.0 - at_once) / maxf(float(e.duration), 0.1)
 	_flask_effects.append(fx)
 	if rig != null:
 		rig.pulse(0.10, 0.3)
@@ -980,14 +972,40 @@ func use_flask(i: int) -> bool:
 	return true
 
 
-## 1 just after drinking, down to 0 when slot i can be drunk again.
-func flask_cooldown_fraction(i: int) -> float:
-	return clampf(_flask_cd[i] / _flask_cd_max[i], 0.0, 1.0)
+## How full flask slot i is (1 full, 0 empty).
+func flask_charge_fraction(i: int) -> float:
+	var it: ItemInstance = flasks[i] if i >= 0 and i < FLASK_SLOTS else null
+	return clampf(it.charges_now() / float(maxi(it.max_charges(), 1)), 0.0, 1.0) if it != null else 0.0
+
+
+## Whether slot i holds enough charges for a drink.
+func flask_ready(i: int) -> bool:
+	var it: ItemInstance = flasks[i] if i >= 0 and i < FLASK_SLOTS else null
+	return it != null and it.charges_now() >= float(it.flask_effect().per_use)
+
+
+## Fill both flasks (a waypoint, the town).
+func refill_flasks() -> void:
+	for it in flasks:
+		if it != null:
+			it.refill()
+
+
+## Charges from a kill: 1 for a normal monster, more for an elite or a boss, times each flask's "charges gained".
+func gain_flask_charges(worth: float) -> void:
+	for it in flasks:
+		if it != null:
+			it.add_charges(worth * float(it.flask_effect().gain_mult))
 
 
 func _process_flasks(delta: float) -> void:
 	for i in FLASK_SLOTS:
 		_flask_cd[i] = maxf(_flask_cd[i] - delta, 0.0)
+		var it: ItemInstance = flasks[i]
+		if it != null:  # "Gains N Charges per Second"
+			var per := float(it.flask_effect().per_second)
+			if per > 0.0:
+				it.add_charges(per * delta)
 	var max_life := stats.get_stat("max_life")
 	for fx in _flask_effects.duplicate():
 		var step := minf(delta, float(fx.t))
@@ -1013,7 +1031,7 @@ func is_worn(item: ItemInstance) -> bool:
 ## Put a flask from the bag (or the ground) into flask slot i. What was there goes into the bag,
 ## where the new one was if it fits; a flask already in another slot swaps with it.
 func equip_flask(item: ItemInstance, i: int) -> bool:
-	if item == null or not item.is_flask() or i < 0 or i >= FLASK_SLOTS:
+	if not flask_fits_slot(item, i):
 		return false
 	var j := flasks.find(item)
 	if j == i:
@@ -1058,7 +1076,7 @@ func can_unequip_flask_to(i: int, at: Vector2i) -> bool:
 	if plan.is_empty():
 		return false
 	var b: ItemInstance = plan.get("swap")
-	return b == null or b.is_flask()
+	return b == null or flask_fits_slot(b, i)
 
 
 func unequip_flask_to(i: int, at: Vector2i) -> bool:
@@ -1133,7 +1151,8 @@ func thorns() -> float:
 
 
 ## Rampage: a slain enemy bursts, hurting others nearby.
-func on_enemy_killed(pos: Vector2) -> void:
+func on_enemy_killed(pos: Vector2, charge_worth := 1.0) -> void:
+	gain_flask_charges(charge_worth)
 	# "Gain N Life / Mana per enemy killed" on gear
 	var life_back := stats.get_stat("life_on_kill")
 	if life_back > 0.0:

@@ -243,7 +243,7 @@ func thorns() -> float:
 	return 0.0  # their thorns hit back in their own game
 
 
-func on_enemy_killed(_pos: Vector2) -> void:
+func on_enemy_killed(_pos: Vector2, _charge_worth := 1.0) -> void:
 	pass
 
 
