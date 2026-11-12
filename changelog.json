@@ -1,5 +1,12 @@
 [
 	{
+		"build": 0,
+		"title": "Gear damage follows your level",
+		"notes": [
+			"Damage modifiers on gear now grow with the item's level, as they did before the PoE2 modifiers, so early gear is a little weaker and the gear you find later in Act I hits harder. Gear you already have is unchanged."
+		]
+	},
+	{
 		"build": 202611122212,
 		"title": "Accuracy, Spirit, skill levels, hybrid modifiers and a balance pass on gear",
 		"notes": [
