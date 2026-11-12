@@ -1,6 +1,6 @@
 [
 	{
-		"build": 0,
+		"build": 202611122020,
 		"title": "Charms",
 		"notes": [
 			"Charms are new, as in Path of Exile 2: small items worn in the charm slots of your belt, used by themselves when something happens to you. A belt opens 1 charm slot below item level 30, 2 below 60 and 3 above; the three slots sit beside your two flasks in the bottom bar, and a charm flashes when it fires.",
@@ -10,7 +10,7 @@
 		]
 	},
 	{
-		"build": 0,
+		"build": 202611122020,
 		"title": "Two flasks with charges, as in Path of Exile 2",
 		"notes": [
 			"You now have two flask slots: a life flask (Q) and a mana flask (E). A belt no longer opens flask slots. Flasks are no longer on a cooldown. They hold charges instead (60 to 75), each drink spends 10, and the flask on the bar shows how full it is.",
@@ -20,7 +20,7 @@
 		]
 	},
 	{
-		"build": 0,
+		"build": 202611122020,
 		"title": "Item modifiers as in Path of Exile 2",
 		"notes": [
 			"Gear modifiers follow Path of Exile 2. Every modifier is a prefix or a suffix with tiers (T1 is the best), and the tier your item can roll depends on its item level: a level 1 ring only reaches the first tier of Life, a level 54 one the eighth. A Magic item holds 1 prefix and 1 suffix, a Rare up to 3 and 3, and a Rare now drops with 4 to 6 modifiers. Every item class has its own pool: staves roll spell damage, bows and swords physical damage, boots movement speed, rings and amulets resistances, attributes and typed damage.",
@@ -30,7 +30,7 @@
 		]
 	},
 	{
-		"build": 0,
+		"build": 202611122020,
 		"title": "Thirty new support gems from Path of Exile 2",
 		"notes": [
 			"Eleven more supports for projectiles and elements: Pierce I to III (arrows fly through one, three, then every enemy, each pierce costing 20% damage), Fork (a shot splits in two where it hits, the forks deal 30% less), Fire Penetration I and II, Cold and Lightning Penetration (your hits get through a monster's Fireproof, Frostborn or Grounded resistance, and add a little against the rest), and Fire, Cold and Lightning Exposure (igniting, shocking or critical cold hits make the enemy take 20% more of that element for 8 seconds).",
@@ -40,7 +40,7 @@
 		]
 	},
 	{
-		"build": 0,
+		"build": 202611122020,
 		"title": "Skill gem levels follow Path of Exile 2",
 		"notes": [
 			"Each skill now has a PoE2 tier that sets the character level you need to cut it: starter skills at level 1, core skills at 6, defensive at 10, brawling at 14, mastery at 31 and the ultimates at 58. Skills you have already cut stay usable.",
