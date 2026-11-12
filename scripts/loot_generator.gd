@@ -543,7 +543,7 @@ func roll_family(item: ItemInstance, family: String) -> Dictionary:
 			pick = open[k]
 			break
 	var v2 := AffixDB.roll_value2(family, tiers[pick], randf()) if AffixDB.is_hybrid(family) else 0.0
-	return make_family_entry(item.base, family, pick, AffixDB.roll_value(family, tiers[pick], randf()), v2)
+	return make_family_entry(item.base, family, pick, AffixDB.roll_value(family, tiers[pick], randf(), item.ilvl), v2)
 
 
 ## A saved or rolled modifier of a family: tier is the index in the class's table (0 = lowest). A hybrid has a second
@@ -578,7 +578,7 @@ func reroll_values(item: ItemInstance) -> void:
 			var t := clampi(int(e.get("tier", 0)), 0, maxi(tiers.size() - 1, 0))
 			if not tiers.is_empty():
 				var v2 := AffixDB.roll_value2(f, tiers[t], randf()) if AffixDB.is_hybrid(f) else 0.0
-				item.affixes[i] = make_family_entry(item.base, f, t, AffixDB.roll_value(f, tiers[t], randf()), v2)
+				item.affixes[i] = make_family_entry(item.base, f, t, AffixDB.roll_value(f, tiers[t], randf(), item.ilvl), v2)
 			continue
 		var def := find_affix(String(e.id))
 		if def != null:
@@ -612,14 +612,14 @@ func entry_from_save(item: ItemInstance, d: Dictionary) -> Dictionary:
 	var best: int = open[0]
 	var gap := INF
 	for i in open:
-		var lo := AffixDB.round_value(family, float(tiers2[i][1]))
-		var hi := AffixDB.round_value(family, float(tiers2[i][2]))
+		var lo := AffixDB.round_value(family, float(tiers2[i][1]), item.ilvl)
+		var hi := AffixDB.round_value(family, float(tiers2[i][2]), item.ilvl)
 		var g := 0.0 if value >= lo and value <= hi else minf(absf(value - lo), absf(value - hi))
 		if g <= gap:  # ties go to the higher tier
 			gap = g
 			best = i
-	var lo2 := AffixDB.round_value(family, float(tiers2[best][1]))
-	var hi2 := AffixDB.round_value(family, float(tiers2[best][2]))
+	var lo2 := AffixDB.round_value(family, float(tiers2[best][1]), item.ilvl)
+	var hi2 := AffixDB.round_value(family, float(tiers2[best][2]), item.ilvl)
 	return make_family_entry(item.base, family, best, clampf(value, lo2, hi2))
 
 

@@ -24,17 +24,17 @@ const FAMILIES := {
 	"mana_pct": {"prefix": true, "stat": "mana_max", "mod": I, "text": "{v}% increased maximum Mana", "scale": 1.0, "pct": true},
 	"armour": {"prefix": true, "stat": "armor", "mod": F, "text": "+{v} to Armour", "scale": 0.7},
 	"armour_pct": {"prefix": true, "stat": "armor", "mod": I, "text": "{v}% increased Armour", "scale": 1.0, "pct": true},
-	"phys_add": {"prefix": true, "stat": "damage", "mod": F, "text": "Adds {v} Physical Damage", "scale": 39.0},
-	"fire_add": {"prefix": true, "stat": "dmg_fire", "mod": F, "text": "Adds {v} Fire Damage", "scale": 19.2},
-	"cold_add": {"prefix": true, "stat": "dmg_cold", "mod": F, "text": "Adds {v} Cold Damage", "scale": 19.2},
-	"lightning_add": {"prefix": true, "stat": "dmg_lightning", "mod": F, "text": "Adds {v} Lightning Damage", "scale": 19.2},
-	"phys_pct": {"prefix": true, "stat": "damage", "mod": I, "text": "{v}% increased Damage", "scale": 2.0, "pct": true},
-	"elem_pct": {"prefix": true, "stat": "ele_inc", "mod": F, "text": "{v}% increased Elemental Damage", "scale": 1.9, "pct": true},
-	"fire_pct": {"prefix": true, "stat": "fire_inc", "mod": F, "text": "{v}% increased Fire Damage", "scale": 1.6, "pct": true},
-	"cold_pct": {"prefix": true, "stat": "cold_inc", "mod": F, "text": "{v}% increased Cold Damage", "scale": 1.6, "pct": true},
-	"lightning_pct": {"prefix": true, "stat": "lightning_inc", "mod": F, "text": "{v}% increased Lightning Damage", "scale": 1.6, "pct": true},
-	"chaos_pct": {"prefix": true, "stat": "chaos_inc", "mod": F, "text": "{v}% increased Chaos Damage", "scale": 1.6, "pct": true},
-	"spell_dmg": {"prefix": true, "stat": "spell_inc", "mod": F, "text": "{v}% increased Spell Damage", "scale": 1.9, "pct": true},
+	"phys_add": {"prefix": true, "grow": true, "stat": "damage", "mod": F, "text": "Adds {v} Physical Damage", "scale": 39.0},
+	"fire_add": {"prefix": true, "grow": true, "stat": "dmg_fire", "mod": F, "text": "Adds {v} Fire Damage", "scale": 19.2},
+	"cold_add": {"prefix": true, "grow": true, "stat": "dmg_cold", "mod": F, "text": "Adds {v} Cold Damage", "scale": 19.2},
+	"lightning_add": {"prefix": true, "grow": true, "stat": "dmg_lightning", "mod": F, "text": "Adds {v} Lightning Damage", "scale": 19.2},
+	"phys_pct": {"prefix": true, "grow": true, "stat": "damage", "mod": I, "text": "{v}% increased Damage", "scale": 2.0, "pct": true},
+	"elem_pct": {"prefix": true, "grow": true, "stat": "ele_inc", "mod": F, "text": "{v}% increased Elemental Damage", "scale": 1.9, "pct": true},
+	"fire_pct": {"prefix": true, "grow": true, "stat": "fire_inc", "mod": F, "text": "{v}% increased Fire Damage", "scale": 1.6, "pct": true},
+	"cold_pct": {"prefix": true, "grow": true, "stat": "cold_inc", "mod": F, "text": "{v}% increased Cold Damage", "scale": 1.6, "pct": true},
+	"lightning_pct": {"prefix": true, "grow": true, "stat": "lightning_inc", "mod": F, "text": "{v}% increased Lightning Damage", "scale": 1.6, "pct": true},
+	"chaos_pct": {"prefix": true, "grow": true, "stat": "chaos_inc", "mod": F, "text": "{v}% increased Chaos Damage", "scale": 1.6, "pct": true},
+	"spell_dmg": {"prefix": true, "grow": true, "stat": "spell_inc", "mod": F, "text": "{v}% increased Spell Damage", "scale": 1.9, "pct": true},
 	"move_speed": {"prefix": true, "stat": "move_speed", "mod": I, "text": "{v}% increased Movement Speed", "scale": 1.5, "pct": true},
 	# Suffixes
 	"str": {"prefix": false, "stat": "str", "mod": F, "text": "+{v} to Strength", "scale": 4.9},
@@ -104,8 +104,8 @@ const FAMILIES := {
 	"es_pct_mana": {"prefix": true, "stat": "energy_shield", "mod": I, "text": "{v}% increased maximum Energy Shield", "scale": 1.0, "pct": true, "second": {"stat": "mana_max", "mod": F, "text": "+{v2} to maximum Mana", "scale": 2.1}},
 	"es_pct_stun": {"prefix": true, "stat": "energy_shield", "mod": I, "text": "{v}% increased maximum Energy Shield", "scale": 1.0, "pct": true, "second": {"stat": "stun_threshold", "mod": F, "text": "+{v2} to Stun Threshold", "scale": 0.3}},
 	"es_flat_pct": {"prefix": true, "stat": "energy_shield", "mod": F, "text": "+{v} to maximum Energy Shield", "scale": 2.8, "second": {"stat": "energy_shield", "mod": I, "text": "{v2}% increased maximum Energy Shield", "scale": 1.0, "pct": true}},
-	"spell_mana": {"prefix": true, "stat": "spell_inc", "mod": F, "text": "{v}% increased Spell Damage", "scale": 1.7, "pct": true, "second": {"stat": "mana_max", "mod": F, "text": "+{v2} to maximum Mana", "scale": 2.1}},
-	"phys_acc": {"prefix": true, "stat": "damage", "mod": I, "text": "{v}% increased Damage", "scale": 1.7, "pct": true, "second": {"stat": "accuracy", "mod": F, "text": "+{v2} to Accuracy Rating", "scale": 0.5}},
+	"spell_mana": {"prefix": true, "grow": true, "stat": "spell_inc", "mod": F, "text": "{v}% increased Spell Damage", "scale": 1.7, "pct": true, "second": {"stat": "mana_max", "mod": F, "text": "+{v2} to maximum Mana", "scale": 2.1}},
+	"phys_acc": {"prefix": true, "grow": true, "stat": "damage", "mod": I, "text": "{v}% increased Damage", "scale": 1.7, "pct": true, "second": {"stat": "accuracy", "mod": F, "text": "+{v2} to Accuracy Rating", "scale": 0.5}},
 	# Flasks (the stats are read by ItemInstance.flask_effect, not worn)
 	"flask_amount": {"prefix": true, "stat": "flask_amount", "mod": F, "text": "{v}% increased Amount Recovered", "scale": 1.0, "pct": true},
 	"flask_speed": {"prefix": true, "stat": "flask_speed", "mod": F, "text": "{v}% increased Recovery rate", "scale": 1.0, "pct": true},
@@ -194,9 +194,17 @@ static func weight_of(family: String) -> int:
 
 
 ## The value of a roll (`t`: a tier row, `u`: 0..1 position in its range), scaled to Tainted.
-static func roll_value(family: String, t: Array, u: float) -> float:
+static func roll_value(family: String, t: Array, u: float, ilvl := -1) -> float:
 	var raw := lerpf(float(t[1]), float(t[2]), u)
-	return round_value(family, raw)
+	return round_value(family, raw, ilvl)
+
+
+## Damage modifiers grow a little with the item's level on top of their tier (the old gear's damage grew with item level, and
+## the pacing was tuned for that): x0.6 at item level 1 to x2.2 at 33 and up. `ilvl` -1: no growth (a family's plain scale).
+static func growth(family: String, ilvl: int) -> float:
+	if ilvl < 0 or not bool(FAMILIES[family].get("grow", false)):
+		return 1.0
+	return clampf(0.40 + 0.055 * float(ilvl), 0.6, 2.2)
 
 
 ## Whether a family gives two stats (a hybrid modifier: "% increased Armour" and "+ to maximum Life").
@@ -234,9 +242,9 @@ static func scale_of(family: String) -> float:
 
 
 ## A raw PoE2 number as the stat's value.
-static func round_value(family: String, raw: float) -> float:
+static func round_value(family: String, raw: float, ilvl := -1) -> float:
 	var def: Dictionary = FAMILIES[family]
-	var v := raw * scale_of(family)
+	var v := raw * scale_of(family) * growth(family, ilvl)
 	if bool(def.get("pct", false)):
 		return snappedf(v / 100.0, 0.0001)
 	var dec: int = int(def.get("dec", 0))
