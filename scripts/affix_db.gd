@@ -5,7 +5,10 @@ extends RefCounted
 ## The tier tables are PoE2's own (AffixData, made by tools/import_poe2_mods.py from poe2db.tw); this file says
 ## what each family does in Tainted, and how far PoE2's numbers are scaled to Tainted's smaller life and damage.
 ##
-## A family is {prefix, stat, mod, text, scale, pct}:
+## A family is {prefix, stat, mod, text, scale, pct}. The scales were calibrated (scratch/measure_power.gd, measure_sums.gd) so that
+## a full Rare set gives about what the old modifiers did at the item levels Act I drops at (3 to 14): damage and effective life within
+## a few percent at item levels 10 to 14, so the pacing tuned for it still holds. Percentage modifiers show PoE2's own numbers
+## (x1 to x2); flat ones are bigger than PoE2's because Tainted's characters are smaller than its.
 ##   text    "{v}" is the rolled value;
 ##   scale   PoE2's numbers x this (Tainted's characters have about 140 Life, not 1500);
 ##   pct     the numbers are percentages and the stat is a fraction (the stat's value is the roll / 100).
@@ -15,50 +18,50 @@ const I := StatBlock.ModType.INCREASED
 
 const FAMILIES := {
 	# Prefixes
-	"life": {"prefix": true, "stat": "max_life", "mod": F, "text": "+{v} to maximum Life", "scale": 0.7},
-	"mana": {"prefix": true, "stat": "mana_max", "mod": F, "text": "+{v} to maximum Mana", "scale": 0.6},
+	"life": {"prefix": true, "stat": "max_life", "mod": F, "text": "+{v} to maximum Life", "scale": 3.9},
+	"mana": {"prefix": true, "stat": "mana_max", "mod": F, "text": "+{v} to maximum Mana", "scale": 2.1},
 	"life_pct": {"prefix": true, "stat": "max_life", "mod": I, "text": "{v}% increased maximum Life", "scale": 1.0, "pct": true},
 	"mana_pct": {"prefix": true, "stat": "mana_max", "mod": I, "text": "{v}% increased maximum Mana", "scale": 1.0, "pct": true},
-	"armour": {"prefix": true, "stat": "armor", "mod": F, "text": "+{v} to Armour", "scale": 0.35},
-	"armour_pct": {"prefix": true, "stat": "armor", "mod": I, "text": "{v}% increased Armour", "scale": 0.5, "pct": true},
-	"phys_add": {"prefix": true, "stat": "damage", "mod": F, "text": "Adds {v} Physical Damage", "scale": 0.8},
-	"fire_add": {"prefix": true, "stat": "dmg_fire", "mod": F, "text": "Adds {v} Fire Damage", "scale": 0.6},
-	"cold_add": {"prefix": true, "stat": "dmg_cold", "mod": F, "text": "Adds {v} Cold Damage", "scale": 0.6},
-	"lightning_add": {"prefix": true, "stat": "dmg_lightning", "mod": F, "text": "Adds {v} Lightning Damage", "scale": 0.6},
-	"phys_pct": {"prefix": true, "stat": "damage", "mod": I, "text": "{v}% increased Damage", "scale": 0.35, "pct": true},
-	"elem_pct": {"prefix": true, "stat": "ele_inc", "mod": F, "text": "{v}% increased Elemental Damage", "scale": 0.4, "pct": true},
-	"fire_pct": {"prefix": true, "stat": "fire_inc", "mod": F, "text": "{v}% increased Fire Damage", "scale": 0.8, "pct": true},
-	"cold_pct": {"prefix": true, "stat": "cold_inc", "mod": F, "text": "{v}% increased Cold Damage", "scale": 0.8, "pct": true},
-	"lightning_pct": {"prefix": true, "stat": "lightning_inc", "mod": F, "text": "{v}% increased Lightning Damage", "scale": 0.8, "pct": true},
-	"chaos_pct": {"prefix": true, "stat": "chaos_inc", "mod": F, "text": "{v}% increased Chaos Damage", "scale": 0.8, "pct": true},
-	"spell_dmg": {"prefix": true, "stat": "spell_inc", "mod": F, "text": "{v}% increased Spell Damage", "scale": 0.4, "pct": true},
-	"move_speed": {"prefix": true, "stat": "move_speed", "mod": I, "text": "{v}% increased Movement Speed", "scale": 0.6, "pct": true},
+	"armour": {"prefix": true, "stat": "armor", "mod": F, "text": "+{v} to Armour", "scale": 0.7},
+	"armour_pct": {"prefix": true, "stat": "armor", "mod": I, "text": "{v}% increased Armour", "scale": 1.0, "pct": true},
+	"phys_add": {"prefix": true, "stat": "damage", "mod": F, "text": "Adds {v} Physical Damage", "scale": 39.0},
+	"fire_add": {"prefix": true, "stat": "dmg_fire", "mod": F, "text": "Adds {v} Fire Damage", "scale": 19.2},
+	"cold_add": {"prefix": true, "stat": "dmg_cold", "mod": F, "text": "Adds {v} Cold Damage", "scale": 19.2},
+	"lightning_add": {"prefix": true, "stat": "dmg_lightning", "mod": F, "text": "Adds {v} Lightning Damage", "scale": 19.2},
+	"phys_pct": {"prefix": true, "stat": "damage", "mod": I, "text": "{v}% increased Damage", "scale": 2.0, "pct": true},
+	"elem_pct": {"prefix": true, "stat": "ele_inc", "mod": F, "text": "{v}% increased Elemental Damage", "scale": 1.9, "pct": true},
+	"fire_pct": {"prefix": true, "stat": "fire_inc", "mod": F, "text": "{v}% increased Fire Damage", "scale": 1.6, "pct": true},
+	"cold_pct": {"prefix": true, "stat": "cold_inc", "mod": F, "text": "{v}% increased Cold Damage", "scale": 1.6, "pct": true},
+	"lightning_pct": {"prefix": true, "stat": "lightning_inc", "mod": F, "text": "{v}% increased Lightning Damage", "scale": 1.6, "pct": true},
+	"chaos_pct": {"prefix": true, "stat": "chaos_inc", "mod": F, "text": "{v}% increased Chaos Damage", "scale": 1.6, "pct": true},
+	"spell_dmg": {"prefix": true, "stat": "spell_inc", "mod": F, "text": "{v}% increased Spell Damage", "scale": 1.9, "pct": true},
+	"move_speed": {"prefix": true, "stat": "move_speed", "mod": I, "text": "{v}% increased Movement Speed", "scale": 1.5, "pct": true},
 	# Suffixes
-	"str": {"prefix": false, "stat": "str", "mod": F, "text": "+{v} to Strength", "scale": 0.6},
-	"dex": {"prefix": false, "stat": "dex", "mod": F, "text": "+{v} to Dexterity", "scale": 0.6},
-	"vit": {"prefix": false, "stat": "vit", "mod": F, "text": "+{v} to Vitality", "scale": 0.6},
-	"ene": {"prefix": false, "stat": "ene", "mod": F, "text": "+{v} to Energy", "scale": 0.6},
-	"all_attr": {"prefix": false, "stat": "all_attr", "mod": F, "text": "+{v} to all Attributes", "scale": 0.6},
-	"res_fire": {"prefix": false, "stat": "res_fire", "mod": F, "text": "+{v}% to Fire Resistance", "scale": 1.0, "pct": true},
-	"res_cold": {"prefix": false, "stat": "res_cold", "mod": F, "text": "+{v}% to Cold Resistance", "scale": 1.0, "pct": true},
-	"res_lightning": {"prefix": false, "stat": "res_lightning", "mod": F, "text": "+{v}% to Lightning Resistance", "scale": 1.0, "pct": true},
-	"res_chaos": {"prefix": false, "stat": "res_chaos", "mod": F, "text": "+{v}% to Chaos Resistance", "scale": 1.0, "pct": true},
-	"res_all": {"prefix": false, "stat": "res_all", "mod": F, "text": "+{v}% to all Elemental Resistances", "scale": 1.0, "pct": true},
-	"attack_speed": {"prefix": false, "stat": "attack_speed", "mod": I, "text": "{v}% increased Attack Speed", "scale": 0.6, "pct": true},
-	"cast_speed": {"prefix": false, "stat": "attack_speed", "mod": I, "text": "{v}% increased Cast Speed", "scale": 0.6, "pct": true},
-	"crit_chance": {"prefix": false, "stat": "crit_chance", "mod": F, "text": "+{v}% to Critical Hit Chance", "scale": 1.5, "pct": true},
-	"crit_chance_inc": {"prefix": false, "stat": "crit_chance", "mod": I, "text": "{v}% increased Critical Hit Chance", "scale": 0.8, "pct": true},
-	"crit_damage": {"prefix": false, "stat": "crit_damage", "mod": F, "text": "+{v}% to Critical Damage Bonus", "scale": 1.0, "pct": true},
+	"str": {"prefix": false, "stat": "str", "mod": F, "text": "+{v} to Strength", "scale": 4.9},
+	"dex": {"prefix": false, "stat": "dex", "mod": F, "text": "+{v} to Dexterity", "scale": 4.9},
+	"vit": {"prefix": false, "stat": "vit", "mod": F, "text": "+{v} to Vitality", "scale": 3.4},
+	"ene": {"prefix": false, "stat": "ene", "mod": F, "text": "+{v} to Energy", "scale": 3.8},
+	"all_attr": {"prefix": false, "stat": "all_attr", "mod": F, "text": "+{v} to all Attributes", "scale": 4.2},
+	"res_fire": {"prefix": false, "stat": "res_fire", "mod": F, "text": "+{v}% to Fire Resistance", "scale": 1.7, "pct": true},
+	"res_cold": {"prefix": false, "stat": "res_cold", "mod": F, "text": "+{v}% to Cold Resistance", "scale": 1.7, "pct": true},
+	"res_lightning": {"prefix": false, "stat": "res_lightning", "mod": F, "text": "+{v}% to Lightning Resistance", "scale": 1.7, "pct": true},
+	"res_chaos": {"prefix": false, "stat": "res_chaos", "mod": F, "text": "+{v}% to Chaos Resistance", "scale": 1.7, "pct": true},
+	"res_all": {"prefix": false, "stat": "res_all", "mod": F, "text": "+{v}% to all Elemental Resistances", "scale": 1.7, "pct": true},
+	"attack_speed": {"prefix": false, "stat": "attack_speed", "mod": I, "text": "{v}% increased Attack Speed", "scale": 2.55, "pct": true},
+	"cast_speed": {"prefix": false, "stat": "attack_speed", "mod": I, "text": "{v}% increased Cast Speed", "scale": 2.55, "pct": true},
+	"crit_chance": {"prefix": false, "stat": "crit_chance", "mod": F, "text": "+{v}% to Critical Hit Chance", "scale": 8.8, "pct": true},
+	"crit_chance_inc": {"prefix": false, "stat": "crit_chance", "mod": I, "text": "{v}% increased Critical Hit Chance", "scale": 3.2, "pct": true},
+	"crit_damage": {"prefix": false, "stat": "crit_damage", "mod": F, "text": "+{v}% to Critical Damage Bonus", "scale": 2.0, "pct": true},
 	"life_regen": {"prefix": false, "stat": "life_regen", "mod": F, "text": "{v} Life Regeneration per second", "scale": 0.12, "dec": 1},
 	"mana_regen": {"prefix": false, "stat": "mana_regen_inc", "mod": F, "text": "{v}% increased Mana Regeneration Rate", "scale": 1.0, "pct": true},
 	"life_kill": {"prefix": false, "stat": "life_on_kill", "mod": F, "text": "Gain {v} Life per enemy killed", "scale": 0.5},
 	"mana_kill": {"prefix": false, "stat": "mana_on_kill", "mod": F, "text": "Gain {v} Mana per enemy killed", "scale": 0.5},
 	"life_leech": {"prefix": false, "stat": "leech", "mod": F, "text": "Leech {v}% of Damage as Life", "scale": 0.4, "pct": true, "dec": 1},
 	# Defences and the rest of what Path of Exile 2 gives gear (Player reads these stats)
-	"evasion": {"prefix": true, "stat": "evasion", "mod": F, "text": "+{v} to Evasion Rating", "scale": 0.35},
-	"evasion_pct": {"prefix": true, "stat": "evasion", "mod": I, "text": "{v}% increased Evasion Rating", "scale": 0.5, "pct": true},
-	"es": {"prefix": true, "stat": "energy_shield", "mod": F, "text": "+{v} to maximum Energy Shield", "scale": 0.5},
-	"es_pct": {"prefix": true, "stat": "energy_shield", "mod": I, "text": "{v}% increased maximum Energy Shield", "scale": 0.5, "pct": true},
+	"evasion": {"prefix": true, "stat": "evasion", "mod": F, "text": "+{v} to Evasion Rating", "scale": 0.7},
+	"evasion_pct": {"prefix": true, "stat": "evasion", "mod": I, "text": "{v}% increased Evasion Rating", "scale": 1.0, "pct": true},
+	"es": {"prefix": true, "stat": "energy_shield", "mod": F, "text": "+{v} to maximum Energy Shield", "scale": 2.8},
+	"es_pct": {"prefix": true, "stat": "energy_shield", "mod": I, "text": "{v}% increased maximum Energy Shield", "scale": 1.0, "pct": true},
 	"thorns": {"prefix": true, "stat": "thorns", "mod": F, "text": "{v} Physical Thorns damage", "scale": 0.4},
 	"rarity_prefix": {"prefix": true, "stat": "item_rarity", "mod": F, "text": "{v}% increased Rarity of Items found", "scale": 1.0, "pct": true},
 	"block": {"prefix": true, "stat": "block", "mod": F, "text": "+{v}% Block chance", "scale": 0.8, "pct": true},
@@ -78,6 +81,31 @@ const FAMILIES := {
 	"ail_ignite": {"prefix": false, "stat": "ail_ignite", "mod": F, "text": "{v}% reduced Ignite Duration on you", "scale": 1.0, "pct": true},
 	"ail_shock": {"prefix": false, "stat": "ail_shock", "mod": F, "text": "{v}% reduced Shock duration on you", "scale": 1.0, "pct": true},
 	"ail_freeze": {"prefix": false, "stat": "ail_freeze", "mod": F, "text": "{v}% reduced Freeze Duration on you", "scale": 1.0, "pct": true},
+	# Accuracy, Spirit, skill levels and the hybrid modifiers (two stats in one)
+	"accuracy": {"prefix": true, "stat": "accuracy", "mod": F, "text": "+{v} to Accuracy Rating", "scale": 0.5},
+	"spirit": {"prefix": true, "stat": "spirit", "mod": F, "text": "+{v} to Spirit", "scale": 1.0},
+	"lvl_melee": {"prefix": false, "stat": "lvl_melee", "mod": F, "text": "+{v} to Level of all Melee Skills", "scale": 1.0},
+	"lvl_projectile": {"prefix": false, "stat": "lvl_projectile", "mod": F, "text": "+{v} to Level of all Projectile Skills", "scale": 1.0},
+	"lvl_spell": {"prefix": false, "stat": "lvl_spell", "mod": F, "text": "+{v} to Level of all Spell Skills", "scale": 1.0},
+	"lvl_fire": {"prefix": false, "stat": "lvl_fire", "mod": F, "text": "+{v} to Level of all Fire Spell Skills", "scale": 1.0},
+	"lvl_cold": {"prefix": false, "stat": "lvl_cold", "mod": F, "text": "+{v} to Level of all Cold Spell Skills", "scale": 1.0},
+	"lvl_lightning": {"prefix": false, "stat": "lvl_lightning", "mod": F, "text": "+{v} to Level of all Lightning Spell Skills", "scale": 1.0},
+	"lvl_chaos": {"prefix": false, "stat": "lvl_chaos", "mod": F, "text": "+{v} to Level of all Chaos Spell Skills", "scale": 1.0},
+	"lvl_phys_spell": {"prefix": false, "stat": "lvl_phys_spell", "mod": F, "text": "+{v} to Level of all Physical Spell Skills", "scale": 1.0},
+	"armour_pct_life": {"prefix": true, "stat": "armor", "mod": I, "text": "{v}% increased Armour", "scale": 1.0, "pct": true, "second": {"stat": "max_life", "mod": F, "text": "+{v2} to maximum Life", "scale": 3.9}},
+	"armour_pct_mana": {"prefix": true, "stat": "armor", "mod": I, "text": "{v}% increased Armour", "scale": 1.0, "pct": true, "second": {"stat": "mana_max", "mod": F, "text": "+{v2} to maximum Mana", "scale": 2.1}},
+	"armour_pct_stun": {"prefix": true, "stat": "armor", "mod": I, "text": "{v}% increased Armour", "scale": 1.0, "pct": true, "second": {"stat": "stun_threshold", "mod": F, "text": "+{v2} to Stun Threshold", "scale": 0.3}},
+	"armour_flat_pct": {"prefix": true, "stat": "armor", "mod": F, "text": "+{v} to Armour", "scale": 0.7, "second": {"stat": "armor", "mod": I, "text": "{v2}% increased Armour", "scale": 1.0, "pct": true}},
+	"evasion_pct_life": {"prefix": true, "stat": "evasion", "mod": I, "text": "{v}% increased Evasion Rating", "scale": 1.0, "pct": true, "second": {"stat": "max_life", "mod": F, "text": "+{v2} to maximum Life", "scale": 3.9}},
+	"evasion_pct_mana": {"prefix": true, "stat": "evasion", "mod": I, "text": "{v}% increased Evasion Rating", "scale": 1.0, "pct": true, "second": {"stat": "mana_max", "mod": F, "text": "+{v2} to maximum Mana", "scale": 2.1}},
+	"evasion_pct_stun": {"prefix": true, "stat": "evasion", "mod": I, "text": "{v}% increased Evasion Rating", "scale": 1.0, "pct": true, "second": {"stat": "stun_threshold", "mod": F, "text": "+{v2} to Stun Threshold", "scale": 0.3}},
+	"evasion_flat_pct": {"prefix": true, "stat": "evasion", "mod": F, "text": "+{v} to Evasion Rating", "scale": 0.7, "second": {"stat": "evasion", "mod": I, "text": "{v2}% increased Evasion Rating", "scale": 1.0, "pct": true}},
+	"es_pct_life": {"prefix": true, "stat": "energy_shield", "mod": I, "text": "{v}% increased maximum Energy Shield", "scale": 1.0, "pct": true, "second": {"stat": "max_life", "mod": F, "text": "+{v2} to maximum Life", "scale": 3.9}},
+	"es_pct_mana": {"prefix": true, "stat": "energy_shield", "mod": I, "text": "{v}% increased maximum Energy Shield", "scale": 1.0, "pct": true, "second": {"stat": "mana_max", "mod": F, "text": "+{v2} to maximum Mana", "scale": 2.1}},
+	"es_pct_stun": {"prefix": true, "stat": "energy_shield", "mod": I, "text": "{v}% increased maximum Energy Shield", "scale": 1.0, "pct": true, "second": {"stat": "stun_threshold", "mod": F, "text": "+{v2} to Stun Threshold", "scale": 0.3}},
+	"es_flat_pct": {"prefix": true, "stat": "energy_shield", "mod": F, "text": "+{v} to maximum Energy Shield", "scale": 2.8, "second": {"stat": "energy_shield", "mod": I, "text": "{v2}% increased maximum Energy Shield", "scale": 1.0, "pct": true}},
+	"spell_mana": {"prefix": true, "stat": "spell_inc", "mod": F, "text": "{v}% increased Spell Damage", "scale": 1.7, "pct": true, "second": {"stat": "mana_max", "mod": F, "text": "+{v2} to maximum Mana", "scale": 2.1}},
+	"phys_acc": {"prefix": true, "stat": "damage", "mod": I, "text": "{v}% increased Damage", "scale": 1.7, "pct": true, "second": {"stat": "accuracy", "mod": F, "text": "+{v2} to Accuracy Rating", "scale": 0.5}},
 	# Flasks (the stats are read by ItemInstance.flask_effect, not worn)
 	"flask_amount": {"prefix": true, "stat": "flask_amount", "mod": F, "text": "{v}% increased Amount Recovered", "scale": 1.0, "pct": true},
 	"flask_speed": {"prefix": true, "stat": "flask_speed", "mod": F, "text": "{v}% increased Recovery rate", "scale": 1.0, "pct": true},
@@ -167,15 +195,48 @@ static func weight_of(family: String) -> int:
 
 ## The value of a roll (`t`: a tier row, `u`: 0..1 position in its range), scaled to Tainted.
 static func roll_value(family: String, t: Array, u: float) -> float:
-	var def: Dictionary = FAMILIES[family]
 	var raw := lerpf(float(t[1]), float(t[2]), u)
 	return round_value(family, raw)
+
+
+## Whether a family gives two stats (a hybrid modifier: "% increased Armour" and "+ to maximum Life").
+static func is_hybrid(family: String) -> bool:
+	return FAMILIES[family].has("second")
+
+
+## A hybrid's second value, rolled in its tier's second range.
+static func roll_value2(family: String, t: Array, u: float) -> float:
+	return round_value2(family, lerpf(float(t[3]), float(t[4]), u))
+
+
+static func round_value2(family: String, raw: float) -> float:
+	var part: Dictionary = FAMILIES[family].second
+	var v := raw * float(part.scale)
+	if bool(part.get("pct", false)):
+		return snappedf(v / 100.0, 0.0001)
+	return maxf(roundf(v), 1.0)
+
+
+## Tooling only: AFFIX_SCALES="life=2,armour=1.5" multiplies those families' scales (scratch/measure_*.gd, to calibrate them).
+static var _override := {}
+static var _override_read := false
+
+
+## A family's scale: its own, times the calibration override if one is set.
+static func scale_of(family: String) -> float:
+	if not _override_read:
+		_override_read = true
+		for kv in OS.get_environment("AFFIX_SCALES").split(",", false):
+			var parts := kv.split("=")
+			if parts.size() == 2:
+				_override[parts[0]] = float(parts[1])
+	return float(FAMILIES[family].scale) * float(_override.get(family, 1.0))
 
 
 ## A raw PoE2 number as the stat's value.
 static func round_value(family: String, raw: float) -> float:
 	var def: Dictionary = FAMILIES[family]
-	var v := raw * float(def.scale)
+	var v := raw * scale_of(family)
 	if bool(def.get("pct", false)):
 		return snappedf(v / 100.0, 0.0001)
 	var dec: int = int(def.get("dec", 0))
@@ -198,7 +259,7 @@ static func tier_of_value(b: ItemBase, family: String, value: float) -> int:
 
 
 ## The text of an entry: the family's text with its value, and the 1-based tier counted from the best (T1 best).
-static func entry_text(family: String, value: float) -> String:
+static func entry_text(family: String, value: float, value2 := 0.0) -> String:
 	var def: Dictionary = FAMILIES[family]
 	var shown: String
 	if bool(def.get("pct", false)):
@@ -207,7 +268,12 @@ static func entry_text(family: String, value: float) -> String:
 	else:
 		var dec: int = int(def.get("dec", 0))
 		shown = ("%.*f" % [dec, value]) if dec > 0 else str(int(round(value)))
-	return String(def.text).replace("{v}", shown)
+	var text := String(def.text).replace("{v}", shown)
+	if def.has("second"):  # a hybrid: its second line
+		var part: Dictionary = def.second
+		var shown2 := str(int(round(value2 * 100.0))) if bool(part.get("pct", false)) else str(int(round(value2)))
+		text += "\n" + String(part.text).replace("{v2}", shown2)
+	return text
 
 
 ## Old modifier ids (before the PoE2 rework) and the family each became.

@@ -542,17 +542,24 @@ func roll_family(item: ItemInstance, family: String) -> Dictionary:
 		if r <= 0.0:
 			pick = open[k]
 			break
-	return make_family_entry(item.base, family, pick, AffixDB.roll_value(family, tiers[pick], randf()))
+	var v2 := AffixDB.roll_value2(family, tiers[pick], randf()) if AffixDB.is_hybrid(family) else 0.0
+	return make_family_entry(item.base, family, pick, AffixDB.roll_value(family, tiers[pick], randf()), v2)
 
 
-## A saved or rolled modifier of a family: tier is the index in the class's table (0 = lowest).
-func make_family_entry(b: ItemBase, family: String, tier: int, value: float) -> Dictionary:
+## A saved or rolled modifier of a family: tier is the index in the class's table (0 = lowest). A hybrid has a second
+## stat and value (value2).
+func make_family_entry(b: ItemBase, family: String, tier: int, value: float, value2 := 0.0) -> Dictionary:
 	var def: Dictionary = AffixDB.FAMILIES[family]
-	return {
+	var e := {
 		"id": family, "family": family, "tier": tier,
 		"tier_no": maxi(AffixDB.tiers_for(b, family).size() - tier, 1),  # 1 is the best tier
-		"stat": def.stat, "mod_type": def.mod, "value": value, "text": AffixDB.entry_text(family, value),
+		"stat": def.stat, "mod_type": def.mod, "value": value, "text": AffixDB.entry_text(family, value, value2),
 	}
+	if def.has("second"):
+		e["stat2"] = def.second.stat
+		e["mod_type2"] = def.second.mod
+		e["value2"] = value2
+	return e
 
 
 func roll_affixes(item: ItemInstance, count: int) -> void:
@@ -570,7 +577,8 @@ func reroll_values(item: ItemInstance) -> void:
 			var tiers := AffixDB.tiers_for(item.base, f)
 			var t := clampi(int(e.get("tier", 0)), 0, maxi(tiers.size() - 1, 0))
 			if not tiers.is_empty():
-				item.affixes[i] = make_family_entry(item.base, f, t, AffixDB.roll_value(f, tiers[t], randf()))
+				var v2 := AffixDB.roll_value2(f, tiers[t], randf()) if AffixDB.is_hybrid(f) else 0.0
+				item.affixes[i] = make_family_entry(item.base, f, t, AffixDB.roll_value(f, tiers[t], randf()), v2)
 			continue
 		var def := find_affix(String(e.id))
 		if def != null:
@@ -586,7 +594,11 @@ func entry_from_save(item: ItemInstance, d: Dictionary) -> Dictionary:
 		var tiers := AffixDB.tiers_for(item.base, id)
 		if tiers.is_empty():
 			return {}
-		return make_family_entry(item.base, id, clampi(int(d.tier), 0, tiers.size() - 1), value)
+		var tier := clampi(int(d.tier), 0, tiers.size() - 1)
+		var v2 := float(d.get("value2", 0.0))
+		if AffixDB.is_hybrid(id) and not d.has("value2"):
+			v2 = AffixDB.roll_value2(id, tiers[tier], 0.5)
+		return make_family_entry(item.base, id, tier, value, v2)
 	var def := find_affix(id)
 	if def != null:  # a flask modifier
 		return make_entry(def, float(d.get("value", def.min_value)))

@@ -1481,6 +1481,36 @@ func set_slot_trigger(i: int, skill_id: String) -> bool:
 	return true
 
 
+## Spirit (Path of Exile 2): what a meta support reserves while it is linked. You have SPIRIT_BASE and gear adds "+N to Spirit";
+## the metas that do not fit (counted in slot order) do nothing until you free some.
+const SPIRIT_BASE := 100
+const SPIRIT_PER_META := 100
+
+
+func spirit_total() -> int:
+	return SPIRIT_BASE + (int(player.stats.get_stat("spirit")) if is_instance_valid(player) else 0)
+
+
+## Spirit the linked meta supports ask for.
+func spirit_wanted() -> int:
+	var n := 0
+	for i in SKILL_SLOTS:
+		if slot_meta(i) != null and slot_skill(i) != "" and slot_trigger(i) != "":
+			n += SPIRIT_PER_META
+	return n
+
+
+## Whether the meta support in skill slot `slot` is covered by your Spirit (an earlier slot's meta comes first).
+func meta_has_spirit(slot: int) -> bool:
+	var used := 0
+	for i in SKILL_SLOTS:
+		if slot_meta(i) != null and slot_skill(i) != "" and slot_trigger(i) != "":
+			used += SPIRIT_PER_META
+			if i == slot:
+				return used <= spirit_total()
+	return false
+
+
 ## What the player's meta supports fire: one {"slot", "event" ("crit" | "hurt"), "skill" (a SkillDef, with the
 ## supports of the slot it is in if it has one), "cd" (seconds until it may fire again)} per slot that has a meta
 ## support, a skill of its own and a chosen skill to cast.

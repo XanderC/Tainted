@@ -1,6 +1,17 @@
 [
 	{
 		"build": 0,
+		"title": "Accuracy, Spirit, skill levels, hybrid modifiers and a balance pass on gear",
+		"notes": [
+			"Accuracy: about one hit in eight now misses. Accuracy Rating on gear cuts the misses (300 halves them), and your character sheet shows how many of your hits land.",
+			"Spirit: meta supports (Cast on Critical Strike, Cast when Damage Taken) now reserve 100 Spirit each. You have 100, and gear adds more with +N to Spirit on body armour and amulets. If you linked two, the second does nothing until you have 200.",
+			"Skill levels on gear: +N to Level of all Melee, Projectile or Spell Skills (and Fire, Cold, Lightning, Chaos or Physical Spell Skills), each level adding 10% skill damage, as a gem level does.",
+			"Hybrid modifiers with two stats in one, as in PoE2: Armour, Evasion or Energy Shield with Life, Mana or Stun Threshold, flat and percentage defence together, Spell Damage with Mana, and Physical Damage with Accuracy.",
+			"Balance: gear with the new modifiers was giving only a quarter of the damage and half the life of the old gear, which would have made Act I several times harder. Modifier values are rescaled so that, at the item levels Act I drops, a full set is worth about what it was (checked against the old build: damage and survivability within about 10% at item levels 10 to 14). Percentage modifiers now show PoE2's own numbers. Stuns and freezes cannot be chained: after one you cannot be stunned or frozen for 2 seconds, and a burn, poison or bleed that kills you no longer errors."
+		]
+	},
+	{
+		"build": 0,
 		"title": "Ailments, all thirteen charms and more item modifiers",
 		"notes": [
 			"Monsters can now afflict you, as in Path of Exile 2. A hit may Ignite you (fire), Shock you (lightning, 20% more damage taken), Freeze you (cold, you cannot move or act for a moment), Poison you (chaos) or make you Bleed (physical), and burning, poison and bleeding keep hurting you for a few seconds. A very big hit Stuns you. Orc Shamans, Dark Elves and Veil Cultists can Curse you (you deal 20% less damage). What is wrong with you shows over the life globe.",

@@ -315,7 +315,28 @@ func get_level_bonus() -> int:
 	var n := 0
 	for r in get_runes():
 		n += r.level_bonus
-	return n
+	return n + _gear_levels()
+
+
+## "+N to Level of all Melee / Projectile / Fire Spell Skills" on the player's gear.
+func _gear_levels() -> int:
+	if for_hireling or not is_instance_valid(GameState.player):
+		return 0
+	var st: StatBlock = GameState.player.stats
+	var n := 0.0
+	if is_spell:
+		n += st.get_stat("lvl_spell")
+		match int(get_effective_damage_type()):
+			RuneDef.DamageType.FIRE: n += st.get_stat("lvl_fire")
+			RuneDef.DamageType.COLD: n += st.get_stat("lvl_cold")
+			RuneDef.DamageType.LIGHTNING: n += st.get_stat("lvl_lightning")
+			RuneDef.DamageType.CHAOS: n += st.get_stat("lvl_chaos")
+			_: n += st.get_stat("lvl_phys_spell")
+	elif weapon == "bow" or weapon == "crossbow":
+		n += st.get_stat("lvl_projectile")
+	else:
+		n += st.get_stat("lvl_melee")
+	return int(n)
 
 
 ## Projectiles a shot of this skill gains, and times a chaining skill chains again (Multishot, Chain).

@@ -12,6 +12,8 @@ const FIGHTS := [["dune_wastes", "briar_alpha", 3.5, 350, 170], ["weeping_hollow
 
 
 func _ready() -> void:
+	if OS.get_environment("FIGHT_SPEED") != "":
+		Engine.time_scale = float(OS.get_environment("FIGHT_SPEED"))  # faster than real time: AILMENTS=0 switches ailments off
 	GameState.tutorial_stage = GameState.TUTORIAL_DONE
 	for f in FIGHTS:
 		var quests := {}
@@ -42,12 +44,15 @@ func _ready() -> void:
 		var dps := 0.6 * 90.0 * float(f[2])
 		var t := 0.0
 		var hits := []
+		var helpless := 0.0
 		var last := p.hp
 		var result := ""
 		while t < 400.0:
 			await get_tree().create_timer(0.25).timeout
 			t += 0.25
-			if boss.brain != null and boss.brain.state != BossBrain.S.SLEEP and boss._shield_t <= 0.0 and boss.hp > 0.0:
+			if p.is_helpless():
+				helpless += 0.25  # a stunned or frozen character deals nothing
+			elif boss.brain != null and boss.brain.state != BossBrain.S.SLEEP and boss._shield_t <= 0.0 and boss.hp > 0.0:
 				boss.take_damage(dps * 0.25)  # (a plain number, no crit)
 			if p.hp < last - 0.5:
 				hits.append((last - p.hp) / p.stats.get_stat("max_life"))
@@ -61,7 +66,7 @@ func _ready() -> void:
 		var biggest := 0.0
 		for h in hits:
 			biggest = maxf(biggest, h)
-		print("%-14s life %6.0f: %s after %3.0f s (character left with %3.0f%%; biggest single hit %.0f%% of their life, %d hits)" % [f[1], boss.max_hp, result, t, 100.0 * maxf(p.hp, 0.0) / p.stats.get_stat("max_life"), biggest * 100.0, hits.size()])
+		print("%-14s life %6.0f: %s after %3.0f s (character left with %3.0f%%; biggest single hit %.0f%% of their life, %d hits, %.0f s stunned or frozen)" % [f[1], boss.max_hp, result, t, 100.0 * maxf(p.hp, 0.0) / p.stats.get_stat("max_life"), biggest * 100.0, hits.size(), helpless])
 		zone.queue_free()
 		await get_tree().create_timer(0.4).timeout
 	get_tree().quit()

@@ -52,11 +52,14 @@ func _ready() -> void:
 	check(p._cooldowns[0] == cd0, "no skill while stunned")
 	step(p, 0.8)
 	check(not p.has_ailment("stun") and not p.is_helpless(), "the stun passes (0.7s)")
+	check(not p.inflict("freeze"), "no freeze straight after a stun: a moment's grace")
+	step(p, 2.1)
 	check(p.inflict("freeze") and p.is_helpless(), "frozen: helpless")
 	step(p, 1.2)
 	check(not p.is_helpless(), "the freeze passes (1.1s)")
 
 	# --- a big hit stuns ---
+	step(p, 2.1)
 	p.hp = max_life
 	p.take_damage(max_life * 0.3, RuneDef.DamageType.PHYSICAL)
 	check(p.has_ailment("stun"), "a hit of 30%% of your life stuns")
@@ -135,11 +138,13 @@ func _ready() -> void:
 		p._ail_dps.clear()
 		var c := charm(pr[0])
 		p.charms = [c, null, null]
+		p._ail_grace = 0.0
 		check(not p.inflict(pr[1], 50.0) and not p.has_ailment(pr[1]), "%s stops %s" % [pr[0], pr[1]])
 		check(c.charges_now() < float(c.max_charges()), "and spent its charges")
 		check(not p.inflict(pr[1], 50.0), "and keeps it off while it lasts")
 		step(p, 3.2)
 		c.charges = 0.0
+		p._ail_grace = 0.0
 		check(p.inflict(pr[1], 50.0), "with no charges left %s lands" % pr[1])
 		p._ail.clear()
 		p._ail_dps.clear()

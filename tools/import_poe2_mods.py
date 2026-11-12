@@ -55,6 +55,10 @@ FAMILY = {
     "IncreasedEvasionRating": "evasion", "EvasionRatingPercent": "evasion_pct",
     "IncreasedEnergyShield": "es", "EnergyShieldPercent": "es_pct",
     "StunThreshold": "stun_threshold", "Thorns": "thorns", "ReducedAilmentDuration": "ail_",
+    "IncreasedAccuracy": "accuracy", "BaseSpirit": "spirit", "IncreaseSocketedGemLevel": "lvl_",
+    "BaseLocalDefencesAndLife": "hyb", "BaseLocalDefencesAndMana": "hyb", "BaseLocalDefencesAndDefencePercent": "hyb",
+    "DefencesPercentAndStunThreshold": "hyb", "SpellDamageAndMana": "hyb",
+    "LocalIncreasedPhysicalDamagePercentAndAccuracyRating": "hyb",
     "ItemFoundRarityIncreasePrefix": "rarity_prefix", "ItemFoundRarityIncrease": "rarity",
     "IncreasedShieldBlockPercentage": "block", "ArmourAppliesToElementalDamage": "armour_ele",
     "MaximumFireResist": "max_fire", "MaximumColdResist": "max_cold", "MaximumLightningResistance": "max_lightning",
@@ -90,10 +94,14 @@ def values(raw: str):
     return out
 
 
-def tier_row(m):
+def tier_row(m, hybrid=False):
     vs = values(m["str"])
     if not vs:
         return None
+    if hybrid:
+        if len(vs) < 2:
+            return None
+        return [int(m["Level"]), round(vs[0][0], 3), round(vs[0][1], 3), round(vs[1][0], 3), round(vs[1][1], 3)]
     if len(vs) >= 2 and re.search(r"Adds|Gain|Thorns", html.unescape(re.sub(r"<[^>]+>", "", m["str"])), re.I):
         lo = (vs[0][0] + vs[1][0]) / 2.0  # "Adds (1-2) to (3-5)": the average hit, low and high roll
         hi = (vs[0][1] + vs[1][1]) / 2.0
@@ -130,6 +138,18 @@ def main(folder: str, out: str) -> None:
                     fid = "es" if flat else "es_pct"
                 else:
                     fid = "armour" if flat else "armour_pct"
+            if fam == "IncreaseSocketedGemLevel":
+                kinds = [("Melee Skills", "lvl_melee"), ("Projectile Skills", "lvl_projectile"), ("Fire Spell", "lvl_fire"),
+                         ("Cold Spell", "lvl_cold"), ("Lightning Spell", "lvl_lightning"), ("Chaos Spell", "lvl_chaos"),
+                         ("Physical Spell", "lvl_phys_spell"), ("all Spell Skills", "lvl_spell")]
+                fid = next((v for k, v in kinds if k in text), None)
+                if fid is None:
+                    continue  # Minion skills: the game has no such gems
+            if FAMILY[fam] == "hyb":
+                kind = "evasion" if "Evasion" in text else ("es" if "Energy Shield" in text else "armour")
+                fid = {"BaseLocalDefencesAndLife": f"{kind}_pct_life", "BaseLocalDefencesAndMana": f"{kind}_pct_mana",
+                       "BaseLocalDefencesAndDefencePercent": f"{kind}_flat_pct", "DefencesPercentAndStunThreshold": f"{kind}_pct_stun",
+                       "SpellDamageAndMana": "spell_mana", "LocalIncreasedPhysicalDamagePercentAndAccuracyRating": "phys_acc"}[fam]
             if fam == "ReducedAilmentDuration":
                 kinds = {"Bleeding": "ail_bleed", "Poison": "ail_poison", "Ignite": "ail_ignite", "Shock": "ail_shock", "Freeze": "ail_freeze"}
                 fid = next((v for k, v in kinds.items() if k in text), None)
@@ -155,7 +175,7 @@ def main(folder: str, out: str) -> None:
                     continue
             if fid == "belt_flask_recovery" and "Life Recovery" not in text:
                 continue  # the belt's mana line is the same mod for the other flask
-            row = tier_row(m)
+            row = tier_row(m, FAMILY[fam] == "hyb")
             if row is None:
                 continue
             if pg != page and fid in have and fid not in fams:
@@ -180,7 +200,7 @@ def main(folder: str, out: str) -> None:
     for cls, fams in data.items():
         lines.append('\t"%s": {' % cls)
         for f, tiers in fams.items():
-            rows = ", ".join("[%d, %s, %s]" % (t[0], fmt(t[1]), fmt(t[2])) for t in tiers)
+            rows = ", ".join("[" + ", ".join([str(t[0])] + [fmt(v) for v in t[1:]]) + "]" for t in tiers)
             lines.append('\t\t"%s": [%s],' % (f, rows))
         lines.append("\t},")
     lines.append("}")

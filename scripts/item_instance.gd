@@ -258,6 +258,8 @@ func apply_to(stats: StatBlock) -> void:
 		stats.add_mod(base.implicit_stat, StatBlock.ModType.FLAT, implicit_value(), self)
 	for a in affixes:
 		stats.add_mod(a.stat, a.mod_type, a.value, self)
+		if a.has("stat2"):  # a hybrid modifier's second stat
+			stats.add_mod(a.stat2, a.mod_type2, a.value2, self)
 	for gid in gems:
 		var g := socket_info(gid)
 		if not g.is_empty():
@@ -305,7 +307,7 @@ func get_tooltip() -> String:
 	if base.implicit_stat != "":
 		lines.append("Implicit: +%d %s" % [int(implicit_value()), base.implicit_stat.replace("_", " ")])
 	for a in affixes:
-		lines.append(a.text)
+		lines.append(String(a.text))
 	if is_runeword():
 		lines.append("Runeword: " + Runewords.rune_names(runeword_id))
 		for m in rw_mods:
@@ -342,7 +344,7 @@ func to_dict() -> Dictionary:
 		"name": display_name,
 		"rarity": int(rarity),
 		"ilvl": ilvl,
-		"affixes": affixes.map(func(a): return {"id": a.id, "value": a.value, "tier": int(a.tier)} if a.has("tier") else {"id": a.id, "value": a.value}),
+		"affixes": affixes.map(func(a): return _affix_dict(a)),
 		"sockets": sockets,
 		"gems": gems,
 		"unique": unique_id,
@@ -360,6 +362,15 @@ func to_dict() -> Dictionary:
 		"uid": _ensure_uid(),
 		"charges": charges,
 	}
+
+
+static func _affix_dict(a: Dictionary) -> Dictionary:
+	var d := {"id": a.id, "value": a.value}
+	if a.has("tier"):
+		d["tier"] = int(a.tier)
+	if a.has("value2"):
+		d["value2"] = a.value2
+	return d
 
 
 func _ensure_uid() -> String:

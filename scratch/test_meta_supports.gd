@@ -24,6 +24,7 @@ func _ready() -> void:
 	add_child(main)
 	await get_tree().create_timer(1.0).timeout
 	var p: Player = main.player
+	p.stats.add_mod("spirit", StatBlock.ModType.FLAT, 500.0, "test_spirit")  # (several metas at once need Spirit)
 	GameState.level = 40
 	GameState.attributes = {"str": 300, "dex": 300, "vit": 300, "ene": 300}
 	p.refresh_attributes()

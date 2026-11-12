@@ -354,6 +354,8 @@ func _hit_area(origin: Vector2, dir: Vector2, hit_radius: float, arc_deg: float,
 			continue
 		if arc_deg < 359.0 and absf(dir.angle_to(to)) > half:
 			continue
+		if _misses():
+			continue  # missed
 
 		var crit_chance := stats.get_stat("crit_chance") if passive("no_crit") <= 0.0 and not skill.cannot_crit() else 0.0
 		if exec_bonus > 0.0 and e.hp / e.max_hp < 0.35 and not skill.cannot_crit():
@@ -454,7 +456,7 @@ func _fire_triggers(event: String) -> void:
 		if t.event != event or float(t.cd) > 0.0:
 			continue
 		var s: SkillDef = t.skill
-		if skill_block_reason(s) != "":
+		if skill_block_reason(s) != "" or not GameState.meta_has_spirit(int(t.slot)):
 			continue
 		t.cd = float(RuneDef.TRIGGER_COOLDOWN.get(event, 1.0))
 		_trigger_busy = true
@@ -590,6 +592,20 @@ func _typed_inc(dtype: int) -> float:
 	return m
 
 
+## Accuracy: some of your hits miss; Accuracy Rating on gear cuts the misses (MISS_BASE with none, half that at ACCURACY_K).
+const MISS_BASE := 0.12
+const ACCURACY_K := 300.0
+
+
+## Tooling: MISSES=0 in the environment makes every hit land (tests that need a hit to land).
+func _misses() -> bool:
+	return OS.get_environment("MISSES") != "0" and randf() < miss_chance()
+
+
+func miss_chance() -> float:
+	return MISS_BASE * ACCURACY_K / (ACCURACY_K + maxf(stats.get_stat("accuracy"), 0.0))
+
+
 ## A critical hit multiplies damage by this (2x, and "+N% to Critical Damage Bonus" on gear).
 func crit_mult() -> float:
 	return 2.0 + stats.get_stat("crit_damage")
@@ -641,6 +657,8 @@ func _hit_one(e, s: SkillDef, part := 1.0, dtype := -1, ailment := "-") -> float
 	if e is Breakable:  # a barrel: it breaks, and that is all (no crit, no leech, no trigger)
 		e.take_damage()
 		return 0.0
+	if _misses():
+		return 0.0  # missed
 	var crit_chance := stats.get_stat("crit_chance") if passive("no_crit") <= 0.0 and not s.cannot_crit() else 0.0
 	if s.get_execute_bonus() > 0.0 and e.hp / e.max_hp < 0.35 and not s.cannot_crit():
 		crit_chance += s.get_execute_bonus()
@@ -1067,6 +1085,13 @@ const CURSE_DAMAGE := -0.2  ## a cursed character deals this much less (a MORE m
 const STUN_HIT := 0.15  ## a hit of this share of your life stuns, and stun threshold raises it
 const DOT_SHARE := {"bleed": 0.4, "poison": 0.4, "ignite": 0.3}  ## of the hit, dealt over the ailment's time
 const DOT_TYPE := {"bleed": RuneDef.DamageType.PHYSICAL, "poison": RuneDef.DamageType.CHAOS, "ignite": RuneDef.DamageType.FIRE}
+## Tooling: AILMENTS=0 in the environment switches monsters' ailments off (to measure how much they add to a fight).
+static func ailments_enabled() -> bool:
+	return OS.get_environment("AILMENTS") != "0"
+
+
+const STUN_GRACE := 2.0  ## after a stun or freeze ends you cannot be stunned or frozen for this long
+var _ail_grace := 0.0
 var _ail := {}  ## ailment -> seconds left
 var _ail_dps := {}  ## a damaging ailment -> damage a second
 var _curse_src := RefCounted.new()
@@ -1088,7 +1113,7 @@ func is_helpless() -> bool:
 
 ## An ailment's chance from a hit of `amount` (before armour) of `dtype`: more for a big hit.
 func _hit_ailments(amount: float, dtype: int) -> void:
-	if amount <= 0.0:
+	if amount <= 0.0 or not ailments_enabled():
 		return
 	var frac := amount / maxf(stats.get_stat("max_life"), 1.0)
 	var chance := clampf(0.10 + frac * 1.5, 0.10, 0.45)
@@ -1099,7 +1124,7 @@ func _hit_ailments(amount: float, dtype: int) -> void:
 			if randf() < chance:
 				inflict("ignite", amount)
 		RuneDef.DamageType.COLD:
-			if randf() < chance * 0.5:
+			if randf() < chance * 0.35:
 				inflict("freeze", amount)
 		RuneDef.DamageType.LIGHTNING:
 			if randf() < chance:
@@ -1115,6 +1140,8 @@ func _hit_ailments(amount: float, dtype: int) -> void:
 ## Give yourself an ailment (`hit`: the damage that caused it, for the damaging ones). A charm for it fires first and may stop it.
 func inflict(name: String, hit := 0.0) -> bool:
 	if dead or not AILMENT_BASE.has(name):
+		return false
+	if _ail_grace > 0.0 and (name == "stun" or name == "freeze"):
 		return false
 	_charm_trigger("ailment_" + name)
 	if stats.get_stat("immune_" + name) > 0.0:
@@ -1137,12 +1164,17 @@ func _process_ailments(delta: float) -> void:
 			continue
 		if _ail_dps.has(k):
 			take_damage(float(_ail_dps[k]) * delta, int(DOT_TYPE[k]), true)
+			if dead:  # the tick killed you: everything was cleared
+				return
 		_ail[k] = float(_ail[k]) - delta
 		if float(_ail[k]) <= 0.0:
 			_ail[k] = 0.0
 			_ail_dps.erase(k)
 			if k == "curse":
 				stats.remove_source(_curse_src)
+			if k == "stun" or k == "freeze":
+				_ail_grace = STUN_GRACE  # no chain-stunning: a moment to act first
+	_ail_grace = maxf(_ail_grace - delta, 0.0)
 
 
 # ---------- charms ----------
