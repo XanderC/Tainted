@@ -79,7 +79,7 @@ const QUESTS := {
 			{"type": "kill_boss", "key": "matron_vhol", "text": "Slay Skittering Matron Vhol"},
 			{"type": "use", "key": "purge_ward", "text": "Plant the Alchemical Purge Ward at the cyst"},
 		],
-		"rewards": {"xp": 420, "orbs": {"alteration": 3, "augment": 2, "alchemy": 1}, "passive_points": 1, "item": {"slot": "", "rarity": 2}},
+		"rewards": {"xp": 420, "orbs": {"augment": 5, "alchemy": 1}, "passive_points": 1, "item": {"slot": "", "rarity": 2}},
 	},
 	"a1_breaking_the_seal": {
 		"name": "Breaking the Seal", "act": 1, "kind": "main", "giver": "althea", "turn_in": "althea", "requires": "a1_poisoning_the_well",
@@ -95,7 +95,7 @@ const QUESTS := {
 			{"type": "use", "key": "golem_half", "text": "Take the second half of the Warded Keystone"},
 			{"type": "use", "key": "mausoleum_seal", "text": "Join the halves at the sealed mausoleum"},
 		],
-		"rewards": {"xp": 650, "orbs": {"alteration": 3, "augment": 2, "alchemy": 2, "chaos": 1}, "passive_points": 1, "item": {"slot": "", "rarity": 2}},
+		"rewards": {"xp": 650, "orbs": {"augment": 5, "alchemy": 2, "chaos": 1}, "passive_points": 1, "item": {"slot": "", "rarity": 2}},
 	},
 	"a1_the_last_watch": {
 		"name": "The Last Watch", "act": 1, "kind": "side", "giver": "dennis", "turn_in": "dennis", "requires": "a1_poisoning_the_well",
@@ -107,7 +107,7 @@ const QUESTS := {
 			{"type": "kill", "key": "mutated_scout", "count": 2, "text": "Put down the 2 scouts the Taint twisted"},
 			{"type": "talk", "key": "mara", "text": "Find the surviving scout at the watchtower"},
 		],
-		"rewards": {"xp": 480, "orbs": {"alteration": 2, "chaos": 1}, "item": {"slot": "", "rarity": 2},
+		"rewards": {"xp": 480, "orbs": {"augment": 2, "chaos": 1}, "item": {"slot": "", "rarity": 2},
 			"notes": ["the Rusted Armory Key (for a vault in the Ossuary)"]},
 		"lines": {
 			"mara": {1: "Dennis sent you? Thank the gods. Jorin and Tess went down to the gates for a closer look... and came back wrong. I couldn't. Here: the armory key, from the guardroom. There's a vault behind a collapsible wall in the Ossuary's first hall. Take it to Dennis, and tell him the beacon's dry."},
@@ -129,7 +129,7 @@ const QUESTS := {
 			{"type": "kill_boss", "key": "herald_morrow", "text": "Slay Herald Morrow, who channels the third"},
 			{"type": "use", "key": "anchor_3", "text": "Shatter the third Veil Anchor"},
 		],
-		"rewards": {"xp": 1100, "orbs": {"alteration": 4, "augment": 3, "alchemy": 3, "chaos": 2}, "passive_points": 1, "item": {"slot": "", "rarity": 2}},
+		"rewards": {"xp": 1100, "orbs": {"augment": 7, "alchemy": 3, "chaos": 2}, "passive_points": 1, "item": {"slot": "", "rarity": 2}},
 	},
 	"a1_lord_malaphax": {
 		"name": "The Flesh-Torn", "act": 1, "kind": "main", "giver": "althea", "turn_in": "althea", "requires": "a1_descent_into_madness",
@@ -142,7 +142,7 @@ const QUESTS := {
 			{"type": "kill_boss", "key": "lord_malaphax", "text": "Slay Lord Malaphax, the Flesh-Torn"},
 			{"type": "use", "key": "rift_scar", "text": "Look into the torn rift behind the altar"},
 		],
-		"rewards": {"xp": 3000, "orbs": {"alteration": 5, "augment": 4, "alchemy": 4, "chaos": 3}, "passive_points": 2, "attr_points": 4,
+		"rewards": {"xp": 3000, "orbs": {"augment": 9, "alchemy": 4, "chaos": 3}, "passive_points": 2, "attr_points": 4,
 			"item": {"slot": "", "rarity": 2},
 			"notes": ["Act I is complete: the road east, over the mountain pass to the wastes, awaits in Act II"]},
 	},
@@ -182,7 +182,7 @@ const QUESTS := {
 			{"type": "reach", "key": "ruined_manor", "text": "Find the ruined manor in the Blackroot Wilds"},
 			{"type": "use", "key": "lockbox", "text": "Take Corwin's lockbox"},
 		],
-		"rewards": {"xp": 200, "orbs": {"alteration": 2}, "gems": {"topaz_2": 1}},
+		"rewards": {"xp": 200, "orbs": {"augment": 2}, "gems": {"topaz_2": 1}},
 	},
 }
 

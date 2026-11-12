@@ -109,7 +109,7 @@ func _hoard(at: Vector2) -> void:
 	zone._flash("The mimic's hoard spills out!", Color(1.0, 0.85, 0.4))
 	for k in 3:
 		zone._drop_item(LootGenerator.roll_item(zone.area_level + 2, ItemInstance.Rarity.RARE if k < 2 else ItemInstance.Rarity.MAGIC), at + Vector2(-70 + k * 70, 60))
-	CurrencyPickup.drop(zone, ["orb", "alteration", 8], at)
+	CurrencyPickup.drop(zone, ["orb", "augment", 8], at)
 	CurrencyPickup.drop(zone, ["orb", "alchemy", 3], at + Vector2(0, 20))
 	CurrencyPickup.drop(zone, ["orb", "chaos", 1], at + Vector2(20, 40))
 	_sprite_at("res://assets/tiles/crypt/decor_23.png", at, 0.6)

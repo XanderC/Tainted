@@ -13,7 +13,7 @@ extends Node
 const HELP := "I'm a test bot. Whisper me: invite, trade, friend, follow, stay, rift (opens one for our party), " + \
 	"die (in a rift or zone: then stand by me to revive me), leave (the party), say <text>."
 const STOCK_ITEMS := 3  ## items it keeps in its bag to trade
-const STOCK_ORBS := {"transmute": 20, "alteration": 10, "alchemy": 3}
+const STOCK_ORBS := {"transmute": 20, "augment": 10, "alchemy": 3}
 
 var runner := false
 var addr := "127.0.0.1"
@@ -257,7 +257,7 @@ func _on_trade(state: Dictionary) -> void:
 		var items: Array = p.inventory.filter(func(it): return it != null)
 		if not items.is_empty():
 			Net.trade_offer([items.pick_random().to_dict().uid])
-		Net.trade_orbs({"transmute": 5, "alteration": 2})
+		Net.trade_orbs({"transmute": 5, "augment": 2})
 		return
 	if bool(state.get("ready_them", false)) and not bool(state.get("ready_me", false)):
 		Net.trade_ready(true)  # you're ready: so is it

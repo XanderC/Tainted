@@ -216,8 +216,8 @@ static func make(uid: String, ilvl: int) -> ItemInstance:
 	var legendary := LEGENDARIES.has(uid)
 	it.rarity = ItemInstance.Rarity.LEGENDARY if legendary else ItemInstance.Rarity.SET
 	var n: Array = LEGENDARY_AFFIXES if legendary else SET_AFFIXES
+	LootGenerator.add_family(it, attr_of(uid))  # its own lean attribute first, then the usual modifiers
 	LootGenerator.roll_affixes(it, randi_range(int(n[0]), int(n[1])))
-	LootGenerator.fill_attributes(it, attr_of(uid))  # two main attributes, its own lean first
 	it.implicit_roll = ItemInstance.roll_implicit()
 	if legendary:
 		reroll_powers(it)

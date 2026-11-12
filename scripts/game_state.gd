@@ -890,7 +890,7 @@ func attribute_total(key: String, gear := true) -> int:
 func attribute_bonus(key: String, gear := true) -> int:
 	var n := int(attributes.get(key, 0)) + int(passive_value(key))
 	if gear and is_instance_valid(player):
-		n += int(player.stats.get_stat(key))
+		n += int(player.stats.get_stat(key)) + int(player.stats.get_stat("all_attr"))  # "+N to all Attributes"
 	return n
 
 
@@ -1936,6 +1936,13 @@ func _load_shared(acc: Dictionary) -> void:
 			data.erase("gold")
 			_write_json(path, data)
 		_save_account()
+	# Path of Exile 2 has no Orb of Alteration or Scouring: the ones held are exchanged one for one
+	for pool in [orbs, shards]:
+		for old in CraftingDB.REMOVED_ORBS:
+			if pool.has(old):
+				var into: String = CraftingDB.REMOVED_ORBS[old]
+				pool[into] = int(pool.get(into, 0)) + int(pool[old])
+				pool.erase(old)
 	for id in orbs.keys():
 		if not CraftingDB.ORBS.has(id):
 			orbs.erase(id)

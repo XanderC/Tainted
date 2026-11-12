@@ -31,35 +31,29 @@ static func orb_block_reason(item: ItemInstance, orb: String) -> String:
 		return "Legendary and Set items can't be altered"
 	if item.is_runeword():
 		return "Runeword items can't be altered"
-	var n := LootGenerator.stat_affix_count(item)  # (its main attributes don't take a place)
-	# A flask has room for one prefix and one suffix when Magic, two of each when Rare
-	var flask_full := false
-	if item.is_flask():
-		var room := LootGenerator.flask_affix_room(item)
-		flask_full = int(room.prefix) <= 0 and int(room.suffix) <= 0
+	# Room for one more modifier: a Magic item has 1 prefix and 1 suffix, a Rare 3 and 3 (a flask has its own limits)
+	var room := LootGenerator.affix_room(item)
+	var full: bool = int(room.prefix) <= 0 and int(room.suffix) <= 0
 	match orb:
 		"transmute":
 			if item.rarity != R.NORMAL: return "Needs a Normal item"
-		"alteration":
-			if item.rarity != R.MAGIC: return "Needs a Magic item"
 		"augment":
 			if item.rarity != R.MAGIC: return "Needs a Magic item"
-			if n >= ItemInstance.MAX_AFFIXES[R.MAGIC] or flask_full: return "Item is full"
+			if full: return "Item is full"
 		"regal":
 			if item.rarity != R.MAGIC: return "Needs a Magic item"
 		"alchemy", "chance":
 			if item.rarity != R.NORMAL: return "Needs a Normal item"
 		"chaos":
 			if item.rarity != R.RARE: return "Needs a Rare item"
+			if item.affixes.is_empty(): return "Item has no modifiers to replace"
 		"exalt":
 			if item.rarity != R.RARE: return "Needs a Rare item"
-			if n >= ItemInstance.MAX_AFFIXES[R.RARE] or flask_full: return "Item is full"
+			if full: return "Item is full"
 		"divine":
 			if item.affixes.is_empty() and item.powers.is_empty(): return "Item has no affixes"
 		"annul":
-			if n == 0: return "Item has no affixes it can lose (its main attributes stay)"
-		"scour":
-			if item.rarity == R.NORMAL: return "Already Normal"
+			if item.affixes.is_empty(): return "Item has no modifiers"
 		"blessed":
 			if item.base.implicit_stat == "": return "Item has no implicit"
 		"jeweller":
@@ -99,10 +93,7 @@ static func apply_orb(player: Player, item: ItemInstance, orb: String, free := f
 		player.add_to_bag(copy)
 		return {"ok": true, "msg": "Mirrored %s!" % item.display_name}
 	var result := {"msg": ""}
-	player.modify_item(item, func():
-		result.msg = _do_orb(item, orb)
-		if orb != "identify":
-			LootGenerator.fill_attributes(item))  # a Magic item one main attribute, a Rare two
+	player.modify_item(item, func(): result.msg = _do_orb(item, orb))
 	return {"ok": true, "msg": result.msg if result.msg != "" else "%s used" % CraftingDB.ORBS[orb].short}
 
 
@@ -114,11 +105,8 @@ static func _do_orb(item: ItemInstance, orb: String) -> String:
 			return "Identified: %s" % item.display_name
 		"transmute":
 			item.rarity = R.MAGIC
-			LootGenerator.roll_affixes(item, randi_range(1, 2))
+			LootGenerator.roll_affixes(item, 1)  # Path of Exile 2: one modifier (an Augmentation adds the second)
 			LootGenerator.rename(item)
-		"alteration":
-			item.affixes.clear()
-			LootGenerator.roll_affixes(item, randi_range(1, 2))
 		"augment":
 			LootGenerator.add_random_affix(item)
 		"regal":
@@ -129,22 +117,22 @@ static func _do_orb(item: ItemInstance, orb: String) -> String:
 			item.rarity = R.RARE
 			LootGenerator.roll_affixes(item, 4)
 			LootGenerator.rename(item)
-		"chaos":
-			item.affixes.clear()
-			LootGenerator.roll_affixes(item, randi_range(4, 5))
+		"chaos":  # Path of Exile 2: one modifier is removed at random and a new one added
+			var lost: Dictionary = item.affixes.pick_random()
+			item.affixes.erase(lost)
+			if not LootGenerator.add_random_affix(item):
+				item.affixes.append(lost)
+				return "Nothing new could be added"
 			LootGenerator.rename(item)
+			return "Replaced: %s" % lost.text
 		"exalt":
 			LootGenerator.add_random_affix(item)
 		"divine":
 			LootGenerator.reroll_values(item)
 			if item.rarity == R.LEGENDARY:
 				UniqueItems.reroll_powers(item)
-		"scour":
-			item.rarity = R.NORMAL
-			item.affixes.clear()
-			item.display_name = item.base.display_name
 		"annul":
-			var gone: Dictionary = item.affixes.filter(func(a): return not LootGenerator.is_main_attribute(a)).pick_random()
+			var gone: Dictionary = item.affixes.pick_random()
 			item.affixes.erase(gone)
 			return "Annulled: %s" % gone.text
 		"blessed":
@@ -185,7 +173,7 @@ static func _chance(item: ItemInstance) -> String:
 		return "Lucky! It became %s!" % item.display_name
 	if r < 0.30:
 		item.rarity = R.RARE
-		LootGenerator.roll_affixes(item, randi_range(3, 5))
+		LootGenerator.roll_affixes(item, randi_range(4, 6))
 	else:
 		item.rarity = R.MAGIC
 		LootGenerator.roll_affixes(item, randi_range(1, 2))

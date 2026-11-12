@@ -304,7 +304,7 @@ func _ready() -> void:
 	check(get_tree().paused and panel.gear().has(rare), "it lists your gear, with the game paused")
 	panel._select(rare)
 	check(not panel._mods.disabled and not panel._socks.disabled, "a Rare item can be rerolled both ways")
-	check(HermitBench.mod_orb(rare) == "chaos" and HermitBench.mod_orb(LootGenerator.roll_item(6, ItemInstance.Rarity.MAGIC)) == "alteration", "Chaos for a Rare, Alteration for a Magic")
+	check(HermitBench.mod_orb(rare) == "chaos" and HermitBench.mod_orb(LootGenerator.roll_item(6, ItemInstance.Rarity.MAGIC)) == "regal", "Chaos for a Rare, Regal for a Magic")
 	panel._use(false)
 	await settle(0.3)
 	check(said.msg != "" and not get_tree().paused, "used: a message, and the game goes on (%s)" % said.msg)

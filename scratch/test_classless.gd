@@ -198,9 +198,9 @@ func _resistances(p: Player) -> void:
 	var vit_seen := false
 	for i in 80:
 		var m := LootGenerator.roll_item(10, ItemInstance.Rarity.MAGIC, "boots")
-		if m.affixes.any(func(a): return String(a.id) == "attr_vit"):
+		if m.affixes.any(func(a): return String(a.get("family", "")) == "vit"):
 			vit_seen = true
-	check(vit_seen, "Vitality is a main attribute on blue items too")
+	check(vit_seen, "Vitality is a suffix on blue items too")
 	for s in p.equipment.keys():
 		p.unequip(s)
 	GameState.attributes = {}
@@ -219,7 +219,7 @@ func _resistances(p: Player) -> void:
 	p.take_damage(100.0, RuneDef.DamageType.FIRE)
 	check(absf((full - p.hp) - phys * 0.9) < 0.5, "a fire hit takes 10%% less with 10%% fire resistance (%.1f vs %.1f)" % [full - p.hp, phys])
 	var boots := _item("worn_boots")
-	boots.affixes.append(LootGenerator.make_entry(LootGenerator.find_affix("res_fire"), 0.3))
+	boots.affixes.append(LootGenerator.make_family_entry(boots.base, "res_fire", 0, 0.3))
 	p.bag.add(boots)
 	p.equip_to(boots, "boots")
 	check(absf(p.resistance(RuneDef.DamageType.FIRE) - 0.4) < 0.001 and absf(p.resistance(RuneDef.DamageType.LIGHTNING) - 0.1) < 0.001,
@@ -245,46 +245,34 @@ func _resistances(p: Player) -> void:
 	p.refresh_attributes()
 
 
-## Diablo III's primary stat: every Magic item has one main attribute (Strength, Dexterity or
-## Energy) besides its modifiers, every Rare, Legendary and Set item two different ones; orbs keep it so.
+## Attributes are ordinary suffixes now (Path of Exile 2): no item is given one, Normal items have no modifiers, a
+## Legendary still leans to its attribute, and the orbs follow the prefix and suffix limits.
 func _main_attributes(p: Player) -> void:
-	var mains := func(it: ItemInstance) -> Array:
-		return it.affixes.filter(func(a): return LootGenerator.is_main_attribute(a)).map(func(a): return String(a.id))
-	var ok := {"normal": true, "magic": true, "rare": true}
+	var fams := func(it: ItemInstance) -> Array:
+		return it.affixes.map(func(a): return String(a.get("family", "")))
+	var normal_ok := true
+	var magic_ok := true
 	for i in 40:
-		var n := LootGenerator.roll_item(10, ItemInstance.Rarity.NORMAL, "chest")
+		normal_ok = normal_ok and LootGenerator.roll_item(10, ItemInstance.Rarity.NORMAL, "chest").affixes.is_empty()
 		var m := LootGenerator.roll_item(10, ItemInstance.Rarity.MAGIC, "ring")
-		var r := LootGenerator.roll_item(10, ItemInstance.Rarity.RARE, "weapon")
-		ok.normal = ok.normal and mains.call(n).is_empty()
-		ok.magic = ok.magic and mains.call(m).size() == 1 and LootGenerator.stat_affix_count(m) >= 1
-		var rm: Array = mains.call(r)
-		ok.rare = ok.rare and rm.size() == 2 and rm[0] != rm[1] and LootGenerator.stat_affix_count(r) >= 3
-	check(ok.normal, "Normal items have no main attribute")
-	check(ok.magic, "every Magic item has one main attribute besides its modifiers")
-	check(ok.rare, "every Rare item has two different ones besides its modifiers")
+		magic_ok = magic_ok and m.affixes.size() >= 1 and m.affixes.size() <= 2
+	check(normal_ok, "Normal items have no modifiers")
+	check(magic_ok, "a Magic item has one or two modifiers")
 	var leg := UniqueItems.make("windpiercer", 20)
-	var lm: Array = mains.call(leg)
-	check(lm.size() == 2 and lm[0] == "attr_dex", "a Legendary has two, its own lean first (%s)" % [lm])
+	check(fams.call(leg)[0] == "dex", "a Legendary's own attribute comes first (%s)" % [fams.call(leg)])
 	var flask := LootGenerator.roll_item(10, ItemInstance.Rarity.MAGIC, "flask")
-	check(mains.call(flask).is_empty(), "flasks have none")
-	# Orbs keep it so
-	GameState.orbs = {"alteration": 5, "augment": 5, "regal": 2, "annul": 5, "chaos": 3}
+	check(not fams.call(flask).any(func(f): return f in ["str", "dex", "vit", "ene"]), "flasks have no attributes")
+	GameState.orbs = {"augment": 10, "regal": 2, "annul": 5, "chaos": 3}
 	var it := LootGenerator.roll_item(10, ItemInstance.Rarity.MAGIC, "ring")
-	while LootGenerator.stat_affix_count(it) > 1:
-		it.affixes.erase(it.affixes.filter(func(a): return not LootGenerator.is_main_attribute(a))[0])
+	it.affixes.resize(1)
 	p.bag.add(it)
 	Crafting.apply_orb(p, it, "augment")
-	check(mains.call(it).size() == 1 and LootGenerator.stat_affix_count(it) == 2, "Augmentation adds a modifier, never a main attribute")
-	Crafting.apply_orb(p, it, "alteration")
-	check(mains.call(it).size() == 1, "Alteration rerolls it, still with one main attribute")
+	check(it.affixes.size() == 2, "Augmentation adds the second modifier")
+	check(not Crafting.apply_orb(p, it, "augment")["ok"], "and no third on a Magic item")
 	Crafting.apply_orb(p, it, "regal")
-	check(it.rarity == ItemInstance.Rarity.RARE and mains.call(it).size() == 2, "a Regal Orb makes it Rare: two main attributes")
-	var before: Array = mains.call(it)
-	for i in 3:
-		Crafting.apply_orb(p, it, "annul")
-	check(mains.call(it) == before, "Annulment never takes a main attribute")
+	check(it.rarity == ItemInstance.Rarity.RARE and it.affixes.size() == 3, "a Regal Orb makes it Rare and adds one")
 	Crafting.apply_orb(p, it, "chaos")
-	check(mains.call(it).size() == 2 and LootGenerator.stat_affix_count(it) >= 3, "Chaos rerolls a Rare: two main attributes and its modifiers")
+	check(it.rarity == ItemInstance.Rarity.RARE and it.affixes.size() == 3, "Chaos swaps one modifier")
 
 
 ## Gear for every build (attribute, spell, Mana and bow modifiers), Legendaries leaning to your
@@ -296,7 +284,7 @@ func _gear_and_supports(p: Player) -> void:
 	var dex0 := GameState.attribute_total("dex")
 	var req0: int = GameState.attribute_totals().dex
 	var ring := _item("bone_ring")
-	ring.affixes.append(LootGenerator.make_entry(LootGenerator.find_affix("attr_dex"), 20.0))
+	ring.affixes.append(LootGenerator.make_family_entry(ring.base, "dex", 0, 20.0))
 	p.bag.add(ring)
 	p.equip_to(ring, "ring")
 	check(GameState.attribute_total("dex") == dex0 + 20, "a ring of +20 Dexterity adds 20 (%d -> %d)" % [dex0, GameState.attribute_total("dex")])
@@ -304,14 +292,14 @@ func _gear_and_supports(p: Player) -> void:
 	var spell0 := p.spell_mult()
 	var mana0 := p.max_mana()
 	var am := _item("old_amulet")
-	am.affixes.append(LootGenerator.make_entry(LootGenerator.find_affix("spell_inc"), 0.2))
-	am.affixes.append(LootGenerator.make_entry(LootGenerator.find_affix("mana_flat"), 30.0))
+	am.affixes.append(LootGenerator.make_family_entry(am.base, "spell_dmg", 0, 0.2))
+	am.affixes.append(LootGenerator.make_family_entry(am.base, "mana", 0, 30.0))
 	p.bag.add(am)
 	p.equip_to(am, "amulet")
 	check(absf(p.spell_mult() - spell0 - 0.2) < 0.001 and absf(p.max_mana() - mana0 - 30.0) < 0.01,
 		"an amulet of spell damage and Mana: +20% spells, +30 Mana")
-	check(LootGenerator.find_affix("bow_inc").fits(LootGenerator.base_by_id("long_bow"))
-		and not LootGenerator.find_affix("bow_inc").fits(LootGenerator.base_by_id("rusty_sword")), "bow damage rolls on bows, not swords")
+	check(AffixDB.families_for(LootGenerator.base_by_id("oak_staff")).has("spell_dmg")
+		and not AffixDB.families_for(LootGenerator.base_by_id("rusty_sword")).has("spell_dmg"), "spell damage rolls on staves, not swords")
 	p.unequip("ring")
 	p.unequip("amulet")
 	# Green attacks scale with Dexterity, red with Strength

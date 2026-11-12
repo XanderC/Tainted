@@ -22,7 +22,7 @@ func _ready() -> void:
 	GameState.add_attribute("str", 8)
 	GameState.quests["a1_first_incursion"] = {"state": Quests.DONE}
 	GameState.orbs["transmute"] = 40
-	GameState.orbs["alteration"] = 40
+	GameState.orbs["augment"] = 40
 	GameState.runes = {"rune_fire": 2, "rune_frost": 1, "rune_vampiric": 1, "rune_echo": 1, "rune_nova": 1}
 	town = load("res://scenes/town.tscn").instantiate()
 	add_child(town)

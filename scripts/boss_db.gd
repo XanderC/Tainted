@@ -55,7 +55,7 @@ const BOSSES := {
 			{"at": 0.3, "say": "The dead are mine to keep!", "moves": ["spade", "reap", "lurch", "raise"],
 				"adds": [{"kind": "skeleton_warrior", "n": 2}], "speed": 1.2, "dmg": 1.15, "cd": 0.85},
 		],
-		"loot": {"rares": 2, "magics": 2, "orbs": {"alteration": 2, "augment": 2, "alchemy": 1}, "scrolls": 2},
+		"loot": {"rares": 2, "magics": 2, "orbs": {"augment": 4, "alchemy": 1}, "scrolls": 2},
 	},
 	# Chapter 3 of Act I: the golem a Bleed Rift animated, with the other half of the Warded Keystone lodged in its chest
 	"rift_golem": {
@@ -74,7 +74,7 @@ const BOSSES := {
 			{"at": 0.65, "say": "", "moves": ["pound", "fling", "quake", "tear"], "adds": [{"kind": "bleed_fiend", "n": 2}], "speed": 1.1},
 			{"at": 0.3, "say": "", "moves": ["pound", "fling", "quake", "tear"], "adds": [{"kind": "bleed_fiend", "n": 2}], "speed": 1.2, "dmg": 1.15, "cd": 0.85},
 		],
-		"loot": {"rares": 2, "magics": 3, "orbs": {"alteration": 2, "augment": 2, "alchemy": 2}, "scrolls": 2},
+		"loot": {"rares": 2, "magics": 3, "orbs": {"augment": 4, "alchemy": 2}, "scrolls": 2},
 	},
 	# Chapter 5 of Act I, the act's end: the Flesh-Torn Lord Malaphax (Duke Edward of Oakhaven), in the Sepulcher of Mourning
 	"lord_malaphax": {
@@ -100,7 +100,7 @@ const BOSSES := {
 				"speed": 1.4, "dmg": 1.2, "cd": 0.75, "skin": "hell_knight",
 				"veil": {"interval": 18.0, "tick": 0.45, "share": 0.08, "souls": 2}},
 		],
-		"loot": {"rares": 4, "magics": 3, "orbs": {"alteration": 4, "augment": 3, "alchemy": 3, "chaos": 2}, "scrolls": 3},
+		"loot": {"rares": 4, "magics": 3, "orbs": {"augment": 7, "alchemy": 3, "chaos": 2}, "scrolls": 3},
 	},
 	# Chapter 4 of Act I: the three cultist heralds who channel the Veil Anchors in the Grand Ossuary
 	"herald_oren": {
@@ -117,7 +117,7 @@ const BOSSES := {
 			{"at": 1.0, "moves": ["strike", "bolts"]},
 			{"at": 0.55, "say": "Rise, vanguard. Rise for the Veil.", "moves": ["strike", "bolts", "call"], "adds": [{"kind": "skeleton_vanguard", "n": 2}], "speed": 1.1},
 		],
-		"loot": {"rares": 1, "magics": 2, "orbs": {"alteration": 2, "augment": 1}, "scrolls": 1},
+		"loot": {"rares": 1, "magics": 2, "orbs": {"augment": 3}, "scrolls": 1},
 	},
 	"herald_sable": {
 		"title": "Herald Sable", "hp": 2.2,
@@ -135,7 +135,7 @@ const BOSSES := {
 			{"at": 0.6, "say": "Come through, little ones.", "moves": ["whirl", "lunge", "bolts", "call"], "adds": [{"kind": "bleed_fiend", "n": 2}], "speed": 1.1},
 			{"at": 0.3, "say": "The Veil is thin. Thinner.", "moves": ["whirl", "lunge", "bolts", "call"], "adds": [{"kind": "veil_cultist", "n": 2}], "speed": 1.2, "dmg": 1.15, "cd": 0.85},
 		],
-		"loot": {"rares": 2, "magics": 2, "orbs": {"alteration": 2, "augment": 2, "alchemy": 1}, "scrolls": 1},
+		"loot": {"rares": 2, "magics": 2, "orbs": {"augment": 4, "alchemy": 1}, "scrolls": 1},
 	},
 	"herald_morrow": {
 		"title": "Herald Morrow", "hp": 3.0,
@@ -154,7 +154,7 @@ const BOSSES := {
 			{"at": 0.65, "say": "Rise! Rise and hold the line!", "moves": ["crush", "storm", "rush", "call"], "adds": [{"kind": "skeleton_vanguard", "n": 3}], "speed": 1.1},
 			{"at": 0.3, "say": "Let it fall. Let it all fall.", "moves": ["crush", "quake", "storm", "rush", "call"], "adds": [{"kind": "veil_cultist", "n": 2}, {"kind": "bleed_fiend", "n": 1}], "speed": 1.2, "dmg": 1.15, "cd": 0.85},
 		],
-		"loot": {"rares": 3, "magics": 2, "orbs": {"alteration": 3, "augment": 2, "alchemy": 2, "chaos": 1}, "scrolls": 2},
+		"loot": {"rares": 3, "magics": 2, "orbs": {"augment": 5, "alchemy": 2, "chaos": 1}, "scrolls": 2},
 	},
 	# Chapter 2 of Act I: the guardian of the Brood Cyst in the Weeping Hollow
 	"matron_vhol": {
@@ -178,7 +178,7 @@ const BOSSES := {
 			{"at": 0.3, "say": "The cyst bleeds for me!", "moves": ["skitter", "lash", "spit", "brood"],
 				"adds": [{"kind": "cave_skitterer", "n": 3}], "speed": 1.2, "dmg": 1.15, "cd": 0.8},
 		],
-		"loot": {"rares": 2, "magics": 2, "orbs": {"alteration": 2, "augment": 2, "alchemy": 1}, "scrolls": 2},
+		"loot": {"rares": 2, "magics": 2, "orbs": {"augment": 4, "alchemy": 1}, "scrolls": 2},
 	},
 	# Chapter 1 of Act I: the pack leader that has Scout Captain Dennis pinned in the hunting lodge
 	"briar_alpha": {

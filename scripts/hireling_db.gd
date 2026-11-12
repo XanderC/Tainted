@@ -116,7 +116,7 @@ static func hire_price(lvl: int) -> Dictionary:
 	if lvl < 10:
 		return {"transmute": 2 + int(lvl / 3.0)}
 	if lvl < 25:
-		return {"alteration": 2 + int((lvl - 10) / 5.0)}
+		return {"augment": 2 + int((lvl - 10) / 5.0)}
 	return {"alchemy": 1 + int((lvl - 25) / 10.0)}
 
 
@@ -125,8 +125,8 @@ static func revive_price(lvl: int) -> Dictionary:
 	if lvl < 10:
 		return {"transmute": 1 + int(lvl / 5.0)}
 	if lvl < 25:
-		return {"alteration": 1 + int((lvl - 10) / 8.0)}
-	return {"alteration": 4 + int((lvl - 25) / 6.0)}
+		return {"augment": 1 + int((lvl - 10) / 8.0)}
+	return {"augment": 4 + int((lvl - 25) / 6.0)}
 
 
 ## A hireling for hire: {type, name, level, xp, skills: [attack, others...], supports: [[]...],

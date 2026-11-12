@@ -14,11 +14,9 @@ const ORBS := {
 	"identify": {"name": "Scroll of Identify", "short": "Identify", "tag": "ID", "color": Color(0.93, 0.86, 0.66),
 		"desc": "Reveal an unidentified item's modifiers. Use it anywhere: tap the item in your bag", "value": 1, "drop": 400},
 	"transmute": {"name": "Orb of Transmutation", "short": "Transmute", "tag": "Trans", "color": Color(0.6, 0.7, 1.0),
-		"desc": "Normal item to Magic with 1-2 affixes", "value": 1, "drop": 300},
-	"alteration": {"name": "Orb of Alteration", "short": "Alteration", "tag": "Alt", "color": Color(0.5, 0.9, 0.9),
-		"desc": "Reroll a Magic item's affixes", "value": 2, "drop": 300},
+		"desc": "Normal item to Magic with 1 random modifier", "value": 1, "drop": 300},
 	"augment": {"name": "Orb of Augmentation", "short": "Augment", "tag": "Aug", "color": Color(0.7, 0.6, 1.0),
-		"desc": "Add an affix to a Magic item with room", "value": 2, "drop": 180},
+		"desc": "Add a modifier to a Magic item with room (1 prefix and 1 suffix at most)", "value": 2, "drop": 180},
 	"chance": {"name": "Orb of Chance", "short": "Chance", "tag": "Chance", "color": Color(0.85, 0.85, 0.55),
 		"desc": "Normal item to a random rarity - small chance of a Legendary or Set item of that base", "value": 3, "drop": 140},
 	"jeweller": {"name": "Jeweller's Orb", "short": "Jeweller's", "tag": "Jwl", "color": Color(0.55, 0.85, 0.55),
@@ -29,32 +27,32 @@ const ORBS := {
 		"desc": "+Quality on a weapon (+5 Normal, +2 Magic, +1 other; max 20%): more Damage", "value": 2, "drop": 160},
 	"blessed": {"name": "Blessed Orb", "short": "Blessed", "tag": "Bless", "color": Color(0.95, 0.95, 0.75),
 		"desc": "Reroll the value of an item's implicit stat", "value": 6, "drop": 80},
-	"scour": {"name": "Orb of Scouring", "short": "Scour", "tag": "Scour", "color": Color(0.85, 0.85, 0.85),
-		"desc": "Strip all affixes, back to Normal", "value": 6, "drop": 80},
 	"regret": {"name": "Orb of Regret", "short": "Regret", "tag": "Regret", "color": Color(0.55, 0.65, 0.95),
 		"desc": "Refund one allocated passive tree node (spent from the passive tree)", "value": 8, "drop": 60},
 	"alchemy": {"name": "Orb of Alchemy", "short": "Alchemy", "tag": "Alch", "color": Color(1.0, 0.75, 0.3),
-		"desc": "Normal item to Rare with 4 affixes", "value": 8, "drop": 100},
+		"desc": "Normal item to Rare with 4 modifiers", "value": 8, "drop": 100},
 	"regal": {"name": "Regal Orb", "short": "Regal", "tag": "Regal", "color": Color(0.95, 0.8, 0.4),
-		"desc": "Magic item to Rare, adds an affix", "value": 12, "drop": 80},
+		"desc": "Magic item to Rare, adds a modifier", "value": 12, "drop": 80},
 	"chaos": {"name": "Chaos Orb", "short": "Chaos", "tag": "Chaos", "color": Color(0.9, 0.5, 0.2),
-		"desc": "Reroll all affixes of a Rare item", "value": 20, "drop": 60},
+		"desc": "Remove a random modifier from a Rare item and add a new one", "value": 20, "drop": 60},
 	"gemcutter": {"name": "Gemcutter's Prism", "short": "Gemcutter's", "tag": "GCP", "color": Color(0.6, 0.95, 0.95),
 		"desc": "Give a skill or support gem a level's worth of experience (used from the Skills panel)", "value": 20, "drop": 30},
 	"vaal": {"name": "Vaal Orb", "short": "Vaal", "tag": "Vaal", "color": Color(0.85, 0.2, 0.25),
 		"desc": "Corrupt an item: nothing, a stronger implicit, an extra socket, or a full reroll. It can never be changed again", "value": 20, "drop": 30},
 	"annul": {"name": "Orb of Annulment", "short": "Annulment", "tag": "Annul", "color": Color(0.95, 0.95, 1.0),
-		"desc": "Remove a random affix from an item", "value": 60, "drop": 15},
+		"desc": "Remove a random modifier from an item", "value": 60, "drop": 15},
 	"exalt": {"name": "Exalted Orb", "short": "Exalt", "tag": "Ex", "color": Color(1.0, 0.95, 0.6),
-		"desc": "Add an affix to a Rare item (max 6)", "value": 150, "drop": 20},
+		"desc": "Add a modifier to a Rare item (3 prefixes and 3 suffixes at most)", "value": 150, "drop": 20},
 	"divine": {"name": "Divine Orb", "short": "Divine", "tag": "Div", "color": Color(1.0, 1.0, 1.0),
 		"desc": "Reroll the values of an item's affixes (and a Legendary's power)", "value": 250, "drop": 10},
 	"mirror": {"name": "Mirror of Kalandra", "short": "Mirror", "tag": "Mirror", "color": Color(0.75, 0.95, 1.0),
 		"desc": "Create a mirrored copy of an item (the copy can't be changed)", "value": 5000, "drop": 1},
 }
+## Orbs Path of Exile 2 does not have, and what a saved one becomes (one for one).
+const REMOVED_ORBS := {"alteration": "augment", "scour": "chaos"}
 ## Display order of orbs (cheapest first).
-const ORB_ORDER := ["identify", "transmute", "alteration", "augment", "chance", "jeweller", "armourer", "whetstone",
-	"blessed", "scour", "regret", "alchemy", "regal", "chaos", "gemcutter", "vaal", "annul", "exalt", "divine", "mirror"]
+const ORB_ORDER := ["identify", "transmute", "augment", "chance", "jeweller", "armourer", "whetstone",
+	"blessed", "regret", "alchemy", "regal", "chaos", "gemcutter", "vaal", "annul", "exalt", "divine", "mirror"]
 
 ## How the stash's Currency tab lays the orbs out, like Path of Exile's currency tab: every orb has its own
 ## fixed place in a group (an orb you have none of keeps its place, as a faint slot), so each is always
@@ -62,8 +60,8 @@ const ORB_ORDER := ["identify", "transmute", "alteration", "augment", "chance", 
 ## follows in a last group (stash_groups).
 const STASH_COLS := 4
 const STASH_LAYOUT := [
-	["Basics", ["identify", "transmute", "alteration", "augment", "chance", "jeweller", "armourer", "whetstone"]],
-	["Rares", ["alchemy", "regal", "chaos", "scour", "blessed", "annul", "exalt", "divine"]],
+	["Basics", ["identify", "transmute", "augment", "chance", "jeweller", "armourer", "whetstone"]],
+	["Rares", ["alchemy", "regal", "chaos", "blessed", "annul", "exalt", "divine"]],
 	["Special", ["regret", "gemcutter", "vaal", "mirror"]],
 ]
 
@@ -93,8 +91,8 @@ static func orb_icon(id: String) -> Texture2D:
 ## worth: id -> [orb, shards per material]. 20 shards make an orb (Currency.SHARDS_PER_ORB).
 const OLD_MATERIAL_SHARDS := {
 	"scrap": ["transmute", 4],     # 5 Iron Scrap sold for 1 Transmutation
-	"dust": ["alteration", 7],     # 3 Arcane Dust for 1 Alteration
-	"essence": ["alteration", 60], # 1 Wraith Essence for 3 Alterations
+	"dust": ["augment", 7],     # 3 Arcane Dust for 1 Augmentation
+	"essence": ["augment", 60], # 1 Wraith Essence for 3 Augmentations
 	"core": ["chaos", 10],         # boss only
 	"soul": ["chaos", 10],         # boss only
 }
@@ -109,8 +107,8 @@ static var RECIPES := {
 		"cost": {"transmute": 2}, "result": {"type": "item", "slot": "helmet", "rarity": R.NORMAL}},
 	"forge_chest": {"name": "Forge Armour", "desc": "A fresh Normal chest piece.", "source": "start",
 		"cost": {"transmute": 3}, "result": {"type": "item", "slot": "chest", "rarity": R.NORMAL}},
-	"arcane_forging": {"name": "Arcane Forging", "desc": "A Magic item of any kind.", "source": "vendor", "price": {"alteration": 6},
-		"cost": {"alteration": 3}, "result": {"type": "item", "slot": "", "rarity": R.MAGIC}},
+	"arcane_forging": {"name": "Arcane Forging", "desc": "A Magic item of any kind.", "source": "vendor", "price": {"augment": 6},
+		"cost": {"augment": 3}, "result": {"type": "item", "slot": "", "rarity": R.MAGIC}},
 	"masterwork": {"name": "Masterwork", "desc": "A Rare item of any kind, +2 item level.", "source": "vendor", "price": {"chaos": 2},
 		"cost": {"alchemy": 3}, "result": {"type": "item", "slot": "", "rarity": R.RARE, "ilvl_bonus": 2}},
 	# Exalted Orbs are never sold: finding this recipe is the one way to make them
@@ -169,7 +167,7 @@ static func recipe_color(recipe_id: String) -> Color:
 	return Color(0.9, 0.75, 0.5)
 
 
-const STARTING_CURRENCY := {"identify": 5, "transmute": 8, "alteration": 6, "augment": 3, "chance": 1, "armourer": 2, "whetstone": 1}
+const STARTING_CURRENCY := {"identify": 5, "transmute": 8, "augment": 9, "chance": 1, "armourer": 2, "whetstone": 1}
 
 
 ## Drops from one normal monster kill. Returns {"shards": {...}, "orbs": {...}}.
@@ -178,15 +176,15 @@ static func monster_drops(ilvl: int) -> Dictionary:
 	if randf() < 0.25:
 		out.shards["transmute"] = randi_range(1, 2) + int(ilvl / 15.0)
 	elif randf() < 0.10:
-		out.shards["alteration"] = 1
+		out.shards["augment"] = 1
 	# What used to drop as crafting materials, as the shards it was worth
 	var r := randf()
 	if r < 0.18:
 		_add(out.shards, "transmute", randi_range(3, 5))
 	elif r < 0.25:
-		_add(out.shards, "alteration", 4)
+		_add(out.shards, "augment", 4)
 	elif r < 0.27:
-		_add(out.orbs, "alteration", 2)
+		_add(out.orbs, "augment", 2)
 	if randf() < 0.12:
 		out.orbs[_weighted_orb()] = 1
 	if randf() < 0.06:
@@ -212,8 +210,8 @@ static func boss_drops(fast: bool) -> Dictionary:
 	var out := {"shards": {"alchemy": randi_range(3, 5) * m, "chaos": randi_range(1, 3) * m}, "orbs": {}}
 	# What used to drop as crafting materials (cores, souls, essence, dust), as the orbs it was worth
 	_add(out.shards, "chaos", 6 * ((randi_range(1, 2) if fast else 1) + (randi_range(1, 2) if fast else 1)))
-	_add(out.orbs, "alteration", 2 * (randi_range(2, 3) if fast else randi_range(1, 2)))
-	_add(out.shards, "alteration", 5 * randi_range(2, 4))
+	_add(out.orbs, "augment", 2 * (randi_range(2, 3) if fast else randi_range(1, 2)))
+	_add(out.shards, "augment", 5 * randi_range(2, 4))
 	_add(out.orbs, "identify", randi_range(1, 3) * m)
 	var n := 4 if fast else 2
 	for i in n:

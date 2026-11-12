@@ -31,7 +31,7 @@ const VESH := {
 		{"at": 0.3, "say": "Burn it all down!", "moves": ["volley", "pin", "backstep", "rain"],
 			"adds": [{"kind": "bandit_archer", "n": 2}], "speed": 1.2, "dmg": 1.15, "cd": 0.75},
 	],
-	"loot": {"rares": 2, "magics": 1, "orbs": {"alteration": 2, "transmute": 3, "augment": 1}, "scrolls": 2},
+	"loot": {"rares": 2, "magics": 1, "orbs": {"augment": 2, "transmute": 3, "augment": 1}, "scrolls": 2},
 }
 
 

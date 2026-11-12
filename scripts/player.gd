@@ -336,7 +336,7 @@ func _hit_area(origin: Vector2, dir: Vector2, hit_radius: float, arc_deg: float,
 	var half := deg_to_rad(arc_deg) * 0.5
 	var dtype := skill.get_effective_damage_type()
 	var ailment := skill.get_effective_ailment()
-	var leech := skill.get_effective_leech() + passive("leech")
+	var leech := skill.get_effective_leech() + passive("leech") + stats.get_stat("leech")
 	var exec_bonus := skill.get_execute_bonus()
 	var rank := GameState.get_skill_rank(skill.id)
 	var mult := skill.get_effective_damage_mult(rank) * (0.50 if is_echo else 1.0) * part
@@ -357,7 +357,7 @@ func _hit_area(origin: Vector2, dir: Vector2, hit_radius: float, arc_deg: float,
 			crit_chance += exec_bonus
 		var crit := randf() < crit_chance
 
-		var dmg := damage_for(skill) * mult * (2.0 if crit else 1.0) * _penetration_scale(e, skill, dtype)
+		var dmg := damage_for(skill) * mult * (crit_mult() if crit else 1.0) * _penetration_scale(e, skill, dtype)
 		if e.hp / e.max_hp < 0.40:
 			dmg *= 1.0 + passive("execute")
 		e.take_damage(dmg, crit, dtype, _exposing(skill, dtype, ailment, crit))
@@ -558,7 +558,33 @@ func main_weapon_type() -> String:
 ## (Strength for red ones, Dexterity for green) and attack damage (and bow damage for a bow's), or for
 ## a spell by Energy and spell damage. Passives, Legendary powers and gear modifiers all count.
 func damage_for(s: SkillDef) -> float:
-	return stats.get_stat("damage") * (spell_mult() if s != null and s.is_spell else attack_mult(s))
+	var dtype := int(s.get_effective_damage_type()) if s != null else int(RuneDef.DamageType.PHYSICAL)
+	return (stats.get_stat("damage") + _typed_flat(dtype)) * (spell_mult() if s != null and s.is_spell else attack_mult(s)) * _typed_inc(dtype)
+
+
+## Gear's "Adds N Fire Damage" and the like: flat damage that only skills of that element get.
+const TYPED_FLAT := {RuneDef.DamageType.FIRE: "dmg_fire", RuneDef.DamageType.COLD: "dmg_cold", RuneDef.DamageType.LIGHTNING: "dmg_lightning"}
+## "% increased Fire Damage" and the like (the element's own, plus "Elemental Damage" for any element).
+const TYPED_INC := {RuneDef.DamageType.FIRE: "fire_inc", RuneDef.DamageType.COLD: "cold_inc",
+	RuneDef.DamageType.LIGHTNING: "lightning_inc", RuneDef.DamageType.CHAOS: "chaos_inc"}
+
+
+func _typed_flat(dtype: int) -> float:
+	return stats.get_stat(String(TYPED_FLAT[dtype])) if TYPED_FLAT.has(dtype) else 0.0
+
+
+func _typed_inc(dtype: int) -> float:
+	if not TYPED_INC.has(dtype):
+		return 1.0
+	var m := 1.0 + stats.get_stat(String(TYPED_INC[dtype]))
+	if dtype != int(RuneDef.DamageType.CHAOS):
+		m += stats.get_stat("ele_inc")
+	return m
+
+
+## A critical hit multiplies damage by this (2x, and "+N% to Critical Damage Bonus" on gear).
+func crit_mult() -> float:
+	return 2.0 + stats.get_stat("crit_damage")
 
 
 func attack_mult(s: SkillDef = null) -> float:
@@ -612,12 +638,12 @@ func _hit_one(e, s: SkillDef, part := 1.0, dtype := -1, ailment := "-") -> float
 		crit_chance += s.get_execute_bonus()
 	var crit := randf() < crit_chance
 	var el: int = s.get_effective_damage_type() if dtype < 0 else dtype
-	var dmg := damage_for(s) * s.get_effective_damage_mult(GameState.get_skill_rank(s.id)) * part * (2.0 if crit else 1.0) \
+	var dmg := damage_for(s) * s.get_effective_damage_mult(GameState.get_skill_rank(s.id)) * part * (crit_mult() if crit else 1.0) \
 		* _penetration_scale(e, s, el)
 	if e.hp / e.max_hp < 0.40:
 		dmg *= 1.0 + passive("execute")
 	e.take_damage(dmg, crit, el, _exposing(s, el, s.get_effective_ailment() if ailment == "-" else ailment, crit))
-	var leech := s.get_effective_leech() + passive("leech")
+	var leech := s.get_effective_leech() + passive("leech") + stats.get_stat("leech")
 	if leech > 0.0:
 		hp = minf(hp + dmg * leech, stats.get_stat("max_life"))
 	if crit:
@@ -1108,6 +1134,13 @@ func thorns() -> float:
 
 ## Rampage: a slain enemy bursts, hurting others nearby.
 func on_enemy_killed(pos: Vector2) -> void:
+	# "Gain N Life / Mana per enemy killed" on gear
+	var life_back := stats.get_stat("life_on_kill")
+	if life_back > 0.0:
+		hp = minf(hp + life_back, stats.get_stat("max_life"))
+	var mana_back := stats.get_stat("mana_on_kill")
+	if mana_back > 0.0:
+		gain_mana(mana_back)
 	var pct := passive("rampage")
 	if pct <= 0.0:
 		return

@@ -10,15 +10,13 @@ const SHARDS_PER_ORB := 20
 ## Exalted, Divine, Annulment and Mirror are never sold: they only drop.
 const VENDOR_ORBS := {
 	"identify": ["transmute", 1],
-	"alteration": ["transmute", 2],
-	"augment": ["alteration", 1],
-	"chance": ["alteration", 2],
-	"jeweller": ["alteration", 2],
+	"augment": ["transmute", 2],
+	"chance": ["augment", 2],
+	"jeweller": ["augment", 2],
 	"armourer": ["transmute", 1],
 	"whetstone": ["transmute", 2],
-	"blessed": ["alteration", 4],
-	"scour": ["alteration", 4],
-	"alchemy": ["alteration", 5],
+	"blessed": ["augment", 4],
+	"alchemy": ["augment", 5],
 	"regret": ["alchemy", 1],
 	"regal": ["alchemy", 2],
 	"chaos": ["alchemy", 3],
@@ -72,7 +70,7 @@ static func sell_value(item: ItemInstance) -> Dictionary:
 	var shards := {}
 	var bonus := int(item.ilvl / 10.0)
 	match item.rarity:
-		ItemInstance.Rarity.MAGIC: shards["alteration"] = 3 + bonus
+		ItemInstance.Rarity.MAGIC: shards["augment"] = 3 + bonus
 		ItemInstance.Rarity.RARE: shards["alchemy"] = 4 + bonus
 		ItemInstance.Rarity.LEGENDARY, ItemInstance.Rarity.SET, ItemInstance.Rarity.RUNEWORD:
 			orbs["alchemy"] = 1
@@ -100,7 +98,7 @@ static func reward_text(r: Dictionary) -> String:
 static func gold_to_orbs(gold: int) -> Dictionary:
 	var units := int(gold / float(GOLD_PER_TRANSMUTE))
 	var out := {}
-	for id in ["chaos", "alchemy", "alteration", "transmute"]:
+	for id in ["chaos", "alchemy", "augment", "transmute"]:
 		var v := int(CraftingDB.ORBS[id].value)
 		var n := int(units / float(v))
 		if n > 0:

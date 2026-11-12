@@ -89,7 +89,7 @@ func on_bag_drop(d: Dictionary, _at: Vector2i) -> void:
 
 
 ## What a Normal flask costs, by tier (small, medium, large; utility flasks as small).
-const FLASK_PRICES := [{"transmute": 1}, {"alteration": 2}, {"alchemy": 1}]
+const FLASK_PRICES := [{"transmute": 1}, {"augment": 2}, {"alchemy": 1}]
 
 
 func _wares() -> Array[Dictionary]:

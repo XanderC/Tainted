@@ -621,7 +621,7 @@ func _reward(at: Vector2, big: bool) -> void:
 	zone._drop_item(LootGenerator.roll_item(zone.area_level + 1, ItemInstance.Rarity.RARE), at + Vector2(-40, 30))
 	if big:
 		zone._drop_item(LootGenerator.roll_item(zone.area_level + 1, ItemInstance.Rarity.MAGIC), at + Vector2(40, 30))
-	CurrencyPickup.drop(zone, ["orb", "alteration", 2], at)
+	CurrencyPickup.drop(zone, ["orb", "augment", 2], at)
 	CurrencyPickup.drop(zone, ["shard", "alchemy", 6 if big else 3], at)
 	zone.spawn_currency("scroll", "town_portal", 1, at + Vector2(0, 60))
 

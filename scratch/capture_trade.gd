@@ -11,8 +11,8 @@ func _ready() -> void:
 	var p: Player = GameState.player
 	for i in 6:
 		p.bag.add(LootGenerator.roll_item(12, ItemInstance.Rarity.RARE if i % 2 == 0 else ItemInstance.Rarity.MAGIC))
-	for id in ["transmute", "alteration", "alchemy", "chance", "regal", "scour"]:
-		GameState.orbs[id] = [34, 12, 7, 3, 2, 5][["transmute", "alteration", "alchemy", "chance", "regal", "scour"].find(id)]
+	for id in ["transmute", "augment", "alchemy", "chance", "regal", "scour"]:
+		GameState.orbs[id] = [34, 12, 7, 3, 2, 5][["transmute", "augment", "alchemy", "chance", "regal", "scour"].find(id)]
 	var mine: Array = [p.inventory.filter(func(it): return it != null)[0].to_dict()]
 	var theirs: Array = [LootGenerator.roll_item(14, ItemInstance.Rarity.RARE).to_dict(), LootGenerator.roll_item(14, ItemInstance.Rarity.MAGIC).to_dict()]
 	Net.trade_ui._on_state({"with": 2, "name": "Kael", "mine": mine, "theirs": theirs, "mine_orbs": {"alchemy": 3, "transmute": 10},

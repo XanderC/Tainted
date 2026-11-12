@@ -165,7 +165,7 @@ func _ready() -> void:
 	check(not helm.is_runeword(), "a helmet isn't body armour: nothing")
 
 	# --- and it says why ---
-	check(Runewords.why_not(magic).contains("Normal") and Runewords.why_not(magic).contains("Scouring"), "Magic: needs Normal, scour it")
+	check(Runewords.why_not(magic).contains("Normal") and Runewords.why_not(magic).contains("crafted on"), "Magic: needs a Normal base")
 	check(Runewords.why_not(roomy).contains("exactly 2"), "a spare socket: says it needs exactly 2")
 	check(Runewords.why_not(helm).contains("Body Armour"), "wrong kind: says where it goes")
 	check(Runewords.why_not(wrong) == "", "wrong order spells nothing")
@@ -174,7 +174,7 @@ func _ready() -> void:
 	p.add_to_bag(legend)
 	socket_all(legend, ["tir", "el"])
 	check(not legend.is_runeword() and Runewords.why_not(legend).contains("Legendary")
-		and not Runewords.why_not(legend).contains("Scouring"), "a Legendary: says so, no scouring hint")
+		and not Runewords.why_not(legend).contains("crafted on"), "a Legendary: says so, no hint")
 	var three := item("battle_axe", 3)
 	p.add_to_bag(three)
 	socket_all(three, ["tir", "el"])

@@ -157,8 +157,8 @@ static func why_not(item: ItemInstance) -> String:
 		if Array(rw.runes) != keys:
 			continue
 		if item.is_unique() or item.rarity != ItemInstance.Rarity.NORMAL:
-			# A Magic or Rare base can be made Normal; a Legendary or Set item can't
-			var hint := "" if item.is_unique() else " An Orb of Scouring makes it Normal."
+			# Nothing makes a Magic or Rare base Normal again (Path of Exile 2 has no Orb of Scouring)
+			var hint := "" if item.is_unique() else " Use a base that has not been crafted on."
 			return "%s needs a Normal (white) item; this one is %s.%s" % [rw.name,
 				ItemInstance.Rarity.keys()[item.rarity].capitalize(), hint]
 		if not fits(rw, item.base):

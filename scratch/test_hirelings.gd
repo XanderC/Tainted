@@ -36,7 +36,7 @@ func _ready() -> void:
 	GameState.level = 10
 	GameState.xp = 0.0
 	GameState.orbs["transmute"] = 50
-	GameState.orbs["alteration"] = 50
+	GameState.orbs["augment"] = 50
 	GameState.runes = {"rune_fire": 2, "rune_frost": 1, "rune_vampiric": 1, "rune_echo": 1}
 	Hirelings.dismiss(p)
 

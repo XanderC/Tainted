@@ -1,6 +1,16 @@
 [
 	{
 		"build": 0,
+		"title": "Item modifiers as in Path of Exile 2",
+		"notes": [
+			"Gear modifiers follow Path of Exile 2. Every modifier is a prefix or a suffix with tiers (T1 is the best), and the tier your item can roll depends on its item level: a level 1 ring only reaches the first tier of Life, a level 54 one the eighth. A Magic item holds 1 prefix and 1 suffix, a Rare up to 3 and 3, and a Rare now drops with 4 to 6 modifiers. Every item class has its own pool: staves roll spell damage, bows and swords physical damage, boots movement speed, rings and amulets resistances, attributes and typed damage.",
+			"New modifiers: Adds Fire, Cold or Lightning Damage (only for skills of that element), increased Fire, Cold, Lightning, Chaos and Elemental Damage, Critical Damage Bonus, Life and Mana per enemy killed, Life Leech, and +N to all Attributes. Items no longer get a guaranteed main attribute; Strength, Dexterity, Vitality and Energy are ordinary suffixes.",
+			"Orbs follow Path of Exile 2: Transmutation makes a Magic item with one modifier, Augmentation adds the second, Regal makes it Rare and adds one, Alchemy makes a Rare with four, Exalted adds one, and Chaos now removes one random modifier and adds a new one. The Orbs of Alteration and Scouring are gone: the ones you held became Augmentation and Chaos Orbs one for one.",
+			"Gear you already own keeps its modifiers: each became the nearest family and tier for its item level, and any that no longer exist on that kind of item were dropped."
+		]
+	},
+	{
+		"build": 0,
 		"title": "Thirty new support gems from Path of Exile 2",
 		"notes": [
 			"Eleven more supports for projectiles and elements: Pierce I to III (arrows fly through one, three, then every enemy, each pierce costing 20% damage), Fork (a shot splits in two where it hits, the forks deal 30% less), Fire Penetration I and II, Cold and Lightning Penetration (your hits get through a monster's Fireproof, Frostborn or Grounded resistance, and add a little against the rest), and Fire, Cold and Lightning Exposure (igniting, shocking or critical cold hits make the enemy take 20% more of that element for 8 seconds).",

@@ -447,13 +447,12 @@ static func item_card(parent: Node, item: ItemInstance, compact := false, deltas
 			stat_arrow(item.base.implicit_stat, deltas)]
 	if not item.identified:
 		txt += "[color=#e04848][b]Unidentified[/b][/color]\n[color=#8a7f6e]Its modifiers are hidden. Use a Scroll of Identify, or the Sage in town identifies everything for free.[/color]\n"
-	# Main attributes first, in their own colours (Diablo III's primary stat), then the other modifiers
+	# Prefixes, then suffixes, each with its tier (T1 is the best) as Path of Exile 2 shows them
 	var shown: Array = item.affixes if item.identified else []
-	for a in shown.filter(func(x): return LootGenerator.is_main_attribute(x)):
-		txt += "[color=#%s][b]%s[/b][/color]%s\n" % [Attributes.COLORS.get(String(a.stat), Color.WHITE).lightened(0.2).to_html(false),
-			a.text, stat_arrow(a.stat, deltas)]
-	for a in shown.filter(func(x): return not LootGenerator.is_main_attribute(x)):
-		txt += "[color=#7ba6ff]• %s[/color]%s\n" % [a.text, stat_arrow(a.stat, deltas)]
+	for want_prefix in [true, false]:
+		for a in shown.filter(func(x): return LootGenerator.entry_is_prefix(x) == want_prefix):
+			var tier := " [color=#8a7f6e](T%d)[/color]" % int(a.tier_no) if a.has("tier_no") else ""
+			txt += "[color=#7ba6ff]• %s[/color]%s%s\n" % [a.text, tier, stat_arrow(a.stat, deltas)]
 	if item.is_unique() and item.identified:
 		var worn: Array = GameState.player.equipment.values() if is_instance_valid(GameState.player) else []
 		txt += UniqueItems.card_bbcode(item, worn)

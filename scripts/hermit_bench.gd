@@ -2,7 +2,7 @@ class_name HermitBench
 extends CanvasLayer
 ## The Hermit's Sanctum's abandoned crafting bench (MiniDungeon): once, a free modification or socket reroll on any piece of gear you
 ## carry or wear. Pick the item, then what to do to it: its modifiers are rerolled with the orb that suits its rarity (Alchemy on a Normal
-## item, Alteration on a Magic one, Chaos on a Rare one, Divine on a Legendary, Set or runeword item), or its sockets with a
+## item, Regal on a Magic one, Chaos on a Rare one, Divine on a Legendary, Set or runeword item), or its sockets with a
 ## Jeweller's Orb: none spent. `done` is called with a message once it has been used.
 
 var player: Player
@@ -92,7 +92,7 @@ static func mod_orb(item: ItemInstance) -> String:
 		ItemInstance.Rarity.NORMAL:
 			return "alchemy"
 		ItemInstance.Rarity.MAGIC:
-			return "alteration"
+			return "regal"
 	return "chaos"
 
 

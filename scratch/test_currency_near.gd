@@ -24,9 +24,9 @@ func alive(c) -> bool:
 
 func _ready() -> void:
 	await get_tree().process_frame
-	var o0 := GameState.orb_count("alteration")
+	var o0 := GameState.orb_count("augment")
 	var s0 := GameState.shard_count("transmute")
-	var a := CurrencyPickup.drop(self, ["orb", "alteration", 2], Vector2(100, 100))
+	var a := CurrencyPickup.drop(self, ["orb", "augment", 2], Vector2(100, 100))
 	var b := CurrencyPickup.drop(self, ["shard", "transmute", 3], a.position + Vector2(120, 0))
 	var c := CurrencyPickup.drop(self, ["shard", "transmute", 2], a.position + Vector2(-150, 90))
 	var far := CurrencyPickup.drop(self, ["orb", "chaos", 1], Vector2(3000, 3000))
@@ -46,11 +46,11 @@ func _ready() -> void:
 	await get_tree().process_frame
 	check(not alive(a) and not alive(b) and not alive(c), "one tap took it and the currency near it")
 	check(alive(far), "the far one stayed")
-	check(GameState.orb_count("alteration") == o0 + 2 and GameState.shard_count("transmute") == s0 + 5, "all of it is in the stash")
+	check(GameState.orb_count("augment") == o0 + 2 and GameState.shard_count("transmute") == s0 + 5, "all of it is in the stash")
 	check(toasts.back().begins_with("+ ") and toasts.back().count(",") >= 1, "one toast says what you got: %s" % toasts.back())
 
 	# More than three: the toast counts the rest
-	var ids := ["transmute", "alteration", "alchemy", "chaos", "exalt"]
+	var ids := ["transmute", "augment", "alchemy", "chaos", "exalt"]
 	for i in ids.size():
 		CurrencyPickup.drop(self, ["orb", ids[i], 1], Vector2(500 + i * 40, 500))
 	var tapped: CurrencyPickup = null
@@ -67,7 +67,7 @@ func _ready() -> void:
 	old.kind = "bundle"
 	old.title = "Currency"
 	old.add_part(["shard", "transmute", 2])
-	old.add_part(["orb", "alteration", 1])
+	old.add_part(["orb", "augment", 1])
 	var s1 := GameState.shard_count("transmute")
 	var text := old.collect()
 	check(GameState.shard_count("transmute") == s1 + 2 and text.begins_with("+ "), "an old bundle still hands everything over")

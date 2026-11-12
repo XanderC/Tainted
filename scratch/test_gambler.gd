@@ -52,9 +52,9 @@ func _ready() -> void:
 	GameState.orbs = {}
 	var it: ItemInstance = wares[0]
 	check(Gambler.buy(p, it) == "Not enough orbs!" and it in GameState.gamble_stock, "can't buy without the orbs")
-	GameState.orbs = {"alteration": 100, "alchemy": 20, "chaos": 20}
+	GameState.orbs = {"augment": 100, "alchemy": 20, "chaos": 20}
 	check(Gambler.buy(p, it) == "" and p.inventory.has(it) and not it in GameState.gamble_stock, "bought: in your bag")
-	check(GameState.orb_count("alteration") == 100 - int(Gambler.price(it).get("alteration", 0)), "and paid for")
+	check(GameState.orb_count("augment") == 100 - int(Gambler.price(it).get("augment", 0)), "and paid for")
 	check(not it.identified, "still unidentified")
 	# Saved with the character
 	var left := GameState.gamble_stock.size()
@@ -85,7 +85,7 @@ func _ready() -> void:
 		get_viewport().get_texture().get_image().save_png(out + "gambler_card.png")
 	menu.item_tip().close()
 	# Sold out: new wares
-	GameState.orbs = {"alteration": 999, "alchemy": 999, "chaos": 999}
+	GameState.orbs = {"augment": 999, "alchemy": 999, "chaos": 999}
 	for w in GameState.gamble_stock.duplicate():
 		p.bag.clear()
 		gp._buy(w)

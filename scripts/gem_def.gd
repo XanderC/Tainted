@@ -114,8 +114,8 @@ static func combine_cost_of(id: String) -> Dictionary:
 static func combine_cost(tier: int) -> Dictionary:
 	match tier:
 		1: return {"transmute": 1}
-		2: return {"alteration": 1}
-		3: return {"alteration": 4}
+		2: return {"augment": 1}
+		3: return {"augment": 4}
 		4: return {"alchemy": 2}
 		5: return {"chaos": 1}
 		6: return {"chaos": 3}

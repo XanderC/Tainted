@@ -632,7 +632,7 @@ func _on_monster_died(e: Enemy, at: Vector2) -> void:
 func _drop_boss_loot(at: Vector2, boss_id := "") -> void:
 	var loot: Dictionary = BossDB.def(boss_id).get("loot", {}) if BossDB.has(boss_id) else {}
 	if loot.is_empty():
-		loot = {"rares": 1, "magics": 1, "orbs": {"alteration": 1, "transmute": 2}, "scrolls": 2}
+		loot = {"rares": 1, "magics": 1, "orbs": {"augment": 1, "transmute": 2}, "scrolls": 2}
 	var n := 0
 	for i in int(loot.get("rares", 1)):
 		_drop_item(LootGenerator.roll_item(area_level + 2, ItemInstance.Rarity.RARE), at + Vector2.from_angle(TAU * n / 5.0) * 40.0)

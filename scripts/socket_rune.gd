@@ -179,9 +179,9 @@ static func combine_cost(id: String) -> Dictionary:
 	if rank <= 6:
 		return {"transmute": 1}
 	if rank <= 11:
-		return {"alteration": 1}
+		return {"augment": 1}
 	if rank <= 16:
-		return {"alteration": 3}
+		return {"augment": 3}
 	if rank <= 21:
 		return {"alchemy": 1}
 	if rank <= 26:

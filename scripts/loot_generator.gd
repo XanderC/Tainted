@@ -340,45 +340,7 @@ func _flask(id: String, name: String, col: Color, weight: int, def: Dictionary) 
 
 
 func _build_affixes() -> void:
-	var F := StatBlock.ModType.FLAT
-	var I := StatBlock.ModType.INCREASED
-	var M := StatBlock.ModType.MORE
-	_affix("life_flat", "+{v} Max Life", "max_life", F, 10, 40)
-	_affix("life_inc", "{v}% Increased Max Life", "max_life", I, 0.05, 0.15, true)
-	_affix("dmg_flat", "+{v} Damage", "damage", F, 3, 12)
-	_affix("dmg_inc", "{v}% Increased Damage", "damage", I, 0.08, 0.25, true)
-	_affix("dmg_more", "{v}% More Damage", "damage", M, 0.05, 0.10, true, 5, 40)
-	_affix("atk_speed", "{v}% Increased Attack Speed", "attack_speed", I, 0.04, 0.12, true)
-	_affix("move_speed", "{v}% Increased Move Speed", "move_speed", I, 0.05, 0.15, true)
-	_affix("armor_flat", "+{v} Armor", "armor", F, 5, 30)
-	_affix("crit", "+{v}% Critical Chance", "crit_chance", F, 0.02, 0.08, true)
-	# For builds: attributes (any gear), and casters' and archers' modifiers. These stats aren't
-	# StatBlock rules of their own: Player and GameState read them (attribute_bonus, spell_mult,
-	# attack_mult, max_mana, mana_regen), so they're all flat amounts (0.10 = +10%).
-	_affix("attr_str", "+{v} Strength", "str", F, 3, 12)
-	_affix("attr_dex", "+{v} Dexterity", "dex", F, 3, 12)
-	_affix("attr_vit", "+{v} Vitality", "vit", F, 3, 12)
-	_affix("attr_ene", "+{v} Energy", "ene", F, 3, 12)
-	_affix("spell_inc", "{v}% Increased Spell Damage", "spell_inc", F, 0.08, 0.25, true)
-	affixes[-1].slots = ["weapon", "offhand", "amulet", "ring", "helmet"]
-	affixes[-1].weapon_types = ["staff", "dagger", "sword", "mace"]
-	_affix("mana_flat", "+{v} Maximum Mana", "mana_max", F, 10, 40)
-	affixes[-1].slots = ["weapon", "offhand", "amulet", "ring", "helmet", "chest", "belt"]
-	_affix("mana_regen", "{v}% Increased Mana Regeneration", "mana_regen_inc", F, 0.10, 0.40, true)
-	affixes[-1].slots = ["weapon", "offhand", "amulet", "ring", "helmet", "shoulders", "chest", "wrists", "gloves", "legs", "boots"]
-	_affix("bow_inc", "{v}% Increased Ranged Damage", "bow_inc", F, 0.10, 0.30, true)
-	affixes[-1].slots = ["weapon", "gloves", "amulet", "ring"]
-	affixes[-1].weapon_types = ["bow", "crossbow"]
-	# Resistances (armour and jewellery; Vitality gives some too)
-	for r in [["res_fire", "Fire"], ["res_cold", "Cold"], ["res_lightning", "Lightning"], ["res_chaos", "Poison"]]:
-		_affix(r[0], "+{v}%% %s Resistance" % r[1], r[0], F, 0.06, 0.20, true)
-		affixes[-1].slots = ["helmet", "shoulders", "chest", "wrists", "gloves", "legs", "boots", "belt", "ring", "amulet", "offhand"]
-	_affix("res_all", "+{v}% to all Resistances", "res_all", F, 0.04, 0.12, true, 8, 40)
-	affixes[-1].slots = ["helmet", "chest", "shield", "ring", "amulet", "offhand"]
-	_affix("attack_inc", "{v}% Increased Attack Damage", "attack_inc", F, 0.06, 0.18, true)
-	affixes[-1].slots = ["weapon", "gloves", "amulet", "ring"]
-	affixes[-1].weapon_types = ["sword", "axe", "mace", "spear", "dagger", "bow", "crossbow"]
-
+	# Gear modifiers are AffixDB families with PoE2's tiers (AffixData); only the flask modifiers are AffixDefs
 	# Flask modifiers. Prefixes change the flask; suffixes work while it is in effect.
 	_flask_affix("fl_ample", "Ample", true, "{v}% Increased Amount Recovered", "flask_amount", 0.15, 0.35, true, ["life", "power"])
 	_flask_affix("fl_seething", "Seething", true, "Recovers Instantly, {v}% Less Amount Recovered", "flask_instant", 0.25, 0.25, true, ["life", "power"])
@@ -436,75 +398,12 @@ func roll_item(ilvl: int = 1, forced_rarity: int = -1, slot: String = "") -> Ite
 		ItemInstance.Rarity.MAGIC:
 			count = randi_range(1, 2)
 		ItemInstance.Rarity.RARE:
-			count = randi_range(3, 4) if item.is_flask() else randi_range(3, 5)
+			count = randi_range(3, 4) if item.is_flask() else randi_range(4, 6)
 
 	roll_affixes(item, count)
-	fill_attributes(item)
 	item.display_name = _make_name(item)
 	item.sockets = ItemInstance.roll_sockets(item.base, item.rarity)
 	return item
-
-
-# ---------- main attributes (Diablo III's primary stat) ----------
-
-## Every Magic item has one of these (Strength, Dexterity, Vitality, Energy) on top of its other modifiers, every Rare, Legendary and Set
-## item two different ones (ATTRIBUTES_BY_RARITY); Normal items and flasks none. They're never
-## among the random modifiers (add_random_affix), so crafting can't stack them.
-const MAIN_ATTRIBUTE_AFFIXES := {"str": "attr_str", "dex": "attr_dex", "vit": "attr_vit", "ene": "attr_ene"}
-const ATTRIBUTES_BY_RARITY := {ItemInstance.Rarity.MAGIC: 1, ItemInstance.Rarity.RARE: 2,
-	ItemInstance.Rarity.LEGENDARY: 2, ItemInstance.Rarity.SET: 2}
-## How often the first one is your build's strongest (or a Legendary's own lean) rather than any.
-const SMART_ATTRIBUTE_CHANCE := 0.6
-
-
-static func is_main_attribute(entry: Dictionary) -> bool:
-	return MAIN_ATTRIBUTE_AFFIXES.values().has(String(entry.get("id", "")))
-
-
-## The item's modifiers that aren't its main attributes (what "full" counts).
-static func stat_affix_count(item: ItemInstance) -> int:
-	return item.affixes.filter(func(a): return not is_main_attribute(a)).size()
-
-
-## Gives `item` the main attributes its rarity calls for (keeping the ones it has, dropping extras,
-## adding new ones in front): after rolling it, and after an orb changes it. `lean` prefers an
-## attribute for the first ("": your build's strongest, sometimes).
-func fill_attributes(item: ItemInstance, lean := "") -> void:
-	var want := 0 if item.is_flask() else int(ATTRIBUTES_BY_RARITY.get(item.rarity, 0))
-	var have := item.affixes.filter(is_main_attribute)
-	while have.size() > want:
-		item.affixes.erase(have.pop_back())
-	if have.size() >= want:
-		return
-	var taken := have.map(func(a): return String(a.id))
-	if lean == "" and item.is_unique():
-		lean = UniqueItems.attr_of(item.unique_id)
-	if not MAIN_ATTRIBUTE_AFFIXES.has(lean):
-		lean = _build_lean() if randf() < SMART_ATTRIBUTE_CHANCE else ""
-	var added: Array = []
-	while have.size() + added.size() < want:
-		var keys := MAIN_ATTRIBUTE_AFFIXES.keys().filter(func(k): return not taken.has(MAIN_ATTRIBUTE_AFFIXES[k]))
-		if keys.is_empty():
-			break
-		var k: String = lean if keys.has(lean) else keys.pick_random()
-		lean = ""
-		var id: String = MAIN_ATTRIBUTE_AFFIXES[k]
-		taken.append(id)
-		added.append(_roll_affix(find_affix(id), item.ilvl))
-	for i in added.size():
-		item.affixes.insert(have.size() + i, added[i])
-
-
-## The strongest of your main attributes ("" before you've put points anywhere).
-static func _build_lean() -> String:
-	var best := ""
-	var most := 0
-	for k in MAIN_ATTRIBUTE_AFFIXES:
-		var n := GameState.attribute_bonus(k)
-		if n > most:
-			most = n
-			best = k
-	return best
 
 
 # ---------- crafting helpers ----------
@@ -523,15 +422,116 @@ func find_affix(id: String) -> AffixDef:
 	return null
 
 
-## Adds one random affix the item doesn't already have. Returns false if none are available.
-## Each kind of item draws from its own modifiers (AffixDef.fits); a flask also has room for one
-## prefix and one suffix when Magic, two of each when Rare.
+## Prefixes and suffixes an item can hold, by rarity (Path of Exile 2: Magic 1 + 1, Rare 3 + 3). Legendary and Set
+## items roll like Rares; a Normal item or a runeword has none.
+const MAX_SIDE := {ItemInstance.Rarity.MAGIC: 1, ItemInstance.Rarity.RARE: 3, ItemInstance.Rarity.LEGENDARY: 3,
+	ItemInstance.Rarity.SET: 3}
+
+
+## The family of an entry ("" for a flask modifier, which is an AffixDef).
+static func family_of(e: Dictionary) -> String:
+	return String(e.get("family", ""))
+
+
+## Whether an entry is a prefix.
+func entry_is_prefix(e: Dictionary) -> bool:
+	var f := family_of(e)
+	if f != "":
+		return AffixDB.is_prefix(f)
+	var def := find_affix(String(e.id))
+	return def != null and def.prefix
+
+
+## How many more prefixes and suffixes the item can take: {"prefix": n, "suffix": n}. A flask has its own limits.
+func affix_room(item: ItemInstance) -> Dictionary:
+	if item.is_flask():
+		return flask_affix_room(item)
+	var cap := int(MAX_SIDE.get(item.rarity, 0))
+	var room := {"prefix": cap, "suffix": cap}
+	for e in item.affixes:
+		room["prefix" if entry_is_prefix(e) else "suffix"] -= 1
+	return room
+
+
+## Adds one random modifier the item can take. False if none are available.
+## Gear draws a family its class has (AffixDB), one it doesn't already carry, on a side with room, then a tier its
+## item level allows (the higher tiers rarer); a flask draws from its own AffixDefs.
 func add_random_affix(item: ItemInstance) -> bool:
+	if item.is_flask():
+		return _add_flask_affix(item)
+	var room := affix_room(item)
+	var have := item.affixes.map(func(e): return family_of(e))
+	var cands := []
+	for f in AffixDB.families_for(item.base):
+		if have.has(f) or int(room["prefix" if AffixDB.is_prefix(f) else "suffix"]) <= 0:
+			continue
+		if AffixDB.open_tiers(item.base, f, item.ilvl).is_empty():
+			continue
+		cands.append(f)
+	if cands.is_empty():
+		return false
+	var total := 0
+	for f in cands:
+		total += AffixDB.weight_of(f)
+	var r := randi_range(1, total)
+	var family: String = cands.back()
+	for f in cands:
+		r -= AffixDB.weight_of(f)
+		if r <= 0:
+			family = f
+			break
+	item.affixes.append(roll_family(item, family))
+	return true
+
+
+## Adds a modifier of a given family if the item has room for it. False if it can't take it.
+func add_family(item: ItemInstance, family: String) -> bool:
+	if item.is_flask() or not AffixDB.FAMILIES.has(family) or not AffixDB.families_for(item.base).has(family):
+		return false
+	if item.affixes.any(func(e): return family_of(e) == family):
+		return false
+	if int(affix_room(item)["prefix" if AffixDB.is_prefix(family) else "suffix"]) <= 0 \
+			or AffixDB.open_tiers(item.base, family, item.ilvl).is_empty():
+		return false
+	item.affixes.append(roll_family(item, family))
+	return true
+
+
+## A fresh roll of a family on an item: a tier the item level allows (lower tiers likelier), then a value in it.
+func roll_family(item: ItemInstance, family: String) -> Dictionary:
+	var open := AffixDB.open_tiers(item.base, family, item.ilvl)
+	var tiers := AffixDB.tiers_for(item.base, family)
+	var weights := []
+	var total := 0.0
+	for k in open.size():
+		var w := pow(AffixDB.TIER_WEIGHT_FALLOFF + 0.1, float(k))
+		weights.append(w)
+		total += w
+	var r := randf() * total
+	var pick: int = open.back()
+	for k in open.size():
+		r -= weights[k]
+		if r <= 0.0:
+			pick = open[k]
+			break
+	return make_family_entry(item.base, family, pick, AffixDB.roll_value(family, tiers[pick], randf()))
+
+
+## A saved or rolled modifier of a family: tier is the index in the class's table (0 = lowest).
+func make_family_entry(b: ItemBase, family: String, tier: int, value: float) -> Dictionary:
+	var def: Dictionary = AffixDB.FAMILIES[family]
+	return {
+		"id": family, "family": family, "tier": tier,
+		"tier_no": maxi(AffixDB.tiers_for(b, family).size() - tier, 1),  # 1 is the best tier
+		"stat": def.stat, "mod_type": def.mod, "value": value, "text": AffixDB.entry_text(family, value),
+	}
+
+
+func _add_flask_affix(item: ItemInstance) -> bool:
 	var taken := item.affix_ids()
 	var room := flask_affix_room(item)
 	var candidates: Array = affixes.filter(func(a): return a.min_ilvl <= item.ilvl and not taken.has(a.id) \
-		and a.fits(item.base) and (not item.is_flask() or int(room["prefix" if a.prefix else "suffix"]) > 0) \
-		and not MAIN_ATTRIBUTE_AFFIXES.values().has(a.id))  # main attributes come only by rarity (fill_attributes)
+		and a.fits(item.base) and int(room["prefix" if a.prefix else "suffix"]) > 0)
 	var picked: AffixDef = _pick_weighted(candidates)
 	if picked == null:
 		return false
@@ -556,12 +556,54 @@ func flask_affix_room(item: ItemInstance) -> Dictionary:
 	return room
 
 
-## Re-rolls each existing affix's value inside its range, keeping which affixes it has.
+## Re-rolls each existing modifier's value inside its tier's range, keeping which modifiers (and tiers) it has.
 func reroll_values(item: ItemInstance) -> void:
 	for i in item.affixes.size():
-		var def := find_affix(item.affixes[i].id)
+		var e: Dictionary = item.affixes[i]
+		var f := family_of(e)
+		if f != "":
+			var tiers := AffixDB.tiers_for(item.base, f)
+			var t := clampi(int(e.get("tier", 0)), 0, maxi(tiers.size() - 1, 0))
+			if not tiers.is_empty():
+				item.affixes[i] = make_family_entry(item.base, f, t, AffixDB.roll_value(f, tiers[t], randf()))
+			continue
+		var def := find_affix(String(e.id))
 		if def != null:
 			item.affixes[i] = _roll_affix(def, item.ilvl)
+
+
+## A saved modifier as an entry. A modifier from before the PoE2 rework (no "tier") becomes the family it
+## matches, in the highest tier its item level allows whose range is nearest its old value, clamped into it.
+func entry_from_save(item: ItemInstance, d: Dictionary) -> Dictionary:
+	var id := String(d.get("id", ""))
+	var value := float(d.get("value", 0.0))
+	if d.has("tier") and AffixDB.FAMILIES.has(id):
+		var tiers := AffixDB.tiers_for(item.base, id)
+		if tiers.is_empty():
+			return {}
+		return make_family_entry(item.base, id, clampi(int(d.tier), 0, tiers.size() - 1), value)
+	var def := find_affix(id)
+	if def != null:  # a flask modifier
+		return make_entry(def, float(d.get("value", def.min_value)))
+	var family: String = AffixDB.LEGACY.get(id, "")
+	if family == "" or not AffixDB.families_for(item.base).has(family):
+		return {}
+	var open := AffixDB.open_tiers(item.base, family, item.ilvl)
+	if open.is_empty():
+		open = [0]
+	var tiers2 := AffixDB.tiers_for(item.base, family)
+	var best: int = open[0]
+	var gap := INF
+	for i in open:
+		var lo := AffixDB.round_value(family, float(tiers2[i][1]))
+		var hi := AffixDB.round_value(family, float(tiers2[i][2]))
+		var g := 0.0 if value >= lo and value <= hi else minf(absf(value - lo), absf(value - hi))
+		if g <= gap:  # ties go to the higher tier
+			gap = g
+			best = i
+	var lo2 := AffixDB.round_value(family, float(tiers2[best][1]))
+	var hi2 := AffixDB.round_value(family, float(tiers2[best][2]))
+	return make_family_entry(item.base, family, best, clampf(value, lo2, hi2))
 
 
 func rename(item: ItemInstance) -> void:

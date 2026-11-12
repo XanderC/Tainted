@@ -258,7 +258,7 @@ func get_tooltip() -> String:
 	return "\n".join(PackedStringArray(lines))
 
 
-const MAX_AFFIXES := {Rarity.NORMAL: 0, Rarity.MAGIC: 2, Rarity.RARE: 6, Rarity.LEGENDARY: 6, Rarity.SET: 6, Rarity.RUNEWORD: 0}
+const MAX_AFFIXES := {Rarity.NORMAL: 0, Rarity.MAGIC: 2, Rarity.RARE: 6, Rarity.LEGENDARY: 6, Rarity.SET: 6, Rarity.RUNEWORD: 0}  # one more than a side's limit each way: LootGenerator.MAX_SIDE
 
 
 func affix_ids() -> Array:
@@ -271,7 +271,7 @@ func to_dict() -> Dictionary:
 		"name": display_name,
 		"rarity": int(rarity),
 		"ilvl": ilvl,
-		"affixes": affixes.map(func(a): return {"id": a.id, "value": a.value}),
+		"affixes": affixes.map(func(a): return {"id": a.id, "value": a.value, "tier": int(a.tier)} if a.has("tier") else {"id": a.id, "value": a.value}),
 		"sockets": sockets,
 		"gems": gems,
 		"unique": unique_id,
@@ -320,10 +320,12 @@ static func from_dict(d: Dictionary) -> ItemInstance:
 	var pw: Dictionary = d.get("powers", {})
 	for k in pw:
 		it.powers[String(k)] = float(pw[k])
+	# Modifiers saved before the PoE2 rework (no "tier") are converted to the nearest family and tier; ones that are
+	# already a family on the item are dropped (one per family)
 	for a in d.get("affixes", []):
-		var def := LootGenerator.find_affix(String(a.get("id", "")))
-		if def != null:
-			it.affixes.append(LootGenerator.make_entry(def, float(a.get("value", def.min_value))))
+		var e := LootGenerator.entry_from_save(it, a)
+		if not e.is_empty() and not it.affixes.any(func(x): return LootGenerator.family_of(x) != "" and LootGenerator.family_of(x) == LootGenerator.family_of(e)):
+			it.affixes.append(e)
 	it.runeword_id = String(d.get("runeword", ""))
 	for m in d.get("rw_mods", []):
 		it.rw_mods.append({"stat": String(m.get("stat", "")), "mod_type": int(m.get("mod_type", 0)),
