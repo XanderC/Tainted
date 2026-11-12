@@ -82,7 +82,7 @@ services:
       - tainted
     environment:
       - TAINTED_BOT_KEY=${TAINTED_BOT_KEY:-}
-    command: ["sh", "-c", "exec godot --headless --main-pack /game/tainted.pck res://scenes/test_bot.tscn -- --addr=ws://tainted:24601 --bot-key=\"$$TAINTED_BOT_KEY\" --name=TestBot"]
+    command: ["sh", "-c", "exec godot --headless --max-fps 20 --main-pack /game/tainted.pck res://scenes/test_bot.tscn -- --addr=ws://tainted:24601 --bot-key=\"$$TAINTED_BOT_KEY\" --name=TestBot"]
     healthcheck:
       disable: true
     networks:
