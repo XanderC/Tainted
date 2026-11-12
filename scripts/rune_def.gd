@@ -60,6 +60,13 @@ enum DamageType {
 @export var extra_chains: int = 0            ## times a chaining skill chains again
 @export var no_crit: bool = false            ## the skill cannot deal critical hits
 @export var level_bonus: int = 0             ## "+1 to level of supported skills" (the skill rank for its damage and cooldown)
+@export var pierce: int = 0                  ## enemies a projectile passes through (99 = all of them)
+@export var pierce_less: float = 0.0         ## each enemy it has pierced takes this fraction off its damage
+@export var forks: int = 0                   ## projectiles a hit splits into (Fork)
+@export var fork_less: float = 0.0           ## damage the forked projectiles lose
+@export var penetration: float = 0.0         ## resistance the supported skill's hits penetrate (1.0 or more: they ignore it)
+@export var pen_type: int = -1               ## ...of this element (DamageType); -1 = none
+@export var expose_type: int = -1            ## the element whose ailment also exposes the enemy (DamageType); -1 = none
 @export var player_only: bool = false        ## its effect is in the player's own casting, so a hireling cannot link it
 @export var rarity: int = 0                  ## ItemInstance.Rarity
 @export var base_id: String = ""             ## id without the rarity suffix
@@ -108,6 +115,21 @@ func stat_lines(lvl: int = 1) -> String:
 		t += "[color=#ffcc4d]• Fires %d additional Projectiles[/color]\n" % extra_projectiles
 	if extra_chains > 0:
 		t += "[color=#ffcc4d]• Chains %d additional time%s[/color]\n" % [extra_chains, "" if extra_chains == 1 else "s"]
+	if pierce > 0:
+		t += "[color=#ffcc4d]• Projectiles pierce %s[/color]\n" % ("all enemies" if pierce >= 99 else "%d enem%s" % [pierce, "y" if pierce == 1 else "ies"])
+	if pierce_less > 0.0:
+		t += "[color=#f87171]• Projectiles deal %d%% less damage for each enemy they pierce[/color]\n" % int(round(pierce_less * 100))
+	if forks > 0:
+		t += "[color=#ffcc4d]• Projectiles fork into %d on hitting an enemy[/color]\n" % forks
+		t += "[color=#f87171]• Forked projectiles deal %d%% less damage[/color]\n" % int(round(fork_less * 100))
+	if penetration > 0.0:
+		t += "[color=#ffcc4d]• Hits %s %s resistance[/color]\n" % ["ignore" if penetration >= 1.0 else "penetrate %d%%" % int(round(penetration * 100)),
+			DamageType.keys()[pen_type].to_lower()]
+	if expose_type >= 0:
+		t += "[color=#ffcc4d]• %s that %s also expose the enemy: -20%% %s resistance for 8s[/color]\n" % [
+			"Critical hits" if expose_type == DamageType.COLD else "Hits",
+			{DamageType.FIRE: "ignite", DamageType.COLD: "freeze", DamageType.LIGHTNING: "shock"}.get(expose_type, "afflict"),
+			DamageType.keys()[expose_type].to_lower()]
 	if more_damage != 0.0:
 		var md := more_damage * sc if more_damage > 0.0 else more_damage
 		t += "[color=#%s]• %d%% %s Damage[/color]\n" % ["66ff66" if md > 0.0 else "f87171", int(round(absf(md) * 100)), "more" if md > 0.0 else "less"]
@@ -167,6 +189,13 @@ class DB:
 		r.extra_chains = mods.get("extra_chains", 0)
 		r.no_crit = mods.get("no_crit", false)
 		r.level_bonus = mods.get("level_bonus", 0)
+		r.pierce = mods.get("pierce", 0)
+		r.pierce_less = mods.get("pierce_less", 0.0)
+		r.forks = mods.get("forks", 0)
+		r.fork_less = mods.get("fork_less", 0.0)
+		r.penetration = mods.get("penetration", 0.0)
+		r.pen_type = mods.get("pen_type", -1)
+		r.expose_type = mods.get("expose_type", -1)
 		r.player_only = mods.get("player_only", false)
 		_catalog[id] = r
 		return r
@@ -311,6 +340,42 @@ class DB:
 		_make("rune_chaos_mastery", "Chaos Mastery", "", Category.MODIFIER, DamageType.CHAOS,
 			"☠", Color(0.8, 0.35, 1.0), "+1 to the level of a Chaos skill.",
 			{"family": "chaos_mastery", "tier": 5, "needs": ["chaos"], "level_bonus": 1, "cost_mult": 1.0})
+		# Projectile supports: Pierce passes through enemies, Fork splits the shot where it lands. (poe2db: Pierce III
+		# pierces everything at 20% less damage per enemy; Pierce I and II counts, 1 and 3, are our own.)
+		_make("rune_pierce_1", "Pierce I", "", Category.FORM, DamageType.PHYSICAL,
+			"➤", Color(0.85, 0.85, 0.95), "Projectiles pierce an enemy, then deal 20% less damage.",
+			{"family": "pierce", "tier": 1, "needs": ["projectile"], "pierce": 1, "pierce_less": 0.2, "cost_mult": 1.0, "player_only": true})
+		_make("rune_pierce_2", "Pierce II", "", Category.FORM, DamageType.PHYSICAL,
+			"➤", Color(0.85, 0.85, 0.95), "Projectiles pierce three enemies, each pierce costing them 20% damage.",
+			{"family": "pierce", "tier": 3, "needs": ["projectile"], "pierce": 3, "pierce_less": 0.2, "cost_mult": 1.0, "player_only": true})
+		_make("rune_pierce_3", "Pierce III", "", Category.FORM, DamageType.PHYSICAL,
+			"➤", Color(0.85, 0.85, 0.95), "Projectiles pierce every enemy, each pierce costing them 20% damage.",
+			{"family": "pierce", "tier": 5, "needs": ["projectile"], "pierce": 99, "pierce_less": 0.2, "cost_mult": 1.0, "player_only": true})
+		_make("rune_fork", "Fork", "", Category.FORM, DamageType.PHYSICAL,
+			"⑂", Color(0.9, 0.8, 0.5), "Projectiles fork in two where they hit an enemy; the forks deal 30% less damage.",
+			{"family": "fork", "tier": 3, "needs": ["projectile"], "forks": 2, "fork_less": 0.3, "cost_mult": 1.1, "player_only": true})
+		# Penetration and Exposure work on the resistances Tainted's monsters carry (Fireproof, Frostborn, Grounded).
+		_make("rune_fire_penetration_1", "Fire Penetration I", "", Category.MODIFIER, DamageType.FIRE,
+			"🔥", Color(1.0, 0.5, 0.2), "Hits penetrate 30% of the enemy's fire resistance.",
+			{"family": "fire_penetration", "tier": 2, "needs": ["hit"], "penetration": 0.3, "pen_type": DamageType.FIRE, "cost_mult": 1.2, "player_only": true})
+		_make("rune_fire_penetration_2", "Fire Penetration II", "", Category.MODIFIER, DamageType.FIRE,
+			"🔥", Color(1.0, 0.5, 0.2), "Hits ignore the enemy's fire resistance.",
+			{"family": "fire_penetration", "tier": 5, "needs": ["hit"], "penetration": 1.0, "pen_type": DamageType.FIRE, "cost_mult": 1.2, "player_only": true})
+		_make("rune_cold_penetration", "Cold Penetration", "", Category.MODIFIER, DamageType.COLD,
+			"❄", Color(0.5, 0.85, 1.0), "Hits penetrate 30% of the enemy's cold resistance.",
+			{"family": "cold_penetration", "tier": 2, "needs": ["hit"], "penetration": 0.3, "pen_type": DamageType.COLD, "cost_mult": 1.2, "player_only": true})
+		_make("rune_lightning_penetration", "Lightning Penetration", "", Category.MODIFIER, DamageType.LIGHTNING,
+			"⚡", Color(1.0, 0.95, 0.4), "Hits penetrate 30% of the enemy's lightning resistance.",
+			{"family": "lightning_penetration", "tier": 2, "needs": ["hit"], "penetration": 0.3, "pen_type": DamageType.LIGHTNING, "cost_mult": 1.2, "player_only": true})
+		_make("rune_fire_exposure", "Fire Exposure", "", Category.MODIFIER, DamageType.FIRE,
+			"🔥", Color(1.0, 0.5, 0.2), "Hits that ignite also expose the enemy: -20% fire resistance for 8 seconds.",
+			{"family": "fire_exposure", "tier": 4, "needs": ["hit"], "expose_type": DamageType.FIRE, "cost_mult": 1.2, "player_only": true})
+		_make("rune_cold_exposure", "Cold Exposure", "", Category.MODIFIER, DamageType.COLD,
+			"❄", Color(0.5, 0.85, 1.0), "Cold critical hits also expose the enemy: -20% cold resistance for 8 seconds.",
+			{"family": "cold_exposure", "tier": 4, "needs": ["hit"], "expose_type": DamageType.COLD, "cost_mult": 1.2, "player_only": true})
+		_make("rune_lightning_exposure", "Lightning Exposure", "", Category.MODIFIER, DamageType.LIGHTNING,
+			"⚡", Color(1.0, 0.95, 0.4), "Hits that shock also expose the enemy: -20% lightning resistance for 8 seconds.",
+			{"family": "lightning_exposure", "tier": 4, "needs": ["hit"], "expose_type": DamageType.LIGHTNING, "cost_mult": 1.2, "player_only": true})
 
 	static func make_id(base: String, r: int) -> String:
 		return base if r <= 0 else "%s@%d" % [base, r]

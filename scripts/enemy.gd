@@ -82,6 +82,11 @@ var _poison_t := 0.0
 var _poison_dps := 0.0
 var _poison_tick := 0.0
 var _sunder_t := 0.0
+## Exposure (the Fire / Cold / Lightning Exposure supports): element (RuneDef.DamageType) -> seconds left. -20% resistance.
+var _exposed := {}
+
+const EXPOSURE_SECONDS := 8.0
+const EXPOSURE_AMOUNT := 0.2
 
 const SLAM_WINDUP := 0.9
 const SLAM_RADIUS := 150.0
@@ -271,6 +276,11 @@ func _process_ailments(delta: float) -> void:
 	if _sunder_t > 0.0:
 		_sunder_t = maxf(_sunder_t - delta, 0.0)
 
+	for k in _exposed.keys():
+		_exposed[k] -= delta
+		if _exposed[k] <= 0.0:
+			_exposed.erase(k)
+
 	# Burning DoT
 	if _burn_t > 0.0:
 		_burn_t = maxf(_burn_t - delta, 0.0)
@@ -403,9 +413,13 @@ func take_damage(amount: float, crit: bool = false,
 		ailment: String = "") -> void:
 	if _dead:
 		return
+	# "+exp" on the ailment: this hit also exposes the enemy to its element (it travels with the hit to the host)
+	var expose := ailment.ends_with("+exp")
+	if expose:
+		ailment = ailment.trim_suffix("+exp")
 	if remote:
 		# The host's copy takes it; the number shows here straight away
-		Coop.forward_hit(net_id, amount, crit, dtype, ailment)
+		Coop.forward_hit(net_id, amount, crit, dtype, ailment + ("+exp" if expose else ""))
 		if _shield_t > 0.0:
 			_spawn_text("Immune", Color(0.85, 0.85, 1.0))
 		else:
@@ -418,7 +432,9 @@ func take_damage(amount: float, crit: bool = false,
 		return
 
 	# Shock and Sunder damage vulnerability multipliers
-	var final_dmg := amount * _resist(dtype)
+	var final_dmg := amount * resist_mult(dtype)
+	if expose and dtype != RuneDef.DamageType.PHYSICAL:
+		_exposed[dtype] = EXPOSURE_SECONDS  # from the next hit on
 	if _shock_t > 0.0:
 		final_dmg *= 1.25
 	if _sunder_t > 0.0:
@@ -696,6 +712,12 @@ func has_affix(id: String) -> bool:
 ## Rift progress this kill is worth (elites and legendaries count for more).
 func kill_weight() -> int:
 	return int(MonsterAffix.TIERS[tier].weight) if tier != MonsterAffix.Tier.NORMAL else 1
+
+
+## The share of a hit of element `dtype` that gets through: 1.0 with no resistance, 0.3 for a resistant monster
+## (Fireproof...), plus 0.2 while exposed to the element.
+func resist_mult(dtype: int) -> float:
+	return _resist(dtype) + (EXPOSURE_AMOUNT if _exposed.has(dtype) else 0.0)
 
 
 func _resist(dtype: RuneDef.DamageType) -> float:

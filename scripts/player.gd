@@ -332,14 +332,14 @@ func _hit_breakables(origin: Vector2, dir: Vector2, hit_radius: float, arc_deg: 
 
 ## Damage every enemy inside a cone or full circle, handling element, runes, crits and leech.
 func _hit_area(origin: Vector2, dir: Vector2, hit_radius: float, arc_deg: float,
-		skill: SkillDef, stun_dur := 0.0, is_echo := false) -> void:
+		skill: SkillDef, stun_dur := 0.0, is_echo := false, part := 1.0) -> void:
 	var half := deg_to_rad(arc_deg) * 0.5
 	var dtype := skill.get_effective_damage_type()
 	var ailment := skill.get_effective_ailment()
 	var leech := skill.get_effective_leech() + passive("leech")
 	var exec_bonus := skill.get_execute_bonus()
 	var rank := GameState.get_skill_rank(skill.id)
-	var mult := skill.get_effective_damage_mult(rank) * (0.50 if is_echo else 1.0)
+	var mult := skill.get_effective_damage_mult(rank) * (0.50 if is_echo else 1.0) * part
 
 	var total_dealt := 0.0
 	var hits := 0
@@ -357,10 +357,10 @@ func _hit_area(origin: Vector2, dir: Vector2, hit_radius: float, arc_deg: float,
 			crit_chance += exec_bonus
 		var crit := randf() < crit_chance
 
-		var dmg := damage_for(skill) * mult * (2.0 if crit else 1.0)
+		var dmg := damage_for(skill) * mult * (2.0 if crit else 1.0) * _penetration_scale(e, skill, dtype)
 		if e.hp / e.max_hp < 0.40:
 			dmg *= 1.0 + passive("execute")
-		e.take_damage(dmg, crit, dtype, ailment)
+		e.take_damage(dmg, crit, dtype, _exposing(skill, dtype, ailment, crit))
 		total_dealt += dmg
 		hits += 1
 		crit_hit = crit_hit or crit
@@ -573,6 +573,32 @@ func spell_mult() -> float:
 	return maxf(1.0 + Attributes.SPELL_PER_ENE * GameState.attribute_bonus("ene") + passive("spell_inc") + stats.get_stat("spell_inc"), 0.1)
 
 
+## Against an enemy with no resistance a Penetration support still adds this much damage (poe2db's gems assume
+## resistant enemies; Tainted's mostly are not, so it counts for a third).
+const PENETRATION_UNRESISTED := 0.10
+
+## How much more of a hit of element `dtype` gets through `e`'s resistance with the skill's Penetration supports.
+func _penetration_scale(e, s: SkillDef, dtype: int) -> float:
+	var pen := s.get_penetration(dtype)
+	if pen <= 0.0 or not e.has_method("resist_mult"):
+		return 1.0
+	var r: float = e.resist_mult(dtype)
+	if r >= 1.0:
+		return 1.0 + PENETRATION_UNRESISTED
+	return minf(r + (1.0 - r if pen >= 1.0 else pen), 1.0) / r
+
+
+## The ailment a hit passes to the enemy, marked ("+exp") when it also exposes it: fire that ignites, lightning that
+## shocks, a cold critical hit.
+func _exposing(s: SkillDef, dtype: int, ailment: String, crit: bool) -> String:
+	if not s.exposes(dtype):
+		return ailment
+	var triggers := (dtype == RuneDef.DamageType.FIRE and ailment == "burn") \
+		or (dtype == RuneDef.DamageType.LIGHTNING and ailment == "shock") \
+		or (dtype == RuneDef.DamageType.COLD and crit)
+	return ailment + "+exp" if triggers else ailment
+
+
 ## One hit of skill `s` on enemy `e` (an arrow, a bolt, a strike of lightning), `scale` of the skill's
 ## damage (`part` of it): crits, execute, element and ailment (or `dtype` / `ailment` instead), leech. The damage dealt.
 func _hit_one(e, s: SkillDef, part := 1.0, dtype := -1, ailment := "-") -> float:
@@ -585,11 +611,12 @@ func _hit_one(e, s: SkillDef, part := 1.0, dtype := -1, ailment := "-") -> float
 	if s.get_execute_bonus() > 0.0 and e.hp / e.max_hp < 0.35 and not s.cannot_crit():
 		crit_chance += s.get_execute_bonus()
 	var crit := randf() < crit_chance
-	var dmg := damage_for(s) * s.get_effective_damage_mult(GameState.get_skill_rank(s.id)) * part * (2.0 if crit else 1.0)
+	var el: int = s.get_effective_damage_type() if dtype < 0 else dtype
+	var dmg := damage_for(s) * s.get_effective_damage_mult(GameState.get_skill_rank(s.id)) * part * (2.0 if crit else 1.0) \
+		* _penetration_scale(e, s, el)
 	if e.hp / e.max_hp < 0.40:
 		dmg *= 1.0 + passive("execute")
-	e.take_damage(dmg, crit, s.get_effective_damage_type() if dtype < 0 else dtype,
-		s.get_effective_ailment() if ailment == "-" else ailment)
+	e.take_damage(dmg, crit, el, _exposing(s, el, s.get_effective_ailment() if ailment == "-" else ailment, crit))
 	var leech := s.get_effective_leech() + passive("leech")
 	if leech > 0.0:
 		hp = minf(hp + dmg * leech, stats.get_stat("max_life"))
@@ -632,13 +659,21 @@ func _shoot_fan(s: SkillDef, dir: Vector2, pierce: bool, style: String) -> void:
 
 ## A projectile of skill `s` along `dir`: an arrow, a bolt of fire ("orb": it bursts where it hits)
 ## or a knife; the party sees it fly.
-func _shoot(s: SkillDef, dir: Vector2, pierce: bool, style: String, reach := 0.0) -> void:
+## `fork_part`: its share of the skill's damage (a fork has less); `origin` / `skip` / `forked`: a fork starts where
+## the shot hit, leaves that enemy alone and does not fork again.
+func _shoot(s: SkillDef, dir: Vector2, pierce: bool, style: String, reach := 0.0,
+		fork_part := 1.0, origin := Vector2.INF, skip = null, forked := false) -> void:
 	if get_parent() == null:
 		return
 	var a := HirelingArrow.new()
-	a.global_position = global_position + Vector2(0, -26)
+	a.global_position = global_position + Vector2(0, -26) if origin == Vector2.INF else origin
 	a.dir = dir
 	a.pierce = pierce
+	if not forked:
+		a.pierce_extra = s.get_pierce_count()
+	if skip != null:
+		a.ignore(skip)
+	var pierce_less := s.get_pierce_less()
 	a.style = style
 	a.maze = _maze()
 	a.color = s.get_effective_color()
@@ -650,12 +685,22 @@ func _shoot(s: SkillDef, dir: Vector2, pierce: bool, style: String, reach := 0.0
 	a.on_hit = func(e) -> void:
 		if not is_instance_valid(self) or not is_instance_valid(e):
 			return
+		var part := fork_part * pow(1.0 - pierce_less, a.pierced)  # forks and pierced projectiles hit softer
 		if s.kind == SkillDef.Kind.BOLT:  # bursts: everything near where it hit
 			_sfx("fire_explosion" if s.get_effective_damage_type() == RuneDef.DamageType.FIRE else "hit_" + _element_name(s),
 				e.global_position + Vector2(0, -16), s.get_effective_radius() / 90.0)
-			_hit_area(e.global_position, Vector2.RIGHT, s.get_effective_radius(), 360.0, s, 0.0, echo)
+			_hit_area(e.global_position, Vector2.RIGHT, s.get_effective_radius(), 360.0, s, 0.0, echo, part)
 		else:
-			_hit_one(e, s, 0.5 if echo else 1.0)
+			_hit_one(e, s, (0.5 if echo else 1.0) * part)
+	if s.get_forks() > 0 and not forked:  # where it stops, it splits in two
+		var forks := s.get_forks()
+		var keep := 1.0 - s.get_fork_less()
+		a.on_end = func(e) -> void:
+			if not is_instance_valid(self) or not is_instance_valid(e) or not e.is_in_group("enemies"):
+				return
+			for k in forks:
+				var off := deg_to_rad(28.0) * (float(k) - float(forks - 1) * 0.5) * 2.0
+				_shoot(s, a.dir.rotated(off), false, style, 300.0, fork_part * keep, a.global_position, e, true)
 	get_parent().add_child(a)
 	Coop.player_fx(["proj", snappedf(a.global_position.x, 0.1), snappedf(a.global_position.y, 0.1), snappedf(dir.angle(), 0.001),
 		a.color.to_html(false), pierce, style, snappedf(a.speed * a.life, 1.0)])

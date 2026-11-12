@@ -333,6 +333,53 @@ func get_extra_chains() -> int:
 	return n
 
 
+## Enemies a projectile of this skill passes through (Pierce; 99 = all) and the damage each pierce takes off.
+func get_pierce_count() -> int:
+	var n := 0
+	for r in get_runes():
+		n = maxi(n, r.pierce)
+	return n
+
+
+func get_pierce_less() -> float:
+	var f := 0.0
+	for r in get_runes():
+		f = maxf(f, r.pierce_less)
+	return f
+
+
+## Projectiles a hit splits into (Fork), and the damage the forks lose.
+func get_forks() -> int:
+	var n := 0
+	for r in get_runes():
+		n = maxi(n, r.forks)
+	return n
+
+
+func get_fork_less() -> float:
+	var f := 0.0
+	for r in get_runes():
+		f = maxf(f, r.fork_less)
+	return f
+
+
+## The resistance (0 to 1; 1 or more = all of it) this skill's hits penetrate of element `dtype`.
+func get_penetration(dtype: int) -> float:
+	var p := 0.0
+	for r in get_runes():
+		if r.penetration > 0.0 and r.pen_type == dtype:
+			p = maxf(p, r.penetration)
+	return p
+
+
+## Whether a hit of element `dtype` that lands its ailment (or, for cold, a critical hit) exposes the enemy.
+func exposes(dtype: int) -> bool:
+	for r in get_runes():
+		if r.expose_type >= 0 and r.expose_type == dtype:
+			return true
+	return false
+
+
 ## How much faster (above 1) or slower (below) the skill is used with its supports (Rapid Attacks, Multishot's penalty).
 func get_speed_mult() -> float:
 	var m := 1.0

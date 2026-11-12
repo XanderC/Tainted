@@ -19,9 +19,18 @@ var style := "arrow"  ## "arrow", "orb" (a bolt of fire or magic) or "knife"
 var speed := SPEED
 var life := LIFE
 var breaks := false  ## the player's own: also hits the barrels, crates and urns (Breakable) on its way
+var pierce_extra := 0  ## the enemies it passes through before it stops (the Pierce supports); `pierce` passes through all
+var pierced := 0  ## the enemies it has passed through so far (on_hit reads it for the damage lost per pierce)
+## Called with the enemy that stopped it (not one it pierced): where the Fork support splits it.
+var on_end: Callable
 
 var _t := 0.0
 var _hit := {}  # enemies already hit (piercing)
+
+
+## Lets it fly through `e` without hitting it (a fork leaves the enemy it split from alone).
+func ignore(e) -> void:
+	_hit[e] = true
 
 
 func _ready() -> void:
@@ -74,7 +83,13 @@ func _physics_process(delta: float) -> void:
 			continue
 		_hit[e] = true
 		on_hit.call(e)
-		if not pierce:
+		if pierce:
+			pierced += 1
+		elif pierced < pierce_extra:
+			pierced += 1
+		else:
+			if on_end.is_valid():
+				on_end.call(e)
 			queue_free()
 			return
 	if breaks:

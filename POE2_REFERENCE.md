@@ -143,10 +143,30 @@ Not in Tainted and common in PoE2: Chain, Multishot, Pierce, Fork, Ricochet, Pro
 | Life Leech II | 3 | 100% | leech 16% of physical attack damage as life | Attack |
 | Life Leech III | 5 | 100% | as II, and the leech is not removed at full life (not built: no leech pool) | Attack |
 | Fire / Cold / Lightning / Chaos Mastery | 5 | 100% | +1 to level of supported skills of that element | that element |
+| Pierce I | 1 | 100% | projectiles pierce an enemy; 20% less damage if they have pierced | Projectile |
+| Pierce II | 3 | 100% | projectiles pierce an enemy (the page gives no more) | Projectile |
+| Pierce III | 5 | 100% | projectiles pierce all targets; 20% less damage for each enemy pierced | Projectile |
+| Fork | 3 | 110% | projectiles fork after hitting; 30% less damage after forking (no grenades) | Projectile |
+| Fire / Cold / Lightning Penetration (I) | 2 | 120% | hits penetrate 30% of that resistance | any hit |
+| Fire Penetration II | 5 | 120% | hits ignore fire resistance | any hit |
+| Fire / Lightning Exposure | 4 | 120% | the skill inflicts Exposure for 8 s when it ignites / shocks (no damage penalty since 0.1.0e) | any hit |
+| Cold Exposure | 4 | 120% | Exposure for 8 s on a cold critical hit that freezes | any hit |
+| Ricochet I / II / III | 2 / 4 / 1 | 100% | I: 40% chance to chain an additional time from terrain (not built: needs bounces off walls) | Projectile |
+
+Exposure itself (the Exposure page): -20% to the enemy's elemental resistances for 4 s by default (8 s from these gems), 15% / 30% / 50% weaker on Magic / Rare / Unique monsters.
 
 ## 6. What this means for the game
 
-Done in the game (2026-11-11): the level curve and PoE2 tiers (phase 2, `SkillTree.GEM_TIER` and `GEM_CHAR_LEVEL`), and the 19 supports above (phase 3, `RuneDef.DB.init_catalog`, restrictions in `SkillDef.supports_block_reason`). Not done: Penetration, Exposure, Pierce, Fork, Ricochet, Ignite/Bleed/Poison tiers, minion and totem supports; those need combat systems Tainted lacks (resistance reduction, chaining projectiles, ailment tiers).
+Done in the game (2026-11-11): the level curve and PoE2 tiers (phase 2, `SkillTree.GEM_TIER` and `GEM_CHAR_LEVEL`), the 19 supports above and, as a third batch, 11 more: Pierce I-III, Fork, Fire Penetration I/II, Cold and Lightning Penetration, and the three Exposures (`RuneDef.DB.init_catalog`, restrictions in `SkillDef.supports_block_reason`).
+
+How they work in Tainted, where it differs from PoE2:
+- **Pierce** (`HirelingArrow.pierce_extra`): I passes through 1 enemy, II through 3 (those two counts are our guess; poe2db gives no numbers), III through all; each pierced enemy takes 20% off the next hit.
+- **Fork** (`HirelingArrow.on_end`, `Player._shoot`): where the shot stops on an enemy it splits into two arrows at +-28 degrees that fly 300 px, leave that enemy alone, deal 30% less and do not fork again.
+- **Penetration** (`Player._penetration_scale`): monsters here only have the Fireproof / Frostborn / Grounded affixes (0.3 of the element gets through). The gem adds its 0.3 to that (twice the damage; II ignores it: 3.3x). Against a monster with no resistance, which is most of them, it adds 10%, since poe2db's numbers assume resistant enemies.
+- **Exposure** (`Enemy._exposed`, `Enemy.resist_mult`): -20% resistance for 8 s, so the share let through grows by 0.2 (a monster with no resistance takes 20% more). Triggers: fire that ignites, lightning that shocks, a cold critical hit. It travels with the hit as a "+exp" suffix on the ailment, so the host applies it in co-op. The rarity weakening is not built.
+- All of these are `player_only`: hirelings cannot link them.
+
+Not done: Ricochet (needs bounces off terrain), Ignite/Bleed/Poison tiers, Rapid Casting III, Life Leech III, minion and totem supports.
 
 
 - **Level requirements:** replace the six-cluster table with the shared curve; the cluster becomes the minimum gem level (tier). Needs a decision on character level cap (the game's cap is below PoE2's 90, so the curve would need compressing or truncating to the levels the game reaches).

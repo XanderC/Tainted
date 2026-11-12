@@ -1,8 +1,9 @@
 [
 	{
 		"build": 0,
-		"title": "Nineteen new support gems from Path of Exile 2",
+		"title": "Thirty new support gems from Path of Exile 2",
 		"notes": [
+			"Eleven more supports for projectiles and elements: Pierce I to III (arrows fly through one, three, then every enemy, each pierce costing 20% damage), Fork (a shot splits in two where it hits, the forks deal 30% less), Fire Penetration I and II, Cold and Lightning Penetration (your hits get through a monster's Fireproof, Frostborn or Grounded resistance, and add a little against the rest), and Fire, Cold and Lightning Exposure (igniting, shocking or critical cold hits make the enemy take 20% more of that element for 8 seconds).",
 			"New supports, found like the others: Multishot I and II (two more projectiles, but less damage and slower), Chain I to III (Arc chains further, for less damage), Rapid Attacks I to III (15%, 25%, then 35% faster for 50% less damage), Rapid Casting I and II (15% and 20% faster), Controlled Destruction (a spell deals 25% more damage but cannot crit), Magnified Area I and II (35% and 45% bigger area), Life Leech I and II (12% and 16% of damage back as life) and the four Masteries (+1 level to a Fire, Cold, Lightning or Chaos skill).",
 			"Supports now come in families (Multishot I and II do not go together), and some only fit certain skills: Multishot needs a projectile skill, Chain a chaining one, Fire Mastery a Fire skill, and so on. The support list greys out what does not fit and says why.",
 			"Hirelings cannot link the ones that change how you cast (Multishot, Chain, the speed ones, Controlled Destruction)."
