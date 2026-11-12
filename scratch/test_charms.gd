@@ -46,7 +46,7 @@ func _ready() -> void:
 
 	# --- bases ---
 	var charms := LootGenerator.bases.filter(func(b): return b.slot == "charm")
-	check(charms.size() == 6, "six charms with a trigger the game has (%d)" % charms.size())
+	check(charms.size() == 13, "all thirteen of PoE2's charms (%d)" % charms.size())
 	check(item("ruby_charm").grid_size() == Vector2i(1, 1), "a charm takes one cell")
 	check(LootGenerator.base_by_id("golden_charm").drop_level == 50 and int(LootGenerator.base_by_id("golden_charm").charm.max_charges) == 80, "Golden: level 50, 80 charges")
 	check(ItemInstance.roll_sockets(item("ruby_charm").base, ItemInstance.Rarity.MAGIC) == 0, "no sockets")

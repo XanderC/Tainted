@@ -55,6 +55,7 @@ func _draw() -> void:
 		player.mana / maxf(player.max_mana(), 1.0), "%d" % int(player.resource), "%d" % int(player.mana))
 	_curls()
 	_xp()
+	_ailments()
 
 
 ## The bar's backdrop behind the slots and the experience line, drawn on `ci` (FlaskBar draws it under
@@ -144,3 +145,18 @@ func _orb(c: Vector2, right: bool, frac: float, col: Color, text: String) -> voi
 			Rect2(0, fill.get_height() - src_h, fill.get_width(), src_h), col)
 	# The value in the part of the globe above the screen's edge
 	HudArt.label(self, Vector2(c.x - r, c.y + 2.0), text, 22, Color(1, 0.97, 0.9), r * 2.0)
+
+
+## The ailments you have (Stunned, Ignited ...), over the life globe.
+func _ailments() -> void:
+	var names: Array[String] = []
+	for k in player.active_ailments():
+		names.append(String(Player.AILMENT_NAMES.get(k, k)))
+	var c := orb_centre(size, false)
+	if player.max_energy_shield() > 0.0:
+		HudArt.label(self, Vector2(c.x - 110.0, c.y - ORB_R - 40.0), "Energy Shield %d" % int(player.energy_shield()), 14, Color(0.55, 0.75, 1.0), 220.0,
+			HORIZONTAL_ALIGNMENT_CENTER)
+	if names.is_empty():
+		return
+	HudArt.label(self, Vector2(c.x - 110.0, c.y - ORB_R - 22.0), "  ".join(PackedStringArray(names)), 15, Color(1.0, 0.55, 0.35), 220.0,
+		HORIZONTAL_ALIGNMENT_CENTER)

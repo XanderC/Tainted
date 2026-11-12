@@ -1,5 +1,15 @@
 [
 	{
+		"build": 0,
+		"title": "Ailments, all thirteen charms and more item modifiers",
+		"notes": [
+			"Monsters can now afflict you, as in Path of Exile 2. A hit may Ignite you (fire), Shock you (lightning, 20% more damage taken), Freeze you (cold, you cannot move or act for a moment), Poison you (chaos) or make you Bleed (physical), and burning, poison and bleeding keep hurting you for a few seconds. A very big hit Stuns you. Orc Shamans, Dark Elves and Veil Cultists can Curse you (you deal 20% less damage). What is wrong with you shows over the life globe.",
+			"The rest of PoE2's charms are in: Stone (stun), Thawing (freeze), Staunching (bleeding), Antidote (poison), Dousing (ignite), Grounding (shock) and Cleansing (curses). Each fires by itself when that ailment would hit you and keeps it off for 3 seconds.",
+			"New modifiers on gear: Evasion Rating (a chance to avoid a hit altogether), Energy Shield (takes damage before your life and recharges when you are left alone), Block chance on shields, Physical Thorns, Stun Threshold, reduced duration of Bleeding, Poison, Ignite, Shock and Freeze on you, Maximum Resistances, Life and Mana per enemy hit, Mana Leech, damage taken recouped as Life or Mana, and Rarity of Items found.",
+			"These monsters and gear changes make fights somewhat harder to stand in, and gear with the new defences easier. Gear you own is not changed."
+		]
+	},
+	{
 		"build": 202611122020,
 		"title": "Charms",
 		"notes": [

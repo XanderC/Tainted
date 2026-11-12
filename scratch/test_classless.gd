@@ -54,6 +54,8 @@ func _playing() -> void:
 	add_child(main)
 	await get_tree().create_timer(1.0).timeout
 	var p: Player = main.player
+	for ail in Player.AILMENT_BASE:  # this test takes hits: ailments from them are not what it checks
+		p.stats.add_mod("immune_" + ail, StatBlock.ModType.FLAT, 1.0, "test_immune")
 	for e in get_tree().get_nodes_in_group("enemies"):
 		e.queue_free()
 	p.global_position = main.maze.random_floor_near(main.maze.start_pos, 100.0, 200.0)

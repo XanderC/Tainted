@@ -309,9 +309,8 @@ func _build_bases() -> void:
 			{"kind": "power", "amount": ft[3], "duration": ft[4], "max_charges": ft[5] - 15, "charges_per_use": 10, "tier": mini(t + 1, 3)})
 		bases[-1].drop_level = int(ft[1])
 	# The utility flasks of earlier builds no longer drop: they are turned into charms when a save loads
-	# Charms (Path of Exile 2): worn in belt charm slots, used by themselves when their trigger happens. Only the
-	# ones whose trigger exists here: PoE2's Stone, Thawing, Staunching, Antidote, Dousing, Grounding and Cleansing
-	# need stun, freeze, bleed, poison, ignite, shock and curses on the player.
+	# Charms (Path of Exile 2): worn in belt charm slots, used by themselves when their trigger happens (a hit of an
+	# element, a slow, an elite's death, or an ailment: Player.inflict).
 	for c in CHARMS:
 		_charm(c)
 	_flask("granite_flask", "Granite Flask", Color(0.62, 0.60, 0.58), 0,
@@ -348,6 +347,13 @@ const CHARMS := [
 	["topaz_charm", "Topaz Charm", 5, Color(0.95, 0.80, 0.25), "hit_lightning", "take Lightning damage from a Hit", "res_lightning", 0.25, "+{v}% to Lightning Resistance", 4.0, 20, 40, {}],
 	["silver_charm", "Silver Charm", 10, Color(0.80, 0.82, 0.88), "slow", "are affected by a Slow", "", 0.0, "Your speed is unaffected by Slows", 3.0, 20, 40, {"warding": true}],
 	["amethyst_charm", "Amethyst Charm", 40, Color(0.65, 0.35, 0.85), "hit_chaos", "take Chaos damage from a Hit", "res_chaos", 0.18, "+{v}% to Chaos Resistance", 4.0, 30, 40, {}],
+	["stone_charm", "Stone Charm", 8, Color(0.62, 0.60, 0.58), "ailment_stun", "are Stunned", "immune_stun", 1.0, "Cannot be Stunned", 3.0, 20, 40, {}],
+	["thawing_charm", "Thawing Charm", 12, Color(0.55, 0.85, 0.95), "ailment_freeze", "become Frozen", "immune_freeze", 1.0, "Immune to Freeze", 3.0, 40, 40, {}],
+	["staunching_charm", "Staunching Charm", 18, Color(0.75, 0.20, 0.25), "ailment_bleed", "start Bleeding", "immune_bleed", 1.0, "Immune to Bleeding", 3.0, 30, 40, {}],
+	["antidote_charm", "Antidote Charm", 24, Color(0.45, 0.75, 0.30), "ailment_poison", "become Poisoned", "immune_poison", 1.0, "Immune to Poison", 3.0, 20, 40, {}],
+	["dousing_charm", "Dousing Charm", 32, Color(0.95, 0.55, 0.20), "ailment_ignite", "become Ignited", "immune_ignite", 1.0, "Immune to Ignite", 3.0, 30, 40, {}],
+	["grounding_charm", "Grounding Charm", 32, Color(0.95, 0.90, 0.35), "ailment_shock", "become Shocked", "immune_shock", 1.0, "Immune to Shock", 3.0, 30, 40, {}],
+	["cleansing_charm", "Cleansing Charm", 40, Color(0.85, 0.85, 0.95), "ailment_curse", "become Cursed", "immune_curse", 1.0, "Immune to Curses", 3.0, 20, 40, {}],
 	["golden_charm", "Golden Charm", 50, Color(1.0, 0.82, 0.25), "kill_elite", "kill an Elite or Legendary monster or a boss", "item_rarity", 0.15, "{v}% increased Rarity of Items found", 3.0, 80, 80, {}],
 ]
 

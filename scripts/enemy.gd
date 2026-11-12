@@ -38,6 +38,7 @@ var _waypoint := Vector2.ZERO
 
 ## Elite / Legendary (MonsterAffix): tougher, with affixes. Set up with make_elite() before adding.
 var tier := 0  # MonsterAffix.Tier
+var curses := false  ## its hits may Curse you (a charm can stop it)
 var affixes: Array[String] = []
 var _ab_t := {}          # ability timers by affix id
 var _shield_t := 0.0     # Shielding: immune while > 0
@@ -212,6 +213,8 @@ func _physics_process(delta: float) -> void:
 
 	if to_player.length() < 46.0 * size_mult and _touch_cd <= 0.0:
 		_foe.take_damage(touch_damage, element)
+		if curses and randf() < 0.3 and _foe.has_method("inflict"):
+			_foe.inflict("curse")
 		if has_affix("vampiric"):
 			_heal(max_hp * 0.04)
 		if _foe.thorns() > 0.0:
@@ -700,6 +703,7 @@ func set_kind(id: String) -> void:
 	display_name = String(k["name"])
 	skin = MonsterKinds.skin_for(id)
 	ranged = bool(k.get("ranged", false))
+	curses = bool(k.get("curses", false))
 	max_hp *= float(k["hp"])
 	speed *= float(k["speed"])
 	touch_damage *= float(k["damage"])

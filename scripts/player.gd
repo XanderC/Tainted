@@ -226,6 +226,8 @@ func _physics_process(delta: float) -> void:
 		dir = joystick.output
 	if dir == Vector2.ZERO and not Net.chat_typing:
 		dir = Input.get_vector("ui_left", "ui_right", "ui_up", "ui_down")  # keyboard for desktop testing
+	if is_helpless():
+		dir = Vector2.ZERO  # stunned or frozen
 	dir = _walk_step(dir, delta)
 	velocity = dir * stats.get_stat("move_speed") * (0.6 if _slow_t > 0.0 else 1.0) * MazeMap.slow_at(global_position)  # (mire: slower)
 	move_and_slide()
@@ -364,6 +366,9 @@ func _hit_area(origin: Vector2, dir: Vector2, hit_radius: float, arc_deg: float,
 		e.take_damage(dmg, crit, dtype, _exposing(skill, dtype, ailment, crit))
 		total_dealt += dmg
 		hits += 1
+		var on_hit := stats.get_stat("life_on_hit")  # "Gain N Life per Enemy Hit"
+		if on_hit > 0.0:
+			hp = minf(hp + on_hit, stats.get_stat("max_life"))
 		crit_hit = crit_hit or crit
 
 		if stun_dur > 0.0:
@@ -380,6 +385,8 @@ func _hit_area(origin: Vector2, dir: Vector2, hit_radius: float, arc_deg: float,
 	if leech > 0.0 and total_dealt > 0.0:
 		var heal := total_dealt * leech
 		hp = minf(hp + heal, stats.get_stat("max_life"))
+	if total_dealt > 0.0 and stats.get_stat("mana_leech") > 0.0:
+		gain_mana(total_dealt * stats.get_stat("mana_leech"))
 
 	_hit_breakables(origin, dir, hit_radius, arc_deg, skill)
 
@@ -405,7 +412,7 @@ func use_skill(i: int) -> void:
 	if _cooldowns[i] > 0.0:
 		return
 	var s := skills[i]
-	if s == null:  # empty action-bar slot
+	if s == null or is_helpless():  # an empty action-bar slot, or stunned or frozen
 		return
 	if skill_block_reason(s) != "":  # its weapon, or not enough of its attribute
 		return
@@ -647,6 +654,10 @@ func _hit_one(e, s: SkillDef, part := 1.0, dtype := -1, ailment := "-") -> float
 	var leech := s.get_effective_leech() + passive("leech") + stats.get_stat("leech")
 	if leech > 0.0:
 		hp = minf(hp + dmg * leech, stats.get_stat("max_life"))
+	if stats.get_stat("mana_leech") > 0.0:
+		gain_mana(dmg * stats.get_stat("mana_leech"))
+	if stats.get_stat("life_on_hit") > 0.0:
+		hp = minf(hp + stats.get_stat("life_on_hit"), stats.get_stat("max_life"))
 	if crit:
 		_fire_triggers("crit")
 	return dmg
@@ -1001,6 +1012,12 @@ func gain_flask_charges(worth: float) -> void:
 
 
 func _process_flasks(delta: float) -> void:
+	_process_ailments(delta)
+	var m_es := max_energy_shield()
+	if m_es > 0.0 and _es >= 0.0 and _es < m_es:
+		_es_wait -= delta
+		if _es_wait <= 0.0:
+			_es = minf(_es + m_es * ES_RECHARGE * delta, m_es)
 	for i in FLASK_SLOTS:
 		_flask_cd[i] = maxf(_flask_cd[i] - delta, 0.0)
 		var it: ItemInstance = flasks[i]
@@ -1035,6 +1052,97 @@ func slow_immune() -> bool:
 
 func is_worn(item: ItemInstance) -> bool:
 	return item != null and (equipment.values().has(item) or flasks.has(item) or charms.has(item))
+
+
+# ---------- ailments ----------
+# What monsters' hits can do to you, as in Path of Exile 2: a hit may Stun (a big hit), Freeze (cold), Shock (lightning),
+# Ignite (fire), Poison (chaos) or Bleed (physical); some monsters Curse. A charm of the matching kind fires when you
+# would be affected and gives immunity for a few seconds. "reduced duration" modifiers shorten each one.
+
+const AILMENT_BASE := {"stun": 0.7, "freeze": 1.1, "bleed": 4.0, "poison": 5.0, "ignite": 4.0, "shock": 4.0, "curse": 5.0}
+const AILMENT_NAMES := {"stun": "Stunned", "freeze": "Frozen", "bleed": "Bleeding", "poison": "Poisoned", "ignite": "Ignited",
+	"shock": "Shocked", "curse": "Cursed"}
+const SHOCK_TAKEN := 1.2  ## a shocked character takes this much more damage
+const CURSE_DAMAGE := -0.2  ## a cursed character deals this much less (a MORE modifier)
+const STUN_HIT := 0.15  ## a hit of this share of your life stuns, and stun threshold raises it
+const DOT_SHARE := {"bleed": 0.4, "poison": 0.4, "ignite": 0.3}  ## of the hit, dealt over the ailment's time
+const DOT_TYPE := {"bleed": RuneDef.DamageType.PHYSICAL, "poison": RuneDef.DamageType.CHAOS, "ignite": RuneDef.DamageType.FIRE}
+var _ail := {}  ## ailment -> seconds left
+var _ail_dps := {}  ## a damaging ailment -> damage a second
+var _curse_src := RefCounted.new()
+
+
+func has_ailment(name: String) -> bool:
+	return float(_ail.get(name, 0.0)) > 0.0
+
+
+## The ailments you have, for the bar.
+func active_ailments() -> Array:
+	return _ail.keys().filter(func(k): return float(_ail[k]) > 0.0)
+
+
+## Stunned or frozen: you can neither move nor use a skill.
+func is_helpless() -> bool:
+	return has_ailment("stun") or has_ailment("freeze")
+
+
+## An ailment's chance from a hit of `amount` (before armour) of `dtype`: more for a big hit.
+func _hit_ailments(amount: float, dtype: int) -> void:
+	if amount <= 0.0:
+		return
+	var frac := amount / maxf(stats.get_stat("max_life"), 1.0)
+	var chance := clampf(0.10 + frac * 1.5, 0.10, 0.45)
+	if frac * stats.get_stat("max_life") >= STUN_HIT * stats.get_stat("max_life") + stats.get_stat("stun_threshold"):
+		inflict("stun", amount)
+	match dtype:
+		RuneDef.DamageType.FIRE:
+			if randf() < chance:
+				inflict("ignite", amount)
+		RuneDef.DamageType.COLD:
+			if randf() < chance * 0.5:
+				inflict("freeze", amount)
+		RuneDef.DamageType.LIGHTNING:
+			if randf() < chance:
+				inflict("shock", amount)
+		RuneDef.DamageType.CHAOS:
+			if randf() < chance:
+				inflict("poison", amount)
+		_:
+			if randf() < chance * 0.6:
+				inflict("bleed", amount)
+
+
+## Give yourself an ailment (`hit`: the damage that caused it, for the damaging ones). A charm for it fires first and may stop it.
+func inflict(name: String, hit := 0.0) -> bool:
+	if dead or not AILMENT_BASE.has(name):
+		return false
+	_charm_trigger("ailment_" + name)
+	if stats.get_stat("immune_" + name) > 0.0:
+		return false
+	var dur: float = float(AILMENT_BASE[name]) * maxf(1.0 - stats.get_stat("ail_" + name), 0.2)
+	var was := has_ailment(name)
+	_ail[name] = maxf(float(_ail.get(name, 0.0)), dur)
+	if DOT_SHARE.has(name):
+		_ail_dps[name] = maxf(float(_ail_dps.get(name, 0.0)), hit * float(DOT_SHARE[name]) / dur)
+	if name == "curse" and not was:
+		stats.add_mod("damage", StatBlock.ModType.MORE, CURSE_DAMAGE, _curse_src)
+	if name == "freeze":
+		_slow_t = 0.0
+	return true
+
+
+func _process_ailments(delta: float) -> void:
+	for k in _ail.keys():
+		if float(_ail[k]) <= 0.0:
+			continue
+		if _ail_dps.has(k):
+			take_damage(float(_ail_dps[k]) * delta, int(DOT_TYPE[k]), true)
+		_ail[k] = float(_ail[k]) - delta
+		if float(_ail[k]) <= 0.0:
+			_ail[k] = 0.0
+			_ail_dps.erase(k)
+			if k == "curse":
+				stats.remove_source(_curse_src)
 
 
 # ---------- charms ----------
@@ -1276,10 +1384,32 @@ func resistance(dtype: int) -> float:
 	if key == "":
 		return 0.0
 	var r := stats.get_stat(key) + stats.get_stat("res_all") + passive(key) + passive("res_all") + Quests.bonus(key) + Quests.bonus("res_all")
-	return clampf(r, -1.0, MAX_RESIST)
+	var cap := MAX_RESIST + stats.get_stat("max_res_" + key.trim_prefix("res_")) + stats.get_stat("max_res_all")  # "+N% to Maximum Fire Resistance"
+	return clampf(r, -1.0, minf(cap, 0.9))
 
 
 const MAX_RESIST := 0.75
+## Evasion Rating: the chance to avoid a hit is rating / (rating + this), at most 75%.
+const EVASION_K := 150.0
+## Energy Shield: an extra pool hits take from first; it recharges (a share of its size a second) after this long unhit.
+const ES_WAIT := 2.0
+const ES_RECHARGE := 0.25
+var _es := -1.0  # current Energy Shield (-1: full)
+var _es_wait := 0.0
+
+
+func max_energy_shield() -> float:
+	return maxf(stats.get_stat("energy_shield"), 0.0)
+
+
+func energy_shield() -> float:
+	var m := max_energy_shield()
+	return m if _es < 0.0 else minf(_es, m)
+
+
+## A hit was blocked or evaded (a hook for a sound or a flash).
+func _flash_dodge() -> void:
+	pass
 const CHARM_HIT_TRIGGERS := {RuneDef.DamageType.FIRE: "hit_fire", RuneDef.DamageType.COLD: "hit_cold",
 	RuneDef.DamageType.LIGHTNING: "hit_lightning", RuneDef.DamageType.CHAOS: "hit_chaos"}
 const RESIST_KEYS := {RuneDef.DamageType.FIRE: "res_fire", RuneDef.DamageType.COLD: "res_cold",
@@ -1289,7 +1419,7 @@ var _element_spark := 0
 
 ## Retaliation: damage reflected to an enemy that hits you.
 func thorns() -> float:
-	return passive("thorns")
+	return passive("thorns") + stats.get_stat("thorns")
 
 
 ## Rampage: a slain enemy bursts, hurting others nearby.
@@ -1609,14 +1739,27 @@ func _do_cleave_skill(s: SkillDef) -> void:
 
 ## A monster's hit: armour takes part of any hit off, your resistance to its element (`dtype`) part of
 ## an elemental one.
-func take_damage(amount: float, dtype := 0) -> void:
+func take_damage(amount: float, dtype := 0, dot := false) -> void:
 	if dead:
 		return
+	# `dot`: a burn, bleed or poison ticking: armour does not stop it, and it brings no charm, ailment or shock of its own
+	if not dot:
+		# A hit may be blocked (a shield) or evaded (Evasion Rating): then it does nothing at all
+		var block := clampf(stats.get_stat("block"), 0.0, 0.75)
+		var ev := maxf(stats.get_stat("evasion"), 0.0)
+		if (block > 0.0 and randf() < block) or (ev > 0.0 and randf() < minf(ev / (ev + EVASION_K), 0.75)):
+			_flash_dodge()
+			return
 	var armor := stats.get_stat("armor")
-	var taken := amount * 100.0 / (100.0 + armor)
+	var taken := amount if dot else amount * 100.0 / (100.0 + armor)
 	if dtype != RuneDef.DamageType.PHYSICAL:
-		_charm_trigger(String(CHARM_HIT_TRIGGERS.get(dtype, "")))  # a Ruby, Sapphire, Topaz or Amethyst Charm
+		if not dot:
+			_charm_trigger(String(CHARM_HIT_TRIGGERS.get(dtype, "")))  # a Ruby, Sapphire, Topaz or Amethyst Charm
 		taken *= 1.0 - resistance(dtype)
+	if not dot:
+		if has_ailment("shock"):
+			taken *= SHOCK_TAKEN
+		_hit_ailments(amount, dtype)
 		if Time.get_ticks_msec() - _element_spark > 250 and get_parent() != null:  # what hit you, in its colour
 			_element_spark = Time.get_ticks_msec()
 			SpellFx.spawn(get_parent(), SpellFx.HITS[clampi(dtype, 0, SpellFx.HITS.size() - 1)], global_position + Vector2(0, -30), 0.8)
@@ -1627,7 +1770,19 @@ func take_damage(amount: float, dtype := 0) -> void:
 		var off := minf(taken * shield, mana)
 		mana -= off
 		taken -= off
+	if taken > 0.0 and max_energy_shield() > 0.0:  # Energy Shield takes the damage first, then life
+		var soak := minf(energy_shield(), taken)
+		_es = energy_shield() - soak
+		taken -= soak
+		_es_wait = ES_WAIT
 	hp -= taken
+	if taken > 0.0:  # "N% of Damage taken Recouped as Life / Mana"
+		var back_life := stats.get_stat("recoup_life")
+		if back_life > 0.0 and hp > 0.0:
+			hp = minf(hp + taken * back_life, stats.get_stat("max_life"))
+		var back_mana := stats.get_stat("recoup_mana")
+		if back_mana > 0.0:
+			gain_mana(taken * back_mana)
 	if hp > 0.0 and taken > 0.0:  # Cast when Damage Taken
 		_fire_triggers("hurt")
 	# Getting hit builds Adrenaline
@@ -1639,6 +1794,9 @@ func take_damage(amount: float, dtype := 0) -> void:
 		gain_resource(gain)
 	if hp <= 0.0:
 		hp = 0.0
+		_ail.clear()
+		_ail_dps.clear()
+		stats.remove_source(_curse_src)
 		dead = true
 		rig.play_once("Dying", 1.0, true)
 		died.emit()

@@ -25,6 +25,12 @@ CLASSES = {
     "flask_life": "Life_Flasks", "flask_mana": "Mana_Flasks", "charm": "Charms",
 }
 
+# The dex and int pages of an armour slot hold the evasion and energy shield modifiers: merged into the same class
+EXTRA_PAGES = {
+    "helmet": ["Helmets_dex", "Helmets_int"], "chest": ["Body_Armours_dex", "Body_Armours_int"],
+    "gloves": ["Gloves_dex", "Gloves_int"], "boots": ["Boots_dex", "Boots_int"],
+}
+
 # poe2db family -> game family id. A family that reads "increased" rather than "+" gets a second id (see ALT).
 FAMILY = {
     "IncreasedLife": "life", "IncreasedMana": "mana",
@@ -45,7 +51,15 @@ FAMILY = {
     "CriticalStrikeChanceIncrease": "crit_chance", "CriticalStrikeMultiplier": "crit_damage",
     "LifeRegeneration": "life_regen", "ManaRegeneration": "mana_regen",
     "LifeGainedFromEnemyDeath": "life_kill", "ManaGainedFromEnemyDeath": "mana_kill",
-    "LifeLeech": "life_leech",
+    "LifeLeech": "life_leech", "ManaLeech": "mana_leech", "LifeGainPerTarget": "life_hit",
+    "IncreasedEvasionRating": "evasion", "EvasionRatingPercent": "evasion_pct",
+    "IncreasedEnergyShield": "es", "EnergyShieldPercent": "es_pct",
+    "StunThreshold": "stun_threshold", "Thorns": "thorns", "ReducedAilmentDuration": "ail_",
+    "ItemFoundRarityIncreasePrefix": "rarity_prefix", "ItemFoundRarityIncrease": "rarity",
+    "IncreasedShieldBlockPercentage": "block", "ArmourAppliesToElementalDamage": "armour_ele",
+    "MaximumFireResist": "max_fire", "MaximumColdResist": "max_cold", "MaximumLightningResistance": "max_lightning",
+    "MaximumChaosResistance": "max_chaos", "MaximumResistances": "max_res",
+    "DamageTakenGainedAsLife": "recoup_life", "PercentDamageGoesToMana": "recoup_mana",
     # Flasks and charms (used from the flask and charm phases)
     "FlaskRecoveryAmount": "flask_amount", "FlaskRecoverySpeed": "flask_speed",
     "FlaskChargesUsed": "flask_used", "FlaskGainCharge": "flask_per_second",
@@ -80,7 +94,7 @@ def tier_row(m):
     vs = values(m["str"])
     if not vs:
         return None
-    if len(vs) >= 2 and re.search(r"Adds|Gain", html.unescape(re.sub(r"<[^>]+>", "", m["str"])), re.I):
+    if len(vs) >= 2 and re.search(r"Adds|Gain|Thorns", html.unescape(re.sub(r"<[^>]+>", "", m["str"])), re.I):
         lo = (vs[0][0] + vs[1][0]) / 2.0  # "Adds (1-2) to (3-5)": the average hit, low and high roll
         hi = (vs[0][1] + vs[1][1]) / 2.0
     else:
@@ -91,11 +105,16 @@ def tier_row(m):
 def main(folder: str, out: str) -> None:
     data = {}
     for cls, page in CLASSES.items():
-        s = io.open(f"{folder}/{page}.html", encoding="utf-8").read()
-        i = s.index("ModsView({") + len("ModsView(")
-        d, _ = json.JSONDecoder().raw_decode(s[i:])
         fams = {}
-        for m in d["normal"]:
+        pages = [page] + EXTRA_PAGES.get(cls, [])
+        rows = []
+        for pg in pages:
+            s = io.open(f"{folder}/{pg}.html", encoding="utf-8").read()
+            i = s.index("ModsView({") + len("ModsView(")
+            d, _ = json.JSONDecoder().raw_decode(s[i:])
+            rows += [(pg, m) for m in d["normal"]]
+        have = set()
+        for pg, m in rows:
             fam = "/".join(m["ModFamilyList"])
             if fam not in FAMILY:
                 continue
@@ -103,6 +122,19 @@ def main(folder: str, out: str) -> None:
             fid = FAMILY[fam]
             if fid in ALT and "increased" in text:
                 fid = ALT[fid]
+            if fam in ("BaseLocalDefences", "DefencesPercent"):
+                flat = fam == "BaseLocalDefences"
+                if "Evasion" in text:
+                    fid = "evasion" if flat else "evasion_pct"
+                elif "Energy Shield" in text:
+                    fid = "es" if flat else "es_pct"
+                else:
+                    fid = "armour" if flat else "armour_pct"
+            if fam == "ReducedAilmentDuration":
+                kinds = {"Bleeding": "ail_bleed", "Poison": "ail_poison", "Ignite": "ail_ignite", "Shock": "ail_shock", "Freeze": "ail_freeze"}
+                fid = next((v for k, v in kinds.items() if k in text), None)
+                if fid is None:
+                    continue  # Chill: the game has no chill
             if fid == "spell_dmg" and fam == "WeaponCasterDamagePrefix" and "Spell Damage" not in text:
                 continue
             if cls == "charm" and fam == "FlaskRecoveryAmount":
@@ -126,6 +158,12 @@ def main(folder: str, out: str) -> None:
             row = tier_row(m)
             if row is None:
                 continue
+            if pg != page and fid in have and fid not in fams:
+                continue
+            if pg == page:
+                have.add(fid)
+            elif fid in have:
+                continue  # the main page's version of a family wins
             fams.setdefault(fid, {})[row[0]] = row  # one row per item level
         # Vitality has no PoE2 counterpart: it takes the tiers of the first attribute the class has
         for src in ("str", "dex", "ene"):
