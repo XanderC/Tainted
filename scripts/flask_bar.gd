@@ -43,22 +43,27 @@ func _draw() -> void:
 	for i in HudBars.FLASK_COUNT:
 		var r := HudBars.slot_rect(size, i)
 		var flask := i < Player.FLASK_SLOTS
-		# A dark backing so the row reads solid over the ground; a slot that is not a flask's is darker
+		var ci := i - Player.FLASK_SLOTS  # a charm slot's number
+		var open := flask or ci < player.charm_slot_count()
+		# A dark backing so the row reads solid over the ground; a charm slot the belt does not open is darker
 		draw_rect(r.grow(-3.0), Color(0.07, 0.07, 0.08, 0.9))
-		draw_texture_rect(slot, r, false, Color.WHITE if flask else Color(0.45, 0.43, 0.46))
-		if not flask:
-			continue
-		var it: ItemInstance = player.flasks[i]
+		draw_texture_rect(slot, r, false, Color.WHITE if open else Color(0.45, 0.43, 0.46))
+		var it: ItemInstance = player.flasks[i] if flask else player.charms[ci]
 		if it != null:
-			var frac := player.flask_charge_fraction(i)
-			var ready := player.flask_ready(i)
+			var frac := player.flask_charge_fraction(i) if flask else player.charm_charge_fraction(ci)
+			var ready := player.flask_ready(i) if flask else frac * float(it.max_charges()) >= float(player._fx(it).per_use)
 			var inner := r.grow(-4.0)
+			var live := open and (flask or ready)
 			if it.base.icon != null:
-				draw_texture_rect(it.base.icon, r.grow(-6.0), false, Color.WHITE if ready else Color(1, 1, 1, 0.45))
-			# The charges it holds, as a tint rising from the bottom, and the empty share shaded from the top
-			var empty := inner.size.y * (1.0 - frac)
-			draw_rect(Rect2(inner.position, Vector2(inner.size.x, empty)), Color(0, 0, 0, 0.55))
+				draw_texture_rect(it.base.icon, r.grow(-6.0), false, Color.WHITE if live else Color(1, 1, 1, 0.45))
+			# The charges it holds: the empty share is shaded from the top
+			draw_rect(Rect2(inner.position, Vector2(inner.size.x, inner.size.y * (1.0 - frac))), Color(0, 0, 0, 0.55))
 			HudArt.label(self, Vector2(r.position.x, r.position.y + 14.0), "%d" % int(it.charges_now()), 11,
-				Color(0.93, 0.90, 0.82) if ready else Color(0.9, 0.5, 0.45), r.size.x - 6.0, HORIZONTAL_ALIGNMENT_RIGHT)
-		HudArt.label(self, Vector2(r.position.x, r.end.y - 5.0), KEYS[i], 12, Color(0.93, 0.90, 0.82), r.size.x - 6.0,
-			HORIZONTAL_ALIGNMENT_RIGHT)
+				Color(0.93, 0.90, 0.82) if live else Color(0.9, 0.5, 0.45), r.size.x - 6.0, HORIZONTAL_ALIGNMENT_RIGHT)
+			if not flask and player.charm_flash(ci) > 0.0:  # a charm just fired
+				draw_rect(r.grow(-2.0), Color(1.0, 0.9, 0.5, 0.55 * player.charm_flash(ci)), false, 3.0)
+		if flask:
+			HudArt.label(self, Vector2(r.position.x, r.end.y - 5.0), KEYS[i], 12, Color(0.93, 0.90, 0.82), r.size.x - 6.0,
+				HORIZONTAL_ALIGNMENT_RIGHT)
+		elif not open:
+			HudArt.label(self, Vector2(r.position.x, r.end.y - 5.0), "🔒", 12, Color(0.7, 0.7, 0.7), r.size.x - 6.0, HORIZONTAL_ALIGNMENT_CENTER)

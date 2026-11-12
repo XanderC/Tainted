@@ -108,6 +108,9 @@ func is_flask() -> bool:
 # that: amount recovered, recovery rate, how much is instant, charges per use, charges held, charges gained.
 # Worn flasks give no stats of their own.
 
+## The old utility flasks and the charm each became.
+const UTILITY_TO_CHARM := {"quicksilver_flask": "silver_charm", "granite_flask": "ruby_charm", "silver_flask": "sapphire_charm",
+	"sulphur_flask": "topaz_charm"}
 const FLASK_USE_LOCK := 0.5  # seconds before a flask can be drunk again
 const HIRELING_FLASK_WAIT := 8.0  # a hireling's flasks recharge on a timer, after the effect ends
 
@@ -115,27 +118,64 @@ const HIRELING_FLASK_WAIT := 8.0  # a hireling's flasks recharge on a timer, aft
 @export var charges: float = -1.0
 
 
-## What drinking it does, modifiers included:
-##   kind, amount, duration, instant (bool), instant_part (0..1, drunk at once), max_charges, per_use, gain_mult,
-##   per_second, cooldown (a hireling's wait), buff {stat, mod, value} for an old utility flask, during, warding
-func flask_effect() -> Dictionary:
-	var f: Dictionary = base.flask
+func is_charm() -> bool:
+	return base != null and base.slot == "charm"
+
+
+## What drinking a flask or using a charm does, modifiers included (and the belt's, if given):
+##   kind ("life", "power", "charm"), amount, duration, instant (bool), instant_part (0..1, drunk at once), max_charges,
+##   per_use, gain_mult, per_second, cooldown (a hireling's wait), trigger (a charm's), buff {stat, mod, value} (a charm's),
+##   charm_life, charm_mana (recovered when a charm is used), warding (slows have no effect), during
+func flask_effect(belt: ItemInstance = null) -> Dictionary:
+	var charm := is_charm()
+	var f: Dictionary = base.charm if charm else base.flask
 	var mods := {}
 	for a in affixes:
 		mods[String(a.stat)] = float(mods.get(String(a.stat), 0.0)) + float(a.value)
-	var kind := String(f.get("kind", "life"))
-	var amount := float(f.get("amount", 0.0)) * (1.0 + float(mods.get("flask_amount", 0.0)))
-	var duration := float(f.get("duration", 3.0)) / (1.0 + float(mods.get("flask_speed", 0.0)))
+	var bm := {}  # the belt's flask and charm modifiers
+	if belt != null:
+		for a in belt.affixes:
+			bm[String(a.stat)] = float(bm.get(String(a.stat), 0.0)) + float(a.value)
+	var kind := "charm" if charm else String(f.get("kind", "life"))
+	var amount := float(f.get("value", 0.0)) if charm else float(f.get("amount", 0.0)) * (1.0 + float(mods.get("flask_amount", 0.0)))
+	var duration: float
+	if charm:
+		duration = float(f.get("duration", 3.0)) * (1.0 + float(mods.get("charm_duration", 0.0)) + float(bm.get("belt_charm_duration", 0.0)))
+	else:
+		duration = float(f.get("duration", 3.0)) / (1.0 + float(mods.get("flask_speed", 0.0)))
+		if kind == "life":
+			duration /= 1.0 + float(bm.get("belt_flask_recovery", 0.0))
+	var gained := float(bm.get("belt_charm_gained" if charm else "belt_flask_gained", 0.0))
+	var used := float(bm.get("belt_charm_used" if charm else "belt_flask_used", 0.0))
 	var out := {"kind": kind, "amount": amount, "duration": duration, "instant": false,
 		"instant_part": clampf(float(mods.get("flask_instant_part", 0.0)), 0.0, 1.0),
 		"max_charges": maxi(int(round(float(f.get("max_charges", 60)) * (1.0 + float(mods.get("flask_charges", 0.0))))), 1),
-		"per_use": maxi(int(round(float(f.get("charges_per_use", 10)) * (1.0 - float(mods.get("flask_used", 0.0))))), 1),
-		"gain_mult": 1.0 + float(mods.get("flask_gained", 0.0)),
+		"per_use": maxi(int(round(float(f.get("charges_per_use", 10)) * maxf(1.0 - float(mods.get("flask_used", 0.0)) - used, 0.2))), 1),
+		"gain_mult": (1.0 + float(mods.get("flask_gained", 0.0))) * (1.0 + gained),
 		"per_second": float(mods.get("flask_per_second", 0.0)),
-		"cooldown": duration + HIRELING_FLASK_WAIT, "during": [], "warding": false}
-	if kind == "utility":  # a flask of an earlier build, until it is turned into a charm
+		"cooldown": duration + HIRELING_FLASK_WAIT, "during": [], "warding": false, "trigger": "",
+		"charm_life": float(mods.get("charm_life", 0.0)), "charm_mana": float(mods.get("charm_mana", 0.0))}
+	if charm:
+		out["trigger"] = String(f.get("trigger", ""))
+		out["warding"] = bool(f.get("warding", false))
+		out["buff"] = {"stat": String(f.get("stat", "")), "mod": int(f.get("mod", StatBlock.ModType.FLAT)), "value": amount}
+	elif kind == "utility":  # a flask of an earlier build, until it is turned into a charm
 		out["buff"] = {"stat": String(f.get("stat", "")), "mod": int(f.get("mod", StatBlock.ModType.INCREASED)), "value": float(f.get("amount", 0.0))}
 	return out
+
+
+## What a charm does, as a line: "+25% to Fire Resistance for 4.0s", with what it recovers.
+func charm_text() -> String:
+	var e := flask_effect()
+	var parts: Array[String] = []
+	if float(e.charm_life) > 0.0:
+		parts.append("Recover %d Life when Used" % int(round(float(e.charm_life))))
+	if float(e.charm_mana) > 0.0:
+		parts.append("Recover %d Mana when Used" % int(round(float(e.charm_mana))))
+	var t := String(base.charm.get("text", ""))
+	if t != "":
+		parts.append("%s for %.1fs" % [t.replace("{v}", str(int(round(float(e.amount) * 100.0)))), e.duration])
+	return "\n".join(PackedStringArray(parts))
 
 
 func max_charges() -> int:
@@ -150,7 +190,7 @@ func charges_now() -> float:
 
 ## Fill it (a new flask, a waypoint, the town).
 func refill() -> void:
-	if is_flask():
+	if is_flask() or is_charm():
 		charges = float(max_charges())
 
 
@@ -159,8 +199,8 @@ func add_charges(n: float) -> void:
 
 
 ## Spend what a drink costs. False (and nothing spent) if it holds too few.
-func spend_charges() -> bool:
-	var need := float(flask_effect().per_use)
+func spend_charges(belt: ItemInstance = null) -> bool:
+	var need := float(flask_effect(belt).per_use)
 	if charges_now() < need:
 		return false
 	charges = charges_now() - need
@@ -332,11 +372,16 @@ static func from_dict(d: Dictionary) -> ItemInstance:
 	var b := LootGenerator.base_by_id(String(d.get("base", "")))
 	if b == null:
 		return null
+	# The utility flasks of the five-slot build are charms now: the nearest one, as a Normal item
+	var converted := false
+	if b.slot == "flask" and String(b.flask.get("kind", "")) == "utility":
+		b = LootGenerator.base_by_id(String(UTILITY_TO_CHARM.get(b.id, "ruby_charm")))
+		converted = true
 	var it := ItemInstance.new()
 	it.base = b
 	it.uid = String(d.get("uid", "")).left(32) if d.get("uid") is String else ""
 	it.display_name = String(d.get("name", b.display_name))
-	it.charges = float(d.get("charges", -1.0))
+	it.charges = -1.0 if converted else float(d.get("charges", -1.0))
 	it.rarity = int(d.get("rarity", 0)) as Rarity
 	it.ilvl = int(d.get("ilvl", 1))
 	it.unique_id = String(d.get("unique", ""))
@@ -363,8 +408,8 @@ static func from_dict(d: Dictionary) -> ItemInstance:
 	for m in d.get("rw_mods", []):
 		it.rw_mods.append({"stat": String(m.get("stat", "")), "mod_type": int(m.get("mod_type", 0)),
 			"value": float(m.get("value", 0.0)), "text": String(m.get("text", ""))})
-	if it.is_flask() and it.rarity > Rarity.MAGIC:
-		# Path of Exile 2 has no Rare flasks: one prefix and one suffix are kept, as a Magic flask
+	if (it.is_flask() or it.is_charm()) and it.rarity > Rarity.MAGIC:
+		# Path of Exile 2 has no Rare flasks or charms: one prefix and one suffix are kept, as a Magic flask
 		it.rarity = Rarity.MAGIC
 		var seen := {"p": false, "s": false}
 		it.affixes = it.affixes.filter(func(e):

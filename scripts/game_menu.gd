@@ -165,13 +165,15 @@ func show_item_tip(item: ItemInstance, extra := Callable(), at = null) -> void:
 	_tip_at = at if at is Vector2 else get_viewport().get_mouse_position()
 	var worn_now := player.is_worn(item)
 	# Flasks give nothing while worn, so there is nothing to compare
-	var on: ItemInstance = null if worn_now or item.is_flask() else player.equipment.get(player.equip_slot_for(item))
+	var on: ItemInstance = null if worn_now or item.is_flask() or item.is_charm() else player.equipment.get(player.equip_slot_for(item))
 	# Unidentified: comparing stats would give its hidden modifiers away
 	var deltas := UIKit.equip_deltas(player, item) if on != null and item.identified else {}
 	item_tip().show_card(item, _tip_at, {}, func(parent: VBoxContainer):
 		if worn_now:
 			parent.add_child(UIKit.label("Worn", 13, UIKit.GOLD))
 			parent.add_child(_unequip_button(item))
+		elif item.is_charm():
+			parent.add_child(_equip_charm_button(item))
 		elif not item.is_flask():
 			var why := player.equip_block_reason(item)
 			if why != "":
@@ -216,6 +218,8 @@ func _unequip_button(item: ItemInstance) -> Control:
 		item_tip().close()
 		if player.flasks.has(item):
 			player.unequip_flask(player.flasks.find(item))
+		if player.charms.has(item):
+			player.unequip_charm(player.charms.find(item))
 		for s in player.equipment.keys():
 			if player.equipment[s] == item:
 				player.unequip(s)
@@ -225,6 +229,18 @@ func _unequip_button(item: ItemInstance) -> Control:
 
 ## Identify, on an unidentified item's card: a Scroll of Identify works anywhere (the Sage in town
 ## does it for free). The card shows again, identified.
+## A charm in the bag: wear it in the first free charm slot of your belt.
+func _equip_charm_button(item: ItemInstance) -> Control:
+	var slot := player.free_charm_slot()
+	var b := UIKit.button("⬆ Wear in a charm slot" if slot != -1 else "No free charm slot (a belt opens 1 to 3)", Color(0.10, 0.16, 0.12), Color(0.45, 0.85, 0.55), Vector2(0, 44), 15)
+	b.disabled = slot == -1
+	b.pressed.connect(func():
+		item_tip().close()
+		player.equip_charm(item, slot)
+		refresh())
+	return b
+
+
 func _identify_button(item: ItemInstance) -> Control:
 	var have := GameState.orb_count("identify")
 	var b := UIKit.button("📜 Identify  (%d scroll%s)" % [have, "" if have == 1 else "s"], Color(0.22, 0.19, 0.12), Color(0.93, 0.86, 0.66), Vector2(0, 44), 15)

@@ -4,7 +4,7 @@ extends Resource
 
 @export var id: String = ""
 @export var display_name: String = ""
-@export_enum("weapon", "offhand", "helmet", "shoulders", "chest", "wrists", "gloves", "legs", "boots", "ring", "amulet", "belt", "flask") var slot: String = "weapon"
+@export_enum("weapon", "offhand", "helmet", "shoulders", "chest", "wrists", "gloves", "legs", "boots", "ring", "amulet", "belt", "flask", "charm") var slot: String = "weapon"
 ## Weapons and shields: "sword", "axe", "mace", "spear", "dagger", "staff", "bow", "shield". "" for armour.
 ## Each class lists the types it may use (ClassDef.weapon_types).
 @export var weapon_type: String = ""
@@ -33,6 +33,12 @@ extends Resource
 ##   text      - utility: the buff, with {v} for its value
 ##   tier      - 1..3, for the icon
 @export var flask := {}
+## Charms (slot "charm"): what it does and when. Keys:
+##   trigger   - "hit_fire" | "hit_cold" | "hit_lightning" | "hit_chaos" | "slow" | "kill_elite"
+##   stat, mod - the buff (StatBlock), value its amount ("stat" "" for none), warding: slows have no effect
+##   duration  - seconds it lasts; max_charges, charges_per_use
+##   when, text - how the item card words the trigger ("take Fire damage from a Hit") and the buff ("{v}% Fire Resistance")
+@export var charm := {}
 
 
 const TYPE_NAMES := {
@@ -55,7 +61,7 @@ const TWO_HANDED_SIZES := {
 const SLOT_SIZES := {
 	"helmet": Vector2i(2, 2), "shoulders": Vector2i(2, 2), "chest": Vector2i(2, 3), "gloves": Vector2i(2, 2),
 	"wrists": Vector2i(2, 2), "legs": Vector2i(2, 2), "boots": Vector2i(2, 2), "ring": Vector2i(1, 1), "amulet": Vector2i(1, 1),
-	"belt": Vector2i(2, 1), "flask": Vector2i(1, 2),
+	"belt": Vector2i(2, 1), "flask": Vector2i(1, 2), "charm": Vector2i(1, 1),
 	"weapon": Vector2i(1, 3), "offhand": Vector2i(2, 2),
 }
 
@@ -78,7 +84,7 @@ func bag_size() -> Vector2i:
 ## gloves, boots, shoulders and legs 2; wrists, rings and amulets 1; belts and flasks none.
 func max_sockets() -> int:
 	match slot:
-		"belt", "flask":
+		"belt", "flask", "charm":
 			return 0
 		"ring", "amulet", "wrists":
 			return 1

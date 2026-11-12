@@ -204,7 +204,8 @@ func _ready() -> void:
 	check(p2.flasks[0] != null and p2.flasks[0].base.id == "large_life_flask" and p2.flasks[1] != null and p2.flasks[1].base.id == "medium_power_flask",
 		"the first life and first mana flask fill the two slots")
 	var in_bag := p2.bag.items().filter(func(i): return i.is_flask()).size()
-	check(in_bag >= 3, "the other three flasks went to the bag (%d)" % in_bag)
+	check(in_bag >= 2, "the other flasks went to the bag (%d)" % in_bag)
+	check(p2.charms.any(func(c): return c != null and c.base.id == "ruby_charm"), "the old Granite Flask came back as a Ruby Charm")
 
 	# --- crafting ---
 	check(Crafting.orb_block_reason(item("rope_belt"), "jeweller") != "", "no sockets on belts")

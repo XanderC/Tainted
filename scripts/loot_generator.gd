@@ -309,6 +309,11 @@ func _build_bases() -> void:
 			{"kind": "power", "amount": ft[3], "duration": ft[4], "max_charges": ft[5] - 15, "charges_per_use": 10, "tier": mini(t + 1, 3)})
 		bases[-1].drop_level = int(ft[1])
 	# The utility flasks of earlier builds no longer drop: they are turned into charms when a save loads
+	# Charms (Path of Exile 2): worn in belt charm slots, used by themselves when their trigger happens. Only the
+	# ones whose trigger exists here: PoE2's Stone, Thawing, Staunching, Antidote, Dousing, Grounding and Cleansing
+	# need stun, freeze, bleed, poison, ignite, shock and curses on the player.
+	for c in CHARMS:
+		_charm(c)
 	_flask("granite_flask", "Granite Flask", Color(0.62, 0.60, 0.58), 0,
 		{"kind": "utility", "stat": "armor", "mod": StatBlock.ModType.FLAT, "amount": 50.0,
 		"text": "+{v} Armour", "duration": 5.0, "cooldown": 15.0, "tier": 2})
@@ -334,6 +339,27 @@ const FLASK_IDS_LIFE := ["small_life_flask", "medium_life_flask", "large_life_fl
 	"colossal_life_flask", "gargantuan_life_flask", "transcendent_life_flask", "ultimate_life_flask"]
 const FLASK_IDS_POWER := ["small_power_flask", "medium_power_flask", "large_power_flask", "grand_power_flask", "giant_power_flask",
 	"colossal_power_flask", "gargantuan_power_flask", "transcendent_power_flask", "ultimate_power_flask"]
+
+
+## [id, name, drop level, colour, trigger, when (item card), stat, value, text, seconds, charges per use, max charges, extra]
+const CHARMS := [
+	["ruby_charm", "Ruby Charm", 5, Color(0.90, 0.20, 0.22), "hit_fire", "take Fire damage from a Hit", "res_fire", 0.25, "+{v}% to Fire Resistance", 4.0, 20, 40, {}],
+	["sapphire_charm", "Sapphire Charm", 5, Color(0.25, 0.45, 0.95), "hit_cold", "take Cold damage from a Hit", "res_cold", 0.25, "+{v}% to Cold Resistance", 4.0, 20, 40, {}],
+	["topaz_charm", "Topaz Charm", 5, Color(0.95, 0.80, 0.25), "hit_lightning", "take Lightning damage from a Hit", "res_lightning", 0.25, "+{v}% to Lightning Resistance", 4.0, 20, 40, {}],
+	["silver_charm", "Silver Charm", 10, Color(0.80, 0.82, 0.88), "slow", "are affected by a Slow", "", 0.0, "Your speed is unaffected by Slows", 3.0, 20, 40, {"warding": true}],
+	["amethyst_charm", "Amethyst Charm", 40, Color(0.65, 0.35, 0.85), "hit_chaos", "take Chaos damage from a Hit", "res_chaos", 0.18, "+{v}% to Chaos Resistance", 4.0, 30, 40, {}],
+	["golden_charm", "Golden Charm", 50, Color(1.0, 0.82, 0.25), "kill_elite", "kill an Elite or Legendary monster or a boss", "item_rarity", 0.15, "{v}% increased Rarity of Items found", 3.0, 80, 80, {}],
+]
+
+
+func _charm(c: Array) -> void:
+	_base(c[0], c[1], "charm", c[3])
+	var b := bases[-1]
+	b.drop_level = int(c[2])
+	b.weight = 18
+	b.charm = {"trigger": c[4], "when": c[5], "stat": c[6], "mod": StatBlock.ModType.FLAT, "value": c[7], "text": c[8],
+		"duration": c[9], "charges_per_use": c[10], "max_charges": c[11], "warding": bool(Dictionary(c[12]).get("warding", false))}
+	b.icon = IconFactory.material_icon(String(c[0]), c[3])
 
 
 func _belt(id: String, name: String, slots: int, col: Color, imp_stat: String, imp_val: float, weight: int) -> void:
@@ -385,8 +411,8 @@ func roll_item(ilvl: int = 1, forced_rarity: int = -1, slot: String = "") -> Ite
 	item.ilvl = ilvl
 	item.implicit_roll = ItemInstance.roll_implicit()
 	item.rarity = forced_rarity if forced_rarity >= 0 else _roll_rarity()
-	if item.is_flask() and item.rarity > ItemInstance.Rarity.MAGIC:
-		item.rarity = ItemInstance.Rarity.MAGIC  # flasks are Normal or Magic only (Path of Exile 2)
+	if (item.is_flask() or item.is_charm()) and item.rarity > ItemInstance.Rarity.MAGIC:
+		item.rarity = ItemInstance.Rarity.MAGIC  # flasks and charms are Normal or Magic only (Path of Exile 2)
 
 	var count := 0
 	match item.rarity:
@@ -400,6 +426,11 @@ func roll_item(ilvl: int = 1, forced_rarity: int = -1, slot: String = "") -> Ite
 	item.sockets = ItemInstance.roll_sockets(item.base, item.rarity)
 	item.refill()
 	return item
+
+
+## "% increased Rarity of Items found" from the player's gear and charms: magic and rare drops get likelier by this share.
+static func rarity_bonus() -> float:
+	return maxf(GameState.player.stats.get_stat("item_rarity"), 0.0) if is_instance_valid(GameState.player) else 0.0
 
 
 # ---------- crafting helpers ----------
@@ -579,13 +610,16 @@ func rename(item: ItemInstance) -> void:
 
 
 func _roll_rarity() -> int:
-	var total := 0
+	var more := 1.0 + rarity_bonus()  # Golden Charm and gear: magic and rare drops are likelier
+	var weights := {}
+	var total := 0.0
 	for k in RARITY_WEIGHTS:
-		total += RARITY_WEIGHTS[k]
-	var r := randi_range(1, total)
+		weights[k] = float(RARITY_WEIGHTS[k]) * (1.0 if k == ItemInstance.Rarity.NORMAL else more)
+		total += weights[k]
+	var r := randf() * total
 	for k in RARITY_WEIGHTS:
-		r -= RARITY_WEIGHTS[k]
-		if r <= 0:
+		r -= weights[k]
+		if r <= 0.0:
 			return k
 	return ItemInstance.Rarity.NORMAL
 

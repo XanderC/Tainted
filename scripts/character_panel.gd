@@ -120,6 +120,10 @@ func refresh() -> void:
 		var cell := _flask_cell(i)
 		cell.position = flask_rect(i).position
 		_doll.add_child(cell)
+	for i in Player.CHARM_SLOTS:  # the charm slots follow the two flasks in the row
+		var cc := _charm_cell(i)
+		cc.position = flask_rect(Player.FLASK_SLOTS + i).position
+		_doll.add_child(cc)
 
 	_bag_view.selected = menu.selected
 	_bag_view.refresh()
@@ -158,7 +162,8 @@ static func doll_rect(slot: String) -> Rect2:
 ## Flask slot i: the two (life, then mana) in a row under the belt, centred on it.
 static func flask_rect(i: int) -> Rect2:
 	var belt := doll_rect("belt")
-	var row_w := Player.FLASK_SLOTS * DOLL_U + (Player.FLASK_SLOTS - 1) * DOLL_GAP.y
+	var n := Player.FLASK_SLOTS + Player.CHARM_SLOTS
+	var row_w := n * DOLL_U + (n - 1) * DOLL_GAP.y
 	var x0 := belt.get_center().x - row_w * 0.5
 	return Rect2(x0 + i * (DOLL_U + DOLL_GAP.y), _down(FLASK_TOP), DOLL_U, DOLL_U * 2.0)
 
@@ -222,6 +227,7 @@ func _bag_accepts(d: Dictionary, at: Vector2i) -> bool:
 			"bag": return player.bag.has(it) and not player.bag.plan_drop(it, at, player.bag).is_empty()
 			"gear": return player.can_unequip_to(String(d.get("slot", "")), at)
 			"flask": return player.can_unequip_flask_to(int(d.get("idx", -1)), at)
+			"charm": return player.can_unequip_charm_to(int(d.get("idx", -1)), at)
 			"stash": return GameState.can_stash_to_bag(it, at)
 			"hireling": return Hirelings.can_unequip_to(player, String(d.get("slot", "")), at)
 			"hireling_flask": return Hirelings.can_unequip_flask_to(player, int(d.get("idx", -1)), at)
@@ -239,10 +245,44 @@ func _bag_dropped(d: Dictionary, at: Vector2i) -> void:
 		"bag": player.move_in_bag(it, at)
 		"gear": player.unequip_to(String(d.get("slot", "")), at)
 		"flask": player.unequip_flask_to(int(d.get("idx", -1)), at)
+		"charm": player.unequip_charm_to(int(d.get("idx", -1)), at)
 		"stash": GameState.stash_to_bag(it, at)
 		"hireling": Hirelings.unequip_to(player, String(d.get("slot", "")), at)
 		"hireling_flask": Hirelings.unequip_flask_to(player, int(d.get("idx", -1)), at)
 	menu.refresh()
+
+
+# ---------- charms ----------
+
+## Charm slot i: the belt opens 1 to 3 of them. Drag a charm here from the bag, and back to take it off.
+func _charm_cell(i: int) -> DragSlot:
+	var it: ItemInstance = player.charms[i]
+	var open := i < player.charm_slot_count()
+	var cell := UIKit.item_cell(it, it != null and it == menu.selected, flask_rect(Player.FLASK_SLOTS + i).size)
+	if it == null:
+		cell.setup(null, Color(0.28, 0.24, 0.30), Color(0.09, 0.08, 0.11), 0,
+			"🔮" if open else "🔒",
+			("Charm slot %d: drag a charm here. It is used by itself when its trigger happens." % (i + 1)) if open \
+				else "Wear a belt with more charm slots to open this one (1 below item level 30, 2 below 60, 3 above)")
+	else:
+		cell.payload = {"kind": "item", "from": "charm", "idx": i, "item": it}
+		cell.clicked.connect(menu.select.bind(it))
+		cell.tooltip_text = "%s\nUsed when you %s\n%s\nCharges %d / %d (%d per use)%s" % [it.display_name, String(it.base.charm.when), it.charm_text(),
+			int(it.charges_now()), it.max_charges(), int(player._fx(it).per_use), "" if open else "\nLocked: your belt doesn't open this slot"]
+		if not open:
+			cell.modulate = Color(1, 1, 1, 0.45)
+	cell.can_accept = func(d: Dictionary) -> bool:
+		var di: ItemInstance = d.get("item")
+		return d.get("kind", "") == "item" and di != null and di.is_charm() and open and d.get("from", "") in ["bag", "charm"] \
+			and not (d.get("from", "") == "charm" and int(d.get("idx", -1)) == i)
+	cell.on_drop = func(d: Dictionary) -> void:
+		var di: ItemInstance = d.get("item")
+		if player.equip_charm(di, i):
+			menu.select(di, false)
+		else:
+			menu.feedback("No room in the bag for the charm it replaces.")
+			menu.refresh()
+	return cell
 
 
 # ---------- flasks ----------

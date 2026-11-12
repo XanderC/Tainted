@@ -114,6 +114,17 @@ func _wares() -> Array[Dictionary]:
 			"desc": "%s. Holds %d charges, 10 a drink; kills and waypoints refill them." % [f.flask_text("Mana"), int(b.flask.max_charges)],
 			"price": FLASK_PRICES[clampi(tier, 0, FLASK_PRICES.size() - 1)],
 			"color": b.color, "icon": b.icon})
+	# Normal charms the level reaches
+	for b in LootGenerator.bases:
+		if b.slot != "charm" or b.drop_level > maxi(GameState.level, 1) + 4:
+			continue
+		var c := ItemInstance.new()
+		c.base = b
+		var price: Dictionary = {"transmute": 2} if b.drop_level <= 5 else ({"augment": 2} if b.drop_level <= 10 else ({"alchemy": 2} if b.drop_level <= 40 else {"chaos": 2}))
+		list.append({"type": "flask", "id": b.id, "name": b.display_name,
+			"desc": "Used when you %s. %s. Holds %d charges, %d a use. Needs a belt with a charm slot." % [String(b.charm.when), c.charm_text().replace("\n", ". "),
+				int(b.charm.max_charges), int(b.charm.charges_per_use)],
+			"price": price, "color": b.color, "icon": b.icon})
 	# Currency exchange: better orbs for cheaper ones
 	for id in CraftingDB.ORB_ORDER:
 		var price := Currency.orb_price(id)

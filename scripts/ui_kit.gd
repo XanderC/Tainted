@@ -27,6 +27,7 @@ const SLOT_NAMES := {
 	"amulet": "Amulet",
 	"belt": "Belt",
 	"flask": "Flask",
+	"charm": "Charm",
 }
 
 const SLOT_ICONS := {
@@ -44,6 +45,7 @@ const SLOT_ICONS := {
 	"amulet": "📿",
 	"belt": "🎗",
 	"flask": "🧪",
+	"charm": "🔮",
 }
 
 const GOLD := Color(0.95, 0.82, 0.45)
@@ -433,6 +435,10 @@ static func item_card(parent: Node, item: ItemInstance, compact := false, deltas
 	var req := Attributes.requirement_bbcode(item.base, have)
 	if req != "":
 		txt += req + "\n"
+	if item.is_charm():
+		var ce := item.flask_effect(GameState.player.equipment.get("belt") if is_instance_valid(GameState.player) else null)
+		txt += "[color=#f3e6c4]Used when you %s[/color]\n[color=#f3e6c4]%s[/color]\n[color=#9ca3af]Charges %d / %d, %d per use[/color]\n" % [
+			String(item.base.charm.get("when", "")), item.charm_text(), int(item.charges_now()), int(ce.max_charges), int(ce.per_use)]
 	if item.is_flask():
 		# What drinking it does, modifiers included, then the modifiers themselves below
 		var e := item.flask_effect()

@@ -126,6 +126,8 @@ const SHARED_KEYS := ["orbs", "shards", "skill_gems", "runes", "gems"]
 var gem_station := false
 ## Flasks in the character's flask slots (Player.flasks), as saved: item dicts or null.
 var _pending_flasks: Array = []
+## Charms worn, as saved: item dicts or null (Player.charms).
+var _pending_charms: Array = []
 ## Flasks made from an older save's potions that weren't put in a slot: they go in the bag.
 var _pending_loose_flasks: Array[ItemInstance] = []
 
@@ -174,6 +176,7 @@ func _new_game() -> void:
 
 	# Every character starts with a Lesser Life Flask and a Lesser Mana Flask in the two flask slots
 	_pending_flasks = [_new_flask("small_life_flask").to_dict(), _new_flask("small_power_flask").to_dict()]
+	_pending_charms = []
 	_pending_loose_flasks.clear()
 
 	# Starting skill gems & points (one passive point per level gained, 99 at level 100)
@@ -1607,9 +1610,23 @@ func attach_player(p: Player) -> void:
 	p.flasks = [null, null]
 	# Path of Exile 2 has two flask slots, life then mana: a saved character's first life flask and first mana flask
 	# go in them, and the rest of its (up to five) flasks go to the bag with the potions of older saves
+	# The utility flasks of the five-slot build come back as charms (ItemInstance.from_dict), and go with the worn charms
+	p.charms = [null, null, null]
+	var spare_charms: Array[ItemInstance] = []
+	for ci in _pending_charms.size():
+		if _pending_charms[ci] is Dictionary:
+			var c := ItemInstance.from_dict(_pending_charms[ci])
+			if c != null and c.is_charm():
+				if ci < Player.CHARM_SLOTS and p.charms[ci] == null:
+					p.charms[ci] = c
+				else:
+					spare_charms.append(c)
 	for fd in _pending_flasks:
 		if fd is Dictionary:
 			var f := ItemInstance.from_dict(fd)
+			if f != null and f.is_charm():
+				spare_charms.append(f)
+				continue
 			if f == null or not f.is_flask():
 				continue
 			var placed := false
@@ -1620,6 +1637,12 @@ func attach_player(p: Player) -> void:
 					break
 			if not placed:
 				_pending_loose_flasks.append(f)
+	for c in spare_charms:  # into an empty charm slot, else the bag
+		var free := p.charms.find(null)
+		if free != -1:
+			p.charms[free] = c
+		else:
+			_pending_loose_flasks.append(c)
 	# Flasks an older save's potions turned into: into the bag, or the stash if it is full
 	var extra: Array[ItemInstance] = []
 	for f in _pending_loose_flasks:
@@ -1711,6 +1734,7 @@ func save() -> void:
 		_pending_inventory = inv
 		_pending_equipment = eq
 		_pending_flasks = player.flasks.map(func(f): return f.to_dict() if f != null else null)
+		_pending_charms = player.charms.map(func(c): return c.to_dict() if c != null else null)
 	else:
 		inv = _pending_inventory
 		eq = _pending_equipment
@@ -1739,6 +1763,7 @@ func save() -> void:
 		"support_xp": support_xp,
 		"skill_slots": skill_slots,
 		"flasks": _pending_flasks,
+		"charms": _pending_charms,
 	}
 	_write_json(_char_path(char_id), data)
 	for c in characters:
@@ -2132,6 +2157,7 @@ func _apply_save(data: Dictionary) -> void:
 	attributes = _ints(data.get("attributes", {}))
 	_fix_attribute_points()
 	_load_hireling(data.get("hireling", {}))
+	_pending_charms = data.get("charms", [])
 	if data.has("flasks"):
 		_pending_flasks = data.flasks
 		_pending_loose_flasks.clear()

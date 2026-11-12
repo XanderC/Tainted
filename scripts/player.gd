@@ -34,6 +34,8 @@ const MANA_REGEN_FLAT := 2.0  ## ...and this much
 const WARD_TAKEN := 0.6  ## Arcane Ward: what's left of a hit
 var _ward_t := 0.0
 var flasks: Array = [null, null]  # ItemInstance or null, FLASK_SLOTS long
+var charms: Array = [null, null, null]  # worn charms (the belt opens charm_slot_count of the slots)
+var _charm_flash: Array[float] = [0.0, 0.0, 0.0]  # 1 just after a charm fires, for the bar
 var _flask_cd: Array[float] = [0.0, 0.0]  # the short wait before a flask can be drunk again
 var _flask_cd_max: Array[float] = [1.0, 1.0]
 ## Flasks in effect: {source, t, life_rate, power_rate, warding}. Their buffs are StatBlock mods
@@ -947,9 +949,9 @@ func use_flask(i: int) -> bool:
 	if dead or i < 0 or i >= FLASK_SLOTS:
 		return false
 	var it: ItemInstance = flasks[i]
-	if it == null or _flask_cd[i] > 0.0 or not it.spend_charges():
+	if it == null or _flask_cd[i] > 0.0 or not it.spend_charges(equipment.get("belt")):
 		return false
-	var e := it.flask_effect()
+	var e := _fx(it)
 	_flask_cd[i] = ItemInstance.FLASK_USE_LOCK
 	_flask_cd_max[i] = ItemInstance.FLASK_USE_LOCK
 	var source := RefCounted.new()
@@ -981,21 +983,21 @@ func flask_charge_fraction(i: int) -> float:
 ## Whether slot i holds enough charges for a drink.
 func flask_ready(i: int) -> bool:
 	var it: ItemInstance = flasks[i] if i >= 0 and i < FLASK_SLOTS else null
-	return it != null and it.charges_now() >= float(it.flask_effect().per_use)
+	return it != null and it.charges_now() >= float(_fx(it).per_use)
 
 
 ## Fill both flasks (a waypoint, the town).
 func refill_flasks() -> void:
-	for it in flasks:
+	for it in flasks + charms:
 		if it != null:
 			it.refill()
 
 
 ## Charges from a kill: 1 for a normal monster, more for an elite or a boss, times each flask's "charges gained".
 func gain_flask_charges(worth: float) -> void:
-	for it in flasks:
+	for it in flasks + charms:
 		if it != null:
-			it.add_charges(worth * float(it.flask_effect().gain_mult))
+			it.add_charges(worth * float(_fx(it).gain_mult))
 
 
 func _process_flasks(delta: float) -> void:
@@ -1003,9 +1005,16 @@ func _process_flasks(delta: float) -> void:
 		_flask_cd[i] = maxf(_flask_cd[i] - delta, 0.0)
 		var it: ItemInstance = flasks[i]
 		if it != null:  # "Gains N Charges per Second"
-			var per := float(it.flask_effect().per_second)
+			var per := float(_fx(it).per_second)
 			if per > 0.0:
 				it.add_charges(per * delta)
+	for i in CHARM_SLOTS:
+		_charm_flash[i] = maxf(_charm_flash[i] - delta * 1.5, 0.0)
+		var ch: ItemInstance = charms[i]
+		if ch != null:
+			var per2 := float(_fx(ch).per_second)
+			if per2 > 0.0:
+				ch.add_charges(per2 * delta)
 	var max_life := stats.get_stat("max_life")
 	for fx in _flask_effects.duplicate():
 		var step := minf(delta, float(fx.t))
@@ -1025,7 +1034,138 @@ func slow_immune() -> bool:
 
 
 func is_worn(item: ItemInstance) -> bool:
-	return item != null and (equipment.values().has(item) or flasks.has(item))
+	return item != null and (equipment.values().has(item) or flasks.has(item) or charms.has(item))
+
+
+# ---------- charms ----------
+# Path of Exile 2: charms sit in the slots a belt opens and are used by themselves when their trigger happens (a hit
+# of an element, a slow, an elite's death), spending charges like a flask; their effect lasts a few seconds.
+
+const CHARM_SLOTS := 3
+
+
+## Charm slots the worn belt opens: 1 below item level 30, 2 below 60, 3 above (Path of Exile 2 rolls up to that many,
+## Tainted gives the most of the band); none without a belt. A charm left in a slot that closes stays but does nothing.
+func charm_slot_count() -> int:
+	var belt: ItemInstance = equipment.get("belt")
+	if belt == null:
+		return 0
+	return 1 if belt.ilvl < 30 else (2 if belt.ilvl < 60 else 3)
+
+
+## What a flask or charm of yours does: its own and the worn belt's modifiers.
+func _fx(it: ItemInstance) -> Dictionary:
+	return it.flask_effect(equipment.get("belt"))
+
+
+## 1 just after charm slot i fired, down to 0.
+func charm_flash(i: int) -> float:
+	return _charm_flash[i] if i >= 0 and i < CHARM_SLOTS else 0.0
+
+
+## How full charm slot i is (1 full, 0 empty).
+func charm_charge_fraction(i: int) -> float:
+	var it: ItemInstance = charms[i] if i >= 0 and i < CHARM_SLOTS else null
+	return clampf(it.charges_now() / float(maxi(it.max_charges(), 1)), 0.0, 1.0) if it != null else 0.0
+
+
+## Use the charms whose trigger just happened: the first free one per slot with charges, not already in effect.
+func _charm_trigger(trigger: String) -> void:
+	for i in mini(charm_slot_count(), CHARM_SLOTS):
+		var it: ItemInstance = charms[i]
+		if it == null:
+			continue
+		var e := _fx(it)
+		if String(e.trigger) != trigger or _flask_effects.any(func(f): return int(f.get("charm", -1)) == i):
+			continue
+		if not it.spend_charges(equipment.get("belt")):
+			continue
+		var source := RefCounted.new()
+		var buff: Dictionary = e.buff
+		if String(buff.stat) != "":
+			stats.add_mod(String(buff.stat), int(buff.mod), float(buff.value), source)
+		if float(e.charm_life) > 0.0:
+			hp = minf(hp + float(e.charm_life), stats.get_stat("max_life"))
+		if float(e.charm_mana) > 0.0:
+			gain_mana(float(e.charm_mana))
+		if bool(e.warding):
+			_slow_t = 0.0
+		_flask_effects.append({"source": source, "t": float(e.duration), "life_rate": 0.0, "power_rate": 0.0, "warding": bool(e.warding), "charm": i})
+		_charm_flash[i] = 1.0
+		if rig != null:
+			rig.pulse(0.10, 0.3)
+
+
+## Put a charm from the bag into charm slot i (one the belt opens). What was there goes into the bag, where the new one
+## was if it fits; a charm already in another slot swaps with it.
+func equip_charm(item: ItemInstance, i: int) -> bool:
+	if item == null or not item.is_charm() or i < 0 or i >= charm_slot_count():
+		return false
+	var j := charms.find(item)
+	if j == i:
+		return true
+	if j != -1:
+		charms[j] = charms[i]
+		charms[i] = item
+		inventory_changed.emit()
+		return true
+	var old: ItemInstance = charms[i]
+	var at := bag.position_of(item)
+	if old != null:
+		var trial := bag.duplicate_grid()
+		trial.remove(item)
+		var spot := at if at != ItemGrid.NONE and trial.fits(old, at) else trial.find_free(old)
+		if spot == ItemGrid.NONE:
+			return false
+		bag.remove(item)
+		bag.place(old, spot)
+	else:
+		bag.remove(item)
+	charms[i] = item
+	inventory_changed.emit()
+	return true
+
+
+## The first open, empty charm slot, or -1.
+func free_charm_slot() -> int:
+	for i in charm_slot_count():
+		if charms[i] == null:
+			return i
+	return -1
+
+
+## Whether the charm in slot i could be dropped at `at` in the bag: into space, or swapping with a charm there.
+func can_unequip_charm_to(i: int, at: Vector2i) -> bool:
+	var it: ItemInstance = charms[i] if i >= 0 and i < CHARM_SLOTS else null
+	if it == null:
+		return false
+	var plan := bag.plan_drop(it, at, null)
+	if plan.is_empty():
+		return false
+	var b: ItemInstance = plan.get("swap")
+	return b == null or b.is_charm()
+
+
+func unequip_charm_to(i: int, at: Vector2i) -> bool:
+	if not can_unequip_charm_to(i, at):
+		return false
+	var it: ItemInstance = charms[i]
+	var b: ItemInstance = bag.plan_drop(it, at, null).get("swap")
+	if b != null:
+		bag.remove(b)
+	charms[i] = b
+	bag.place(it, at)
+	inventory_changed.emit()
+	return true
+
+
+## Take the charm in slot i off into the first space in the bag it fits.
+func unequip_charm(i: int) -> bool:
+	var it: ItemInstance = charms[i] if i >= 0 and i < CHARM_SLOTS else null
+	if it == null:
+		return false
+	var at := bag.find_free(it)
+	return at != ItemGrid.NONE and unequip_charm_to(i, at)
 
 
 ## Put a flask from the bag (or the ground) into flask slot i. What was there goes into the bag,
@@ -1140,6 +1280,8 @@ func resistance(dtype: int) -> float:
 
 
 const MAX_RESIST := 0.75
+const CHARM_HIT_TRIGGERS := {RuneDef.DamageType.FIRE: "hit_fire", RuneDef.DamageType.COLD: "hit_cold",
+	RuneDef.DamageType.LIGHTNING: "hit_lightning", RuneDef.DamageType.CHAOS: "hit_chaos"}
 const RESIST_KEYS := {RuneDef.DamageType.FIRE: "res_fire", RuneDef.DamageType.COLD: "res_cold",
 	RuneDef.DamageType.LIGHTNING: "res_lightning", RuneDef.DamageType.CHAOS: "res_chaos"}
 var _element_spark := 0
@@ -1153,6 +1295,8 @@ func thorns() -> float:
 ## Rampage: a slain enemy bursts, hurting others nearby.
 func on_enemy_killed(pos: Vector2, charge_worth := 1.0) -> void:
 	gain_flask_charges(charge_worth)
+	if charge_worth >= 3.0:
+		_charm_trigger("kill_elite")  # a Golden Charm
 	# "Gain N Life / Mana per enemy killed" on gear
 	var life_back := stats.get_stat("life_on_kill")
 	if life_back > 0.0:
@@ -1170,6 +1314,7 @@ func on_enemy_killed(pos: Vector2, charge_worth := 1.0) -> void:
 
 
 func apply_slow(seconds: float) -> void:
+	_charm_trigger("slow")
 	if slow_immune():
 		return
 	if _slow_t <= 0.0:
@@ -1470,6 +1615,7 @@ func take_damage(amount: float, dtype := 0) -> void:
 	var armor := stats.get_stat("armor")
 	var taken := amount * 100.0 / (100.0 + armor)
 	if dtype != RuneDef.DamageType.PHYSICAL:
+		_charm_trigger(String(CHARM_HIT_TRIGGERS.get(dtype, "")))  # a Ruby, Sapphire, Topaz or Amethyst Charm
 		taken *= 1.0 - resistance(dtype)
 		if Time.get_ticks_msec() - _element_spark > 250 and get_parent() != null:  # what hit you, in its colour
 			_element_spark = Time.get_ticks_msec()
@@ -1671,8 +1817,8 @@ func can_equip(item: ItemInstance) -> bool:
 ## Equipment slots `item` may go in (empty if the class can't use it).
 func valid_slots(item: ItemInstance) -> Array[String]:
 	var out: Array[String] = []
-	if not can_equip(item) or item.is_flask():
-		return out  # flasks go in flask slots (equip_flask)
+	if not can_equip(item) or item.is_flask() or item.is_charm():
+		return out  # flasks and charms go in their own slots (equip_flask, equip_charm)
 	out.append(item.base.slot)
 	if item.base.slot == "weapon" and not item.base.two_handed and class_def.dual_wield:
 		out.append("offhand")
@@ -1836,6 +1982,12 @@ func unequip(slot: String) -> bool:
 func drop_item(item: ItemInstance) -> void:
 	if bag.has(item):
 		drop_from_bag(item)
+		return
+	var ci := charms.find(item)
+	if ci != -1:
+		charms[ci] = null
+		item_dropped.emit(item)
+		inventory_changed.emit()
 		return
 	var fi := flasks.find(item)
 	if fi != -1:

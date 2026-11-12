@@ -1,6 +1,16 @@
 [
 	{
 		"build": 0,
+		"title": "Charms",
+		"notes": [
+			"Charms are new, as in Path of Exile 2: small items worn in the charm slots of your belt, used by themselves when something happens to you. A belt opens 1 charm slot below item level 30, 2 below 60 and 3 above; the three slots sit beside your two flasks in the bottom bar, and a charm flashes when it fires.",
+			"Six charms to find or buy: Ruby, Sapphire and Topaz (+25% resistance for 4 seconds when you take Fire, Cold or Lightning damage from a hit), Amethyst (+18% Chaos resistance, level 40), Silver (a slow has no effect for 3 seconds, level 10) and Golden (15% more rarity of items found for 3 seconds when you kill an elite, legendary monster or boss, level 50). Each spends charges like a flask and is refilled the same way. Normal or Magic only: Magic charms can recover life or mana when used and last longer.",
+			"Belts roll the PoE2 belt modifiers: flask life recovery rate, charm effect duration, and more charges gained or fewer used for flasks and for charms.",
+			"Your old Granite, Quicksilver, Silver and Sulphur Flasks became charms (Ruby, Silver, Sapphire and Topaz), in a charm slot if one is free or else in your bag. The other seven PoE2 charms (stun, freeze, bleed, poison, ignite, shock, curses) are not in the game yet: monsters cannot do those things to you."
+		]
+	},
+	{
+		"build": 0,
 		"title": "Two flasks with charges, as in Path of Exile 2",
 		"notes": [
 			"You now have two flask slots: a life flask (Q) and a mana flask (E). A belt no longer opens flask slots. Flasks are no longer on a cooldown. They hold charges instead (60 to 75), each drink spends 10, and the flask on the bar shows how full it is.",

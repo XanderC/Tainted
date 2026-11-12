@@ -61,6 +61,16 @@ const FAMILIES := {
 	"flask_used": {"prefix": false, "stat": "flask_used", "mod": F, "text": "{v}% reduced Charges per use", "scale": 1.0, "pct": true},
 	"flask_charges": {"prefix": false, "stat": "flask_charges", "mod": F, "text": "{v}% increased Charges", "scale": 1.0, "pct": true},
 	"flask_gained": {"prefix": false, "stat": "flask_gained", "mod": F, "text": "{v}% increased Charges gained", "scale": 1.0, "pct": true},
+	# Charms and the belt's charm and flask modifiers
+	"charm_life": {"prefix": true, "stat": "charm_life", "mod": F, "text": "Recover {v} Life when Used", "scale": 0.5},
+	"charm_mana": {"prefix": true, "stat": "charm_mana", "mod": F, "text": "Recover {v} Mana when Used", "scale": 0.5},
+	"charm_duration": {"prefix": true, "stat": "charm_duration", "mod": F, "text": "{v}% increased Duration", "scale": 1.0, "pct": true},
+	"belt_flask_recovery": {"prefix": true, "stat": "belt_flask_recovery", "mod": F, "text": "{v}% increased Flask Life Recovery rate", "scale": 1.0, "pct": true},
+	"belt_charm_duration": {"prefix": true, "stat": "belt_charm_duration", "mod": F, "text": "{v}% increased Charm Effect Duration", "scale": 1.0, "pct": true},
+	"belt_charm_gained": {"prefix": false, "stat": "belt_charm_gained", "mod": F, "text": "{v}% increased Charm Charges gained", "scale": 1.0, "pct": true},
+	"belt_charm_used": {"prefix": false, "stat": "belt_charm_used", "mod": F, "text": "{v}% reduced Charm Charges used", "scale": 1.0, "pct": true},
+	"belt_flask_gained": {"prefix": false, "stat": "belt_flask_gained", "mod": F, "text": "{v}% increased Flask Charges gained", "scale": 1.0, "pct": true},
+	"belt_flask_used": {"prefix": false, "stat": "belt_flask_used", "mod": F, "text": "{v}% reduced Flask Charges used", "scale": 1.0, "pct": true},
 	"flask_per_second": {"prefix": false, "stat": "flask_per_second", "mod": F, "text": "Gains {v} Charges per Second", "scale": 1.0, "dec": 2},
 }
 
@@ -92,6 +102,8 @@ static func class_of(b: ItemBase) -> String:
 			return "sword2" if b.two_handed else "sword1"
 		"flask":
 			return "flask_mana" if String(b.flask.get("kind", "")) == "power" else "flask_life"
+		"charm":
+			return "charm"
 	return ""
 
 
